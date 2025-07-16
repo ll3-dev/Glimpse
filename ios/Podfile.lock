@@ -53,8 +53,6 @@ PODS:
     - ExpoModulesCore
   - ExpoLinking (7.1.7):
     - ExpoModulesCore
-  - ExpoLiveController (1.0.0):
-    - ExpoModulesCore
   - ExpoModulesCore (2.4.2):
     - DoubleConversion
     - glog
@@ -93,6 +91,8 @@ PODS:
   - fast_float (6.1.4)
   - FBLazyVector (0.79.5)
   - fmt (11.0.2)
+  - GlimpseNativeBridges (1.0.0):
+    - ExpoModulesCore
   - glog (0.3.5)
   - hermes-engine (0.79.5):
     - hermes-engine/Pre-built (= 0.79.5)
@@ -2086,7 +2086,6 @@ DEPENDENCIES:
   - ExpoImage (from `../node_modules/expo-image/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
-  - ExpoLiveController (from `../modules/expo-live-controller/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
@@ -2096,6 +2095,7 @@ DEPENDENCIES:
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
+  - GlimpseNativeBridges (from `../modules/glimpse-native-bridges/ios`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
@@ -2207,8 +2207,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-keep-awake/ios"
   ExpoLinking:
     :path: "../node_modules/expo-linking/ios"
-  ExpoLiveController:
-    :path: "../modules/expo-live-controller/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoSplashScreen:
@@ -2227,6 +2225,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
   fmt:
     :podspec: "../node_modules/react-native/third-party-podspecs/fmt.podspec"
+  GlimpseNativeBridges:
+    :path: "../modules/glimpse-native-bridges/ios"
   glog:
     :podspec: "../node_modules/react-native/third-party-podspecs/glog.podspec"
   hermes-engine:
@@ -2383,7 +2383,6 @@ SPEC CHECKSUMS:
   ExpoImage: 785f7673cfecd97045cf333fd6486b57ccab4b71
   ExpoKeepAwake: bf0811570c8da182bfb879169437d4de298376e7
   ExpoLinking: d5c183998ca6ada66ff45e407e0f965b398a8902
-  ExpoLiveController: 243ef73a3c852af8bb28c111ecfde7c17c9c89b5
   ExpoModulesCore: e0409d8c674a651a183e941be663e1966b49e2a2
   ExpoSplashScreen: 0ad5acac1b5d2953c6e00d4319f16d616f70d4dd
   ExpoSymbols: c5612a90fb9179cdaebcd19bea9d8c69e5d3b859
@@ -2393,6 +2392,7 @@ SPEC CHECKSUMS:
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
   FBLazyVector: d2a9cd223302b6c9aa4aa34c1a775e9db609eb52
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
+  GlimpseNativeBridges: f55f779d2972b58247ea156fadddee1d957b2830
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: f03b0e06d3882d71e67e45b073bb827da1a21aae
   libavif: 84bbb62fb232c3018d6f1bab79beea87e35de7b7
