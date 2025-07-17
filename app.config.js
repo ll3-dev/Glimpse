@@ -44,6 +44,7 @@ export default {
         },
       ],
       "@bacons/apple-targets",
+      "expo-sqlite",
     ],
     experiments: {
       typedRoutes: true,

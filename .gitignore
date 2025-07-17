@@ -36,4 +36,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-.env*
+.env
+*.logs/
+drizzle/
+*.db
+
+# @end expo-cli
