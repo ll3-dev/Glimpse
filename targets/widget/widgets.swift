@@ -7,16 +7,31 @@ struct Provider: TimelineProvider {
     }
   
   func getSnapshot(in context: Context, completion: @escaping (ContentEntry) -> Void) {
-    let entry = ContentEntry(date: Date(), content: "Editor")
+    let entry = ContentEntry(date: Date(), content: "오늘의 나는?")
     completion(entry)
   }
   func getTimeline(in context: Context, completion: @escaping (Timeline<ContentEntry>) -> Void) {
     let userDefaults = UserDefaults(suiteName: "group.glimpse.data")
-    let content = userDefaults?.string(forKey: "widgetData") ?? ""
-    let entry = ContentEntry(date: Date(), content: content)
+    let contentJsonData = userDefaults?.string(forKey: "widgetData") ?? "Hello, Glimpse!"
     
+    var contents : [String] = []
+    var entries: [ContentEntry] = []
     
-    let timeline = Timeline(entries: [entry], policy: .atEnd)
+    do {
+      let jsonData = Data(contentJsonData.utf8)
+      contents = try JSONDecoder().decode([String].self, from: jsonData)
+    } catch {
+      print(error)
+    }
+    
+    let currentDate = Date()
+    for hourOffset in 0..<5 {
+      let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
+      let entry = ContentEntry(date: entryDate, content: contents[hourOffset % contents.count])
+      entries.append(entry);
+    }
+    
+    let timeline = Timeline(entries: entries, policy: .atEnd)
     completion(timeline)
   }
 }
@@ -24,7 +39,6 @@ struct Provider: TimelineProvider {
 struct ContentEntry: TimelineEntry {
     var date: Date = Date()
     let content: String
-  
 }
 
 struct widgetEntryView : View {
