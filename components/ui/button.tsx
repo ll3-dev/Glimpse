@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
+import * as Slot from "@rn-primitives/slot";
 import { Pressable } from "react-native";
 import { TextClassContext } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
@@ -60,9 +61,18 @@ const buttonTextVariants = cva(
 );
 
 type ButtonProps = React.ComponentProps<typeof Pressable> &
-  VariantProps<typeof buttonVariants>;
+  VariantProps<typeof buttonVariants> & { asChild?: boolean };
 
-function Button({ ref, className, variant, size, ...props }: ButtonProps) {
+function Button({
+  asChild,
+  ref,
+  className,
+  variant,
+  size,
+  ...props
+}: ButtonProps) {
+  const Component = asChild ? Slot.Pressable : Pressable;
+
   return (
     <TextClassContext.Provider
       value={buttonTextVariants({
@@ -71,7 +81,7 @@ function Button({ ref, className, variant, size, ...props }: ButtonProps) {
         className: "web:pointer-events-none",
       })}
     >
-      <Pressable
+      <Component
         className={cn(
           props.disabled && "opacity-50 web:pointer-events-none",
           buttonVariants({ variant, size, className })
