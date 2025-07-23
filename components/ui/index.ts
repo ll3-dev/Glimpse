@@ -34,6 +34,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { View } from "@/components/ui/view";
+import { Badge, badgeTextVariants, badgeVariants } from "@/components/ui/badge";
 
 const ui = {
   View,
@@ -69,6 +70,10 @@ const ui = {
   ToolTip: Object.assign(Tooltip, {
     Content: TooltipContent,
     Trigger: TooltipTrigger,
+  }),
+  Badge: Object.assign(Badge, {
+    badgeTextVariants,
+    badgeVariants,
   }),
 };
 

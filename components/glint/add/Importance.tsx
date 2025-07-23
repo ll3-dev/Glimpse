@@ -8,12 +8,12 @@ export default function AddGlintImportance() {
   const { set } = useNewGlintStore((state) => state.actions);
 
   return (
-    <ui.View vertical>
+    <ui.View vertical className="gap-2">
       <ui.View className="items-center gap-3">
-        <ui.Text className="font-bold">반짝임</ui.Text>
+        <ui.Text className="font-bold">중요도</ui.Text>
         <ui.ToolTip>
           <ui.ToolTip.Trigger>
-            <Info size={16} />
+            <Info className="text-foreground" size={16} />
           </ui.ToolTip.Trigger>
           <ui.ToolTip.Content align="start">
             <ui.Text>Glint가 화면에 더 자주 나옵니다.</ui.Text>

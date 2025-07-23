@@ -5,7 +5,7 @@ import { create } from "zustand";
 interface GlintState
   extends Omit<
     GlintInsert,
-    "id" | "createdAt" | "showedAt" | "disabledAt" | "updatedAt" | "deletedAt"
+    "createdAt" | "showedAt" | "disabledAt" | "updatedAt" | "deletedAt"
   > {
   showedAt: number; // Timestamp in milliseconds
   disabledAt: number; // Timestamp in milliseconds
@@ -13,6 +13,7 @@ interface GlintState
 
 interface GlintAction {
   set: (field: keyof GlintState, value: GlintState[keyof GlintState]) => void;
+  setGlint: (glint: GlintInsert) => void;
   addTag: (tag: TagInsert) => void;
   removeTag: (index: number) => void;
   reset: () => void;
@@ -33,6 +34,11 @@ export const useNewGlintStore = create<GlintState & { actions: GlintAction }>(
     actions: {
       set: (field: keyof GlintState, value: GlintState[keyof GlintState]) =>
         set((state) => ({ ...state, [field]: value })),
+      setGlint: (glint: GlintInsert) =>
+        set(() => ({
+          ...initialGlintState,
+          ...glint,
+        })),
       reset: () => set(() => ({ ...initialGlintState })),
       addTag: (tag: TagInsert) =>
         set((state) => {

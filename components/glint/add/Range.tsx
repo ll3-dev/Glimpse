@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Calendar } from "@/components/icons";
 import { useNewGlintStore } from "@/store/useNewGlintStore";
 import { transformYYYYMMDD } from "@/lib/date";
-import CalenderSelector from "@/components/glint/add/Calender";
+import CalenderSelector from "@/components/glint/add/Calendar";
 
 export default function AddRange() {
   const showedAt = useNewGlintStore((state) => state.showedAt);
@@ -22,29 +22,26 @@ export default function AddRange() {
   return (
     <ui.View vertical className="flex-1">
       <ui.View className="gap-3 items-center">
-        <ui.Text className="font-bold">범위 선택</ui.Text>
+        <ui.Text className="font-bold">보는 날짜</ui.Text>
         <ui.ToolTip>
           <ui.ToolTip.Trigger>
-            <Info size={16} />
+            <Info className="text-foreground" size={16} />
           </ui.ToolTip.Trigger>
           <ui.ToolTip.Content align="start" insets={contentInsets}>
-            <ui.Text>
-              범위를 선택하여 반짝임을 추가할 수 있습니다. 범위는 날짜에 따라
-              설정할 수 있습니다.
-            </ui.Text>
+            <ui.Text>범위를 선택하여 보는 날짜를 추가할 수 있습니다.</ui.Text>
           </ui.ToolTip.Content>
         </ui.ToolTip>
       </ui.View>
       <ui.View className="border border-input rounded mt-2 items-center justify-between">
         <ui.View className="p-2">
-          <Calendar />
+          <Calendar className="text-foreground" />
         </ui.View>
         <CalenderSelector
           className="flex-1"
           disabledAt={disabledAt}
           showedAt={showedAt}
           onChange={(date) => {
-            if (new Date(date).getDate() < new Date(disabledAt).getDate()) {
+            if (new Date(date) < new Date(disabledAt)) {
               set("showedAt", date);
             }
           }}
@@ -63,7 +60,7 @@ export default function AddRange() {
           disabledAt={disabledAt}
           showedAt={showedAt}
           onChange={(date) => {
-            if (new Date(date).getDate() > new Date(showedAt).getDate()) {
+            if (new Date(date) > new Date(showedAt)) {
               set("disabledAt", date);
             }
           }}

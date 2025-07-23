@@ -2,7 +2,7 @@ import ui from "@/components/ui";
 import AddGlintTags from "@/components/glint/add/tag";
 import AddGlintImportance from "@/components/glint/add/Importance";
 import AddGlintTitle from "@/components/glint/add/Title";
-import AddGlintContent from "@/components/glint/Content";
+import AddGlintContent from "@/components/glint/add/Content";
 import AddRange from "@/components/glint/add/Range";
 import { ScrollView } from "react-native";
 import { useEffect } from "react";

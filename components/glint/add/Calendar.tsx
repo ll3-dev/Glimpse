@@ -1,4 +1,5 @@
 import ui from "@/components/ui";
+import { useTheme } from "@react-navigation/native";
 import { PropsWithChildren, useState } from "react";
 import { Calendar } from "react-native-calendars";
 import { MarkedDates } from "react-native-calendars/src/types";
@@ -18,6 +19,7 @@ export default function CalenderSelector({
   children,
 }: CalendarProps) {
   const [dialogVisible, setDialogVisible] = useState(false);
+  const { dark } = useTheme();
 
   const showedAtDate = new Date(showedAt);
   const disabledAtDate = new Date(disabledAt);
@@ -31,19 +33,19 @@ export default function CalenderSelector({
   ) {
     const dateString = d.toISOString().split("T")[0];
     markedDates[dateString] = {
-      color: "black",
-      textColor: "white",
+      color: dark ? "#333" : "#eee",
+      textColor: dark ? "#fff" : "#000",
     };
   }
   markedDates[showedAtDate.toISOString().split("T")[0]] = {
     startingDay: true,
-    color: "black",
-    textColor: "white",
+    color: dark ? "#333" : "#eee",
+    textColor: dark ? "#fff" : "#000",
   };
   markedDates[disabledAtDate.toISOString().split("T")[0]] = {
     endingDay: true,
-    color: "black",
-    textColor: "white",
+    color: dark ? "#333" : "#eee",
+    textColor: dark ? "#fff" : "#000",
   };
 
   return (
@@ -65,10 +67,16 @@ export default function CalenderSelector({
             }}
             minDate={new Date().toISOString().split("T")[0]}
             theme={{
-              selectedDayBackgroundColor: "black",
-              todayTextColor: "black",
-              arrowColor: "black",
-              textSectionTitleColor: "black",
+              backgroundColor: dark ? "#000" : "#fff",
+              calendarBackground: dark ? "#000" : "#fff",
+              textSectionTitleColor: dark ? "#fff" : "#000",
+              textSectionTitleDisabledColor: dark ? "#000" : "#ccc",
+              selectedDayBackgroundColor: dark ? "#000" : "#ccc",
+              todayTextColor: dark ? "#fff" : "#000",
+              dayTextColor: dark ? "#fff" : "#000",
+              arrowColor: dark ? "#fff" : "#000",
+              textDisabledColor: dark ? "#555" : "#ccc",
+              monthTextColor: dark ? "#fff" : "#000",
               textDayFontFamily: "System",
               textMonthFontFamily: "System",
               textDayHeaderFontFamily: "System",

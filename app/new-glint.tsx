@@ -1,10 +1,19 @@
 import AddGlint from "@/components/glint/add";
-import { SafeAreaView, View } from "react-native";
+import { Stack } from "expo-router";
+import { SafeAreaView } from "react-native";
 
 export default function NewGlintScreen() {
   return (
-    <SafeAreaView className="flex-1">
-      <AddGlint />
-    </SafeAreaView>
+    <>
+      <Stack.Screen
+        name="new-glint"
+        options={{
+          title: "새로운 Glint",
+        }}
+      />
+      <SafeAreaView className="flex-1">
+        <AddGlint />
+      </SafeAreaView>
+    </>
   );
 }
