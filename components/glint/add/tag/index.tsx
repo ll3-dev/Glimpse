@@ -18,7 +18,7 @@ export default function AddGlintTags() {
           </ui.Button>
         </Link>
       </ui.View>
-      <ui.View className="flex-wrap gap-2 rounded-lg bg-secondary/30">
+      <ui.View className="flex-wrap gap-2 rounded-lg">
         {tags?.map((tag, index) => (
           <ui.Badge key={index} className="flex-row" variant="outline" asChild>
             <Pressable onPress={() => removeTag(index)}>

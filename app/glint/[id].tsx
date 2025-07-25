@@ -26,7 +26,7 @@ export default function GlintScreen() {
           ),
         }}
       />
-      <SafeAreaView className="flex-1">
+      <SafeAreaView className="flex-1 bg-background">
         <Suspense>
           <GlintDetail id={id} />
         </Suspense>

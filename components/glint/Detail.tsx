@@ -23,7 +23,7 @@ export default function GlintDetail({ id }: GlintDetailProps) {
   if (!glint) return;
 
   return (
-    <ScrollView>
+    <ScrollView className="bg-background">
       <ui.Text.TextClassContext.Provider value="text-foreground">
         <ui.View
           vertical
@@ -54,7 +54,7 @@ export default function GlintDetail({ id }: GlintDetailProps) {
               <ui.Text className="font-bold">보여지는 날짜</ui.Text>
               <ui.ToolTip>
                 <ui.ToolTip.Trigger>
-                  <Info size={16} />
+                  <Info className="text-foreground" size={16} />
                 </ui.ToolTip.Trigger>
                 <ui.ToolTip.Content align="start" insets={contentInsets}>
                   <ui.Text>

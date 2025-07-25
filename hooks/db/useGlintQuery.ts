@@ -3,7 +3,7 @@ import { glintTable, glintTagsTable, tagsTable } from "@/db/schema";
 import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { sql } from "drizzle-orm";
 
-const getGlints = async () =>
+export const getGlints = async () =>
   db
     .select()
     .from(glintTable)

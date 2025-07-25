@@ -7,7 +7,7 @@ export default function AddGlintContent() {
 
   return (
     <ui.View vertical>
-      <ui.Text className="font-bold">내용</ui.Text>
+      <ui.Text className="font-bold mb-2">내용</ui.Text>
       <ui.Textarea
         className="py-4 px-6 bg-secondary/30 rounded-lg border border-input"
         value={content}

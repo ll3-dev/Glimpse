@@ -36,6 +36,7 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
   usePlatformSpecificSetup();
   useDrizzleStudio(expoDb);
+
   const { success, error } = useMigrations(db, migrations);
   const { isDarkColorScheme } = useColorScheme();
 

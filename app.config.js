@@ -45,6 +45,7 @@ export default {
       ],
       "@bacons/apple-targets",
       "expo-sqlite",
+      "expo-background-task",
     ],
     experiments: {
       typedRoutes: true,

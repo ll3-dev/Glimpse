@@ -2,20 +2,21 @@ import WidgetKit
 import SwiftUI
 
 struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> ContentEntry {
-      ContentEntry(content: "오늘의 나는?")
+  func placeholder(in context: Context) -> GlintContentEntry {
+      GlintContentEntry(content: "-")
     }
   
-  func getSnapshot(in context: Context, completion: @escaping (ContentEntry) -> Void) {
-    let entry = ContentEntry(date: Date(), content: "오늘의 나는?")
+  func getSnapshot(in context: Context, completion: @escaping (GlintContentEntry) -> Void) {
+    let entry = GlintContentEntry(date: Date(), content: "-")
     completion(entry)
   }
-  func getTimeline(in context: Context, completion: @escaping (Timeline<ContentEntry>) -> Void) {
+  
+  func getTimeline(in context: Context, completion: @escaping (Timeline<GlintContentEntry>) -> Void) {
     let userDefaults = UserDefaults(suiteName: "group.glimpse.data")
-    let contentJsonData = userDefaults?.string(forKey: "widgetData") ?? "Hello, Glimpse!"
+    let contentJsonData = userDefaults?.string(forKey: "widgetData") ?? "[]"
     
     var contents : [String] = []
-    var entries: [ContentEntry] = []
+    var entries: [GlintContentEntry] = []
     
     do {
       let jsonData = Data(contentJsonData.utf8)
@@ -26,8 +27,8 @@ struct Provider: TimelineProvider {
     
     let currentDate = Date()
     for hourOffset in 0..<5 {
-      let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-      let entry = ContentEntry(date: entryDate, content: contents[hourOffset % contents.count])
+      let entryDate = Calendar.current.date(byAdding: .minute, value: hourOffset * 15, to: currentDate)!
+      let entry = GlintContentEntry(date: entryDate, content: contents[hourOffset % contents.count])
       entries.append(entry);
     }
     
@@ -36,12 +37,12 @@ struct Provider: TimelineProvider {
   }
 }
 
-struct ContentEntry: TimelineEntry {
+struct GlintContentEntry: TimelineEntry {
     var date: Date = Date()
     let content: String
 }
 
-struct widgetEntryView : View {
+struct WidgetEntryView : View {
   var content: String
 
     var body: some View {
@@ -52,19 +53,22 @@ struct widgetEntryView : View {
 }
 
 struct widget: Widget {
-    let kind: String = "widget"
+  let kind: String = "kr.ll3.glimpse"
 
-    var body: some WidgetConfiguration {
+  var body: some WidgetConfiguration {
       StaticConfiguration(kind: kind, provider: Provider()) { entry in
-        widgetEntryView(content: entry.content)
+        WidgetEntryView(content: entry.content)
+          .containerBackground(.fill.tertiary, for: .widget)
       }.supportedFamilies([.systemSmall])
         .configurationDisplayName("Glimpse Widget")
         .description("글림스 위젯입니다.")
     }
 }
 
-struct wedgets_preview: PreviewProvider {
-  static var previews: some View {
-    widgetEntryView(content: "콘텐츠입니다").previewContext(WidgetPreviewContext(family: .systemSmall))
-  }
+#Preview(as: .systemSmall) {
+  widget()
+} timeline: {
+    let date = Date()
+  GlintContentEntry(date: date, content: "asdf")
+  GlintContentEntry(date: date.addingTimeInterval(60), content: "asdfasdf")
 }
