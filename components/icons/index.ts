@@ -6,3 +6,4 @@ export { MoonStar } from "./MoonStar";
 export { Sparkle } from "./Sparkle";
 export { Calendar } from "./Calendar";
 export { SquarePen } from "./SquarePen";
+export { ChevronLeft } from "./ChevronLeft";
