@@ -5,7 +5,7 @@ public class GlimpseNativeBridgesModule: Module {
   public func definition() -> ModuleDefinition {
     Name("GlimpseNativeBridges")
 
-    Constants([:])
+    Constant([:])
 
     Function("set") { (key: String, value: String, group: String?) in
       let userDefaults = UserDefaults(suiteName: group)

@@ -1,15 +1,16 @@
-import { SafeAreaView, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from "react-native";
 import GlintDetail from "@/components/glint/Detail";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { Suspense } from "react";
 import ui from "@/components/ui";
 import { SquarePen } from "@/components/icons";
 import { useGlintByIdQuery } from "@/hooks/db/useGlintQuery";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function GlintScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: glint } = useGlintByIdQuery(id)[0];
-  if (!id) return null; // Handle the case where id is not provided
+  if (!id) throw new Error("허용되지 않는 접근입니다.");
 
   return (
     <>

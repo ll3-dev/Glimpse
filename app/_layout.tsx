@@ -17,10 +17,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 export { ErrorBoundary } from "expo-router";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import migrations from "@/drizzle/migrations";
-import { SafeAreaView, Text } from "react-native";
+import { Text } from "react-native";
 import { db, expoDb } from "@/db";
 import { Suspense } from "react";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
