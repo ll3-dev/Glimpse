@@ -61,12 +61,10 @@ export function ShareIntentDialog() {
     setIsSaving(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const newGlint = await saveSharedContent(title);
+      await saveSharedContent(title);
       dismiss();
-      // Navigate to the new glint
-      if (newGlint) {
-        router.push(`/glint/${newGlint.id}`);
-      }
+      // Navigate to home after saving
+      router.push("/");
     } catch (err) {
       console.error("Failed to save:", err);
     } finally {

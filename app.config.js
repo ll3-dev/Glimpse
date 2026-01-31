@@ -45,7 +45,6 @@ export default {
           backgroundColor: "#ffffff",
         },
       ],
-      "@bacons/apple-targets",
       "expo-sqlite",
       "expo-background-task",
       [
