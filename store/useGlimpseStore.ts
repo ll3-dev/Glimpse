@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import glimpseNativeBridges from "@/modules/glimpse-native-bridges";
+import { setWidgetData } from "@/modules/nitro-bridges";
 
 interface GlimpseActions {
   setGlimpse: (glimpse: string) => void;
@@ -8,6 +8,6 @@ interface GlimpseActions {
 export const useGlimpseStore = create<{ actions: GlimpseActions }>(() => ({
   actions: {
     setGlimpse: (glimpse) =>
-      glimpseNativeBridges.set("widgetData", glimpse, "group.glimpse.data"),
+      setWidgetData("widgetData", glimpse, "group.glimpse.data"),
   },
 }));

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["glimpse"],
+  "ios": {
+    "iosModuleName": "NitroGlimpseBridges"
+  },
+  "android": {
+    "androidNamespace": ["glimpse"],
+    "androidCxxLibName": "NitroGlimpseBridges"
+  },
+  "autolinking": {
+    "GlimpseBridges": {
+      "swift": "GlimpseBridges",
+      "kotlin": "GlimpseBridges"
+    },
+    "ClipboardMonitor": {
+      "swift": "ClipboardMonitor",
+      "kotlin": "ClipboardMonitor"
+    }
+  }
+}
