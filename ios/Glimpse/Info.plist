@@ -55,8 +55,11 @@
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
+    <key>RCTNewArchEnabled</key>
+    <true/>
     <key>UIBackgroundModes</key>
     <array>
+      <string>fetch</string>
       <string>processing</string>
     </array>
     <key>UILaunchStoryboardName</key>
