@@ -48,6 +48,20 @@ export default {
       "@bacons/apple-targets",
       "expo-sqlite",
       "expo-background-task",
+      [
+        "expo-share-intent",
+        {
+          ios: {
+            extensionBundleIdentifier: "kr.ll3.glimpse.ShareExtension",
+            appGroupIdentifier: "group.glimpse.data",
+          },
+          android: {
+            applicationId: "kr.ll3.glimpse",
+            displayName: "Share to Glimpse",
+            filters: ["text/*", "image/*", "video/*", "application/*"],
+          },
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

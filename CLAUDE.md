@@ -35,7 +35,7 @@ npx expo drizzle
 ### Tech Stack
 - **Framework**: Expo 53 with React Native 0.79.5 (New Architecture enabled)
 - **Routing**: expo-router (file-based routing in `app/` directory)
-- **Styling**: NativeWind 4 with Tailwind CSS (CSS variables for theming)
+- **Styling**: Uniwind with Tailwind CSS (CSS variables for theming)
 - **State Management**: Zustand for global state, TanStack Query for server-like state
 - **Database**: expo-sqlite + Drizzle ORM (migrations run on app startup)
 - **UI Components**: Custom components in `components/ui/` (shadcn-style) and `@rn-primitives`
@@ -72,9 +72,17 @@ npx expo drizzle
 - **Theming**: CSS variables in `global.css` for light/dark mode support
 
 ## Styling Conventions
-- Use NativeWind class names (Tailwind CSS syntax)
-- Colors use HSL CSS variables: `bg-background`, `text-foreground`, `border-border`, etc.
+- **Uniwind** is used for Tailwind CSS styling (see `docs/UNIWIND.md` for complete reference)
+- Classes are parsed at **build time** - never use template literals like `` `text-${color}` ``
+- Use platform selectors: `ios:`, `android:`, `web:`, `native:`
+- Dark mode with `dark:` prefix
+- Colors use CSS variables: `bg-background`, `text-foreground`, `border-border`, etc.
 - Platform-specific code uses `Platform.select()` or separate files with `.ios`/`.android` extensions
+
+## Naming Conventions
+- **Event handlers**: Use `on` prefix (e.g., `onPress`, `onSubmit`, `onChange`) NOT `handle` prefix
+- Component names: PascalCase (e.g., `GlintList`, `ThemeToggle`)
+- Hooks: `use` prefix (e.g., `useColorScheme`, `useGlintQuery`)
 
 ## Path Aliases
 - `@/*` maps to project root (configured in `tsconfig.json`)
