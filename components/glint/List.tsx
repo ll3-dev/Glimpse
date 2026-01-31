@@ -2,7 +2,7 @@ import ui from "@/components/ui";
 import { useGlintQuery } from "@/hooks/db/useGlintQuery";
 import { transformYYYYMMDD } from "@/lib/date";
 import { cn } from "@/lib/utils";
-import { FlashList } from "@shopify/flash-list";
+import { StyledFlashList } from "@/lib/init";
 import { Link } from "expo-router";
 import { useState } from "react";
 import { TouchableOpacity } from "react-native";
@@ -17,7 +17,7 @@ export default function GlintList() {
   );
 
   return (
-    <FlashList
+    <StyledFlashList
       contentContainerClassName="py-4"
       refreshing
       renderItem={({ item: glint }) => (

@@ -1,7 +1,7 @@
 import { FlashList } from "@shopify/flash-list";
 import { onlineManager } from "@tanstack/react-query";
 import * as Network from "expo-network";
-import { cssInterop } from "nativewind";
+import { withUniwind } from "uniwind";
 import { Calendar, LocaleConfig } from "react-native-calendars";
 
 onlineManager.setEventListener((setOnline) => {
@@ -11,14 +11,8 @@ onlineManager.setEventListener((setOnline) => {
   return eventSubscription.remove;
 });
 
-cssInterop(FlashList, {
-  className: "style",
-  contentContainerClassName: "contentContainerStyle",
-});
-
-cssInterop(Calendar, {
-  className: "style",
-});
+export const StyledFlashList = withUniwind(FlashList);
+export const StyledCalendar = withUniwind(Calendar);
 
 LocaleConfig.locales["ko"] = {
   monthNames: [

@@ -1,8 +1,8 @@
 import ui from "@/components/ui";
 import { useTheme } from "@react-navigation/native";
 import { PropsWithChildren, useState } from "react";
-import { Calendar } from "react-native-calendars";
 import { MarkedDates } from "react-native-calendars/src/types";
+import { StyledCalendar } from "@/lib/init";
 
 interface CalendarProps extends PropsWithChildren {
   className?: string;
@@ -57,7 +57,7 @@ export default function CalenderSelector({
       <ui.AlertDialog.Trigger asChild>{children}</ui.AlertDialog.Trigger>
       <ui.AlertDialog.Content>
         <ui.AlertDialog.Header>
-          <Calendar
+          <StyledCalendar
             className="w-[calc(80vw)]"
             markingType="period"
             markedDates={markedDates}
