@@ -22,6 +22,7 @@ import { db, expoDb } from "@/db";
 import { Suspense } from "react";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ShareIntentDialog } from "@/components/ShareIntentDialog";
 
 const LIGHT_THEME: Theme = {
   ...DefaultTheme,
@@ -67,6 +68,7 @@ export default function RootLayout() {
               }}
             />
           </Stack>
+          <ShareIntentDialog />
           <PortalHost />
         </QueryClientProvider>
       </ThemeProvider>
