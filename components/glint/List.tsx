@@ -53,7 +53,6 @@ export default function GlintList() {
         </Link>
       )}
       data={filteredGlints}
-      estimatedItemSize={50}
     />
   );
 }

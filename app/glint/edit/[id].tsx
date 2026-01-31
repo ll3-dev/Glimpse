@@ -1,12 +1,12 @@
 import EditGlint from "@/components/glint/Edit";
 import { useGlintByIdQuery } from "@/hooks/db/useGlintQuery";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { SafeAreaView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function GlintEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: glint } = useGlintByIdQuery(id)[0];
-  if (!id) return null; // Handle the case where id is not provided
+  if (!id) throw new Error("허용되지 않는 접근입니다.");
 
   return (
     <>
