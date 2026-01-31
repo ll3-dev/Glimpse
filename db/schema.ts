@@ -38,3 +38,57 @@ export const glintTagsTable = sqliteTable("glint_tags_table", {
     .notNull()
     .references(() => tagsTable.id, { onDelete: "cascade" }),
 });
+
+// Clipboard history tables
+export const clipboardTable = sqliteTable("clipboard_table", {
+  id: int().primaryKey({ autoIncrement: true }),
+  type: text()
+    .notNull()
+    .default("text"), // text, image, url, file
+  content: text().notNull(),
+  metadata: text(), // JSON string for additional data (file path, image url, etc.)
+  isPinned: int().notNull().default(0),
+  copiedCount: int().notNull().default(1), // Number of times this was copied
+  lastCopiedAt: int()
+    .notNull()
+    .default(sql`(current_timestamp)`),
+  createdAt: int()
+    .notNull()
+    .default(sql`(current_timestamp)`),
+  deletedAt: int().notNull().default(0),
+});
+
+export const clipboardFolderTable = sqliteTable("clipboard_folder_table", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull(),
+  color: text().notNull().default("#3b82f6"), // Hex color for folder icon
+  order: int().notNull().default(0),
+  createdAt: int()
+    .notNull()
+    .default(sql`(current_timestamp)`),
+  deletedAt: int().notNull().default(0),
+});
+
+export const clipboardTagsTable = sqliteTable("clipboard_tags_table", {
+  clipboardId: int()
+    .notNull()
+    .references(() => clipboardTable.id, { onDelete: "cascade" }),
+  tagId: int()
+    .notNull()
+    .references(() => tagsTable.id, { onDelete: "cascade" }),
+});
+
+export const clipboardFolderItemsTable = sqliteTable(
+  "clipboard_folder_items_table",
+  {
+    clipboardId: int()
+      .notNull()
+      .references(() => clipboardTable.id, { onDelete: "cascade" }),
+    folderId: int()
+      .notNull()
+      .references(() => clipboardFolderTable.id, { onDelete: "cascade" }),
+    createdAt: int()
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  }
+);
