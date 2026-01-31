@@ -1,8 +1,6 @@
 import { useUniwind } from "uniwind";
-import { useColorScheme as useRNColorScheme } from "react-native";
 
 export function useColorScheme() {
-  const rnColorScheme = useRNColorScheme();
   const { theme } = useUniwind();
 
   // Uniwind handles theme through CSS, theme reflects current theme

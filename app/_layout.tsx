@@ -62,7 +62,6 @@ export default function RootLayout() {
           <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
           <Stack screenOptions={{ headerBackButtonDisplayMode: "generic" }}>
             <Stack.Screen
-              name="glint/[id]"
               options={{
                 title: "",
               }}

@@ -1,8 +1,6 @@
-import GlintList from "@/components/glint/List";
-import FloatingActionButton from "@/components/home/FloatingActionButton";
 import { Stack } from "expo-router";
-import { Suspense } from "react";
 import { View } from "react-native";
+import ui from "@/components/ui";
 
 export default function Screen() {
   return (
@@ -13,10 +11,7 @@ export default function Screen() {
         }}
       />
       <View className="flex-1 bg-secondary/30 text-foreground">
-        <Suspense>
-          <GlintList />
-        </Suspense>
-        <FloatingActionButton />
+        <ui.Text>안녕하세요</ui.Text>
       </View>
     </>
   );

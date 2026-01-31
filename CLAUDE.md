@@ -79,6 +79,11 @@ npx expo drizzle
 - Colors use CSS variables: `bg-background`, `text-foreground`, `border-border`, etc.
 - Platform-specific code uses `Platform.select()` or separate files with `.ios`/`.android` extensions
 
+## UI Components
+- Reusable shadcn-style components are in `components/ui/`
+- See `docs/REACT_NATIVE_REUSABLES.md` for adding new components via RNR CLI
+- Existing components: button, card, input, alert-dialog, badge, separator, text, textarea, tooltip, view
+
 ## Naming Conventions
 - **Event handlers**: Use `on` prefix (e.g., `onPress`, `onSubmit`, `onChange`) NOT `handle` prefix
 - Component names: PascalCase (e.g., `GlintList`, `ThemeToggle`)
