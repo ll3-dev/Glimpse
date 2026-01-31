@@ -77,6 +77,8 @@ PODS:
     - Yoga
   - ExpoNetwork (8.0.8):
     - ExpoModulesCore
+  - ExpoShareIntentModule (5.1.1):
+    - ExpoModulesCore
   - ExpoSplashScreen (31.0.13):
     - ExpoModulesCore
   - ExpoSQLite (16.0.10):
@@ -2123,6 +2125,7 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoNetwork (from `../node_modules/expo-network/ios`)
+  - ExpoShareIntentModule (from `../node_modules/expo-share-intent/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
@@ -2247,6 +2250,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoNetwork:
     :path: "../node_modules/expo-network/ios"
+  ExpoShareIntentModule:
+    :path: "../node_modules/expo-share-intent/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSQLite:
@@ -2430,6 +2435,7 @@ SPEC CHECKSUMS:
   ExpoLinking: 8f0aaf69aa56f832913030503b6263dc6f647f37
   ExpoModulesCore: f3da4f1ab5a8375d0beafab763739dbee8446583
   ExpoNetwork: ee1fb67b0de59ab7f36794caf8242955dd8ae046
+  ExpoShareIntentModule: 928ff229dd5e577561944786f0de08be339f640b
   ExpoSplashScreen: bc3cffefca2716e5f22350ca109badd7e50ec14d
   ExpoSQLite: 7eedbe476870a5f18d6b89c817c4ac6f299830ad
   ExpoSymbols: 349ee2b4d7d5ff3ea8436467914f8a67635aa354
