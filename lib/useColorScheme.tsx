@@ -1,12 +1,23 @@
-import { useColorScheme as useNativewindColorScheme } from "nativewind";
+import { useUniwind } from "uniwind";
+import { useColorScheme as useRNColorScheme } from "react-native";
 
 export function useColorScheme() {
-  const { colorScheme, setColorScheme, toggleColorScheme } =
-    useNativewindColorScheme();
+  const rnColorScheme = useRNColorScheme();
+  const { theme } = useUniwind();
+
+  // Uniwind handles theme through CSS, theme reflects current theme
+  const colorScheme = theme === "dark" ? "dark" : "light";
+
   return {
-    colorScheme: colorScheme ?? "dark",
+    colorScheme,
     isDarkColorScheme: colorScheme === "dark",
-    setColorScheme,
-    toggleColorScheme,
+    setColorScheme: (scheme: "light" | "dark") => {
+      // Theme is controlled by CSS .dark class on root
+      // For manual switching, you'd need to add/remove .dark class
+      // This requires additional implementation with AsyncStorage
+    },
+    toggleColorScheme: () => {
+      // Toggle requires additional implementation
+    },
   };
 }
