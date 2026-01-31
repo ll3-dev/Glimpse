@@ -8,7 +8,6 @@ export default function Screen() {
   return (
     <>
       <Stack.Screen
-        name="index"
         options={{
           title: "Glimpse",
         }}
