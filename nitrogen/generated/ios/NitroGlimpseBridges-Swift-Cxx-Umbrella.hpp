@@ -8,24 +8,14 @@
 #pragma once
 
 // Forward declarations of C++ defined types
-// Forward declaration of `ClipboardItemType` to properly resolve imports.
-namespace margelo::nitro::glimpse { enum class ClipboardItemType; }
-// Forward declaration of `ClipboardItem` to properly resolve imports.
-namespace margelo::nitro::glimpse { struct ClipboardItem; }
-// Forward declaration of `HybridClipboardMonitorSpec` to properly resolve imports.
-namespace margelo::nitro::glimpse { class HybridClipboardMonitorSpec; }
 // Forward declaration of `HybridGlimpseBridgesSpec` to properly resolve imports.
 namespace margelo::nitro::glimpse { class HybridGlimpseBridgesSpec; }
 
 // Include C++ defined types
-#include "ClipboardItem.hpp"
-#include "ClipboardItemType.hpp"
-#include "HybridClipboardMonitorSpec.hpp"
 #include "HybridGlimpseBridgesSpec.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
 #include <exception>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -40,8 +30,6 @@ namespace margelo::nitro::glimpse { class HybridGlimpseBridgesSpec; }
 #include <NitroModules/DateToChronoDate.hpp>
 
 // Forward declarations of Swift defined types
-// Forward declaration of `HybridClipboardMonitorSpec_cxx` to properly resolve imports.
-namespace NitroGlimpseBridges { class HybridClipboardMonitorSpec_cxx; }
 // Forward declaration of `HybridGlimpseBridgesSpec_cxx` to properly resolve imports.
 namespace NitroGlimpseBridges { class HybridGlimpseBridgesSpec_cxx; }
 

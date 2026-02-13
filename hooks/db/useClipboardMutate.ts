@@ -29,7 +29,7 @@ const findExistingClipboardItem = async (content: string) => {
       )
     )
     .limit(1)
-    .then((rows) => rows[0]);
+    .then((rows: Array<typeof clipboardTable.$inferSelect>) => rows[0]);
 };
 
 const addClipboardItem = async (data: ClipboardItemInput) => {

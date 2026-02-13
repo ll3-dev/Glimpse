@@ -28,7 +28,7 @@ const getGlintById = async (id: string) =>
     .from(glintTable)
     .where(sql`${glintTable.id} = ${id} AND ${glintTable.deletedAt} = 0`)
     .limit(1)
-    .then((rows) => rows[0]);
+    .then((rows: Array<typeof glintTable.$inferSelect>) => rows[0]);
 
 const getGlintTagsById = async (id: string) =>
   db

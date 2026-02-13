@@ -23,16 +23,4 @@ public final class NitroGlimpseBridgesAutolinking {
   public static func isGlimpseBridgesRecyclable() -> Bool {
     return GlimpseBridges.self is any RecyclableView.Type
   }
-  
-  public static func createClipboardMonitor() -> bridge.std__shared_ptr_HybridClipboardMonitorSpec_ {
-    let hybridObject = ClipboardMonitor()
-    return { () -> bridge.std__shared_ptr_HybridClipboardMonitorSpec_ in
-      let __cxxWrapped = hybridObject.getCxxWrapper()
-      return __cxxWrapped.getCxxPart()
-    }()
-  }
-  
-  public static func isClipboardMonitorRecyclable() -> Bool {
-    return ClipboardMonitor.self is any RecyclableView.Type
-  }
 }

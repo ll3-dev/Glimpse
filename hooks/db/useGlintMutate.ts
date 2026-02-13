@@ -11,16 +11,21 @@ export type GlintInsert = typeof glintTable.$inferInsert & {
 
 const addGlint = async (data: GlintInsert) =>
   db.transaction(async (tx) => {
+    const validTags = data.tags.filter(
+      (tag): tag is TagInsert & { id: number } => typeof tag.id === "number",
+    );
+
     const { lastInsertRowId, changes } = await tx
       .insert(glintTable)
       .values(data);
     if (changes === 0) return tx.rollback();
+    if (typeof lastInsertRowId !== "number") return tx.rollback();
 
     await Promise.all(
-      data.tags.map((tag) =>
+      validTags.map((tag) =>
         tx.insert(glintTagsTable).values({
           glintId: lastInsertRowId,
-          tagId: tag.id!,
+          tagId: tag.id,
         })
       )
     );
@@ -41,10 +46,16 @@ export const useAddGlintMutate = () => {
 
 const updateGlint = async (data: GlintInsert) =>
   db.transaction(async (tx) => {
-    if (!data.id) throw new Error("Glint ID is required for update");
+    if (typeof data.id !== "number") {
+      throw new Error("Glint ID is required for update");
+    }
+    const glintId = data.id;
+    const validTags = data.tags.filter(
+      (tag): tag is TagInsert & { id: number } => typeof tag.id === "number",
+    );
     await tx
       .delete(glintTagsTable)
-      .where(sql`${glintTagsTable.glintId} = ${data.id}`);
+      .where(sql`${glintTagsTable.glintId} = ${glintId}`);
 
     await Promise.all([
       await tx
@@ -56,11 +67,11 @@ const updateGlint = async (data: GlintInsert) =>
           showedAt: data.showedAt,
           disabledAt: data.disabledAt,
         })
-        .where(sql`${glintTable.id} = ${data.id}`),
-      ...data.tags.map((tag) =>
+        .where(sql`${glintTable.id} = ${glintId}`),
+      ...validTags.map((tag) =>
         tx.insert(glintTagsTable).values({
-          glintId: data.id!,
-          tagId: tag.id!,
+          glintId,
+          tagId: tag.id,
         })
       ),
     ]);

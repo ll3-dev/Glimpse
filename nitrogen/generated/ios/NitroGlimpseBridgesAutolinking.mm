@@ -11,7 +11,6 @@
 #import <type_traits>
 
 #include "HybridGlimpseBridgesSpecSwift.hpp"
-#include "HybridClipboardMonitorSpecSwift.hpp"
 
 @interface NitroGlimpseBridgesAutolinking : NSObject
 @end
@@ -26,13 +25,6 @@
     "GlimpseBridges",
     []() -> std::shared_ptr<HybridObject> {
       std::shared_ptr<HybridGlimpseBridgesSpec> hybridObject = NitroGlimpseBridges::NitroGlimpseBridgesAutolinking::createGlimpseBridges();
-      return hybridObject;
-    }
-  );
-  HybridObjectRegistry::registerHybridObjectConstructor(
-    "ClipboardMonitor",
-    []() -> std::shared_ptr<HybridObject> {
-      std::shared_ptr<HybridClipboardMonitorSpec> hybridObject = NitroGlimpseBridges::NitroGlimpseBridgesAutolinking::createClipboardMonitor();
       return hybridObject;
     }
   );

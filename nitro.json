@@ -12,10 +12,6 @@
     "GlimpseBridges": {
       "swift": "GlimpseBridges",
       "kotlin": "GlimpseBridges"
-    },
-    "ClipboardMonitor": {
-      "swift": "ClipboardMonitor",
-      "kotlin": "ClipboardMonitor"
     }
   }
 }

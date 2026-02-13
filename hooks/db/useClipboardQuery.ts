@@ -62,7 +62,7 @@ const getClipboardById = async (id: number) =>
     .from(clipboardTable)
     .where(sql`${clipboardTable.id} = ${id} AND ${clipboardTable.deletedAt} = 0`)
     .limit(1)
-    .then((rows) => rows[0]);
+    .then((rows: Array<typeof clipboardTable.$inferSelect>) => rows[0]);
 
 export const useClipboardByIdQuery = (id: number) => {
   return useQuery({

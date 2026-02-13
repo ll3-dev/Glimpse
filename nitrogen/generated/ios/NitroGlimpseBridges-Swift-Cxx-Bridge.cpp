@@ -8,7 +8,6 @@
 #include "NitroGlimpseBridges-Swift-Cxx-Bridge.hpp"
 
 // Include C++ implementation defined types
-#include "HybridClipboardMonitorSpecSwift.hpp"
 #include "HybridGlimpseBridgesSpecSwift.hpp"
 #include "NitroGlimpseBridges-Swift-Cxx-Umbrella.hpp"
 #include <NitroModules/NitroDefines.hpp>
@@ -60,30 +59,6 @@ namespace margelo::nitro::glimpse::bridge::swift {
     }
     #endif
     NitroGlimpseBridges::HybridGlimpseBridgesSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
-    return swiftPart.toUnsafe();
-  }
-  
-  // pragma MARK: std::function<void(const ClipboardItem& /* item */)>
-  Func_void_ClipboardItem create_Func_void_ClipboardItem(void* NON_NULL swiftClosureWrapper) noexcept {
-    auto swiftClosure = NitroGlimpseBridges::Func_void_ClipboardItem::fromUnsafe(swiftClosureWrapper);
-    return [swiftClosure = std::move(swiftClosure)](const ClipboardItem& item) mutable -> void {
-      swiftClosure.call(item);
-    };
-  }
-  
-  // pragma MARK: std::shared_ptr<HybridClipboardMonitorSpec>
-  std::shared_ptr<HybridClipboardMonitorSpec> create_std__shared_ptr_HybridClipboardMonitorSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
-    NitroGlimpseBridges::HybridClipboardMonitorSpec_cxx swiftPart = NitroGlimpseBridges::HybridClipboardMonitorSpec_cxx::fromUnsafe(swiftUnsafePointer);
-    return std::make_shared<margelo::nitro::glimpse::HybridClipboardMonitorSpecSwift>(swiftPart);
-  }
-  void* NON_NULL get_std__shared_ptr_HybridClipboardMonitorSpec_(std__shared_ptr_HybridClipboardMonitorSpec_ cppType) {
-    std::shared_ptr<margelo::nitro::glimpse::HybridClipboardMonitorSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::glimpse::HybridClipboardMonitorSpecSwift>(cppType);
-    #ifdef NITRO_DEBUG
-    if (swiftWrapper == nullptr) [[unlikely]] {
-      throw std::runtime_error("Class \"HybridClipboardMonitorSpec\" is not implemented in Swift!");
-    }
-    #endif
-    NitroGlimpseBridges::HybridClipboardMonitorSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
     return swiftPart.toUnsafe();
   }
 

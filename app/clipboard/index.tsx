@@ -1,19 +1,18 @@
-import { Stack, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Stack } from "expo-router";
+import { useState } from "react";
 import { View, ScrollView, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ui from "@/components/ui";
 import { useClipboardQuery } from "@/hooks/db/useClipboardQuery";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useAddClipboardMutate, useTogglePinClipboard, useDeleteClipboard } from "@/hooks/db/useClipboardMutate";
-import { ClipboardCheck, Copy, Pin, PinOff, Trash2, FolderPlus, Play, Square } from "@/components/icons";
+import { ClipboardCheck, Copy, Pin, PinOff, Trash2 } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 
 export default function ClipboardScreen() {
-  const router = useRouter();
   const { data: clipboardItems, isLoading } = useClipboardQuery();
-  const { getClipboard, setClipboard, startMonitoring, stopMonitoring, isMonitoring } = useClipboard();
+  const { getClipboard, setClipboard } = useClipboard();
   const addClipboard = useAddClipboardMutate();
   const togglePin = useTogglePinClipboard();
   const deleteClipboard = useDeleteClipboard();
@@ -44,7 +43,7 @@ export default function ClipboardScreen() {
     try {
       await setClipboard(content);
       Alert.alert("성공", "클립보드에 복사되었습니다.");
-    } catch (error) {
+    } catch {
       Alert.alert("오류", "복사에 실패했습니다.");
     }
   };
@@ -70,18 +69,9 @@ export default function ClipboardScreen() {
     );
   };
 
-  // Toggle monitoring
-  const handleToggleMonitoring = async () => {
-    if (isMonitoring) {
-      await stopMonitoring();
-    } else {
-      await startMonitoring();
-    }
-  };
-
   const detectType = (content: string): "text" | "url" | "file" => {
     try {
-      const url = new URL(content);
+      new URL(content);
       return "url";
     } catch {
       if (content.startsWith("/")) {
@@ -128,20 +118,6 @@ export default function ClipboardScreen() {
       <Stack.Screen
         options={{
           title: "클립보드",
-          headerRight: () => (
-            <View className="flex-row items-center gap-2 pr-2">
-              <Pressable
-                onPress={handleToggleMonitoring}
-                className={`p-2 rounded-lg ${isMonitoring ? "bg-green-500/20" : "bg-secondary"}`}
-              >
-                {isMonitoring ? (
-                  <Square size={20} className="text-green-500" strokeWidth={2.5} />
-                ) : (
-                  <Play size={20} className="text-foreground" strokeWidth={2.5} />
-                )}
-              </Pressable>
-            </View>
-          ),
         }}
       />
       <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
@@ -156,15 +132,6 @@ export default function ClipboardScreen() {
               현재 클립보드 가져오기
             </ui.Text>
           </Pressable>
-
-          {/* Monitoring status */}
-          <View className="bg-secondary/50 rounded-xl p-3 mb-4">
-            <ui.Text className="text-muted-foreground text-sm">
-              {isMonitoring
-                ? "클립보드 모니터링 활성화 중..."
-                : "클립보드 모니터링 비활성화됨"}
-            </ui.Text>
-          </View>
 
           {/* Clipboard items */}
           {isLoading ? (
