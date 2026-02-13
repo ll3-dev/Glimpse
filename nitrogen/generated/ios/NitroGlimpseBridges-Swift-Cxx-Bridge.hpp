@@ -8,25 +8,14 @@
 #pragma once
 
 // Forward declarations of C++ defined types
-// Forward declaration of `ClipboardItemType` to properly resolve imports.
-namespace margelo::nitro::glimpse { enum class ClipboardItemType; }
-// Forward declaration of `ClipboardItem` to properly resolve imports.
-namespace margelo::nitro::glimpse { struct ClipboardItem; }
-// Forward declaration of `HybridClipboardMonitorSpec` to properly resolve imports.
-namespace margelo::nitro::glimpse { class HybridClipboardMonitorSpec; }
 // Forward declaration of `HybridGlimpseBridgesSpec` to properly resolve imports.
 namespace margelo::nitro::glimpse { class HybridGlimpseBridgesSpec; }
 
 // Forward declarations of Swift defined types
-// Forward declaration of `HybridClipboardMonitorSpec_cxx` to properly resolve imports.
-namespace NitroGlimpseBridges { class HybridClipboardMonitorSpec_cxx; }
 // Forward declaration of `HybridGlimpseBridgesSpec_cxx` to properly resolve imports.
 namespace NitroGlimpseBridges { class HybridGlimpseBridgesSpec_cxx; }
 
 // Include C++ defined types
-#include "ClipboardItem.hpp"
-#include "ClipboardItemType.hpp"
-#include "HybridClipboardMonitorSpec.hpp"
 #include "HybridGlimpseBridgesSpec.hpp"
 #include <NitroModules/Promise.hpp>
 #include <NitroModules/PromiseHolder.hpp>
@@ -228,49 +217,6 @@ namespace margelo::nitro::glimpse::bridge::swift {
   }
   inline Result_std__shared_ptr_Promise_bool___ create_Result_std__shared_ptr_Promise_bool___(const std::exception_ptr& error) noexcept {
     return Result<std::shared_ptr<Promise<bool>>>::withError(error);
-  }
-  
-  // pragma MARK: std::function<void(const ClipboardItem& /* item */)>
-  /**
-   * Specialized version of `std::function<void(const ClipboardItem&)>`.
-   */
-  using Func_void_ClipboardItem = std::function<void(const ClipboardItem& /* item */)>;
-  /**
-   * Wrapper class for a `std::function<void(const ClipboardItem& / * item * /)>`, this can be used from Swift.
-   */
-  class Func_void_ClipboardItem_Wrapper final {
-  public:
-    explicit Func_void_ClipboardItem_Wrapper(std::function<void(const ClipboardItem& /* item */)>&& func): _function(std::make_unique<std::function<void(const ClipboardItem& /* item */)>>(std::move(func))) {}
-    inline void call(ClipboardItem item) const noexcept {
-      _function->operator()(item);
-    }
-  private:
-    std::unique_ptr<std::function<void(const ClipboardItem& /* item */)>> _function;
-  } SWIFT_NONCOPYABLE;
-  Func_void_ClipboardItem create_Func_void_ClipboardItem(void* NON_NULL swiftClosureWrapper) noexcept;
-  inline Func_void_ClipboardItem_Wrapper wrap_Func_void_ClipboardItem(Func_void_ClipboardItem value) noexcept {
-    return Func_void_ClipboardItem_Wrapper(std::move(value));
-  }
-  
-  // pragma MARK: std::shared_ptr<HybridClipboardMonitorSpec>
-  /**
-   * Specialized version of `std::shared_ptr<HybridClipboardMonitorSpec>`.
-   */
-  using std__shared_ptr_HybridClipboardMonitorSpec_ = std::shared_ptr<HybridClipboardMonitorSpec>;
-  std::shared_ptr<HybridClipboardMonitorSpec> create_std__shared_ptr_HybridClipboardMonitorSpec_(void* NON_NULL swiftUnsafePointer) noexcept;
-  void* NON_NULL get_std__shared_ptr_HybridClipboardMonitorSpec_(std__shared_ptr_HybridClipboardMonitorSpec_ cppType);
-  
-  // pragma MARK: std::weak_ptr<HybridClipboardMonitorSpec>
-  using std__weak_ptr_HybridClipboardMonitorSpec_ = std::weak_ptr<HybridClipboardMonitorSpec>;
-  inline std__weak_ptr_HybridClipboardMonitorSpec_ weakify_std__shared_ptr_HybridClipboardMonitorSpec_(const std::shared_ptr<HybridClipboardMonitorSpec>& strong) noexcept { return strong; }
-  
-  // pragma MARK: Result<bool>
-  using Result_bool_ = Result<bool>;
-  inline Result_bool_ create_Result_bool_(bool value) noexcept {
-    return Result<bool>::withValue(std::move(value));
-  }
-  inline Result_bool_ create_Result_bool_(const std::exception_ptr& error) noexcept {
-    return Result<bool>::withError(error);
   }
 
 } // namespace margelo::nitro::glimpse::bridge::swift

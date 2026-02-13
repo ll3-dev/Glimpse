@@ -45,7 +45,6 @@ export default {
           backgroundColor: "#ffffff",
         },
       ],
-      "expo-sqlite",
       "expo-background-task",
       [
         "expo-share-intent",

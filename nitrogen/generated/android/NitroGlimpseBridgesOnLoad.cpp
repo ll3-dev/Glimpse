@@ -16,8 +16,7 @@
 #include <NitroModules/HybridObjectRegistry.hpp>
 
 #include "JHybridGlimpseBridgesSpec.hpp"
-#include "JHybridClipboardMonitorSpec.hpp"
-#include "JFunc_void_ClipboardItem.hpp"
+#include "JHybridNitroSQLiteOnLoadSpec.hpp"
 #include <NitroModules/DefaultConstructableObject.hpp>
 
 namespace margelo::nitro::glimpse {
@@ -30,22 +29,13 @@ int initialize(JavaVM* vm) {
   return facebook::jni::initialize(vm, [] {
     // Register native JNI methods
     margelo::nitro::glimpse::JHybridGlimpseBridgesSpec::registerNatives();
-    margelo::nitro::glimpse::JHybridClipboardMonitorSpec::registerNatives();
-    margelo::nitro::glimpse::JFunc_void_ClipboardItem_cxx::registerNatives();
+    margelo::nitro::glimpse::JHybridNitroSQLiteOnLoadSpec::registerNatives();
 
     // Register Nitro Hybrid Objects
     HybridObjectRegistry::registerHybridObjectConstructor(
       "GlimpseBridges",
       []() -> std::shared_ptr<HybridObject> {
         static DefaultConstructableObject<JHybridGlimpseBridgesSpec::javaobject> object("com/margelo/nitro/glimpse/GlimpseBridges");
-        auto instance = object.create();
-        return instance->cthis()->shared();
-      }
-    );
-    HybridObjectRegistry::registerHybridObjectConstructor(
-      "ClipboardMonitor",
-      []() -> std::shared_ptr<HybridObject> {
-        static DefaultConstructableObject<JHybridClipboardMonitorSpec::javaobject> object("com/margelo/nitro/glimpse/ClipboardMonitor");
         auto instance = object.create();
         return instance->cthis()->shared();
       }

@@ -34,10 +34,12 @@ target_sources(
   ../nitrogen/generated/android/NitroGlimpseBridgesOnLoad.cpp
   # Shared Nitrogen C++ sources
   ../nitrogen/generated/shared/c++/HybridGlimpseBridgesSpec.cpp
-  ../nitrogen/generated/shared/c++/HybridClipboardMonitorSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridNativeQueryResultSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridNitroSQLiteSpec.cpp
+  ../nitrogen/generated/shared/c++/HybridNitroSQLiteOnLoadSpec.cpp
   # Android-specific Nitrogen C++ sources
   ../nitrogen/generated/android/c++/JHybridGlimpseBridgesSpec.cpp
-  ../nitrogen/generated/android/c++/JHybridClipboardMonitorSpec.cpp
+  ../nitrogen/generated/android/c++/JHybridNitroSQLiteOnLoadSpec.cpp
 )
 
 # From node_modules/react-native/ReactAndroid/cmake-utils/folly-flags.cmake

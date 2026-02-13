@@ -15,12 +15,11 @@ import { PortalHost } from "@rn-primitives/portal";
 import { usePlatformSpecificSetup } from "@/hooks/useInit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 export { ErrorBoundary } from "expo-router";
-import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+import { useMigrations } from "@/db/nitro-sqlite-migrator";
 import migrations from "@/drizzle/migrations";
 import { Text } from "react-native";
-import { db, expoDb } from "@/db";
+import { db } from "@/db";
 import { Suspense } from "react";
-import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ShareIntentDialog } from "@/components/ShareIntentDialog";
 
@@ -37,7 +36,6 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
   usePlatformSpecificSetup();
-  useDrizzleStudio(expoDb);
 
   const { success, error } = useMigrations(db, migrations);
   const { isDarkColorScheme } = useColorScheme();
