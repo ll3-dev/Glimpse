@@ -35,6 +35,15 @@
 - Follow existing naming and file organization patterns in the nearest directory.
 - Do not introduce unrelated formatting or large-scale renames.
 
+## UI architecture (Atomic Design)
+
+- Treat `src/ui` as atomic layer only (atoms/primitives/icons/tokens).
+- Keep `src/ui` components stateless and reusable; no feature/domain behavior inside.
+- Do not place composed, feature-aware UI in `src/ui` (for example list items, search bars, page headers tied to a screen flow).
+- Put composed UI in `src/components/<feature>` (or screen-local component files when scope is very small).
+- Screens in `app/` should orchestrate state, queries, and actions, and consume atomic parts from `src/ui/*` plus composed parts from `src/components/*`.
+- Avoid `<ui.*>` namespaced composition for non-atomic constructs; prefer explicit named imports.
+
 ## PR instructions
 
 - Keep each change focused on a single purpose.
