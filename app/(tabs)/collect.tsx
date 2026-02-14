@@ -1,27 +1,45 @@
 import { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   saveKnowledgeItem,
   type SaveFailureResult,
-} from '../../src/features/capture';
-import { logger } from '../../src/utils/logger';
+} from '@/src/features/capture';
+import { CollectForm, CollectTopBar } from '@/src/components/collect';
+import { logger } from '@/src/utils/logger';
+
+function formatErrorDetails(details: unknown): string | undefined {
+  if (details === null || details === undefined) {
+    return undefined;
+  }
+
+  if (typeof details === 'string') {
+    return details;
+  }
+
+  if (details instanceof Error) {
+    return details.message;
+  }
+
+  try {
+    return JSON.stringify(details);
+  } catch {
+    return String(details);
+  }
+}
 
 export default function CollectScreen() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const handleSave = async () => {
     if (!body.trim()) {
@@ -29,10 +47,7 @@ export default function CollectScreen() {
       return;
     }
 
-    if (isSaving) {
-      return;
-    }
-
+    if (isSaving) return;
     setIsSaving(true);
 
     try {
@@ -44,14 +59,17 @@ export default function CollectScreen() {
 
       if (!result.success) {
         const failure = result as SaveFailureResult;
+        const details = formatErrorDetails(failure.error.details);
+        logger.error('CollectScreen.handleSave failed (SaveFailureResult)', details ?? failure.error.message, {
+          code: failure.error.code,
+          message: failure.error.message,
+          details: failure.error.details,
+        });
         Alert.alert('저장 실패', failure.error.message);
         return;
       }
 
-      logger.debug('[CollectScreen] Note saved:', result.data);
-
       await queryClient.invalidateQueries({ queryKey: ['knowledgeItems'] });
-
       setTitle('');
       setBody('');
       Alert.alert('저장 완료', '메모가 저장되었습니다.');
@@ -64,51 +82,23 @@ export default function CollectScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View 
+      className="flex-1 bg-app-bg" 
+      style={{ paddingTop: insets.top }}
+    >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <TextInput
-            className="mb-4 text-3xl font-bold text-gray-900"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="제목 없음"
-            placeholderTextColor="#9ca3af"
-            multiline={false}
-          />
-
-          <View className="mb-8 min-h-[300px]">
-            <TextInput
-              className="text-lg leading-7 text-gray-800"
-              value={body}
-              onChangeText={setBody}
-              placeholder="여기에 내용을 입력하세요..."
-              placeholderTextColor="#9ca3af"
-              multiline
-              textAlignVertical="top"
-              scrollEnabled={false}
-            />
-          </View>
-
-          <TouchableOpacity
-            className={`items-center rounded-lg bg-blue-600 py-3 ${isSaving ? 'opacity-60' : ''}`}
-            onPress={handleSave}
-            disabled={isSaving}
-            activeOpacity={0.7}
-          >
-            <Text className="text-base font-semibold text-white">
-              {isSaving ? '저장 중...' : '저장하기'}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <CollectTopBar isSaving={isSaving} onSave={handleSave} />
+        <CollectForm
+          title={title}
+          body={body}
+          bottomInset={insets.bottom}
+          onChangeTitle={setTitle}
+          onChangeBody={setBody}
+        />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,25 +1,22 @@
-import { Tabs } from 'expo-router';
-import { ClipboardList, Library } from 'lucide-react-native';
+import { Tabs } from "expo-router";
+import { ClipboardList, Library } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#000000',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: "#000000",
+        tabBarInactiveTintColor: "#9ca3af",
         tabBarStyle: {
           borderTopWidth: 1,
-          borderTopColor: '#f1f1f1',
+          borderTopColor: "#f1f1f1",
           elevation: 0,
           shadowOpacity: 0,
-          backgroundColor: '#ffffff',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: "#ffffff",
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '500',
+          fontWeight: "500",
         },
         headerShown: false,
       }}
@@ -27,19 +24,15 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="collect"
         options={{
-          title: '수집',
-          tabBarIcon: ({ color, size }) => (
-            <ClipboardList color={color} size={18} />
-          ),
+          title: "수집",
+          tabBarIcon: ({ color }) => <ClipboardList color={color} size={18} />,
         }}
       />
       <Tabs.Screen
         name="library"
         options={{
-          title: '라이브러리',
-          tabBarIcon: ({ color, size }) => (
-            <Library color={color} size={18} />
-          ),
+          title: "라이브러리",
+          tabBarIcon: ({ color }) => <Library color={color} size={18} />,
         }}
       />
       <Tabs.Screen
