@@ -10,8 +10,9 @@
  * 5. Database insertion
  */
 
-import { db, knowledgeItems, type KnowledgeItem, type NewKnowledgeItem } from '../../db';
+import { db, knowledgeItems, type KnowledgeItem, type NewKnowledgeItem } from '@/src/db';
 import { generateSummaryStub, generateTagsStub } from './stubs';
+import { logger } from '@/src/utils/logger';
 
 /**
  * Input type for creating a note
@@ -219,6 +220,8 @@ export async function saveKnowledgeItem(
       data: newKnowledgeItem as KnowledgeItem,
     };
   } catch (error) {
+    logger.error('saveKnowledgeItem failed', error, { inputType: input.type });
+
     // Handle database or unexpected errors
     return {
       success: false,
