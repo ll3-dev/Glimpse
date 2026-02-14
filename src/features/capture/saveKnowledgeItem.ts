@@ -202,7 +202,7 @@ export async function saveKnowledgeItem(
       id,
       type: input.type,
       title: normalizeText(input.title),
-      body: input.type === 'note' ? normalizeText(input.body) : normalizeText(input.body),
+      body: normalizeText(input.body),
       url: input.type === 'link' ? input.url.trim() : null,
       summary,
       tags,
