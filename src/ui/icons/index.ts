@@ -1,5 +1,7 @@
 export { Plus } from "./Plus";
 export { X } from "./X";
+export { Check } from "./Check";
+export { Minus } from "./Minus";
 export { Sun } from "./Sun";
 export { Info } from "./Info";
 export { MoonStar } from "./MoonStar";

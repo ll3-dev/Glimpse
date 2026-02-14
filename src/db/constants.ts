@@ -1,10 +1,11 @@
 export const DB_NAME = "glimpse.db";
 export const KNOWLEDGE_ITEMS_TABLE_NAME = "knowledge_items";
+export const RECOMMENDATIONS_TABLE_NAME = "recommendations";
 
 export const CREATE_KNOWLEDGE_ITEMS_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS knowledge_items (
   id TEXT PRIMARY KEY NOT NULL,
-  type TEXT NOT NULL CHECK(type IN ('note', 'link')),
+  type TEXT NOT NULL CHECK(type IN ('note', 'link', 'highlight', 'screenshot', 'share')),
   title TEXT,
   body TEXT,
   url TEXT,
@@ -14,6 +15,30 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
   updated_at REAL NOT NULL
 );
 `;
+
+export const CREATE_RECOMMENDATIONS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS recommendations (
+  id TEXT PRIMARY KEY NOT NULL,
+  item_a_id TEXT NOT NULL,
+  item_b_id TEXT NOT NULL,
+  reason TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'ignored', 'dismissed')),
+  created_at REAL NOT NULL,
+  responded_at REAL,
+  FOREIGN KEY (item_a_id) REFERENCES knowledge_items(id),
+  FOREIGN KEY (item_b_id) REFERENCES knowledge_items(id)
+);
+`;
+
+export const RECOMMENDATIONS_SELECT_COLUMNS = [
+  "id",
+  "item_a_id",
+  "item_b_id",
+  "reason",
+  "status",
+  "created_at",
+  "responded_at",
+] as const;
 
 export type RequiredColumn = {
   name: string;
