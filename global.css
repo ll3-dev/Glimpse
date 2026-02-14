@@ -2,14 +2,12 @@
 @import "uniwind";
 
 @theme {
-  --color-app-bg: #ffffff;
+  --color-app-bg: #f7f6f3; /* Notion-style off-white background */
   --color-app-surface: #ffffff;
-  --color-app-border: rgba(15, 15, 15, 0.1);
-  --color-app-text: #37352f;
-  --color-app-label: rgba(25, 23, 17, 0.6);
-  --color-app-muted: rgba(25, 23, 17, 0.4);
-  --color-app-subtle: rgba(25, 23, 17, 0.3);
+  --color-app-border: #edece9;
+  --color-app-text: #37352f; /* Notion main text */
+  --color-app-muted: #787774; /* Notion muted text */
+  --color-app-subtle: #9b9a97;
   --color-app-primary: #2383e2;
-  --color-app-danger: #eb5757;
-  --color-app-chip: #f1f1ef;
+  --color-app-accent: #eb5757;
 }
