@@ -5,7 +5,7 @@
  * Filters by title, body, and tags (case-insensitive).
  */
 
-import type { KnowledgeItem } from '../../db';
+import type { KnowledgeItem } from '@/src/db';
 
 /**
  * Filters knowledge items by search query.

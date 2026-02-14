@@ -1,6 +1,27 @@
 {
   "extends": "expo/tsconfig.base",
-  "compilerOptions": {},
-  "include": ["app/**/*.ts", "app/**/*.tsx", "src/**/*.ts", "src/**/*.tsx", "*.ts", ".expo/types/**/*.ts"],
-  "exclude": ["node_modules", "android", "ios", "dist", "babel.config.js", "metro.config.js", "jest.config.js"]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios",
+    "dist",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ]
 }

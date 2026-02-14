@@ -6,7 +6,7 @@
  */
 
 import { desc } from 'drizzle-orm';
-import { db, knowledgeItems, type KnowledgeItem } from '../../db';
+import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
 
 /**
  * Result type for successful retrieval
