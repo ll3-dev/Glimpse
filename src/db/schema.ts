@@ -47,3 +47,48 @@ export const knowledgeItems = sqliteTable('knowledge_items', {
 // Type exports for use in application code
 export type KnowledgeItem = typeof knowledgeItems.$inferSelect;
 export type NewKnowledgeItem = typeof knowledgeItems.$inferInsert;
+
+/**
+ * Recommendation status enum
+ * - 'pending': Initial state, awaiting user action
+ * - 'accepted': User explicitly accepted the connection
+ * - 'ignored': User explicitly rejected
+ * - 'dismissed': User temporarily hid (may resurface later)
+ */
+export const recommendationStatus = ['pending', 'accepted', 'ignored', 'dismissed'] as const;
+export type RecommendationStatus = (typeof recommendationStatus)[number];
+
+/**
+ * Recommendations table schema
+ * Stores AI-suggested connections between knowledge items
+ */
+export const recommendations = sqliteTable('recommendations', {
+  // Unique identifier
+  id: text('id').primaryKey(),
+
+  // First item in the connection
+  itemA_id: text('item_a_id')
+    .notNull()
+    .references(() => knowledgeItems.id),
+
+  // Second item in the connection
+  itemB_id: text('item_b_id')
+    .notNull()
+    .references(() => knowledgeItems.id),
+
+  // Reason for the recommendation
+  reason: text('reason'),
+
+  // Current status
+  status: text('status', { enum: recommendationStatus }).notNull().default('pending'),
+
+  // Creation timestamp
+  createdAt: real('created_at').notNull(),
+
+  // Response timestamp (when user accepted/ignored/dismissed)
+  respondedAt: real('responded_at'),
+});
+
+// Type exports for recommendations
+export type Recommendation = typeof recommendations.$inferSelect;
+export type NewRecommendation = typeof recommendations.$inferInsert;
