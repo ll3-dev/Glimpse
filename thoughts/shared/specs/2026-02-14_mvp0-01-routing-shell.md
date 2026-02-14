@@ -1,7 +1,7 @@
 ---
 date: 2026-02-14
 author: loopy
-status: draft
+status: done
 type: feature
 priority: high
 ---

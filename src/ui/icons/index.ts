@@ -16,3 +16,5 @@ export { Play } from "./Play";
 export { Square } from "./Square";
 export { Clipboard } from "./Clipboard";
 export { FolderPlus } from "./FolderPlus";
+export { ImagePlus } from "./ImagePlus";
+export { Share2 } from "./Share2";
