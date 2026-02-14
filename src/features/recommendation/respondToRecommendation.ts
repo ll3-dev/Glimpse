@@ -2,10 +2,12 @@
  * Respond to Recommendation Use Case
  *
  * Updates recommendation status based on user action (accept/ignore/dismiss).
+ * Also logs the feedback event for analytics.
  */
 
 import { db, recommendations, type RecommendationStatus } from '@/src/db';
 import { eq } from 'drizzle-orm';
+import { logRecommendationFeedback } from './logRecommendationFeedback';
 
 export interface RespondResult {
   success: true;
@@ -25,6 +27,7 @@ export type RespondToRecommendationResult = RespondResult | RespondFailureResult
 
 /**
  * Updates a recommendation's status based on user response.
+ * Also logs the feedback event for analytics.
  *
  * @param recommendationId - The ID of the recommendation to update
  * @param action - The user's action: 'accept', 'ignore', or 'dismiss'
@@ -43,6 +46,7 @@ export async function respondToRecommendation(
     const newStatus = statusMap[action];
     const now = Date.now();
 
+    // Update recommendation status
     await db
       .update(recommendations)
       .set({
@@ -50,6 +54,9 @@ export async function respondToRecommendation(
         respondedAt: now,
       })
       .where(eq(recommendations.id, recommendationId));
+
+    // Log feedback event
+    await logRecommendationFeedback(recommendationId, action);
 
     return {
       success: true,

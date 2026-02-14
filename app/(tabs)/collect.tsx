@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   saveKnowledgeItem,
-  type SaveFailureResult,
+  type KnowledgeItemInput,
 } from '@/src/features/capture';
 import {
   CollectForm,
@@ -68,9 +68,7 @@ export default function CollectScreen() {
   const handleSave = async () => {
     if (isSaving) return;
 
-    let saveType: KnowledgeItemType;
-    let saveTitle: string | undefined;
-    let saveBody: string | undefined;
+    let saveInput: KnowledgeItemInput;
 
     switch (channel) {
       case 'note':
@@ -78,9 +76,11 @@ export default function CollectScreen() {
           Alert.alert('입력 오류', '본문을 입력해주세요.');
           return;
         }
-        saveType = 'note';
-        saveTitle = title.trim() || undefined;
-        saveBody = body.trim();
+        saveInput = {
+          type: 'note',
+          title: title.trim() || undefined,
+          body: body.trim(),
+        };
         break;
 
       case 'link':
@@ -88,9 +88,11 @@ export default function CollectScreen() {
           Alert.alert('입력 오류', 'URL을 입력해주세요.');
           return;
         }
-        saveType = 'link';
-        saveTitle = title.trim() || undefined;
-        saveBody = body.trim();
+        saveInput = {
+          type: 'link',
+          title: title.trim() || undefined,
+          url: body.trim(),
+        };
         break;
 
       case 'highlight':
@@ -98,9 +100,11 @@ export default function CollectScreen() {
           Alert.alert('입력 오류', '하이라이트 텍스트를 입력해주세요.');
           return;
         }
-        saveType = 'highlight';
-        saveTitle = highlightSource.trim() || undefined;
-        saveBody = highlightText.trim();
+        saveInput = {
+          type: 'highlight',
+          title: highlightSource.trim() || undefined,
+          body: highlightText.trim(),
+        };
         break;
 
       case 'screenshot':
@@ -115,21 +119,16 @@ export default function CollectScreen() {
     setIsSaving(true);
 
     try {
-      const result = await saveKnowledgeItem({
-        type: saveType,
-        title: saveTitle,
-        body: saveBody,
-      });
+      const result = await saveKnowledgeItem(saveInput);
 
       if (!result.success) {
-        const failure = result as SaveFailureResult;
-        const details = formatErrorDetails(failure.error.details);
-        logger.error('CollectScreen.handleSave failed (SaveFailureResult)', details ?? failure.error.message, {
-          code: failure.error.code,
-          message: failure.error.message,
-          details: failure.error.details,
+        const details = formatErrorDetails(result.error.details);
+        logger.error('CollectScreen.handleSave failed (SaveFailureResult)', details ?? result.error.message, {
+          code: result.error.code,
+          message: result.error.message,
+          details: result.error.details,
         });
-        Alert.alert('저장 실패', failure.error.message);
+        Alert.alert('저장 실패', result.error.message);
         return;
       }
 

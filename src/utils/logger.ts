@@ -7,11 +7,19 @@ type GlobalErrorUtils = {
   setGlobalHandler?: (handler: GlobalErrorHandler) => void;
 };
 
-function toErrorStack(error: unknown): string {
+function toErrorStack(error: unknown): string | undefined {
   if (error instanceof Error && error.stack) {
     return error.stack;
   }
-  return new Error('Trace capture').stack ?? 'no stack available';
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'stack' in error &&
+    typeof (error as { stack?: unknown }).stack === 'string'
+  ) {
+    return (error as { stack: string }).stack;
+  }
+  return undefined;
 }
 
 function formatError(error: unknown): string {
@@ -39,7 +47,7 @@ export const logger = {
     const stack = toErrorStack(error);
     console.error(message, {
       error: formatError(error),
-      stack,
+      ...(stack ? { stack } : {}),
       ...context,
     });
   },

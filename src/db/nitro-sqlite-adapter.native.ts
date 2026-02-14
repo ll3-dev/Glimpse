@@ -6,9 +6,12 @@
 
 import { NitroSQLite } from "react-native-nitro-sqlite";
 import {
+  CREATE_FEEDBACK_EVENTS_TABLE_SQL,
   CREATE_KNOWLEDGE_ITEMS_TABLE_SQL,
   CREATE_RECOMMENDATIONS_TABLE_SQL,
   DB_NAME,
+  FEEDBACK_EVENTS_SELECT_COLUMNS,
+  FEEDBACK_EVENTS_TABLE_NAME,
   KNOWLEDGE_ITEMS_SELECT_COLUMNS,
   KNOWLEDGE_ITEMS_TABLE_NAME,
   RECOMMENDATIONS_SELECT_COLUMNS,
@@ -96,6 +99,7 @@ async function initDatabase() {
       NitroSQLite.open({ name: DB_NAME });
       await NitroSQLite.executeAsync(DB_NAME, CREATE_KNOWLEDGE_ITEMS_TABLE_SQL);
       await NitroSQLite.executeAsync(DB_NAME, CREATE_RECOMMENDATIONS_TABLE_SQL);
+      await NitroSQLite.executeAsync(DB_NAME, CREATE_FEEDBACK_EVENTS_TABLE_SQL);
       await ensureKnowledgeItemsSchema();
       await sanitizeKnowledgeItemsRows();
       isInitialized = true;
@@ -126,6 +130,13 @@ function getOrderedColumnNames(
     sqlLower.includes(`from ${RECOMMENDATIONS_TABLE_NAME}`)
   ) {
     return [...RECOMMENDATIONS_SELECT_COLUMNS];
+  }
+
+  if (
+    sqlLower.includes(`from "${FEEDBACK_EVENTS_TABLE_NAME}"`) ||
+    sqlLower.includes(`from ${FEEDBACK_EVENTS_TABLE_NAME}`)
+  ) {
+    return [...FEEDBACK_EVENTS_SELECT_COLUMNS];
   }
 
   if (metadata && Object.keys(metadata).length > 0) {

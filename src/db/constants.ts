@@ -40,6 +40,25 @@ export const RECOMMENDATIONS_SELECT_COLUMNS = [
   "responded_at",
 ] as const;
 
+export const FEEDBACK_EVENTS_TABLE_NAME = "feedback_events";
+
+export const CREATE_FEEDBACK_EVENTS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS feedback_events (
+  id TEXT PRIMARY KEY NOT NULL,
+  recommendation_id TEXT NOT NULL,
+  action TEXT NOT NULL CHECK(action IN ('accept', 'ignore', 'dismiss')),
+  created_at REAL NOT NULL,
+  FOREIGN KEY (recommendation_id) REFERENCES recommendations(id)
+);
+`;
+
+export const FEEDBACK_EVENTS_SELECT_COLUMNS = [
+  "id",
+  "recommendation_id",
+  "action",
+  "created_at",
+] as const;
+
 export type RequiredColumn = {
   name: string;
   definition: string;
