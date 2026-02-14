@@ -9,6 +9,7 @@ export {
   saveKnowledgeItem,
   type NoteInput,
   type LinkInput,
+  type HighlightInput,
   type KnowledgeItemInput,
   type SaveResult,
   type SaveSuccessResult,

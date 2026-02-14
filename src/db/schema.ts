@@ -92,3 +92,36 @@ export const recommendations = sqliteTable('recommendations', {
 // Type exports for recommendations
 export type Recommendation = typeof recommendations.$inferSelect;
 export type NewRecommendation = typeof recommendations.$inferInsert;
+
+/**
+ * Feedback action type enum
+ * - 'accept': User accepted the recommendation
+ * - 'ignore': User explicitly rejected
+ * - 'dismiss': User temporarily dismissed
+ */
+export const feedbackActionType = ['accept', 'ignore', 'dismiss'] as const;
+export type FeedbackActionType = (typeof feedbackActionType)[number];
+
+/**
+ * Feedback Events table schema
+ * Logs user reactions to recommendations for learning/analytics
+ */
+export const feedbackEvents = sqliteTable('feedback_events', {
+  // Unique identifier
+  id: text('id').primaryKey(),
+
+  // Reference to the recommendation
+  recommendationId: text('recommendation_id')
+    .notNull()
+    .references(() => recommendations.id),
+
+  // Action taken by user
+  action: text('action', { enum: feedbackActionType }).notNull(),
+
+  // Timestamp of the event
+  createdAt: real('created_at').notNull(),
+});
+
+// Type exports for feedback events
+export type FeedbackEvent = typeof feedbackEvents.$inferSelect;
+export type NewFeedbackEvent = typeof feedbackEvents.$inferInsert;

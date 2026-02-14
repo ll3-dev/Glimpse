@@ -1,7 +1,7 @@
 /**
  * Save Knowledge Item Use Case
  *
- * Handles the creation and persistence of knowledge items (notes and links).
+ * Handles the creation and persistence of knowledge items (notes, links, highlights).
  * This function orchestrates:
  * 1. Input validation and normalization
  * 2. ID generation
@@ -34,9 +34,18 @@ export interface LinkInput {
 }
 
 /**
+ * Input type for creating a highlight
+ */
+export interface HighlightInput {
+  type: 'highlight';
+  title?: string; // Source (book title, URL, etc.)
+  body: string;
+}
+
+/**
  * Union type for all knowledge item inputs
  */
-export type KnowledgeItemInput = NoteInput | LinkInput;
+export type KnowledgeItemInput = NoteInput | LinkInput | HighlightInput;
 
 /**
  * Success result type
@@ -102,13 +111,27 @@ function validateLinkInput(input: LinkInput): string | null {
 }
 
 /**
+ * Validates highlight input
+ */
+function validateHighlightInput(input: HighlightInput): string | null {
+  if (!input.body || input.body.trim().length === 0) {
+    return 'Highlight text is required and cannot be empty';
+  }
+  return null;
+}
+
+/**
  * Validates knowledge item input based on type
  */
 function validateInput(input: KnowledgeItemInput): string | null {
   if (input.type === 'note') {
     return validateNoteInput(input);
-  } else if (input.type === 'link') {
+  }
+  if (input.type === 'link') {
     return validateLinkInput(input);
+  }
+  if (input.type === 'highlight') {
+    return validateHighlightInput(input);
   }
   return 'Unknown item type';
 }
@@ -143,7 +166,7 @@ function createContentForProcessing(input: KnowledgeItemInput): string {
 }
 
 /**
- * Saves a knowledge item (note or link) to the database.
+ * Saves a knowledge item (note, link, or highlight) to the database.
  *
  * This function:
  * 1. Validates the input
@@ -152,7 +175,7 @@ function createContentForProcessing(input: KnowledgeItemInput): string {
  * 4. Generates summary and tags using stub functions
  * 5. Inserts the item into the database
  *
- * @param input - The knowledge item input (NoteInput or LinkInput)
+ * @param input - The knowledge item input (NoteInput, LinkInput, or HighlightInput)
  * @returns A SaveResult indicating success or failure
  *
  * @example
