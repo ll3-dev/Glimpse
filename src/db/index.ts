@@ -1,15 +1,13 @@
-import { drizzle } from 'drizzle-orm/nitro-sqlite';
-import { NitroSQLite } from 'react-native-nitro-sqlite';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import * as schema from './schema';
+import { nitroSQLiteCallback, nitroSQLiteBatchCallback } from './nitro-sqlite-adapter';
 
-// Database name for local storage
-const DB_NAME = 'glimpse.db';
-
-// Initialize the database connection
-const sqlite = NitroSQLite.openDatabase(DB_NAME);
-
-// Create drizzle ORM instance
-export const db = drizzle(sqlite, { schema });
+// Create drizzle ORM instance with nitro-sqlite adapter
+export const db = drizzle(
+  nitroSQLiteCallback,
+  nitroSQLiteBatchCallback,
+  { schema, logger: __DEV__ }
+);
 
 // Re-export schema types and tables
 export * from './schema';
