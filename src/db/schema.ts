@@ -4,8 +4,11 @@ import { sqliteTable, text, real } from 'drizzle-orm/sqlite-core';
  * Knowledge item type enum
  * - 'note': User-created text notes
  * - 'link': Saved URLs with optional notes
+ * - 'highlight': Key passages excerpted from reading
+ * - 'screenshot': Visual captures with optional OCR
+ * - 'share': Content received via OS share sheet
  */
-export const knowledgeItemType = ['note', 'link'] as const;
+export const knowledgeItemType = ['note', 'link', 'highlight', 'screenshot', 'share'] as const;
 export type KnowledgeItemType = (typeof knowledgeItemType)[number];
 
 /**

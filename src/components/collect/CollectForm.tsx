@@ -4,6 +4,7 @@ type CollectFormProps = {
   title: string;
   body: string;
   bottomInset: number;
+  placeholder?: string;
   onChangeTitle: (value: string) => void;
   onChangeBody: (value: string) => void;
 };
@@ -12,6 +13,7 @@ export function CollectForm({
   title,
   body,
   bottomInset,
+  placeholder = '자유롭게 기록하세요...',
   onChangeTitle,
   onChangeBody,
 }: CollectFormProps) {
@@ -39,7 +41,7 @@ export function CollectForm({
           className="text-xl leading-8 text-app-text"
           value={body}
           onChangeText={onChangeBody}
-          placeholder="자유롭게 기록하세요..."
+          placeholder={placeholder}
           placeholderTextColor="#d3d2d1"
           multiline
           textAlignVertical="top"
