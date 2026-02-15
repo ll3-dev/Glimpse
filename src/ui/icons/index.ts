@@ -20,3 +20,6 @@ export { Clipboard } from "./Clipboard";
 export { FolderPlus } from "./FolderPlus";
 export { ImagePlus } from "./ImagePlus";
 export { Share2 } from "./Share2";
+export { Link } from "./Link";
+export { FileText } from "./FileText";
+export { Image } from "./Image";

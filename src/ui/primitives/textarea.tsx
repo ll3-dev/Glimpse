@@ -15,11 +15,11 @@ function Textarea({
   return (
     <TextInput
       className={cn(
-        "web:flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base lg:text-sm native:text-lg native:leading-[1.25] text-foreground web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2",
+        "web:flex min-h-[100px] w-full rounded-md border border-app-border bg-white px-3 py-2.5 text-sm native:text-base text-app-text web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-1 web:focus-visible:ring-app-primary",
         props.editable === false && "opacity-50 web:cursor-not-allowed",
         className
       )}
-      placeholderTextColorClassName={cn("text-muted-foreground", placeholderTextColorClassName)}
+      placeholderTextColor={props.placeholderTextColor || "#d3d2d1"}
       multiline={multiline}
       numberOfLines={numberOfLines}
       textAlignVertical="top"
