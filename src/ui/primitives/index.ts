@@ -27,3 +27,4 @@ export { Textarea } from '@/src/ui/primitives/textarea';
 export { Tooltip, TooltipContent, TooltipTrigger } from '@/src/ui/primitives/tooltip';
 export { View } from '@/src/ui/primitives/view';
 export { Badge, badgeTextVariants, badgeVariants } from '@/src/ui/primitives/badge';
+export { ScreenHeader } from '@/src/ui/primitives/screen-header';

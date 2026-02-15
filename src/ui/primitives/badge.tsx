@@ -5,17 +5,17 @@ import { cn } from "@/src/lib/utils";
 import { TextClassContext } from "@/src/ui/primitives/text";
 
 const badgeVariants = cva(
-  "web:inline-flex items-center rounded-full border border-border px-2.5 py-0.5 web:transition-colors web:focus:outline-none web:focus:ring-2 web:focus:ring-ring web:focus:ring-offset-2",
+  "web:inline-flex items-center rounded-full border border-app-border px-2.5 py-0.5 web:transition-colors web:focus:outline-none web:focus:ring-2 web:focus:ring-ring web:focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary web:hover:opacity-80 active:opacity-80",
+          "border-transparent bg-app-primary web:hover:opacity-80 active:opacity-80",
         secondary:
-          "border-transparent bg-secondary web:hover:opacity-80 active:opacity-80",
+          "border-transparent bg-app-bg web:hover:opacity-80 active:opacity-80",
         destructive:
-          "border-transparent bg-destructive web:hover:opacity-80 active:opacity-80",
-        outline: "text-foreground",
+          "border-transparent bg-app-accent web:hover:opacity-80 active:opacity-80",
+        outline: "text-app-text",
       },
     },
     defaultVariants: {
@@ -24,13 +24,13 @@ const badgeVariants = cva(
   }
 );
 
-const badgeTextVariants = cva("text-xs font-semibold ", {
+const badgeTextVariants = cva("text-[10px] font-bold uppercase tracking-tight ", {
   variants: {
     variant: {
-      default: "text-primary-foreground",
-      secondary: "text-secondary-foreground",
-      destructive: "text-destructive-foreground",
-      outline: "text-foreground",
+      default: "text-white",
+      secondary: "text-app-muted",
+      destructive: "text-white",
+      outline: "text-app-text",
     },
   },
   defaultVariants: {
