@@ -10,6 +10,8 @@ export {
   type NoteInput,
   type LinkInput,
   type HighlightInput,
+  type ScreenshotInput,
+  type ShareInput,
   type KnowledgeItemInput,
   type SaveResult,
   type SaveSuccessResult,

@@ -16,12 +16,11 @@ type ChannelSegmentProps = {
 
 export function ChannelSegment({ value, onChange }: ChannelSegmentProps) {
   return (
-    <View className="border-b border-border">
+    <View className="px-6 pb-6">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="px-4"
-        contentContainerClassName="flex-row gap-1 py-2"
+        contentContainerClassName="flex-row gap-2"
       >
         {CHANNELS.map((channel) => {
           const isActive = value === channel.type;
@@ -29,13 +28,13 @@ export function ChannelSegment({ value, onChange }: ChannelSegmentProps) {
             <Pressable
               key={channel.type}
               onPress={() => onChange(channel.type)}
-              className={`rounded-full px-4 py-2 ${
-                isActive ? 'bg-foreground' : 'bg-muted'
+              className={`rounded-md px-3 py-1.5 ${
+                isActive ? 'bg-app-text' : 'bg-app-border/40'
               }`}
             >
               <Text
-                className={`text-sm font-medium ${
-                  isActive ? 'text-background' : 'text-muted-foreground'
+                className={`text-xs font-bold uppercase tracking-tight ${
+                  isActive ? 'text-white' : 'text-app-muted'
                 }`}
               >
                 {channel.label}

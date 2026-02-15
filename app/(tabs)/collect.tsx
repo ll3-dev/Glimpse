@@ -1,26 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
+  Text,
 } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useShareIntentContext } from 'expo-share-intent';
 import {
   saveKnowledgeItem,
   type KnowledgeItemInput,
 } from '@/src/features/capture';
 import {
   CollectForm,
-  CollectTopBar,
   ChannelSegment,
   HighlightForm,
-  ScreenshotStub,
-  ShareStub,
+  ScreenshotForm,
+  ShareForm,
+  type SharedContent,
 } from '@/src/components/collect';
 import { KnowledgeItemType } from '@/src/db/schema';
 import { logger } from '@/src/utils/logger';
+import { ScreenHeader } from '@/src/ui/primitives';
 
 function formatErrorDetails(details: unknown): string | undefined {
   if (details === null || details === undefined) {
@@ -48,15 +52,55 @@ export default function CollectScreen() {
   const [body, setBody] = useState('');
   const [highlightText, setHighlightText] = useState('');
   const [highlightSource, setHighlightSource] = useState('');
+  const [screenshotText, setScreenshotText] = useState('');
+  const [shareTitle, setShareTitle] = useState('');
+  const [shareBody, setShareBody] = useState('');
+  const [sharedContent, setSharedContent] = useState<SharedContent>({});
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+
+  // Handle share intent
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+
+  useEffect(() => {
+    if (hasShareIntent && shareIntent) {
+      // Switch to share channel
+      setChannel('share');
+
+      // Process shared content
+      const newSharedContent: SharedContent = {};
+
+      if (shareIntent.text) {
+        newSharedContent.text = shareIntent.text;
+        setShareBody(shareIntent.text);
+      }
+
+      if (shareIntent.webUrl) {
+        newSharedContent.url = shareIntent.webUrl;
+        setShareTitle(shareIntent.webUrl);
+      }
+
+      if (shareIntent.files && shareIntent.files.length > 0) {
+        newSharedContent.imageUri = shareIntent.files[0].path;
+      }
+
+      setSharedContent(newSharedContent);
+
+      // Reset share intent after processing
+      resetShareIntent();
+    }
+  }, [hasShareIntent, shareIntent, resetShareIntent]);
 
   const resetForm = () => {
     setTitle('');
     setBody('');
     setHighlightText('');
     setHighlightSource('');
+    setScreenshotText('');
+    setShareTitle('');
+    setShareBody('');
+    setSharedContent({});
   };
 
   const handleChannelChange = (newChannel: KnowledgeItemType) => {
@@ -108,9 +152,29 @@ export default function CollectScreen() {
         break;
 
       case 'screenshot':
+        if (!screenshotText.trim()) {
+          Alert.alert('입력 오류', '이미지를 선택하고 텍스트를 추출해주세요.');
+          return;
+        }
+        saveInput = {
+          type: 'screenshot',
+          title: title.trim() || undefined,
+          body: screenshotText.trim(),
+        };
+        break;
+
       case 'share':
-        Alert.alert('알림', '이 채널은 MVP v1에서 준비 중입니다.');
-        return;
+        if (!shareBody.trim() && !sharedContent.url && !sharedContent.imageUri) {
+          Alert.alert('입력 오류', '공유된 내용이 없습니다.');
+          return;
+        }
+        saveInput = {
+          type: 'share',
+          title: shareTitle.trim() || sharedContent.url || undefined,
+          body: shareBody.trim(),
+          url: sharedContent.url,
+        };
+        break;
 
       default:
         return;
@@ -170,10 +234,25 @@ export default function CollectScreen() {
         );
 
       case 'screenshot':
-        return <ScreenshotStub bottomInset={insets.bottom} />;
+        return (
+          <ScreenshotForm
+            extractedText={screenshotText}
+            onChangeExtractedText={setScreenshotText}
+            bottomInset={insets.bottom}
+          />
+        );
 
       case 'share':
-        return <ShareStub bottomInset={insets.bottom} />;
+        return (
+          <ShareForm
+            sharedContent={sharedContent}
+            editedTitle={shareTitle}
+            editedBody={shareBody}
+            bottomInset={insets.bottom}
+            onChangeTitle={setShareTitle}
+            onChangeBody={setShareBody}
+          />
+        );
 
       default:
         return null;
@@ -189,7 +268,20 @@ export default function CollectScreen() {
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <CollectTopBar isSaving={isSaving} onSave={handleSave} />
+        <ScreenHeader
+          title="수집"
+          subtitle="새로운 지식 기록하기"
+          rightElement={
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-md bg-app-primary ${isSaving ? 'opacity-30' : ''}`}
+              onPress={handleSave}
+              disabled={isSaving}
+              activeOpacity={0.8}
+            >
+              <Text className="text-white font-bold text-sm">저장</Text>
+            </TouchableOpacity>
+          }
+        />
         <ChannelSegment value={channel} onChange={handleChannelChange} />
         {renderForm()}
       </KeyboardAvoidingView>

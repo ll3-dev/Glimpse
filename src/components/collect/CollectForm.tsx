@@ -21,14 +21,14 @@ export function CollectForm({
     <ScrollView
       className="flex-1"
       contentContainerStyle={{
-        paddingHorizontal: 32,
+        paddingHorizontal: 24, // px-6
         paddingTop: 20,
         paddingBottom: bottomInset + 100,
       }}
       keyboardShouldPersistTaps="handled"
     >
       <TextInput
-        className="mb-6 text-4xl font-bold text-app-text"
+        className="mb-4 text-3xl font-bold text-app-text"
         value={title}
         onChangeText={onChangeTitle}
         placeholder="제목 없음"
@@ -38,7 +38,7 @@ export function CollectForm({
 
       <View className="min-h-[400px]">
         <TextInput
-          className="text-xl leading-8 text-app-text"
+          className="text-lg leading-7 text-app-text"
           value={body}
           onChangeText={onChangeBody}
           placeholder={placeholder}
