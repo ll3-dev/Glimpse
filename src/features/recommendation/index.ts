@@ -3,3 +3,4 @@ export * from './generateRecommendations';
 export * from './getPendingRecommendations';
 export * from './respondToRecommendation';
 export * from './logRecommendationFeedback';
+export * from './updateRecommendationCadence';
