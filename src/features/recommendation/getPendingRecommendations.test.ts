@@ -1,4 +1,8 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createGetPendingRecommendations,
+  type GetPendingRecommendationsDeps,
+} from './getPendingRecommendations';
 
 const db = {
   select: mock(),
@@ -14,23 +18,16 @@ const knowledgeItems = {
 
 const eqMock = mock((left: unknown, right: unknown) => ({ left, right }));
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   recommendations,
   knowledgeItems,
-}));
-
-mock.module('drizzle-orm', () => ({
   eq: eqMock,
-}));
+} as unknown as GetPendingRecommendationsDeps;
 
-const { getPendingRecommendations } = await import('./getPendingRecommendations');
+const getPendingRecommendations = createGetPendingRecommendations(deps);
 
 describe('getPendingRecommendations', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     eqMock.mockClear();

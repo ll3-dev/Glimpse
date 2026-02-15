@@ -9,6 +9,7 @@ import { ko } from 'date-fns/locale';
 import { FileText, Link, Check, Clock } from 'lucide-react-native';
 import { Text, TouchableOpacity, View } from 'react-native';
 import type { KnowledgeItem } from '@/src/db';
+import { Card } from '@/src/ui/primitives';
 
 type ReviewItemCardProps = {
   item: KnowledgeItem;
@@ -22,17 +23,17 @@ export function ReviewItemCard({ item, onComplete, onPostpone }: ReviewItemCardP
   const TypeIcon = item.type === 'note' ? FileText : Link;
 
   return (
-    <View className="mb-3 rounded-2xl bg-white border border-app-border overflow-hidden">
+    <Card className="mb-2 overflow-hidden">
       {/* Item Content */}
-      <View className="flex-row items-center p-5">
+      <View className="flex-row items-center p-4">
         <View className="mr-4">
-          <TypeIcon size={22} color="#37352f" />
+          <TypeIcon size={18} color="#787774" />
         </View>
         <View className="flex-1">
-          <Text className="text-lg font-bold text-app-text" numberOfLines={2}>
+          <Text className="text-base font-semibold text-app-text" numberOfLines={2}>
             {displayTitle}
           </Text>
-          <Text className="mt-1 text-xs text-app-subtle font-semibold uppercase tracking-wider">
+          <Text className="mt-0.5 text-[10px] text-app-muted font-medium uppercase tracking-tight">
             {timeAgo}
           </Text>
         </View>
@@ -41,25 +42,25 @@ export function ReviewItemCard({ item, onComplete, onPostpone }: ReviewItemCardP
       {/* Action Buttons */}
       <View className="flex-row border-t border-app-border">
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center py-3 bg-green-50 active:bg-green-100"
+          className="flex-1 flex-row items-center justify-center py-2.5 bg-white active:bg-green-50"
           onPress={onComplete}
           activeOpacity={0.7}
         >
-          <Check size={16} color="#16a34a" />
-          <Text className="ml-2 text-sm font-semibold text-green-600">완료</Text>
+          <Check size={14} color="#16a34a" />
+          <Text className="ml-2 text-xs font-bold text-green-700">완료</Text>
         </TouchableOpacity>
 
         <View className="w-px bg-app-border" />
 
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center py-3 active:bg-gray-50"
+          className="flex-1 flex-row items-center justify-center py-2.5 bg-white active:bg-gray-50"
           onPress={onPostpone}
           activeOpacity={0.7}
         >
-          <Clock size={16} color="#6b7280" />
-          <Text className="ml-2 text-sm font-semibold text-gray-500">나중에</Text>
+          <Clock size={14} color="#6b7280" />
+          <Text className="ml-2 text-xs font-bold text-app-muted">나중에</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Card>
   );
 }

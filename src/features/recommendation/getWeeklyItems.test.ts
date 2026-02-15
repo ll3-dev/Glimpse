@@ -1,4 +1,5 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { createGetWeeklyItems, type GetWeeklyItemsDeps } from './getWeeklyItems';
 
 const db = {
   select: mock(),
@@ -15,23 +16,16 @@ const gteMock = mock((column: unknown, value: unknown) => ({
 }));
 const descMock = mock((column: unknown) => ({ type: 'desc', column }));
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   knowledgeItems,
-}));
-
-mock.module('drizzle-orm', () => ({
   gte: gteMock,
   desc: descMock,
-}));
+} as unknown as GetWeeklyItemsDeps;
 
-const { getWeeklyItems } = await import('./getWeeklyItems');
+const getWeeklyItems = createGetWeeklyItems(deps);
 
 describe('getWeeklyItems', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     gteMock.mockClear();

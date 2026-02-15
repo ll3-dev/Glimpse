@@ -6,8 +6,6 @@
  * integration will be added in future updates.
  */
 
-import { Platform } from 'react-native';
-
 /**
  * Minimum OS versions supporting Apple Intelligence
  */
@@ -25,8 +23,40 @@ export interface AppleIntelligenceConfig {
   unavailableReason?: string;
 }
 
-// In-memory storage
-let appleIntelligenceEnabled = false;
+export interface AppleIntelligencePlatform {
+  OS: string;
+  Version: string | number;
+}
+
+export interface AppleIntelligenceToggleDeps {
+  platform: AppleIntelligencePlatform;
+}
+
+function resolveDefaultPlatform(): AppleIntelligencePlatform {
+  const maybeRequire = globalThis as typeof globalThis & {
+    require?: (id: string) => unknown;
+  };
+
+  if (typeof maybeRequire.require === 'function') {
+    try {
+      const reactNativeModule = maybeRequire.require('react-native') as {
+        Platform?: AppleIntelligencePlatform;
+      };
+
+      if (reactNativeModule?.Platform) {
+        return reactNativeModule.Platform;
+      }
+    } catch {
+      // Fall through to web-like default when react-native is unavailable.
+    }
+  }
+
+  return { OS: 'web', Version: '0' };
+}
+
+const defaultDeps: AppleIntelligenceToggleDeps = {
+  platform: resolveDefaultPlatform(),
+};
 
 /**
  * Parses a version string (e.g., "18.1") into parts
@@ -54,111 +84,141 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/**
- * Checks if Apple Intelligence is available on the current platform.
- *
- * @returns Object with availability status and reason if unavailable
- */
-export function checkAppleIntelligenceAvailability(): {
-  available: boolean;
-  reason?: string;
-} {
-  const { OS, Version } = Platform;
+export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps = defaultDeps) {
+  let appleIntelligenceEnabled = false;
 
-  // Android and other platforms don't support Apple Intelligence
-  if (OS !== 'ios' && OS !== 'macos') {
+  /**
+   * Checks if Apple Intelligence is available on the current platform.
+   *
+   * @returns Object with availability status and reason if unavailable
+   */
+  function checkAppleIntelligenceAvailability(): {
+    available: boolean;
+    reason?: string;
+  } {
+    const { OS, Version } = deps.platform;
+
+    // Android and other platforms don't support Apple Intelligence
+    if (OS !== 'ios' && OS !== 'macos') {
+      return {
+        available: false,
+        reason: 'Apple Intelligence는 Apple 기기에서만 사용할 수 있습니다',
+      };
+    }
+
+    // Get minimum required version
+    const minVersion = OS === 'ios' ? MIN_VERSIONS.ios : MIN_VERSIONS.macos;
+    const currentVersion = String(Version);
+
+    // Check version
+    if (compareVersions(currentVersion, minVersion) < 0) {
+      return {
+        available: false,
+        reason: `${OS === 'ios' ? 'iOS' : 'macOS'} ${minVersion} 이상이 필요합니다`,
+      };
+    }
+
+    return { available: true };
+  }
+
+  /**
+   * Gets the current Apple Intelligence configuration.
+   *
+   * @returns Apple Intelligence config
+   */
+  function getAppleIntelligenceConfig(): AppleIntelligenceConfig {
+    const { available, reason } = checkAppleIntelligenceAvailability();
+
     return {
-      available: false,
-      reason: 'Apple Intelligence는 Apple 기기에서만 사용할 수 있습니다',
+      enabled: available && appleIntelligenceEnabled,
+      isAvailable: available,
+      unavailableReason: reason,
     };
   }
 
-  // Get minimum required version
-  const minVersion = OS === 'ios' ? MIN_VERSIONS.ios : MIN_VERSIONS.macos;
-  const currentVersion = String(Version);
-
-  // Check version
-  if (compareVersions(currentVersion, minVersion) < 0) {
-    return {
-      available: false,
-      reason: `${OS === 'ios' ? 'iOS' : 'macOS'} ${minVersion} 이상이 필요합니다`,
-    };
+  /**
+   * Checks if Apple Intelligence is enabled.
+   *
+   * @returns true if enabled
+   */
+  function isAppleIntelligenceEnabled(): boolean {
+    const { available } = checkAppleIntelligenceAvailability();
+    return available && appleIntelligenceEnabled;
   }
 
-  return { available: true };
-}
+  /**
+   * Enables Apple Intelligence.
+   *
+   * @returns true if successfully enabled
+   */
+  function enableAppleIntelligence(): boolean {
+    const { available } = checkAppleIntelligenceAvailability();
+    if (!available) {
+      return false;
+    }
 
-/**
- * Gets the current Apple Intelligence configuration.
- *
- * @returns Apple Intelligence config
- */
-export function getAppleIntelligenceConfig(): AppleIntelligenceConfig {
-  const { available, reason } = checkAppleIntelligenceAvailability();
-
-  return {
-    enabled: available && appleIntelligenceEnabled,
-    isAvailable: available,
-    unavailableReason: reason,
-  };
-}
-
-/**
- * Checks if Apple Intelligence is enabled.
- *
- * @returns true if enabled
- */
-export function isAppleIntelligenceEnabled(): boolean {
-  const { available } = checkAppleIntelligenceAvailability();
-  return available && appleIntelligenceEnabled;
-}
-
-/**
- * Enables Apple Intelligence.
- *
- * @returns true if successfully enabled
- */
-export function enableAppleIntelligence(): boolean {
-  const { available } = checkAppleIntelligenceAvailability();
-  if (!available) {
-    return false;
+    appleIntelligenceEnabled = true;
+    return true;
   }
 
-  appleIntelligenceEnabled = true;
-  return true;
-}
+  /**
+   * Disables Apple Intelligence.
+   */
+  function disableAppleIntelligence(): void {
+    appleIntelligenceEnabled = false;
+  }
 
-/**
- * Disables Apple Intelligence.
- */
-export function disableAppleIntelligence(): void {
-  appleIntelligenceEnabled = false;
-}
-
-/**
- * Sets Apple Intelligence enabled state.
- *
- * @param enabled - Desired enabled state
- * @returns true if successfully set
- */
-export function setAppleIntelligenceEnabled(enabled: boolean): boolean {
-  if (enabled) {
-    return enableAppleIntelligence();
-  } else {
+  /**
+   * Sets Apple Intelligence enabled state.
+   *
+   * @param enabled - Desired enabled state
+   * @returns true if successfully set
+   */
+  function setAppleIntelligenceEnabled(enabled: boolean): boolean {
+    if (enabled) {
+      return enableAppleIntelligence();
+    }
     disableAppleIntelligence();
     return true;
   }
+
+  /**
+   * Gets the inference provider to use.
+   * Returns 'apple-intelligence' if enabled, otherwise falls back to default.
+   *
+   * @returns Provider identifier
+   */
+  function getInferenceProvider(): 'apple-intelligence' | 'default' {
+    if (isAppleIntelligenceEnabled()) {
+      return 'apple-intelligence';
+    }
+    return 'default';
+  }
+
+  return {
+    checkAppleIntelligenceAvailability,
+    getAppleIntelligenceConfig,
+    isAppleIntelligenceEnabled,
+    enableAppleIntelligence,
+    disableAppleIntelligence,
+    setAppleIntelligenceEnabled,
+    getInferenceProvider,
+  };
 }
 
-/**
- * Gets the inference provider to use.
- * Returns 'apple-intelligence' if enabled, otherwise falls back to default.
- *
- * @returns Provider identifier
- */
-export function getInferenceProvider(): 'apple-intelligence' | 'default' {
-  if (isAppleIntelligenceEnabled()) {
-    return 'apple-intelligence';
-  }
-  return 'default';
-}
+const appleIntelligenceToggle = createAppleIntelligenceToggle();
+
+export const checkAppleIntelligenceAvailability =
+  appleIntelligenceToggle.checkAppleIntelligenceAvailability;
+export const getAppleIntelligenceConfig =
+  appleIntelligenceToggle.getAppleIntelligenceConfig;
+export const isAppleIntelligenceEnabled =
+  appleIntelligenceToggle.isAppleIntelligenceEnabled;
+export const enableAppleIntelligence =
+  appleIntelligenceToggle.enableAppleIntelligence;
+export const disableAppleIntelligence =
+  appleIntelligenceToggle.disableAppleIntelligence;
+export const setAppleIntelligenceEnabled =
+  appleIntelligenceToggle.setAppleIntelligenceEnabled;
+export const getInferenceProvider =
+  appleIntelligenceToggle.getInferenceProvider;

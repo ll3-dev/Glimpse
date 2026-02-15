@@ -53,6 +53,20 @@ export function initializeReviewSchedule(createdAt: number): {
   };
 }
 
+export interface BatchInitializeReviewSchedulesDeps {
+  db: typeof db;
+  knowledgeItems: typeof knowledgeItems;
+  isNull: typeof isNull;
+  logger: Pick<typeof logger, 'info' | 'error'>;
+}
+
+const defaultDeps: BatchInitializeReviewSchedulesDeps = {
+  db,
+  knowledgeItems,
+  isNull,
+  logger,
+};
+
 /**
  * Batch initializes review schedules for existing items that don't have one.
  * This is useful for migrating existing data.
@@ -60,39 +74,45 @@ export function initializeReviewSchedule(createdAt: number): {
  * @param intervalMs - Custom interval in milliseconds (defaults to 1 day)
  * @returns Number of items updated
  */
-export async function batchInitializeReviewSchedules(
-  intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS
-): Promise<number> {
-  try {
-    // Find items without nextReviewAt
-    const itemsWithoutSchedule = await db
-      .select()
-      .from(knowledgeItems)
-      .where(isNull(knowledgeItems.nextReviewAt));
+export function createBatchInitializeReviewSchedules(
+  deps: BatchInitializeReviewSchedulesDeps = defaultDeps
+) {
+  return async function batchInitializeReviewSchedules(
+    intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS
+  ): Promise<number> {
+    try {
+      // Find items without nextReviewAt
+      const itemsWithoutSchedule = await deps.db
+        .select()
+        .from(deps.knowledgeItems)
+        .where(deps.isNull(deps.knowledgeItems.nextReviewAt));
 
-    if (itemsWithoutSchedule.length === 0) {
-      logger.info('No items need review schedule initialization');
-      return 0;
+      if (itemsWithoutSchedule.length === 0) {
+        deps.logger.info('No items need review schedule initialization');
+        return 0;
+      }
+
+      // Update each item with initial review schedule
+      let updatedCount = 0;
+
+      for (const item of itemsWithoutSchedule) {
+        const nextReviewAt = calculateInitialReviewAt(item.createdAt, intervalMs);
+
+        await deps.db
+          .update(deps.knowledgeItems)
+          .set({ nextReviewAt })
+          .where(deps.knowledgeItems.id.eq?.(item.id) as any);
+
+        updatedCount++;
+      }
+
+      deps.logger.info(`Initialized review schedules for ${updatedCount} items`);
+      return updatedCount;
+    } catch (error) {
+      deps.logger.error('Failed to batch initialize review schedules', error);
+      throw error;
     }
-
-    // Update each item with initial review schedule
-    let updatedCount = 0;
-
-    for (const item of itemsWithoutSchedule) {
-      const nextReviewAt = calculateInitialReviewAt(item.createdAt, intervalMs);
-
-      await db
-        .update(knowledgeItems)
-        .set({ nextReviewAt })
-        .where(knowledgeItems.id.eq?.(item.id) as any);
-
-      updatedCount++;
-    }
-
-    logger.info(`Initialized review schedules for ${updatedCount} items`);
-    return updatedCount;
-  } catch (error) {
-    logger.error('Failed to batch initialize review schedules', error);
-    throw error;
-  }
+  };
 }
+
+export const batchInitializeReviewSchedules = createBatchInitializeReviewSchedules();

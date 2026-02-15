@@ -33,6 +33,18 @@ export interface GetItemsFailureResult {
  */
 export type GetItemsResult = GetItemsSuccessResult | GetItemsFailureResult;
 
+export interface GetAllKnowledgeItemsDeps {
+  db: typeof db;
+  knowledgeItems: typeof knowledgeItems;
+  desc: typeof desc;
+}
+
+const defaultDeps: GetAllKnowledgeItemsDeps = {
+  db,
+  knowledgeItems,
+  desc,
+};
+
 /**
  * Retrieves all knowledge items from the database, ordered by creation date (newest first).
  *
@@ -53,28 +65,32 @@ export type GetItemsResult = GetItemsSuccessResult | GetItemsFailureResult;
  *   });
  * }
  */
-export async function getAllKnowledgeItems(): Promise<GetItemsResult> {
-  try {
-    // Query all items, ordered by creation date (newest first)
-    const items = await db
-      .select()
-      .from(knowledgeItems)
-      .orderBy(desc(knowledgeItems.createdAt));
+export function createGetAllKnowledgeItems(deps: GetAllKnowledgeItemsDeps = defaultDeps) {
+  return async function getAllKnowledgeItems(): Promise<GetItemsResult> {
+    try {
+      // Query all items, ordered by creation date (newest first)
+      const items = await deps.db
+        .select()
+        .from(deps.knowledgeItems)
+        .orderBy(deps.desc(deps.knowledgeItems.createdAt));
 
-    // Return success with items
-    return {
-      success: true,
-      data: items,
-    };
-  } catch (error) {
-    // Handle database or unexpected errors
-    return {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve knowledge items',
-        details: error instanceof Error ? error.message : error,
-      },
-    };
-  }
+      // Return success with items
+      return {
+        success: true,
+        data: items,
+      };
+    } catch (error) {
+      // Handle database or unexpected errors
+      return {
+        success: false,
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Failed to retrieve knowledge items',
+          details: error instanceof Error ? error.message : error,
+        },
+      };
+    }
+  };
 }
+
+export const getAllKnowledgeItems = createGetAllKnowledgeItems();

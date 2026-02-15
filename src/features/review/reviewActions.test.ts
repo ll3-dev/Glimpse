@@ -1,4 +1,10 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createMarkAsReviewed,
+  createPostponeReview,
+  DEFAULT_POSTPONE_INTERVAL_MS,
+  type ReviewActionsDeps,
+} from './reviewActions';
 
 const db = {
   select: mock(),
@@ -14,31 +20,20 @@ const calculateNextReviewFromFeedback = mock(() => ({
   intervalMs: 2 * 24 * 60 * 60 * 1000,
   nextReviewAt: 1_700_000_123_000,
 }));
+const logger = { info: mock(), error: mock() };
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   knowledgeItems,
-}));
-
-mock.module('drizzle-orm', () => ({
   eq: eqMock,
-}));
-
-mock.module('./adjustIntervalFromFeedback', () => ({
   calculateNextReviewFromFeedback,
-}));
+  logger,
+} as unknown as ReviewActionsDeps;
 
-const {
-  DEFAULT_POSTPONE_INTERVAL_MS,
-  markAsReviewed,
-  postponeReview,
-} = await import('./reviewActions');
+const markAsReviewed = createMarkAsReviewed(deps);
+const postponeReview = createPostponeReview(deps);
 
 describe('reviewActions', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     db.update.mockReset();
@@ -48,6 +43,8 @@ describe('reviewActions', () => {
       intervalMs: 2 * 24 * 60 * 60 * 1000,
       nextReviewAt: 1_700_000_123_000,
     });
+    logger.info.mockClear();
+    logger.error.mockClear();
   });
 
   test('markAsReviewed returns NOT_FOUND when item does not exist', async () => {
@@ -127,5 +124,6 @@ describe('reviewActions', () => {
     if (!result.success) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
+    expect(logger.error).toHaveBeenCalledTimes(1);
   });
 });

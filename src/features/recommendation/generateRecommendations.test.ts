@@ -1,4 +1,10 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createGenerateRecommendations,
+  createSaveRecommendations,
+  type GenerateRecommendationsDeps,
+  type SaveRecommendationsDeps,
+} from './generateRecommendations';
 
 const db = {
   select: mock(),
@@ -11,26 +17,22 @@ const getWeeklyItems = mock();
 const nanoid = mock(() => 'generated-id');
 const insertValues = mock(async () => undefined);
 
-mock.module('@/src/db', () => ({
+const generateDeps = {
   db,
   recommendations,
-}));
-
-mock.module('./getWeeklyItems', () => ({
   getWeeklyItems,
-}));
+} as unknown as GenerateRecommendationsDeps;
 
-mock.module('nanoid', () => ({
+const saveDeps = {
+  db,
+  recommendations,
   nanoid,
-}));
+} as unknown as SaveRecommendationsDeps;
 
-const { generateRecommendations, saveRecommendations } = await import('./generateRecommendations');
+const generateRecommendations = createGenerateRecommendations(generateDeps);
+const saveRecommendations = createSaveRecommendations(saveDeps);
 
 describe('generateRecommendations', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     db.insert.mockReset();

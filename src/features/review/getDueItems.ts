@@ -28,6 +28,24 @@ export interface GetDueItemsResult {
   count: number;
 }
 
+export interface GetDueItemsDeps {
+  db: typeof db;
+  knowledgeItems: typeof knowledgeItems;
+  lte: typeof lte;
+  asc: typeof asc;
+  isNotNull: typeof isNotNull;
+  logger: Pick<typeof logger, 'error'>;
+}
+
+const defaultDeps: GetDueItemsDeps = {
+  db,
+  knowledgeItems,
+  lte,
+  asc,
+  isNotNull,
+  logger,
+};
+
 /**
  * Gets knowledge items that are due for review.
  * Items are sorted by nextReviewAt ascending (oldest/most overdue first).
@@ -43,41 +61,45 @@ export interface GetDueItemsResult {
  * // Get top 10 due items
  * const result = await getDueItems({ limit: 10 });
  */
-export async function getDueItems(
-  options: GetDueItemsOptions = {}
-): Promise<GetDueItemsResult> {
-  const { limit, now = Date.now() } = options;
+export function createGetDueItems(deps: GetDueItemsDeps = defaultDeps) {
+  return async function getDueItems(
+    options: GetDueItemsOptions = {}
+  ): Promise<GetDueItemsResult> {
+    const { limit, now = Date.now() } = options;
 
-  try {
-    // Build query - items with nextReviewAt that is not null and <= now
-    let query = db
-      .select()
-      .from(knowledgeItems)
-      .where(
-        isNotNull(knowledgeItems.nextReviewAt),
-        lte(knowledgeItems.nextReviewAt, now)
-      )
-      .orderBy(asc(knowledgeItems.nextReviewAt));
+    try {
+      // Build query - items with nextReviewAt that is not null and <= now
+      let query = deps.db
+        .select()
+        .from(deps.knowledgeItems)
+        .where(
+          deps.isNotNull(deps.knowledgeItems.nextReviewAt),
+          deps.lte(deps.knowledgeItems.nextReviewAt, now)
+        )
+        .orderBy(deps.asc(deps.knowledgeItems.nextReviewAt));
 
-    // Apply limit if specified
-    if (limit !== undefined && limit > 0) {
-      query = query.limit(limit) as typeof query;
+      // Apply limit if specified
+      if (limit !== undefined && limit > 0) {
+        query = query.limit(limit) as typeof query;
+      }
+
+      const items = await query;
+
+      return {
+        success: true,
+        items,
+        count: items.length,
+      };
+    } catch (error) {
+      deps.logger.error('Failed to get due items', error);
+      // Return empty result on error instead of throwing
+      return {
+        success: true,
+        items: [],
+        count: 0,
+      };
     }
-
-    const items = await query;
-
-    return {
-      success: true,
-      items,
-      count: items.length,
-    };
-  } catch (error) {
-    logger.error('Failed to get due items', error);
-    // Return empty result on error instead of throwing
-    return {
-      success: true,
-      items: [],
-      count: 0,
-    };
-  }
+  };
 }
+
+export const getDueItems = createGetDueItems();

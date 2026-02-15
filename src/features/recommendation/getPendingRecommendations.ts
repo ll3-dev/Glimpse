@@ -29,69 +29,89 @@ export interface PendingFailureResult {
 
 export type GetPendingResult = PendingResult | PendingFailureResult;
 
+export interface GetPendingRecommendationsDeps {
+  db: typeof db;
+  recommendations: typeof recommendations;
+  knowledgeItems: typeof knowledgeItems;
+  eq: typeof eq;
+}
+
+const defaultDeps: GetPendingRecommendationsDeps = {
+  db,
+  recommendations,
+  knowledgeItems,
+  eq,
+};
+
 /**
  * Retrieves all pending recommendations with their associated items.
  */
-export async function getPendingRecommendations(): Promise<GetPendingResult> {
-  try {
-    // Get all pending recommendations
-    const pendingRecs = await db
-      .select()
-      .from(recommendations)
-      .where(eq(recommendations.status, 'pending'));
+export function createGetPendingRecommendations(
+  deps: GetPendingRecommendationsDeps = defaultDeps
+) {
+  return async function getPendingRecommendations(): Promise<GetPendingResult> {
+    try {
+      // Get all pending recommendations
+      const pendingRecs = await deps.db
+        .select()
+        .from(deps.recommendations)
+        .where(deps.eq(deps.recommendations.status, 'pending'));
 
-    if (pendingRecs.length === 0) {
+      if (pendingRecs.length === 0) {
+        return {
+          success: true,
+          data: [],
+        };
+      }
+
+      // Get all unique item IDs
+      const itemIds = new Set<string>();
+      pendingRecs.forEach((r) => {
+        itemIds.add(r.itemA_id);
+        itemIds.add(r.itemB_id);
+      });
+
+      // Fetch all items
+      const items = await deps.db
+        .select()
+        .from(deps.knowledgeItems);
+
+      // Create item lookup map
+      const itemMap = new Map<string, KnowledgeItem>();
+      items.forEach((item) => {
+        itemMap.set(item.id, item);
+      });
+
+      // Combine recommendations with items
+      const result: RecommendationWithItems[] = [];
+      for (const rec of pendingRecs) {
+        const itemA = itemMap.get(rec.itemA_id);
+        const itemB = itemMap.get(rec.itemB_id);
+
+        if (itemA && itemB) {
+          result.push({
+            recommendation: rec,
+            itemA,
+            itemB,
+          });
+        }
+      }
+
       return {
         success: true,
-        data: [],
+        data: result,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Failed to retrieve pending recommendations',
+          details: error instanceof Error ? error.message : error,
+        },
       };
     }
-
-    // Get all unique item IDs
-    const itemIds = new Set<string>();
-    pendingRecs.forEach((r) => {
-      itemIds.add(r.itemA_id);
-      itemIds.add(r.itemB_id);
-    });
-
-    // Fetch all items
-    const items = await db
-      .select()
-      .from(knowledgeItems);
-
-    // Create item lookup map
-    const itemMap = new Map<string, KnowledgeItem>();
-    items.forEach((item) => {
-      itemMap.set(item.id, item);
-    });
-
-    // Combine recommendations with items
-    const result: RecommendationWithItems[] = [];
-    for (const rec of pendingRecs) {
-      const itemA = itemMap.get(rec.itemA_id);
-      const itemB = itemMap.get(rec.itemB_id);
-
-      if (itemA && itemB) {
-        result.push({
-          recommendation: rec,
-          itemA,
-          itemB,
-        });
-      }
-    }
-
-    return {
-      success: true,
-      data: result,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve pending recommendations',
-        details: error instanceof Error ? error.message : error,
-      },
-    };
-  }
+  };
 }
+
+export const getPendingRecommendations = createGetPendingRecommendations();
