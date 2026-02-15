@@ -13,6 +13,7 @@
 import { db, knowledgeItems, type KnowledgeItem, type NewKnowledgeItem } from '@/src/db';
 import { generateSummaryStub, generateTagsStub } from './stubs';
 import { logger } from '@/src/utils/logger';
+import { initializeReviewSchedule } from '../review';
 
 /**
  * Input type for creating a note
@@ -232,6 +233,7 @@ export async function saveKnowledgeItem(
       tags,
       createdAt: now,
       updatedAt: now,
+      ...initializeReviewSchedule(now),
     };
 
     // Insert into database
