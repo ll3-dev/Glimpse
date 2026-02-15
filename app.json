@@ -2,5 +2,18 @@
   "scheme": "ll3.kr",
   "ios": {
     "bundleIdentifier": "com.anonymous.glimpse"
-  }
+  },
+  "plugins": [
+    [
+      "expo-share-intent",
+      {
+        "iosActivationRules": {
+          "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+          "NSExtensionActivationSupportsTextWithMaxCount": 1,
+          "NSExtensionActivationSupportsImageWithMaxCount": 1
+        },
+        "androidIntentFilters": ["text/*", "image/*"]
+      }
+    ]
+  ]
 }

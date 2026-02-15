@@ -19,16 +19,16 @@ export function HighlightForm({
     <ScrollView
       className="flex-1"
       contentContainerStyle={{
-        paddingHorizontal: 32,
+        paddingHorizontal: 24, // px-6
         paddingTop: 20,
         paddingBottom: bottomInset + 100,
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <Text className="mb-2 text-sm font-medium text-muted-foreground">
+      <Text className="mb-2 text-sm font-semibold text-app-muted">
         하이라이트 텍스트
       </Text>
-      <View className="min-h-[200px] mb-6 rounded-lg border border-border bg-muted/30 p-4">
+      <View className="min-h-[160px] mb-6 rounded-md border border-app-border bg-white p-4">
         <TextInput
           className="text-lg leading-7 text-app-text"
           value={text}
@@ -41,10 +41,10 @@ export function HighlightForm({
         />
       </View>
 
-      <Text className="mb-2 text-sm font-medium text-muted-foreground">
+      <Text className="mb-2 text-sm font-semibold text-app-muted">
         출처 (선택)
       </Text>
-      <View className="flex-row items-center rounded-lg border border-border bg-muted/30 px-4 mb-4">
+      <View className="flex-row items-center rounded-md border border-app-border bg-white px-4 mb-4">
         <TextInput
           className="flex-1 py-3 text-base text-app-text"
           value={source}

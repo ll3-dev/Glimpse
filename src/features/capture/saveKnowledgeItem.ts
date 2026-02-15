@@ -44,9 +44,28 @@ export interface HighlightInput {
 }
 
 /**
+ * Input type for creating a screenshot
+ */
+export interface ScreenshotInput {
+  type: 'screenshot';
+  title?: string;
+  body: string; // OCR extracted text
+}
+
+/**
+ * Input type for creating a shared item
+ */
+export interface ShareInput {
+  type: 'share';
+  title?: string;
+  body?: string;
+  url?: string;
+}
+
+/**
  * Union type for all knowledge item inputs
  */
-export type KnowledgeItemInput = NoteInput | LinkInput | HighlightInput;
+export type KnowledgeItemInput = NoteInput | LinkInput | HighlightInput | ScreenshotInput | ShareInput;
 
 /**
  * Success result type
@@ -72,6 +91,24 @@ export interface SaveFailureResult {
  * Union result type for save operation
  */
 export type SaveResult = SaveSuccessResult | SaveFailureResult;
+
+export interface SaveKnowledgeItemDeps {
+  db: typeof db;
+  knowledgeItems: typeof knowledgeItems;
+  generateSummaryStub: typeof generateSummaryStub;
+  generateTagsStub: typeof generateTagsStub;
+  initializeReviewSchedule: typeof initializeReviewSchedule;
+  logger: Pick<typeof logger, 'error'>;
+}
+
+const defaultDeps: SaveKnowledgeItemDeps = {
+  db,
+  knowledgeItems,
+  generateSummaryStub,
+  generateTagsStub,
+  initializeReviewSchedule,
+  logger,
+};
 
 /**
  * Generates a unique ID using timestamp and random suffix
@@ -122,6 +159,33 @@ function validateHighlightInput(input: HighlightInput): string | null {
 }
 
 /**
+ * Validates screenshot input
+ */
+function validateScreenshotInput(input: ScreenshotInput): string | null {
+  if (!input.body || input.body.trim().length === 0) {
+    return 'Screenshot text is required and cannot be empty';
+  }
+  return null;
+}
+
+/**
+ * Validates share input
+ */
+function validateShareInput(input: ShareInput): string | null {
+  if (!input.body?.trim() && !input.url?.trim()) {
+    return 'Share content is required (body or URL)';
+  }
+  if (input.url) {
+    try {
+      new URL(input.url);
+    } catch {
+      return 'Invalid URL format';
+    }
+  }
+  return null;
+}
+
+/**
  * Validates knowledge item input based on type
  */
 function validateInput(input: KnowledgeItemInput): string | null {
@@ -133,6 +197,12 @@ function validateInput(input: KnowledgeItemInput): string | null {
   }
   if (input.type === 'highlight') {
     return validateHighlightInput(input);
+  }
+  if (input.type === 'screenshot') {
+    return validateScreenshotInput(input);
+  }
+  if (input.type === 'share') {
+    return validateShareInput(input);
   }
   return 'Unknown item type';
 }
@@ -160,6 +230,10 @@ function createContentForProcessing(input: KnowledgeItemInput): string {
   }
 
   if (input.type === 'link' && input.url) {
+    parts.push(input.url);
+  }
+
+  if (input.type === 'share' && input.url) {
     parts.push(input.url);
   }
 
@@ -195,66 +269,68 @@ function createContentForProcessing(input: KnowledgeItemInput): string {
  *   body: 'Interesting article about something'
  * });
  */
-export async function saveKnowledgeItem(
-  input: KnowledgeItemInput
-): Promise<SaveResult> {
-  try {
-    // Validate input
-    const validationError = validateInput(input);
-    if (validationError) {
+export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps = defaultDeps) {
+  return async function saveKnowledgeItem(input: KnowledgeItemInput): Promise<SaveResult> {
+    try {
+      // Validate input
+      const validationError = validateInput(input);
+      if (validationError) {
+        return {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: validationError,
+          },
+        };
+      }
+
+      // Generate ID and timestamps
+      const id = generateId();
+      const now = Date.now();
+
+      // Create content for processing
+      const contentForProcessing = createContentForProcessing(input);
+
+      // Generate summary and tags using stub functions
+      const summary = deps.generateSummaryStub(contentForProcessing);
+      const tags = deps.generateTagsStub(contentForProcessing);
+
+      // Build the new knowledge item
+      const newKnowledgeItem: NewKnowledgeItem = {
+        id,
+        type: input.type,
+        title: normalizeText(input.title),
+        body: normalizeText(input.body),
+        url: (input.type === 'link' || input.type === 'share') && input.url ? input.url.trim() : null,
+        summary,
+        tags,
+        createdAt: now,
+        updatedAt: now,
+        ...deps.initializeReviewSchedule(now),
+      };
+
+      // Insert into database
+      await deps.db.insert(deps.knowledgeItems).values(newKnowledgeItem);
+
+      // Return success with the created item
+      return {
+        success: true,
+        data: newKnowledgeItem as KnowledgeItem,
+      };
+    } catch (error) {
+      deps.logger.error('saveKnowledgeItem failed', error, { inputType: input.type });
+
+      // Handle database or unexpected errors
       return {
         success: false,
         error: {
-          code: 'VALIDATION_ERROR',
-          message: validationError,
+          code: 'DATABASE_ERROR',
+          message: 'Failed to save knowledge item',
+          details: error instanceof Error ? error.message : error,
         },
       };
     }
-
-    // Generate ID and timestamps
-    const id = generateId();
-    const now = Date.now();
-
-    // Create content for processing
-    const contentForProcessing = createContentForProcessing(input);
-
-    // Generate summary and tags using stub functions
-    const summary = generateSummaryStub(contentForProcessing);
-    const tags = generateTagsStub(contentForProcessing);
-
-    // Build the new knowledge item
-    const newKnowledgeItem: NewKnowledgeItem = {
-      id,
-      type: input.type,
-      title: normalizeText(input.title),
-      body: normalizeText(input.body),
-      url: input.type === 'link' ? input.url.trim() : null,
-      summary,
-      tags,
-      createdAt: now,
-      updatedAt: now,
-      ...initializeReviewSchedule(now),
-    };
-
-    // Insert into database
-    await db.insert(knowledgeItems).values(newKnowledgeItem);
-
-    // Return success with the created item
-    return {
-      success: true,
-      data: newKnowledgeItem as KnowledgeItem,
-    };
-  } catch (error) {
-    logger.error('saveKnowledgeItem failed', error, { inputType: input.type });
-
-    // Handle database or unexpected errors
-    return {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to save knowledge item',
-        details: error instanceof Error ? error.message : error,
-      },
-    };
-  }
+  };
 }
+
+export const saveKnowledgeItem = createSaveKnowledgeItem();
