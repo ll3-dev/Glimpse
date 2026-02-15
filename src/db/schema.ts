@@ -42,6 +42,20 @@ export const knowledgeItems = sqliteTable('knowledge_items', {
 
   // Last update timestamp (Unix epoch in milliseconds)
   updatedAt: real('updated_at').notNull(),
+
+  // --- Spaced Repetition Fields (MVP v2) ---
+
+  // Memory stability for FSRS algorithm (null if never reviewed)
+  stability: real('stability'),
+
+  // Difficulty level for FSRS algorithm (null if never reviewed)
+  difficulty: real('difficulty'),
+
+  // Last review timestamp (null if never reviewed)
+  lastReviewedAt: real('last_reviewed_at'),
+
+  // Next scheduled review timestamp (null if no review scheduled)
+  nextReviewAt: real('next_review_at'),
 });
 
 // Type exports for use in application code

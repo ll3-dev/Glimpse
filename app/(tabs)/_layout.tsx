@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { ClipboardList, Library, Sparkles } from "lucide-react-native";
+import { ClipboardList, Library, Sparkles, RotateCcw } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
@@ -33,6 +33,13 @@ export default function TabsLayout() {
         options={{
           title: "라이브러리",
           tabBarIcon: ({ color }) => <Library color={color} size={18} />,
+        }}
+      />
+      <Tabs.Screen
+        name="review"
+        options={{
+          title: "다시 보기",
+          tabBarIcon: ({ color }) => <RotateCcw color={color} size={18} />,
         }}
       />
       <Tabs.Screen
