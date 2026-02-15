@@ -39,6 +39,22 @@ export interface ReviewActionFailureResult {
   };
 }
 
+export interface ReviewActionsDeps {
+  db: typeof db;
+  knowledgeItems: typeof knowledgeItems;
+  eq: typeof eq;
+  logger: Pick<typeof logger, 'info' | 'error'>;
+  calculateNextReviewFromFeedback: typeof calculateNextReviewFromFeedback;
+}
+
+const defaultDeps: ReviewActionsDeps = {
+  db,
+  knowledgeItems,
+  eq,
+  logger,
+  calculateNextReviewFromFeedback,
+};
+
 /**
  * Marks a knowledge item as reviewed.
  * Uses interval adjustment based on previous review history.
@@ -47,67 +63,69 @@ export interface ReviewActionFailureResult {
  * @param feedbackType - Type of feedback (default: 'remembered')
  * @returns Updated knowledge item
  */
-export async function markAsReviewed(
-  itemId: string,
-  feedbackType: ReviewFeedbackType = 'remembered'
-): Promise<ReviewActionResult | ReviewActionFailureResult> {
-  try {
-    // First get the current item to calculate adjusted interval
-    const items = await db
-      .select()
-      .from(knowledgeItems)
-      .where(eq(knowledgeItems.id, itemId));
+export function createMarkAsReviewed(deps: ReviewActionsDeps = defaultDeps) {
+  return async function markAsReviewed(
+    itemId: string,
+    feedbackType: ReviewFeedbackType = 'remembered'
+  ): Promise<ReviewActionResult | ReviewActionFailureResult> {
+    try {
+      // First get the current item to calculate adjusted interval
+      const items = await deps.db
+        .select()
+        .from(deps.knowledgeItems)
+        .where(deps.eq(deps.knowledgeItems.id, itemId));
 
-    if (items.length === 0) {
+      if (items.length === 0) {
+        return {
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Item not found',
+          },
+        };
+      }
+
+      const item = items[0];
+      const now = Date.now();
+
+      // Calculate next review based on feedback
+      const { nextReviewAt, intervalMs } = deps.calculateNextReviewFromFeedback(
+        item.lastReviewedAt,
+        item.nextReviewAt,
+        feedbackType
+      );
+
+      const result = await deps.db
+        .update(deps.knowledgeItems)
+        .set({
+          lastReviewedAt: now,
+          nextReviewAt,
+          updatedAt: now,
+        })
+        .where(deps.eq(deps.knowledgeItems.id, itemId))
+        .returning();
+
+      deps.logger.info('Item marked as reviewed', {
+        itemId,
+        feedbackType,
+        intervalDays: Math.round(intervalMs / (24 * 60 * 60 * 1000)),
+      });
+
+      return {
+        success: true,
+        data: result[0] as KnowledgeItem,
+      };
+    } catch (error) {
+      deps.logger.error('Failed to mark item as reviewed', error, { itemId });
       return {
         success: false,
         error: {
-          code: 'NOT_FOUND',
-          message: 'Item not found',
+          code: 'DATABASE_ERROR',
+          message: 'Failed to update item',
         },
       };
     }
-
-    const item = items[0];
-    const now = Date.now();
-
-    // Calculate next review based on feedback
-    const { nextReviewAt, intervalMs } = calculateNextReviewFromFeedback(
-      item.lastReviewedAt,
-      item.nextReviewAt,
-      feedbackType
-    );
-
-    const result = await db
-      .update(knowledgeItems)
-      .set({
-        lastReviewedAt: now,
-        nextReviewAt,
-        updatedAt: now,
-      })
-      .where(eq(knowledgeItems.id, itemId))
-      .returning();
-
-    logger.info('Item marked as reviewed', {
-      itemId,
-      feedbackType,
-      intervalDays: Math.round(intervalMs / (24 * 60 * 60 * 1000)),
-    });
-
-    return {
-      success: true,
-      data: result[0] as KnowledgeItem,
-    };
-  } catch (error) {
-    logger.error('Failed to mark item as reviewed', error, { itemId });
-    return {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to update item',
-      },
-    };
-  }
+  };
 }
 
 /**
@@ -118,55 +136,60 @@ export async function markAsReviewed(
  * @param intervalMs - Custom postpone interval (default: 1 day)
  * @returns Updated knowledge item
  */
-export async function postponeReview(
-  itemId: string,
-  intervalMs: number = DEFAULT_POSTPONE_INTERVAL_MS
-): Promise<ReviewActionResult | ReviewActionFailureResult> {
-  try {
-    // First get the current item to calculate new nextReviewAt
-    const items = await db
-      .select()
-      .from(knowledgeItems)
-      .where(eq(knowledgeItems.id, itemId));
+export function createPostponeReview(deps: ReviewActionsDeps = defaultDeps) {
+  return async function postponeReview(
+    itemId: string,
+    intervalMs: number = DEFAULT_POSTPONE_INTERVAL_MS
+  ): Promise<ReviewActionResult | ReviewActionFailureResult> {
+    try {
+      // First get the current item to calculate new nextReviewAt
+      const items = await deps.db
+        .select()
+        .from(deps.knowledgeItems)
+        .where(deps.eq(deps.knowledgeItems.id, itemId));
 
-    if (items.length === 0) {
+      if (items.length === 0) {
+        return {
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Item not found',
+          },
+        };
+      }
+
+      const item = items[0];
+      const currentNextReview = item.nextReviewAt ?? Date.now();
+      const nextReviewAt = currentNextReview + intervalMs;
+      const now = Date.now();
+
+      const result = await deps.db
+        .update(deps.knowledgeItems)
+        .set({
+          nextReviewAt,
+          updatedAt: now,
+        })
+        .where(deps.eq(deps.knowledgeItems.id, itemId))
+        .returning();
+
+      deps.logger.info('Review postponed', { itemId, nextReviewAt });
+
+      return {
+        success: true,
+        data: result[0] as KnowledgeItem,
+      };
+    } catch (error) {
+      deps.logger.error('Failed to postpone review', error, { itemId });
       return {
         success: false,
         error: {
-          code: 'NOT_FOUND',
-          message: 'Item not found',
+          code: 'DATABASE_ERROR',
+          message: 'Failed to update item',
         },
       };
     }
-
-    const item = items[0];
-    const currentNextReview = item.nextReviewAt ?? Date.now();
-    const nextReviewAt = currentNextReview + intervalMs;
-    const now = Date.now();
-
-    const result = await db
-      .update(knowledgeItems)
-      .set({
-        nextReviewAt,
-        updatedAt: now,
-      })
-      .where(eq(knowledgeItems.id, itemId))
-      .returning();
-
-    logger.info('Review postponed', { itemId, nextReviewAt });
-
-    return {
-      success: true,
-      data: result[0] as KnowledgeItem,
-    };
-  } catch (error) {
-    logger.error('Failed to postpone review', error, { itemId });
-    return {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to update item',
-      },
-    };
-  }
+  };
 }
+
+export const markAsReviewed = createMarkAsReviewed();
+export const postponeReview = createPostponeReview();

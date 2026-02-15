@@ -1,38 +1,23 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
+import { createAppleIntelligenceToggle } from './appleIntelligenceToggle';
 
 const platform = {
   OS: 'ios',
   Version: '18.2',
 };
 
-mock.module('react-native', () => ({
-  Platform: platform,
-}));
-
-const {
-  checkAppleIntelligenceAvailability,
-  disableAppleIntelligence,
-  enableAppleIntelligence,
-  getAppleIntelligenceConfig,
-  getInferenceProvider,
-  isAppleIntelligenceEnabled,
-  setAppleIntelligenceEnabled,
-} = await import('./appleIntelligenceToggle');
+const toggle = createAppleIntelligenceToggle({ platform });
 
 describe('appleIntelligenceToggle', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     platform.OS = 'ios';
     platform.Version = '18.2';
-    disableAppleIntelligence();
+    toggle.disableAppleIntelligence();
   });
 
   test('is unavailable on non-Apple platforms', () => {
     platform.OS = 'android';
-    const availability = checkAppleIntelligenceAvailability();
+    const availability = toggle.checkAppleIntelligenceAvailability();
     expect(availability.available).toBe(false);
     expect(availability.reason).toContain('Apple 기기');
   });
@@ -40,7 +25,7 @@ describe('appleIntelligenceToggle', () => {
   test('is unavailable on old iOS version', () => {
     platform.OS = 'ios';
     platform.Version = '18.0';
-    const availability = checkAppleIntelligenceAvailability();
+    const availability = toggle.checkAppleIntelligenceAvailability();
     expect(availability.available).toBe(false);
     expect(availability.reason).toContain('iOS 18.1');
   });
@@ -48,26 +33,26 @@ describe('appleIntelligenceToggle', () => {
   test('enables on supported iOS versions', () => {
     platform.OS = 'ios';
     platform.Version = '18.3';
-    expect(enableAppleIntelligence()).toBe(true);
-    expect(isAppleIntelligenceEnabled()).toBe(true);
-    expect(getInferenceProvider()).toBe('apple-intelligence');
+    expect(toggle.enableAppleIntelligence()).toBe(true);
+    expect(toggle.isAppleIntelligenceEnabled()).toBe(true);
+    expect(toggle.getInferenceProvider()).toBe('apple-intelligence');
   });
 
   test('setAppleIntelligenceEnabled(false) disables regardless of platform', () => {
     platform.OS = 'ios';
     platform.Version = '18.3';
-    enableAppleIntelligence();
-    expect(isAppleIntelligenceEnabled()).toBe(true);
-    expect(setAppleIntelligenceEnabled(false)).toBe(true);
-    expect(isAppleIntelligenceEnabled()).toBe(false);
-    expect(getInferenceProvider()).toBe('default');
+    toggle.enableAppleIntelligence();
+    expect(toggle.isAppleIntelligenceEnabled()).toBe(true);
+    expect(toggle.setAppleIntelligenceEnabled(false)).toBe(true);
+    expect(toggle.isAppleIntelligenceEnabled()).toBe(false);
+    expect(toggle.getInferenceProvider()).toBe('default');
   });
 
   test('config reflects availability and enabled state', () => {
     platform.OS = 'ios';
     platform.Version = '18.3';
-    enableAppleIntelligence();
-    const config = getAppleIntelligenceConfig();
+    toggle.enableAppleIntelligence();
+    const config = toggle.getAppleIntelligenceConfig();
     expect(config.isAvailable).toBe(true);
     expect(config.enabled).toBe(true);
   });

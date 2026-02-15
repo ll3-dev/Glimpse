@@ -8,11 +8,11 @@ type LibrarySearchInputProps = {
 
 export function LibrarySearchInput({ value, onChangeText }: LibrarySearchInputProps) {
   return (
-    <View className="px-8 pb-8">
-      <View className="flex-row items-center rounded-2xl bg-[#efeeea] px-4 py-3">
-        <Search size={18} color="#9b9a97" />
+    <View className="px-6 pb-6">
+      <View className="flex-row items-center rounded-md bg-app-border/40 px-3 py-2">
+        <Search size={16} color="#9b9a97" />
         <TextInput
-          className="ml-3 flex-1 text-base text-app-text"
+          className="ml-2.5 flex-1 text-sm text-app-text"
           placeholder="기록 검색..."
           placeholderTextColor="#9b9a97"
           value={value}

@@ -8,8 +8,9 @@ import {
   respondToRecommendation,
   type RecommendationWithItems,
 } from '@/src/features/recommendation';
-import { DigestHeader, RecommendationCard } from '@/src/components/digest';
+import { RecommendationCard } from '@/src/components/digest';
 import { logger } from '@/src/utils/logger';
+import { ScreenHeader } from '@/src/ui/primitives';
 
 export default function DigestScreen() {
   const [recommendations, setRecommendations] = useState<RecommendationWithItems[]>([]);
@@ -96,12 +97,16 @@ export default function DigestScreen() {
 
   return (
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
-      <DigestHeader />
+      <ScreenHeader
+        title="연결 추천"
+        subtitle="항목 간의 지식 연결"
+      />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
           paddingTop: 16,
           paddingBottom: insets.bottom + 100,
+          paddingHorizontal: 24,
         }}
         refreshControl={
           <RefreshControl

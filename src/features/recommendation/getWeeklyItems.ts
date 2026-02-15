@@ -25,32 +25,50 @@ export interface WeeklyItemsFailureResult {
 
 export type WeeklyItemsResult = WeeklyItemsSuccessResult | WeeklyItemsFailureResult;
 
+export interface GetWeeklyItemsDeps {
+  db: typeof db;
+  knowledgeItems: typeof knowledgeItems;
+  gte: typeof gte;
+  desc: typeof desc;
+}
+
+const defaultDeps: GetWeeklyItemsDeps = {
+  db,
+  knowledgeItems,
+  gte,
+  desc,
+};
+
 /**
  * Retrieves knowledge items created in the last 7 days.
  * Returns items ordered by creation date (newest first).
  */
-export async function getWeeklyItems(): Promise<WeeklyItemsResult> {
-  try {
-    const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
+export function createGetWeeklyItems(deps: GetWeeklyItemsDeps = defaultDeps) {
+  return async function getWeeklyItems(): Promise<WeeklyItemsResult> {
+    try {
+      const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
 
-    const items = await db
-      .select()
-      .from(knowledgeItems)
-      .where(gte(knowledgeItems.createdAt, sevenDaysAgo))
-      .orderBy(desc(knowledgeItems.createdAt));
+      const items = await deps.db
+        .select()
+        .from(deps.knowledgeItems)
+        .where(deps.gte(deps.knowledgeItems.createdAt, sevenDaysAgo))
+        .orderBy(deps.desc(deps.knowledgeItems.createdAt));
 
-    return {
-      success: true,
-      data: items,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve weekly items',
-        details: error instanceof Error ? error.message : error,
-      },
-    };
-  }
+      return {
+        success: true,
+        data: items,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Failed to retrieve weekly items',
+          details: error instanceof Error ? error.message : error,
+        },
+      };
+    }
+  };
 }
+
+export const getWeeklyItems = createGetWeeklyItems();

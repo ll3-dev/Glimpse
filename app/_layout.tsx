@@ -7,6 +7,7 @@ import { LogBox, Platform } from "react-native";
 
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { installGlobalErrorTraceLogger } from "@/src/utils/logger";
+import { ShareIntentProvider } from "expo-share-intent";
 
 export default function RootLayout() {
   const [queryClient] = useState(
@@ -36,11 +37,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-      </QueryClientProvider>
+      <ShareIntentProvider>
+        <QueryClientProvider client={queryClient}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </QueryClientProvider>
+      </ShareIntentProvider>
     </SafeAreaProvider>
   );
 }

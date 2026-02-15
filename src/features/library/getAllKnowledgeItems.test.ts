@@ -1,4 +1,8 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createGetAllKnowledgeItems,
+  type GetAllKnowledgeItemsDeps,
+} from './getAllKnowledgeItems';
 
 const db = {
   select: mock(),
@@ -10,22 +14,15 @@ const knowledgeItems = {
 
 const descMock = mock((column: unknown) => ({ type: 'desc', column }));
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   knowledgeItems,
-}));
-
-mock.module('drizzle-orm', () => ({
   desc: descMock,
-}));
+} as unknown as GetAllKnowledgeItemsDeps;
 
-const { getAllKnowledgeItems } = await import('./getAllKnowledgeItems');
+const getAllKnowledgeItems = createGetAllKnowledgeItems(deps);
 
 describe('getAllKnowledgeItems', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     descMock.mockClear();

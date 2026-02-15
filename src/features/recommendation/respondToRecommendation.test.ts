@@ -1,4 +1,8 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createRespondToRecommendation,
+  type RespondToRecommendationDeps,
+} from './respondToRecommendation';
 
 const db = {
   update: mock(),
@@ -13,26 +17,16 @@ const logRecommendationFeedback = mock(async () => ({
   success: true,
 }));
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   recommendations,
-}));
-
-mock.module('drizzle-orm', () => ({
   eq: eqMock,
-}));
-
-mock.module('./logRecommendationFeedback', () => ({
   logRecommendationFeedback,
-}));
+} as unknown as RespondToRecommendationDeps;
 
-const { respondToRecommendation } = await import('./respondToRecommendation');
+const respondToRecommendation = createRespondToRecommendation(deps);
 
 describe('respondToRecommendation', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.update.mockReset();
     eqMock.mockClear();

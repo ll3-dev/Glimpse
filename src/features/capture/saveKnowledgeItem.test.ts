@@ -1,4 +1,8 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createSaveKnowledgeItem,
+  type SaveKnowledgeItemDeps,
+} from './saveKnowledgeItem';
 
 const insertValues = mock(async () => undefined);
 const db = {
@@ -14,27 +18,29 @@ const initializeReviewSchedule = mock((createdAt: number) => ({
   difficulty: null,
   lastReviewedAt: null,
 }));
+const generateSummaryStub = mock(() => 'summary');
+const generateTagsStub = mock(() => ['stub-tag']);
+const logger = { error: mock() };
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   knowledgeItems,
-}));
-
-mock.module('../review', () => ({
   initializeReviewSchedule,
-}));
+  generateSummaryStub,
+  generateTagsStub,
+  logger,
+} as unknown as SaveKnowledgeItemDeps;
 
-const { saveKnowledgeItem } = await import('./saveKnowledgeItem');
+const saveKnowledgeItem = createSaveKnowledgeItem(deps);
 
 describe('saveKnowledgeItem', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.insert.mockClear();
     insertValues.mockClear();
     initializeReviewSchedule.mockClear();
+    generateSummaryStub.mockClear();
+    generateTagsStub.mockClear();
+    logger.error.mockClear();
   });
 
   test('returns validation error for empty note body', async () => {
@@ -64,34 +70,27 @@ describe('saveKnowledgeItem', () => {
   });
 
   test('inserts normalized note with initialized review schedule', async () => {
-    const originalNow = Date.now;
-    const originalRandom = Math.random;
     Date.now = () => 1_700_000_000_000;
     Math.random = () => 0.123456789;
 
-    try {
-      const result = await saveKnowledgeItem({
-        type: 'note',
-        title: '  My title  ',
-        body: '  My body  ',
-      });
+    const result = await saveKnowledgeItem({
+      type: 'note',
+      title: '  My title  ',
+      body: '  My body  ',
+    });
 
-      expect(result.success).toBe(true);
-      expect(db.insert).toHaveBeenCalledTimes(1);
-      expect(insertValues).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(true);
+    expect(db.insert).toHaveBeenCalledTimes(1);
+    expect(insertValues).toHaveBeenCalledTimes(1);
 
-      const inserted = insertValues.mock.calls[0]?.[0] as Record<string, unknown>;
-      expect(inserted.type).toBe('note');
-      expect(inserted.title).toBe('My title');
-      expect(inserted.body).toBe('My body');
-      expect(inserted.url).toBeNull();
-      expect(inserted.createdAt).toBe(1_700_000_000_000);
-      expect(inserted.updatedAt).toBe(1_700_000_000_000);
-      expect(inserted.nextReviewAt).toBe(1_700_000_001_000);
-      expect(initializeReviewSchedule).toHaveBeenCalledWith(1_700_000_000_000);
-    } finally {
-      Date.now = originalNow;
-      Math.random = originalRandom;
-    }
+    const inserted = insertValues.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.type).toBe('note');
+    expect(inserted.title).toBe('My title');
+    expect(inserted.body).toBe('My body');
+    expect(inserted.url).toBeNull();
+    expect(inserted.createdAt).toBe(1_700_000_000_000);
+    expect(inserted.updatedAt).toBe(1_700_000_000_000);
+    expect(inserted.nextReviewAt).toBe(1_700_000_001_000);
+    expect(initializeReviewSchedule).toHaveBeenCalledWith(1_700_000_000_000);
   });
 });

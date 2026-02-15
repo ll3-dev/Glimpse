@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getDueItems, markAsReviewed, postponeReview, type KnowledgeItem } from '@/src/features/review';
 import { ReviewItemCard } from '@/src/components/review';
 import { logger } from '@/src/utils/logger';
+import { ScreenHeader } from '@/src/ui/primitives';
 
 export default function ReviewScreen() {
   const [items, setItems] = useState<KnowledgeItem[]>([]);
@@ -66,13 +67,10 @@ export default function ReviewScreen() {
 
   return (
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
-      {/* Header */}
-      <View className="px-6 pt-4 pb-2">
-        <Text className="text-2xl font-bold text-app-text">다시 보기</Text>
-        <Text className="mt-1 text-sm text-app-subtle">
-          복습이 필요한 항목 {items.length}개
-        </Text>
-      </View>
+      <ScreenHeader
+        title="다시 보기"
+        subtitle={`복습이 필요한 항목 ${items.length}개`}
+      />
 
       {/* Content */}
       <ScrollView
@@ -80,7 +78,7 @@ export default function ReviewScreen() {
         contentContainerStyle={{
           paddingTop: 8,
           paddingBottom: insets.bottom + 100,
-          paddingHorizontal: 24,
+          paddingHorizontal: 24, // px-6
         }}
         refreshControl={
           <RefreshControl

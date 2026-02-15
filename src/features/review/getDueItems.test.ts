@@ -1,4 +1,5 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { createGetDueItems, type GetDueItemsDeps } from './getDueItems';
 
 type QueryChain = {
   where: ReturnType<typeof mock>;
@@ -34,30 +35,26 @@ const knowledgeItems = {
 const lteMock = mock((column: unknown, value: unknown) => ({ type: 'lte', column, value }));
 const ascMock = mock((column: unknown) => ({ type: 'asc', column }));
 const isNotNullMock = mock((column: unknown) => ({ type: 'isNotNull', column }));
+const logger = { error: mock() };
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   knowledgeItems,
-}));
-
-mock.module('drizzle-orm', () => ({
   lte: lteMock,
   asc: ascMock,
   isNotNull: isNotNullMock,
-}));
+  logger,
+} as unknown as GetDueItemsDeps;
 
-const { getDueItems } = await import('./getDueItems');
+const getDueItems = createGetDueItems(deps);
 
 describe('getDueItems', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     lteMock.mockClear();
     ascMock.mockClear();
     isNotNullMock.mockClear();
+    logger.error.mockClear();
   });
 
   test('returns due items and count', async () => {
@@ -104,5 +101,6 @@ describe('getDueItems', () => {
       items: [],
       count: 0,
     });
+    expect(logger.error).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,8 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createBatchInitializeReviewSchedules,
+  type BatchInitializeReviewSchedulesDeps,
+} from './initializeReviewSchedule';
 
 const db = {
   select: mock(),
@@ -13,27 +17,24 @@ const knowledgeItems = {
 };
 
 const isNullMock = mock((column: unknown) => ({ type: 'isNull', column }));
+const logger = { info: mock(), error: mock() };
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   knowledgeItems,
-}));
-
-mock.module('drizzle-orm', () => ({
   isNull: isNullMock,
-}));
+  logger,
+} as unknown as BatchInitializeReviewSchedulesDeps;
 
-const { batchInitializeReviewSchedules } = await import('./initializeReviewSchedule');
+const batchInitializeReviewSchedules = createBatchInitializeReviewSchedules(deps);
 
 describe('batchInitializeReviewSchedules', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.select.mockReset();
     db.update.mockReset();
     isNullMock.mockClear();
+    logger.info.mockClear();
+    logger.error.mockClear();
   });
 
   test('returns 0 when there are no items to initialize', async () => {
@@ -76,5 +77,6 @@ describe('batchInitializeReviewSchedules', () => {
     });
 
     await expect(batchInitializeReviewSchedules()).rejects.toThrow('db unavailable');
+    expect(logger.error).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,9 @@
-import { afterAll, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import {
+  createGetRecentFeedbackEvents,
+  createLogRecommendationFeedback,
+  type RecommendationFeedbackDeps,
+} from './logRecommendationFeedback';
 
 const insertValues = mock(async () => undefined);
 const db = {
@@ -13,29 +18,17 @@ const feedbackEvents = {
 const descMock = mock((column: unknown) => ({ type: 'desc', column }));
 const nanoid = mock(() => 'feedback-id');
 
-mock.module('@/src/db', () => ({
+const deps = {
   db,
   feedbackEvents,
-}));
-
-mock.module('drizzle-orm', () => ({
   desc: descMock,
-}));
-
-mock.module('nanoid', () => ({
   nanoid,
-}));
+} as unknown as RecommendationFeedbackDeps;
 
-const {
-  getRecentFeedbackEvents,
-  logRecommendationFeedback,
-} = await import('./logRecommendationFeedback');
+const logRecommendationFeedback = createLogRecommendationFeedback(deps);
+const getRecentFeedbackEvents = createGetRecentFeedbackEvents(deps);
 
 describe('logRecommendationFeedback', () => {
-  afterAll(() => {
-    mock.restore();
-  });
-
   beforeEach(() => {
     db.insert.mockClear();
     db.select.mockReset();
