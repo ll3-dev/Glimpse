@@ -1,6 +1,8 @@
-import { View, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSaveKnowledgeItemMutation } from '@/src/hooks';
+import { useRouter } from 'expo-router';
+import { X } from '@/src/ui/icons';
 import {
   ChannelSegment,
   CollectChannelForm,
@@ -14,6 +16,7 @@ export default function CollectScreen() {
     useCollectFormState();
   const { mutate: saveItem, isPending } = useSaveKnowledgeItemMutation();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const handleSave = () => {
     if (isPending) return;
@@ -27,7 +30,9 @@ export default function CollectScreen() {
     saveItem(nextSaveInput.input, {
       onSuccess: () => {
         resetForm();
-        Alert.alert('저장 완료', '저장되었습니다.');
+        Alert.alert('저장 완료', '저장되었습니다.', [
+          { text: '확인', onPress: () => router.back() }
+        ]);
       },
       onError: (error) => {
         Alert.alert('저장 실패', error.message);
@@ -36,14 +41,23 @@ export default function CollectScreen() {
   };
 
   return (
-    <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
+    <View 
+      className="flex-1 bg-app-bg" 
+      style={{ 
+        paddingTop: Platform.OS === 'ios' ? 8 : insets.top 
+      }}
+    >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScreenHeader
-          title="수집"
-          subtitle="새로운 지식 기록하기"
+          title="새로운 기록"
+          leftElement={
+            <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+              <X size={24} color="#37352f" />
+            </TouchableOpacity>
+          }
           rightElement={
             <CollectSaveButton isSaving={isPending} onPress={handleSave} />
           }
