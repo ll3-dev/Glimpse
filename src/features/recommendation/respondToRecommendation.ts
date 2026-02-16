@@ -5,10 +5,16 @@
  * Also logs the feedback event for analytics.
  */
 
-import { db, recommendations, type RecommendationStatus } from '@/src/db';
+import { nanoid } from 'nanoid';
+import {
+  db,
+  feedbackEvents,
+  recommendations,
+  type NewFeedbackEvent,
+  type RecommendationStatus,
+} from '@/src/db';
 import { eq } from 'drizzle-orm';
 import { Effect } from 'effect';
-import { logRecommendationFeedback } from './logRecommendationFeedback';
 import {
   appError,
   isFailure,
@@ -32,15 +38,17 @@ export type RespondToRecommendationResult = RespondResult | RespondFailureResult
 export interface RespondToRecommendationDeps {
   db: typeof db;
   recommendations: typeof recommendations;
+  feedbackEvents: typeof feedbackEvents;
   eq: typeof eq;
-  logRecommendationFeedback: typeof logRecommendationFeedback;
+  nanoid: typeof nanoid;
 }
 
 const defaultDeps: RespondToRecommendationDeps = {
   db,
   recommendations,
+  feedbackEvents,
   eq,
-  logRecommendationFeedback,
+  nanoid,
 };
 
 /**
@@ -64,9 +72,15 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
 
       const newStatus = statusMap[action];
       const now = Date.now();
+      const newFeedbackEvent: NewFeedbackEvent = {
+        id: deps.nanoid(),
+        recommendationId,
+        action,
+        createdAt: now,
+      };
 
       yield* tryPromise(
-        () =>
+        () => deps.db.batch([
           deps.db
             .update(deps.recommendations)
             .set({
@@ -74,18 +88,11 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
               respondedAt: now,
             })
             .where(deps.eq(deps.recommendations.id, recommendationId)),
+          deps.db.insert(deps.feedbackEvents).values(newFeedbackEvent),
+        ]),
         (error): AppError =>
-          appError('DATABASE_ERROR', 'Failed to update recommendation status', error)
+          appError('DATABASE_ERROR', 'Failed to persist recommendation response', error)
       );
-
-      const feedbackResult = yield* tryPromise(
-        () => deps.logRecommendationFeedback(recommendationId, action),
-        (error): AppError =>
-          appError('DATABASE_ERROR', 'Failed to update recommendation status', error)
-      );
-      if (feedbackResult.success === false) {
-        yield* Effect.fail(feedbackResult.error);
-      }
 
       return {
         success: true as const,

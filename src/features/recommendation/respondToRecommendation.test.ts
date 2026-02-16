@@ -5,50 +5,63 @@ import {
 } from './respondToRecommendation';
 
 const db = {
+  batch: mock(),
   update: mock(),
+  insert: mock(),
 };
 
 const recommendations = {
   id: 'recommendation_id_col',
 };
 
+const feedbackEvents = {
+  recommendationId: 'feedback_recommendation_id_col',
+};
+
 const eqMock = mock((left: unknown, right: unknown) => ({ left, right }));
-const logRecommendationFeedback = mock(async () => ({
-  success: true,
-}));
+const nanoidMock = mock(() => 'event-1');
 
 const deps = {
   db,
   recommendations,
+  feedbackEvents,
   eq: eqMock,
-  logRecommendationFeedback,
+  nanoid: nanoidMock,
 } as unknown as RespondToRecommendationDeps;
 
 const respondToRecommendation = createRespondToRecommendation(deps);
 
 describe('respondToRecommendation', () => {
   beforeEach(() => {
+    db.batch.mockReset();
     db.update.mockReset();
+    db.insert.mockReset();
     eqMock.mockClear();
-    logRecommendationFeedback.mockReset();
-    logRecommendationFeedback.mockResolvedValue({ success: true });
+    nanoidMock.mockClear();
+    nanoidMock.mockReturnValue('event-1');
   });
 
-  test('maps accept action to accepted status and logs feedback', async () => {
-    const where = mock(async () => undefined);
+  test('maps accept action to accepted status and persists feedback in one batch', async () => {
+    const where = mock(() => 'update-query');
     const set = mock(() => ({ where }));
+    const values = mock(() => 'insert-query');
     db.update.mockReturnValue({ set });
+    db.insert.mockReturnValue({ values });
+    db.batch.mockResolvedValue([]);
 
     const result = await respondToRecommendation('rec-1', 'accept');
 
     expect(result).toEqual({ success: true, status: 'accepted' });
-    expect(logRecommendationFeedback).toHaveBeenCalledWith('rec-1', 'accept');
+    expect(db.batch).toHaveBeenCalledWith(['update-query', 'insert-query']);
   });
 
   test('maps ignore and dismiss actions correctly', async () => {
-    const where = mock(async () => undefined);
+    const where = mock(() => 'update-query');
     const set = mock(() => ({ where }));
+    const values = mock(() => 'insert-query');
     db.update.mockReturnValue({ set });
+    db.insert.mockReturnValue({ values });
+    db.batch.mockResolvedValue([]);
 
     const ignored = await respondToRecommendation('rec-2', 'ignore');
     const dismissed = await respondToRecommendation('rec-3', 'dismiss');
@@ -58,9 +71,7 @@ describe('respondToRecommendation', () => {
   });
 
   test('returns DATABASE_ERROR on failure', async () => {
-    db.update.mockImplementation(() => {
-      throw new Error('update failed');
-    });
+    db.batch.mockRejectedValue(new Error('batch failed'));
 
     const result = await respondToRecommendation('rec-4', 'accept');
 

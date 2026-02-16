@@ -5,7 +5,7 @@
  */
 
 import { db, recommendations, knowledgeItems, type Recommendation, type KnowledgeItem } from '@/src/db';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { Effect } from 'effect';
 import {
   appError,
@@ -38,6 +38,7 @@ export interface GetPendingRecommendationsDeps {
   recommendations: typeof recommendations;
   knowledgeItems: typeof knowledgeItems;
   eq: typeof eq;
+  inArray: typeof inArray;
 }
 
 const defaultDeps: GetPendingRecommendationsDeps = {
@@ -45,6 +46,7 @@ const defaultDeps: GetPendingRecommendationsDeps = {
   recommendations,
   knowledgeItems,
   eq,
+  inArray,
 };
 
 /**
@@ -69,11 +71,25 @@ export function createGetPendingRecommendations(
         return { success: true as const, data: [] };
       }
 
-      const items = (yield* tryPromise(
-        () => deps.db.select().from(deps.knowledgeItems),
-        (error): AppError =>
-          appError('DATABASE_ERROR', 'Failed to retrieve pending recommendations', error)
-      )) as KnowledgeItem[];
+      const itemIds = Array.from(
+        new Set(
+          pendingRecs.flatMap((recommendation) => [
+            recommendation.itemA_id,
+            recommendation.itemB_id,
+          ])
+        )
+      );
+      const items = itemIds.length === 0
+        ? []
+        : ((yield* tryPromise(
+            () =>
+              deps.db
+                .select()
+                .from(deps.knowledgeItems)
+                .where(deps.inArray(deps.knowledgeItems.id, itemIds)),
+            (error): AppError =>
+              appError('DATABASE_ERROR', 'Failed to retrieve pending recommendations', error)
+          )) as KnowledgeItem[]);
 
       const itemMap = new Map<string, KnowledgeItem>();
       items.forEach((item) => {

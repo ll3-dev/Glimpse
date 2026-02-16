@@ -17,12 +17,14 @@ const knowledgeItems = {
 };
 
 const eqMock = mock((left: unknown, right: unknown) => ({ left, right }));
+const inArrayMock = mock((left: unknown, right: unknown[]) => ({ left, right }));
 
 const deps = {
   db,
   recommendations,
   knowledgeItems,
   eq: eqMock,
+  inArray: inArrayMock,
 } as unknown as GetPendingRecommendationsDeps;
 
 const getPendingRecommendations = createGetPendingRecommendations(deps);
@@ -31,6 +33,7 @@ describe('getPendingRecommendations', () => {
   beforeEach(() => {
     db.select.mockReset();
     eqMock.mockClear();
+    inArrayMock.mockClear();
   });
 
   test('returns empty list when there are no pending recommendations', async () => {
@@ -64,7 +67,9 @@ describe('getPendingRecommendations', () => {
         })),
       })
       .mockReturnValueOnce({
-        from: mock(async () => items),
+        from: mock(() => ({
+          where: mock(async () => items),
+        })),
       });
 
     const result = await getPendingRecommendations();
@@ -76,6 +81,7 @@ describe('getPendingRecommendations', () => {
       expect(result.data[0]?.itemA.id).toBe('a');
       expect(result.data[0]?.itemB.id).toBe('b');
     }
+    expect(inArrayMock).toHaveBeenCalledWith('id_column', ['a', 'b', 'missing']);
   });
 
   test('returns DATABASE_ERROR when query fails', async () => {
