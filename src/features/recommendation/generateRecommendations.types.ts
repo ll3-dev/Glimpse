@@ -1,7 +1,8 @@
-import { nanoid } from 'nanoid';
 import { db, recommendations, type KnowledgeItem } from '@/src/db';
 import { getWeeklyItems } from './getWeeklyItems';
 import type { AppError } from '@/src/lib/effect-result';
+
+type IdGenerator = () => string;
 
 export interface GeneratedRecommendation {
   itemA: KnowledgeItem;
@@ -30,5 +31,5 @@ export interface GenerateRecommendationsDeps {
 export interface SaveRecommendationsDeps {
   db: typeof db;
   recommendations: typeof recommendations;
-  nanoid: typeof nanoid;
+  nanoid: IdGenerator;
 }

@@ -1,12 +1,12 @@
-import { nanoid } from 'nanoid';
-import { db, recommendations } from '@/src/db';
-import { getWeeklyItems } from './getWeeklyItems';
-import { createGenerateRecommendations as createGenerateRecommendationsUsecase } from './generateRecommendations.usecase';
-import { createSaveRecommendations as createSaveRecommendationsUsecase } from './saveRecommendations.usecase';
+import { db, recommendations } from "@/src/db";
+import { generateId } from "@/src/lib/id";
+import { getWeeklyItems } from "./getWeeklyItems";
+import { createGenerateRecommendations as createGenerateRecommendationsUsecase } from "./generateRecommendations.usecase";
+import { createSaveRecommendations as createSaveRecommendationsUsecase } from "./saveRecommendations.usecase";
 import type {
   GenerateRecommendationsDeps,
   SaveRecommendationsDeps,
-} from './generateRecommendations.types';
+} from "./generateRecommendations.types";
 
 export type {
   GenerateFailureResult,
@@ -15,7 +15,7 @@ export type {
   GenerateResult,
   GeneratedRecommendation,
   SaveRecommendationsDeps,
-} from './generateRecommendations.types';
+} from "./generateRecommendations.types";
 
 const defaultGenerateDeps: GenerateRecommendationsDeps = {
   db,
@@ -26,14 +26,18 @@ const defaultGenerateDeps: GenerateRecommendationsDeps = {
 const defaultSaveDeps: SaveRecommendationsDeps = {
   db,
   recommendations,
-  nanoid,
+  nanoid: generateId,
 };
 
-export function createGenerateRecommendations(deps: GenerateRecommendationsDeps = defaultGenerateDeps) {
+export function createGenerateRecommendations(
+  deps: GenerateRecommendationsDeps = defaultGenerateDeps,
+) {
   return createGenerateRecommendationsUsecase(deps);
 }
 
-export function createSaveRecommendations(deps: SaveRecommendationsDeps = defaultSaveDeps) {
+export function createSaveRecommendations(
+  deps: SaveRecommendationsDeps = defaultSaveDeps,
+) {
   return createSaveRecommendationsUsecase(deps);
 }
 

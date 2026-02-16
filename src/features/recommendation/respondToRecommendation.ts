@@ -5,7 +5,6 @@
  * Also logs the feedback event for analytics.
  */
 
-import { nanoid } from 'nanoid';
 import {
   db,
   feedbackEvents,
@@ -13,6 +12,7 @@ import {
   type NewFeedbackEvent,
   type RecommendationStatus,
 } from '@/src/db';
+import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 import { eq } from 'drizzle-orm';
 import { Effect } from 'effect';
 import {
@@ -40,7 +40,7 @@ export interface RespondToRecommendationDeps {
   recommendations: typeof recommendations;
   feedbackEvents: typeof feedbackEvents;
   eq: typeof eq;
-  nanoid: typeof nanoid;
+  nanoid: () => string;
 }
 
 const defaultDeps: RespondToRecommendationDeps = {
@@ -48,7 +48,7 @@ const defaultDeps: RespondToRecommendationDeps = {
   recommendations,
   feedbackEvents,
   eq,
-  nanoid,
+  nanoid: generateId,
 };
 
 /**
@@ -63,14 +63,14 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
     recommendationId: string,
     action: 'accept' | 'ignore' | 'dismiss'
   ): Promise<RespondToRecommendationResult> {
-    const program = Effect.gen(function* () {
-      const statusMap: Record<string, RecommendationStatus> = {
-        accept: 'accepted',
-        ignore: 'ignored',
-        dismiss: 'dismissed',
-      };
+    const statusMap: Record<string, RecommendationStatus> = {
+      accept: 'accepted',
+      ignore: 'ignored',
+      dismiss: 'dismissed',
+    };
+    const newStatus = statusMap[action];
 
-      const newStatus = statusMap[action];
+    for (let attempt = 0; attempt <= MAX_ID_COLLISION_RETRIES; attempt++) {
       const now = Date.now();
       const newFeedbackEvent: NewFeedbackEvent = {
         id: deps.nanoid(),
@@ -79,36 +79,48 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
         createdAt: now,
       };
 
-      yield* tryPromise(
-        () => deps.db.batch([
-          deps.db
-            .update(deps.recommendations)
-            .set({
-              status: newStatus,
-              respondedAt: now,
-            })
-            .where(deps.eq(deps.recommendations.id, recommendationId)),
-          deps.db.insert(deps.feedbackEvents).values(newFeedbackEvent),
-        ]),
-        (error): AppError =>
-          appError('DATABASE_ERROR', 'Failed to persist recommendation response', error)
+      const batchResult = await runEffectSuccess(
+        tryPromise(
+          () => deps.db.batch([
+            deps.db
+              .update(deps.recommendations)
+              .set({
+                status: newStatus,
+                respondedAt: now,
+              })
+              .where(deps.eq(deps.recommendations.id, recommendationId)),
+            deps.db.insert(deps.feedbackEvents).values(newFeedbackEvent),
+          ]),
+          (error): AppError =>
+            appError('DATABASE_ERROR', 'Failed to persist recommendation response', error)
+        ).pipe(
+          Effect.map(() => ({
+            success: true as const,
+            status: newStatus,
+          }))
+        )
       );
 
-      return {
-        success: true as const,
-        status: newStatus,
-      };
-    });
+      if (!isFailure(batchResult)) {
+        return batchResult;
+      }
 
-    const result = await runEffectSuccess(program);
-    if (isFailure(result)) {
-      return {
-        success: false,
-        error: result.error,
-      };
+      const isFinalAttempt = attempt === MAX_ID_COLLISION_RETRIES;
+      if (!isIdCollisionError(batchResult.error.details) || isFinalAttempt) {
+        return {
+          success: false,
+          error: batchResult.error,
+        };
+      }
     }
 
-    return result;
+    return {
+      success: false,
+      error: appError(
+        'DATABASE_ERROR',
+        'Failed to persist recommendation response after ID collision retries'
+      ),
+    };
   };
 }
 

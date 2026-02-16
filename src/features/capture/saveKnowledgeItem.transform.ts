@@ -1,9 +1,8 @@
 import type { KnowledgeItemInput } from './saveKnowledgeItem.types';
+import { generateId as generateRuntimeId } from '@/src/lib/id';
 
 export function generateId(): string {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 10);
-  return `${timestamp}-${randomPart}`;
+  return generateRuntimeId();
 }
 
 export function normalizeText(text: string | undefined): string | undefined {
