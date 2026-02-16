@@ -161,6 +161,18 @@ describe('buildSaveInputByChannel', () => {
       expect('input' in result).toBe(true);
     });
 
+    test("title is undefined when shareTitle and url are both empty", () => {
+      const state = {
+        ...createEmptyFormState(),
+        shareBody: "some content",
+        sharedContent: { imageUri: "file:///path/to/image.jpg" },
+      };
+      const result = buildSaveInputByChannel("share", state);
+      if ("input" in result && result.input.type === "share") {
+        expect(result.input.title).toBeUndefined();
+      }
+    });
+
     test('uses sharedContent URL as title when shareTitle is empty', () => {
       const state = {
         ...createEmptyFormState(),
