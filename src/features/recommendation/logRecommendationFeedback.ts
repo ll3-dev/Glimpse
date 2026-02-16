@@ -4,10 +4,10 @@
  * Logs user feedback events to recommendations for analytics and learning.
  */
 
-import { nanoid } from 'nanoid';
 import { db, feedbackEvents, type FeedbackEvent, type NewFeedbackEvent, type FeedbackActionType } from '@/src/db';
 import { desc } from 'drizzle-orm';
 import { Effect } from 'effect';
+import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 import {
   appError,
   isFailure,
@@ -46,14 +46,14 @@ export interface RecommendationFeedbackDeps {
   db: typeof db;
   feedbackEvents: typeof feedbackEvents;
   desc: typeof desc;
-  nanoid: typeof nanoid;
+  nanoid: () => string;
 }
 
 const defaultDeps: RecommendationFeedbackDeps = {
   db,
   feedbackEvents,
   desc,
-  nanoid,
+  nanoid: generateId,
 };
 
 /**
@@ -64,7 +64,7 @@ export function createLogRecommendationFeedback(deps: RecommendationFeedbackDeps
     recommendationId: string,
     action: FeedbackActionType
   ): Promise<LogRecommendationFeedbackResult> {
-    const program = Effect.gen(function* () {
+    for (let attempt = 0; attempt <= MAX_ID_COLLISION_RETRIES; attempt++) {
       const now = Date.now();
       const newEvent: NewFeedbackEvent = {
         id: deps.nanoid(),
@@ -73,27 +73,36 @@ export function createLogRecommendationFeedback(deps: RecommendationFeedbackDeps
         createdAt: now,
       };
 
-      yield* tryPromise(
-        () => deps.db.insert(deps.feedbackEvents).values(newEvent),
-        (error): AppError =>
-          appError('DATABASE_ERROR', 'Failed to log feedback event', error)
+      const insertResult = await runEffectSuccess(
+        tryPromise(
+          () => deps.db.insert(deps.feedbackEvents).values(newEvent),
+          (error): AppError =>
+            appError('DATABASE_ERROR', 'Failed to log feedback event', error)
+        ).pipe(
+          Effect.map(() => ({
+            success: true as const,
+            event: newEvent as FeedbackEvent,
+          }))
+        )
       );
 
-      return {
-        success: true as const,
-        event: newEvent as FeedbackEvent,
-      };
-    });
+      if (!isFailure(insertResult)) {
+        return insertResult;
+      }
 
-    const result = await runEffectSuccess(program);
-    if (isFailure(result)) {
-      return {
-        success: false,
-        error: result.error,
-      };
+      const isFinalAttempt = attempt === MAX_ID_COLLISION_RETRIES;
+      if (!isIdCollisionError(insertResult.error.details) || isFinalAttempt) {
+        return {
+          success: false,
+          error: insertResult.error,
+        };
+      }
     }
 
-    return result;
+    return {
+      success: false,
+      error: appError('DATABASE_ERROR', 'Failed to log feedback event after ID collision retries'),
+    };
   };
 }
 
