@@ -69,6 +69,17 @@ CREATE TABLE IF NOT EXISTS feedback_events (
 );
 `;
 
+export const CREATE_INDEXES_SQL = [
+  "CREATE INDEX IF NOT EXISTS knowledge_items_created_at_idx ON knowledge_items(created_at);",
+  "CREATE INDEX IF NOT EXISTS knowledge_items_next_review_at_idx ON knowledge_items(next_review_at);",
+  "CREATE INDEX IF NOT EXISTS recommendations_status_idx ON recommendations(status);",
+  "CREATE INDEX IF NOT EXISTS recommendations_item_a_idx ON recommendations(item_a_id);",
+  "CREATE INDEX IF NOT EXISTS recommendations_item_b_idx ON recommendations(item_b_id);",
+  "CREATE UNIQUE INDEX IF NOT EXISTS recommendations_item_pair_unique_idx ON recommendations(item_a_id, item_b_id);",
+  "CREATE INDEX IF NOT EXISTS feedback_events_recommendation_id_idx ON feedback_events(recommendation_id);",
+  "CREATE INDEX IF NOT EXISTS feedback_events_created_at_idx ON feedback_events(created_at);",
+] as const;
+
 export const FEEDBACK_EVENTS_SELECT_COLUMNS = [
   "id",
   "recommendation_id",
