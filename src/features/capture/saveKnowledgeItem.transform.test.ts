@@ -21,7 +21,7 @@ describe('generateId', () => {
     expect(ids.size).toBe(100);
   });
 
-  test('ID uses nanoid-compatible format', () => {
+  test('ID uses UUID-like format without spaces', () => {
     const id = generateId();
     expect(id.length).toBeGreaterThanOrEqual(21);
     expect(id).not.toContain(' ');

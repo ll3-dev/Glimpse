@@ -1,9 +1,9 @@
-import { nanoid } from 'nanoid';
+import { randomUUID } from 'expo-crypto';
 
 export const MAX_ID_COLLISION_RETRIES = 3;
 
 export function generateId(): string {
-  return nanoid();
+  return randomUUID();
 }
 
 export function isIdCollisionError(error: unknown): boolean {
