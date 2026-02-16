@@ -15,6 +15,7 @@ import {
   FEEDBACK_EVENTS_SELECT_COLUMNS,
   REQUIRED_COLUMNS,
   CREATE_KNOWLEDGE_ITEMS_TABLE_SQL,
+  CREATE_INDEXES_SQL,
 } from './constants';
 import { getTableColumns } from 'drizzle-orm/utils';
 
@@ -86,5 +87,11 @@ describe('Schema Synchronization', () => {
     for (const col of requiredNames) {
       expect(CREATE_KNOWLEDGE_ITEMS_TABLE_SQL).toContain(col);
     }
+  });
+
+  it('knowledge_items indexes should include mvp0 keys', () => {
+    const indexSql = CREATE_INDEXES_SQL.join('\n');
+    expect(indexSql).toContain('knowledge_items_type_idx');
+    expect(indexSql).toContain('knowledge_items_created_at_idx');
   });
 });

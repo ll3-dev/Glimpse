@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS feedback_events (
 `;
 
 export const CREATE_INDEXES_SQL = [
+  "CREATE INDEX IF NOT EXISTS knowledge_items_type_idx ON knowledge_items(type);",
   "CREATE INDEX IF NOT EXISTS knowledge_items_created_at_idx ON knowledge_items(created_at);",
   "CREATE INDEX IF NOT EXISTS knowledge_items_next_review_at_idx ON knowledge_items(next_review_at);",
   "CREATE INDEX IF NOT EXISTS recommendations_status_idx ON recommendations(status);",
