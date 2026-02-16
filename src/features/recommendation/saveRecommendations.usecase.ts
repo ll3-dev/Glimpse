@@ -1,15 +1,18 @@
-import { Effect } from 'effect';
-import { appError, isFailure, runEffectSuccess, type AppError, tryPromise } from '@/src/lib/effect-result';
+import { appError, isFailure, runEffectResult, type AppError, tryPromise } from '@/src/lib/effect-result';
 import type { NewRecommendation } from '@/src/db';
 import type { GeneratedRecommendation, SaveRecommendationsDeps } from './generateRecommendations.types';
+import { isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 
 export function createSaveRecommendations(deps: SaveRecommendationsDeps) {
   return async function saveRecommendations(
     recommendationsList: GeneratedRecommendation[]
   ): Promise<{ success: true } | { success: false; error: AppError }> {
-    const program = Effect.gen(function* () {
-      const now = Date.now();
+    if (recommendationsList.length === 0) {
+      return { success: true as const };
+    }
 
+    for (let attempt = 0; attempt <= MAX_ID_COLLISION_RETRIES; attempt++) {
+      const now = Date.now();
       const newRecommendations: NewRecommendation[] = recommendationsList.map((recommendation) => ({
         id: deps.nanoid(),
         itemA_id: recommendation.itemA.id,
@@ -20,24 +23,32 @@ export function createSaveRecommendations(deps: SaveRecommendationsDeps) {
         respondedAt: null,
       }));
 
-      if (newRecommendations.length > 0) {
-        yield* tryPromise(
+      const insertResult = await runEffectResult(
+        tryPromise(
           () => deps.db.insert(deps.recommendations).values(newRecommendations),
           (error): AppError => appError('DATABASE_ERROR', 'Failed to save recommendations', error)
-        );
+        )
+      );
+
+      if (insertResult.success) {
+        return { success: true as const };
+      }
+      if (!isFailure(insertResult)) {
+        continue;
       }
 
-      return { success: true as const };
-    });
-
-    const result = await runEffectSuccess(program);
-    if (isFailure(result)) {
-      return {
-        success: false,
-        error: result.error,
-      };
+      const isFinalAttempt = attempt === MAX_ID_COLLISION_RETRIES;
+      if (!isIdCollisionError(insertResult.error.details) || isFinalAttempt) {
+        return { success: false, error: insertResult.error };
+      }
     }
 
-    return result;
+    return {
+      success: false,
+      error: appError(
+        'DATABASE_ERROR',
+        'Failed to save recommendations after ID collision retries'
+      ),
+    };
   };
 }

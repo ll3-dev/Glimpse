@@ -21,10 +21,10 @@ describe('generateId', () => {
     expect(ids.size).toBe(100);
   });
 
-  test('ID contains timestamp and random parts separated by dash', () => {
+  test('ID uses nanoid-compatible format', () => {
     const id = generateId();
-    const parts = id.split('-');
-    expect(parts.length).toBeGreaterThanOrEqual(2);
+    expect(id.length).toBeGreaterThanOrEqual(21);
+    expect(id).not.toContain(' ');
   });
 });
 
