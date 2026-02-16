@@ -72,8 +72,8 @@ export default function SettingsScreen() {
 
         <Card className="p-4 bg-app-border/20 border-0">
           <Text className="text-[10px] leading-4 text-app-muted font-medium">
-            ⓘ API 키는 기기에 안전하게 저장됩니다.{"\n"}
-            실제 API 호출은 추후 업데이트에서 지원될 예정입니다.
+            ⓘ API 키는 현재 앱 세션 메모리에만 보관됩니다.{"\n"}
+            앱을 종료하면 초기화되며, 실제 API 호출은 추후 업데이트에서 지원됩니다.
           </Text>
         </Card>
       </ScrollView>

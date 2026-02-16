@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { appError, tryPromise } from '@/src/lib/effect-result';
+import { logger } from '@/src/utils/logger';
 import { ImagePlus, X } from '@/src/ui/icons';
 
 type ScreenshotFormProps = {
@@ -58,7 +59,9 @@ export function ScreenshotForm({
       }
     });
 
-    await Effect.runPromise(program);
+    await Effect.runPromise(program).catch((error) => {
+      logger.error('Failed to pick screenshot image', error);
+    });
   };
 
   const processImage = async (uri: string) => {
