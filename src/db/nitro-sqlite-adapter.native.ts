@@ -5,6 +5,7 @@
  */
 
 import { NitroSQLite } from "react-native-nitro-sqlite";
+import { Effect } from "effect";
 import {
   CREATE_FEEDBACK_EVENTS_TABLE_SQL,
   CREATE_KNOWLEDGE_ITEMS_TABLE_SQL,
@@ -25,31 +26,39 @@ let initPromise: Promise<void> | null = null;
 type NativeQueryRow = Record<string, string | number | boolean | ArrayBuffer | null>;
 type NativeQueryMetadata = Record<string, { name: string; index: number }>;
 
-async function ensureKnowledgeItemsSchema() {
-  const pragmaResult = await NitroSQLite.executeAsync(
-    DB_NAME,
-    `PRAGMA table_info(${KNOWLEDGE_ITEMS_TABLE_NAME});`,
-  );
-  const existingColumns = new Set(
-    (pragmaResult.results as NativeQueryRow[]).map((row) => String(row.name)),
-  );
-
-  if (!existingColumns.has("id")) {
-    throw new Error(
-      "knowledge_items table exists without id column. Please reset local DB.",
+function ensureKnowledgeItemsSchema() {
+  const program = Effect.gen(function* () {
+    const pragmaResult = yield* Effect.promise(() =>
+      NitroSQLite.executeAsync(
+        DB_NAME,
+        `PRAGMA table_info(${KNOWLEDGE_ITEMS_TABLE_NAME});`,
+      ),
     );
-  }
+    const existingColumns = new Set(
+      (pragmaResult.results as NativeQueryRow[]).map((row) => String(row.name)),
+    );
 
-  for (const column of REQUIRED_COLUMNS) {
-    if (existingColumns.has(column.name) || column.name === "id") {
-      continue;
+    if (!existingColumns.has("id")) {
+      yield* Effect.fail(
+        new Error("knowledge_items table exists without id column. Please reset local DB."),
+      );
     }
 
-    await NitroSQLite.executeAsync(
-      DB_NAME,
-      `ALTER TABLE ${KNOWLEDGE_ITEMS_TABLE_NAME} ADD COLUMN ${column.definition};`,
-    );
-  }
+    for (const column of REQUIRED_COLUMNS) {
+      if (existingColumns.has(column.name) || column.name === "id") {
+        continue;
+      }
+
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(
+          DB_NAME,
+          `ALTER TABLE ${KNOWLEDGE_ITEMS_TABLE_NAME} ADD COLUMN ${column.definition};`,
+        ),
+      );
+    }
+  });
+
+  return Effect.runPromise(program);
 }
 
 function isValidTagsJson(rawValue: unknown): boolean {
@@ -61,55 +70,77 @@ function isValidTagsJson(rawValue: unknown): boolean {
     return false;
   }
 
-  try {
-    const parsed = JSON.parse(rawValue);
-    return Array.isArray(parsed);
-  } catch {
-    return false;
-  }
-}
-
-async function sanitizeKnowledgeItemsRows() {
-  const selectResult = await NitroSQLite.executeAsync(
-    DB_NAME,
-    `SELECT id, tags FROM ${KNOWLEDGE_ITEMS_TABLE_NAME};`,
+  const parsed = Effect.runSync(
+    Effect.try({
+      try: () => JSON.parse(rawValue),
+      catch: () => null,
+    }),
   );
-  const rows = selectResult.results as NativeQueryRow[];
-
-  for (const row of rows) {
-    if (isValidTagsJson(row.tags)) {
-      continue;
-    }
-
-    await NitroSQLite.executeAsync(
-      DB_NAME,
-      `UPDATE ${KNOWLEDGE_ITEMS_TABLE_NAME} SET tags = NULL WHERE id = ?;`,
-      [row.id ?? null],
-    );
-  }
+  return Array.isArray(parsed);
 }
 
-async function initDatabase() {
+function sanitizeKnowledgeItemsRows() {
+  const program = Effect.gen(function* () {
+    const selectResult = yield* Effect.promise(() =>
+      NitroSQLite.executeAsync(
+        DB_NAME,
+        `SELECT id, tags FROM ${KNOWLEDGE_ITEMS_TABLE_NAME};`,
+      ),
+    );
+    const rows = selectResult.results as NativeQueryRow[];
+
+    for (const row of rows) {
+      if (isValidTagsJson(row.tags)) {
+        continue;
+      }
+
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(
+          DB_NAME,
+          `UPDATE ${KNOWLEDGE_ITEMS_TABLE_NAME} SET tags = NULL WHERE id = ?;`,
+          [row.id ?? null],
+        ),
+      );
+    }
+  });
+
+  return Effect.runPromise(program);
+}
+
+function initDatabase() {
   if (isInitialized) {
-    return;
+    return Promise.resolve();
   }
 
   if (!initPromise) {
-    initPromise = (async () => {
+    const initEffect = Effect.gen(function* () {
       NitroSQLite.open({ name: DB_NAME });
-      await NitroSQLite.executeAsync(DB_NAME, CREATE_KNOWLEDGE_ITEMS_TABLE_SQL);
-      await NitroSQLite.executeAsync(DB_NAME, CREATE_RECOMMENDATIONS_TABLE_SQL);
-      await NitroSQLite.executeAsync(DB_NAME, CREATE_FEEDBACK_EVENTS_TABLE_SQL);
-      await ensureKnowledgeItemsSchema();
-      await sanitizeKnowledgeItemsRows();
-      isInitialized = true;
-    })().catch((error) => {
-      initPromise = null;
-      throw error;
-    });
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(DB_NAME, CREATE_KNOWLEDGE_ITEMS_TABLE_SQL),
+      );
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(DB_NAME, CREATE_RECOMMENDATIONS_TABLE_SQL),
+      );
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(DB_NAME, CREATE_FEEDBACK_EVENTS_TABLE_SQL),
+      );
+      yield* Effect.promise(() => ensureKnowledgeItemsSchema());
+      yield* Effect.promise(() => sanitizeKnowledgeItemsRows());
+      yield* Effect.sync(() => {
+        isInitialized = true;
+      });
+    }).pipe(
+      Effect.tapError(() =>
+        Effect.sync(() => {
+          initPromise = null;
+        }),
+      ),
+    );
+
+    initPromise = Effect.runPromise(initEffect);
   }
 
-  await initPromise;
+  return initPromise;
 }
 
 function getOrderedColumnNames(
@@ -174,9 +205,13 @@ function mapRowToColumnArray(
       : null;
 
     if (columnName === "tags" && typeof rawValue === "string") {
-      try {
-        JSON.parse(rawValue);
-      } catch {
+      const parsedTags = Effect.runSync(
+        Effect.try({
+          try: () => JSON.parse(rawValue),
+          catch: () => null,
+        }),
+      );
+      if (parsedTags === null) {
         return null;
       }
     }
@@ -193,39 +228,46 @@ export async function nitroSQLiteCallback(
   params: (string | number | boolean | null | ArrayBuffer)[],
   method: "run" | "all" | "get" | "values",
 ): Promise<{ rows: unknown[]; changes?: number; lastInsertRowId?: number }> {
-  await initDatabase();
+  const program = Effect.gen(function* () {
+    yield* Effect.promise(() => initDatabase());
 
-  const result = await NitroSQLite.executeAsync(DB_NAME, sql, params);
-  const typedResults = result.results as NativeQueryRow[];
-  const orderedColumnNames = getOrderedColumnNames(
-    sql,
-    result.metadata as NativeQueryMetadata | undefined,
-    typedResults,
-  );
+    const result = yield* Effect.promise(() =>
+      NitroSQLite.executeAsync(DB_NAME, sql, params),
+    );
+    const typedResults = result.results as NativeQueryRow[];
+    const orderedColumnNames = getOrderedColumnNames(
+      sql,
+      result.metadata as NativeQueryMetadata | undefined,
+      typedResults,
+    );
 
-  switch (method) {
-    case "run":
-      return {
-        rows: [],
-        changes: result.rowsAffected,
-        lastInsertRowId: result.insertId ?? undefined,
-      };
+    switch (method) {
+      case "run":
+        return {
+          rows: [],
+          changes: result.rowsAffected,
+          lastInsertRowId: result.insertId ?? undefined,
+        };
 
-    case "all":
-    case "values":
-      return {
-        rows: typedResults.map((row) => mapRowToColumnArray(row, orderedColumnNames)),
-      };
+      case "all":
+      case "values":
+        return {
+          rows: typedResults.map((row) => mapRowToColumnArray(row, orderedColumnNames)),
+        };
 
-    case "get":
-      const firstRow = typedResults[0];
-      return {
-        rows: firstRow ? mapRowToColumnArray(firstRow, orderedColumnNames) : [],
-      };
+      case "get": {
+        const firstRow = typedResults[0];
+        return {
+          rows: firstRow ? mapRowToColumnArray(firstRow, orderedColumnNames) : [],
+        };
+      }
 
-    default:
-      return { rows: result.results };
-  }
+      default:
+        return { rows: result.results };
+    }
+  });
+
+  return Effect.runPromise(program);
 }
 
 /**
@@ -234,14 +276,18 @@ export async function nitroSQLiteCallback(
 export async function nitroSQLiteBatchCallback(
   queries: { sql: string; params: unknown[] }[],
 ): Promise<{ rows: unknown[] }[]> {
-  await initDatabase();
+  const program = Effect.gen(function* () {
+    yield* Effect.promise(() => initDatabase());
 
-  const commands = queries.map((q) => ({
-    query: q.sql,
-    params: q.params as (string | number | boolean | null | ArrayBuffer)[],
-  }));
+    const commands = queries.map((q) => ({
+      query: q.sql,
+      params: q.params as (string | number | boolean | null | ArrayBuffer)[],
+    }));
 
-  await NitroSQLite.executeBatchAsync(DB_NAME, commands);
+    yield* Effect.promise(() => NitroSQLite.executeBatchAsync(DB_NAME, commands));
 
-  return queries.map(() => ({ rows: [] }));
+    return queries.map(() => ({ rows: [] }));
+  });
+
+  return Effect.runPromise(program);
 }
