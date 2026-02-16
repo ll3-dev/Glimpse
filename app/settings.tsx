@@ -36,12 +36,12 @@ export default function SettingsScreen() {
       <ScreenHeader
         title="설정"
         className="pb-2"
-        rightElement={
+        leftElement={
           <TouchableOpacity
             onPress={() => router.back()}
-            className="p-2.5 rounded-md bg-app-border/30"
+            className="p-2 -ml-2"
           >
-            <ArrowLeft size={20} color="#37352f" />
+            <ArrowLeft size={24} color="#37352f" />
           </TouchableOpacity>
         }
       />

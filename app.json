@@ -1,7 +1,7 @@
 {
   "scheme": "ll3.kr",
   "ios": {
-    "bundleIdentifier": "com.anonymous.glimpse"
+    "bundleIdentifier": "kr.ll3.glimpse"
   },
   "plugins": [
     [

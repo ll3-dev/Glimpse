@@ -9,10 +9,7 @@ import {
   KnowledgeItemCard,
   LibrarySearchInput,
 } from "@/src/components/library";
-import {
-  filterKnowledgeItems,
-  parseQueryToKeyword,
-} from "@/src/features/search";
+import { resolveLibrarySearch } from "@/src/features/library";
 import { useKnowledgeItemsQuery } from "@/src/hooks";
 import { ScreenHeader } from "@/src/ui/primitives";
 
@@ -23,10 +20,8 @@ export default function LibraryScreen() {
 
   const { data: items } = useKnowledgeItemsQuery();
 
-  const filteredItems = useMemo(() => {
-    if (!items) return [];
-    const keyword = parseQueryToKeyword(searchQuery);
-    return filterKnowledgeItems(items, keyword);
+  const { filteredItems, emptyState } = useMemo(() => {
+    return resolveLibrarySearch(items, searchQuery);
   }, [items, searchQuery]);
 
   return (
@@ -36,10 +31,10 @@ export default function LibraryScreen() {
         subtitle={`${items?.length || 0}개의 지식`}
         rightElement={
           <TouchableOpacity
-            className="p-2.5 rounded-md bg-app-border/30"
+            className="p-2 -mr-2"
             onPress={() => router.push('/settings')}
           >
-            <Settings size={20} color="#37352f" />
+            <Settings size={24} color="#37352f" />
           </TouchableOpacity>
         }
       />
@@ -48,9 +43,14 @@ export default function LibraryScreen() {
       <View className="flex-1 px-6">
         <FlashList
           data={filteredItems}
-          renderItem={({ item }) => <KnowledgeItemCard item={item} />}
+          renderItem={({ item }) => (
+            <KnowledgeItemCard
+              item={item}
+              onPress={() => router.push(`/library/${item.id}`)}
+            />
+          )}
           contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
-          ListEmptyComponent={<EmptyLibraryState />}
+          ListEmptyComponent={<EmptyLibraryState {...emptyState} />}
         />
       </View>
     </View>

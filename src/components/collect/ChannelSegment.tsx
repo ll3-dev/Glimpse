@@ -1,4 +1,4 @@
-import { View, ScrollView, Pressable, Text } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
 import { KnowledgeItemType } from '@/src/db/schema';
 
 export const CHANNELS: { type: KnowledgeItemType; label: string }[] = [
@@ -16,25 +16,21 @@ type ChannelSegmentProps = {
 
 export function ChannelSegment({ value, onChange }: ChannelSegmentProps) {
   return (
-    <View className="px-6 pb-6">
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="flex-row gap-2"
-      >
+    <View className="px-6 pb-4">
+      <View className="bg-app-border/20 p-1 rounded-lg flex-row">
         {CHANNELS.map((channel) => {
           const isActive = value === channel.type;
           return (
             <Pressable
               key={channel.type}
               onPress={() => onChange(channel.type)}
-              className={`rounded-md px-3 py-1.5 ${
-                isActive ? 'bg-app-text' : 'bg-app-border/40'
+              className={`flex-1 rounded-md py-1.5 items-center justify-center ${
+                isActive ? 'bg-white shadow-sm' : ''
               }`}
             >
               <Text
-                className={`text-xs font-bold uppercase tracking-tight ${
-                  isActive ? 'text-white' : 'text-app-muted'
+                className={`text-[11px] font-bold ${
+                  isActive ? 'text-app-text' : 'text-app-muted'
                 }`}
               >
                 {channel.label}
@@ -42,7 +38,7 @@ export function ChannelSegment({ value, onChange }: ChannelSegmentProps) {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }
