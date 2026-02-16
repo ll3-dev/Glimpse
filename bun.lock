@@ -21,6 +21,7 @@
         "@rn-primitives/tooltip": "~1.2.0",
         "@shopify/flash-list": "2.0.2",
         "@tanstack/react-query": "^5.83.0",
+        "@toss/hangul": "^1.7.1",
         "@types/sql.js": "^1.4.9",
         "baseline-browser-mapping": "^2.9.19",
         "caniuse-lite": "^1.0.30001766",
@@ -638,6 +639,8 @@
     "@tanstack/query-core": ["@tanstack/query-core@5.90.20", "", {}, "sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg=="],
 
     "@tanstack/react-query": ["@tanstack/react-query@5.90.21", "", { "dependencies": { "@tanstack/query-core": "5.90.20" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-0Lu6y5t+tvlTJMTO7oh5NSpJfpg/5D41LlThfepTixPYkJ0sE2Jj0m0f6yYqujBwIXlId87e234+MxG3D3g7kg=="],
+
+    "@toss/hangul": ["@toss/hangul@1.7.1", "", {}, "sha512-fBjc/1iLSkQEURqZEDcU4QE/LHCR9t2/EWMc7F4yX1kOBjG8cGxl+F626w3oVBdEDuW5YEXVnXLuYoko6/yqUg=="],
 
     "@ts-morph/common": ["@ts-morph/common@0.28.1", "", { "dependencies": { "minimatch": "^10.0.1", "path-browserify": "^1.0.1", "tinyglobby": "^0.2.14" } }, "sha512-W74iWf7ILp1ZKNYXY5qbddNaml7e9Sedv5lvU1V8lftlitkc9Pq1A+jlH23ltDgWYeZFFEqGCD1Ies9hqu3O+g=="],
 

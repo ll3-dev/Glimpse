@@ -2,9 +2,14 @@
  * Filter Knowledge Items
  *
  * Client-side filtering for knowledge items based on search query.
- * Filters by title, body, and tags (case-insensitive).
+ * Filters by title, body, and tags.
+ *
+ * Uses @toss/hangul for better Korean search matching:
+ * - 초성 검색 (e.g., "ㅌㅅ" -> "토스")
+ * - 한글 분해 기반 검색 (e.g., "톳" -> "토스")
  */
 
+import { chosungIncludes, hangulIncludes } from '@toss/hangul';
 import type { KnowledgeItem } from '@/src/db';
 
 /**
@@ -36,28 +41,35 @@ export function filterKnowledgeItems(
     return items;
   }
 
-  // Convert query to lowercase for case-insensitive matching
   const lowerQuery = trimmedQuery.toLowerCase();
+
+  function matchesText(value: string | null | undefined): boolean {
+    if (!value) {
+      return false;
+    }
+
+    if (value.toLowerCase().includes(lowerQuery)) {
+      return true;
+    }
+
+    return hangulIncludes(value, trimmedQuery) || chosungIncludes(value, trimmedQuery);
+  }
 
   // Filter items where query exists in title, body, or tags
   return items.filter((item) => {
-    // Check title
-    if (item.title && item.title.toLowerCase().includes(lowerQuery)) {
+    if (matchesText(item.title)) {
       return true;
     }
 
-    // Check body
-    if (item.body && item.body.toLowerCase().includes(lowerQuery)) {
+    if (matchesText(item.body)) {
       return true;
     }
 
-    // Check tags (if they exist)
     if (item.tags && item.tags.length > 0) {
-      return item.tags.some((tag) => tag.toLowerCase().includes(lowerQuery));
+      return item.tags.some((tag) => matchesText(tag));
     }
 
-    // Check URL as fallback (useful for links)
-    if (item.url && item.url.toLowerCase().includes(lowerQuery)) {
+    if (matchesText(item.url)) {
       return true;
     }
 
