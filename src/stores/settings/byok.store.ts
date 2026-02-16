@@ -10,8 +10,14 @@ export interface BYOKConfig {
   apiKey: string | null;
 }
 
+type BYOKStoreActions = {
+  updateConfig: (updater: (config: BYOKConfig) => BYOKConfig) => void;
+  resetConfig: () => void;
+};
+
 type BYOKStoreState = {
   config: BYOKConfig;
+  actions: BYOKStoreActions;
 };
 
 const initialByokConfig: BYOKConfig = {
@@ -20,8 +26,18 @@ const initialByokConfig: BYOKConfig = {
   apiKey: null,
 };
 
-const byokStore = createStore<BYOKStoreState>(() => ({
+const byokStore = createStore<BYOKStoreState>((set) => ({
   config: initialByokConfig,
+  actions: {
+    updateConfig: (updater) => {
+      set((state) => ({
+        config: updater(state.config),
+      }));
+    },
+    resetConfig: () => {
+      set({ config: initialByokConfig });
+    },
+  },
 }));
 
 export function getBYOKStoreConfig(): BYOKConfig {
@@ -33,11 +49,9 @@ export function useBYOKStoreConfig<T>(selector: (config: BYOKConfig) => T): T {
 }
 
 export function updateBYOKStoreConfig(updater: (config: BYOKConfig) => BYOKConfig): void {
-  byokStore.setState((state) => ({
-    config: updater(state.config),
-  }));
+  byokStore.getState().actions.updateConfig(updater);
 }
 
 export function resetBYOKStoreConfig(): void {
-  byokStore.setState({ config: initialByokConfig });
+  byokStore.getState().actions.resetConfig();
 }
