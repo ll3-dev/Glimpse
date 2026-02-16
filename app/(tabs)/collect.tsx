@@ -188,42 +188,40 @@ export default function CollectScreen() {
     const program = Effect.gen(function* () {
       const result = yield* tryPromise(
         () => saveKnowledgeItem(saveInput),
-        (error) => appError('UNKNOWN_ERROR', 'CollectScreen.handleSave failed', error)
+        (error) =>
+          appError("UNKNOWN_ERROR", "CollectScreen.handleSave failed", error),
       );
 
       if (isFailure(result)) {
         const details = formatErrorDetails(result.error.details);
         logger.error(
-          'CollectScreen.handleSave failed (SaveFailureResult)',
+          "CollectScreen.handleSave failed (SaveFailureResult)",
           details ?? result.error.message,
           {
             code: result.error.code,
             message: result.error.message,
             details: result.error.details,
-          }
+          },
         );
-        Alert.alert('저장 실패', result.error.message);
+        Alert.alert("저장 실패", result.error.message);
         return;
       }
 
       yield* tryPromise(
-        () => queryClient.invalidateQueries({ queryKey: ['knowledgeItems'] }),
-        (error) => appError('UNKNOWN_ERROR', 'CollectScreen.handleSave failed', error)
+        () => queryClient.invalidateQueries({ queryKey: ["knowledgeItems"] }),
+        (error) =>
+          appError("UNKNOWN_ERROR", "CollectScreen.handleSave failed", error),
       );
       resetForm();
-      Alert.alert('저장 완료', '저장되었습니다.');
+      Alert.alert("저장 완료", "저장되었습니다.");
     }).pipe(
       Effect.catchAll((error) =>
         Effect.sync(() => {
-          logger.error('CollectScreen.handleSave failed', error);
-          Alert.alert('저장 실패', '저장 중 예상치 못한 오류가 발생했습니다.');
-        })
+          logger.error("CollectScreen.handleSave failed", error);
+          Alert.alert("저장 실패", "저장 중 예상치 못한 오류가 발생했습니다.");
+        }),
       ),
-      Effect.ensuring(
-        Effect.sync(() => {
-          setIsSaving(false);
-        })
-      )
+      Effect.ensuring(Effect.sync(() => setIsSaving(false))),
     );
 
     await Effect.runPromise(program);
