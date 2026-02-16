@@ -1,4 +1,5 @@
 import "../global.css";
+import "@/src/lib/init";
 
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
