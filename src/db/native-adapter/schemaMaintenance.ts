@@ -40,13 +40,13 @@ export function ensureKnowledgeItemsSchema(): Promise<void> {
   return Effect.runPromise(program);
 }
 
-function isValidTagsJson(rawValue: unknown): boolean {
+function normalizeTags(rawValue: unknown): string[] | null | 'invalid' {
   if (rawValue === null) {
-    return true;
+    return null;
   }
 
   if (typeof rawValue !== 'string') {
-    return false;
+    return 'invalid';
   }
 
   const parsed = Effect.runSync(
@@ -56,7 +56,20 @@ function isValidTagsJson(rawValue: unknown): boolean {
     })
   );
 
-  return Array.isArray(parsed);
+  if (!Array.isArray(parsed)) {
+    return 'invalid';
+  }
+
+  const normalized = parsed
+    .filter((tag): tag is string => typeof tag === 'string')
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0 && tag !== 'stub-tag');
+
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  return [...new Set(normalized)];
 }
 
 export function sanitizeKnowledgeItemsRows(): Promise<void> {
@@ -70,15 +83,29 @@ export function sanitizeKnowledgeItemsRows(): Promise<void> {
 
     const rows = selectResult.results as NativeQueryRow[];
     for (const row of rows) {
-      if (isValidTagsJson(row.tags)) {
+      const normalizedTags = normalizeTags(row.tags);
+
+      if (normalizedTags === 'invalid') {
+        yield* Effect.promise(() =>
+          NitroSQLite.executeAsync(
+            DB_NAME,
+            `UPDATE ${KNOWLEDGE_ITEMS_TABLE_NAME} SET tags = NULL WHERE id = ?;`,
+            [row.id ?? null]
+          )
+        );
+        continue;
+      }
+
+      const nextValue = normalizedTags === null ? null : JSON.stringify(normalizedTags);
+      if (row.tags === nextValue) {
         continue;
       }
 
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(
           DB_NAME,
-          `UPDATE ${KNOWLEDGE_ITEMS_TABLE_NAME} SET tags = NULL WHERE id = ?;`,
-          [row.id ?? null]
+          `UPDATE ${KNOWLEDGE_ITEMS_TABLE_NAME} SET tags = ? WHERE id = ?;`,
+          [nextValue, row.id ?? null]
         )
       );
     }
