@@ -10,12 +10,17 @@ export {
   BYOKProvider,
   // Getters
   getBYOKConfig,
+  useBYOKConfig,
+  useBYOKReady,
+  useBYOKCredentialsConfigured,
   isBYOKReady,
+  hasBYOKCredentials,
   getApiKey,
   getProvider,
   // Setters
   enableBYOK,
   disableBYOK,
+  setProvider,
   setApiKey,
   clearApiKey,
   // Utilities
@@ -29,6 +34,7 @@ export {
   // Functions
   checkAppleIntelligenceAvailability,
   getAppleIntelligenceConfig,
+  useAppleIntelligenceConfig,
   isAppleIntelligenceEnabled,
   enableAppleIntelligence,
   disableAppleIntelligence,

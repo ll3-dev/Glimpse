@@ -1,14 +1,9 @@
 import { View, TouchableOpacity } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { Effect } from "effect";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Settings } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import {
-  getAllKnowledgeItems,
-} from "@/src/features/library";
 import {
   EmptyLibraryState,
   KnowledgeItemCard,
@@ -18,7 +13,7 @@ import {
   filterKnowledgeItems,
   parseQueryToKeyword,
 } from "@/src/features/search";
-import { appError, isFailure, tryPromise } from "@/src/lib/effect-result";
+import { useKnowledgeItemsQuery } from "@/src/hooks";
 import { ScreenHeader } from "@/src/ui/primitives";
 
 export default function LibraryScreen() {
@@ -26,22 +21,7 @@ export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const { data: items } = useQuery({
-    queryKey: ["knowledgeItems"],
-    queryFn: () =>
-      Effect.runPromise(
-        Effect.gen(function* () {
-          const result = yield* tryPromise(
-            () => getAllKnowledgeItems(),
-            (error) => appError("DATABASE_ERROR", "Failed to load knowledge items", error),
-          );
-          if (isFailure(result)) {
-            throw new Error(result.error.message);
-          }
-          return result.data;
-        }),
-      ),
-  });
+  const { data: items } = useKnowledgeItemsQuery();
 
   const filteredItems = useMemo(() => {
     if (!items) return [];

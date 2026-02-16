@@ -7,6 +7,12 @@
  */
 
 import { Effect } from 'effect';
+import {
+  createAppleIntelligenceStore,
+  getAppleIntelligenceEnabled,
+  setAppleIntelligenceEnabledValue,
+  useAppleIntelligenceStoreValue,
+} from '@/src/stores/settings/appleIntelligence.store';
 
 /**
  * Minimum OS versions supporting Apple Intelligence
@@ -90,7 +96,7 @@ function compareVersions(a: string, b: string): number {
 }
 
 export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps = defaultDeps) {
-  let appleIntelligenceEnabled = false;
+  const appleIntelligenceStore = createAppleIntelligenceStore();
 
   /**
    * Checks if Apple Intelligence is available on the current platform.
@@ -133,12 +139,27 @@ export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps 
    */
   function getAppleIntelligenceConfig(): AppleIntelligenceConfig {
     const { available, reason } = checkAppleIntelligenceAvailability();
+    const enabled = getAppleIntelligenceEnabled(appleIntelligenceStore);
 
     return {
-      enabled: available && appleIntelligenceEnabled,
+      enabled: available && enabled,
       isAvailable: available,
       unavailableReason: reason,
     };
+  }
+
+  /**
+   * React hook to subscribe Apple Intelligence config updates.
+   */
+  function useAppleIntelligenceConfig(): AppleIntelligenceConfig {
+    return useAppleIntelligenceStoreValue(appleIntelligenceStore, (state) => {
+      const { available, reason } = checkAppleIntelligenceAvailability();
+      return {
+        enabled: available && state.enabled,
+        isAvailable: available,
+        unavailableReason: reason,
+      };
+    });
   }
 
   /**
@@ -148,7 +169,7 @@ export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps 
    */
   function isAppleIntelligenceEnabled(): boolean {
     const { available } = checkAppleIntelligenceAvailability();
-    return available && appleIntelligenceEnabled;
+    return available && getAppleIntelligenceEnabled(appleIntelligenceStore);
   }
 
   /**
@@ -162,7 +183,7 @@ export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps 
       return false;
     }
 
-    appleIntelligenceEnabled = true;
+    setAppleIntelligenceEnabledValue(appleIntelligenceStore, true);
     return true;
   }
 
@@ -170,7 +191,7 @@ export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps 
    * Disables Apple Intelligence.
    */
   function disableAppleIntelligence(): void {
-    appleIntelligenceEnabled = false;
+    setAppleIntelligenceEnabledValue(appleIntelligenceStore, false);
   }
 
   /**
@@ -203,6 +224,7 @@ export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps 
   return {
     checkAppleIntelligenceAvailability,
     getAppleIntelligenceConfig,
+    useAppleIntelligenceConfig,
     isAppleIntelligenceEnabled,
     enableAppleIntelligence,
     disableAppleIntelligence,
@@ -217,6 +239,8 @@ export const checkAppleIntelligenceAvailability =
   appleIntelligenceToggle.checkAppleIntelligenceAvailability;
 export const getAppleIntelligenceConfig =
   appleIntelligenceToggle.getAppleIntelligenceConfig;
+export const useAppleIntelligenceConfig =
+  appleIntelligenceToggle.useAppleIntelligenceConfig;
 export const isAppleIntelligenceEnabled =
   appleIntelligenceToggle.isAppleIntelligenceEnabled;
 export const enableAppleIntelligence =

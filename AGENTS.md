@@ -51,6 +51,12 @@ The sync test will fail if schema and constants diverge, preventing runtime data
 - Follow existing naming and file organization patterns in the nearest directory.
 - Do not introduce unrelated formatting or large-scale renames.
 
+## File complexity guideline
+
+- When editing any code file, if it is over ~200 lines, pause and assess whether responsibilities should be split.
+- Prefer extracting reusable UI to `src/components/<feature>` and stateful logic to hooks/utilities when it improves maintainability.
+- Mention the split assessment briefly in the final handoff when a touched file is over this threshold.
+
 ## UI architecture (Atomic Design)
 
 - Treat `src/ui` as atomic layer only (atoms/primitives/icons/tokens).

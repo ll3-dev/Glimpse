@@ -5,21 +5,18 @@
  * This is a stub implementation - keys are stored in memory for now.
  * Future: Migrate to secure storage (Keychain/EncryptedStorage).
  */
+import {
+  BYOKProvider,
+  type BYOKProviderType,
+  type BYOKConfig,
+  getBYOKStoreConfig,
+  useBYOKStoreConfig,
+  updateBYOKStoreConfig,
+  resetBYOKStoreConfig,
+} from '@/src/stores/settings/byok.store';
 
-/**
- * Supported LLM providers for BYOK
- */
-export const BYOKProvider = ['openai', 'anthropic', 'google'] as const;
-export type BYOKProviderType = (typeof BYOKProvider)[number];
-
-/**
- * BYOK configuration
- */
-export interface BYOKConfig {
-  enabled: boolean;
-  provider: BYOKProviderType | null;
-  apiKey: string | null;
-}
+export { BYOKProvider };
+export type { BYOKProviderType, BYOKConfig };
 
 /**
  * Validation result
@@ -28,13 +25,6 @@ export interface ValidationResult {
   valid: boolean;
   error?: string;
 }
-
-// In-memory storage (stub - replace with secure storage later)
-let byokConfig: BYOKConfig = {
-  enabled: false,
-  provider: null,
-  apiKey: null,
-};
 
 /**
  * API key prefix patterns for validation
@@ -96,7 +86,29 @@ export function validateApiKey(key: string, provider: BYOKProviderType): Validat
  * @returns Current BYOK config
  */
 export function getBYOKConfig(): BYOKConfig {
-  return { ...byokConfig };
+  return { ...getBYOKStoreConfig() };
+}
+
+/**
+ * React hook for selecting BYOK configuration from the shared store.
+ *
+ * @param selector - Selector over BYOK config
+ * @returns Selected value
+ */
+export function useBYOKConfig<T>(selector: (config: BYOKConfig) => T): T {
+  return useBYOKStoreConfig(selector);
+}
+
+export function useBYOKReady(): boolean {
+  return useBYOKStoreConfig(
+    (config) => config.enabled && config.apiKey !== null && config.provider !== null,
+  );
+}
+
+export function useBYOKCredentialsConfigured(): boolean {
+  return useBYOKStoreConfig(
+    (config) => config.apiKey !== null && config.provider !== null,
+  );
 }
 
 /**
@@ -105,7 +117,18 @@ export function getBYOKConfig(): BYOKConfig {
  * @returns true if BYOK is ready to use
  */
 export function isBYOKReady(): boolean {
-  return byokConfig.enabled && byokConfig.apiKey !== null && byokConfig.provider !== null;
+  const config = getBYOKStoreConfig();
+  return config.enabled && config.apiKey !== null && config.provider !== null;
+}
+
+/**
+ * Checks if BYOK credentials are configured (regardless of enabled state).
+ *
+ * @returns true if provider and key are present
+ */
+export function hasBYOKCredentials(): boolean {
+  const config = getBYOKStoreConfig();
+  return config.apiKey !== null && config.provider !== null;
 }
 
 /**
@@ -114,14 +137,16 @@ export function isBYOKReady(): boolean {
  * @returns Validation result (fails if no key is set)
  */
 export function enableBYOK(): ValidationResult {
-  if (!byokConfig.apiKey) {
+  const config = getBYOKStoreConfig();
+
+  if (!config.apiKey) {
     return { valid: false, error: 'API 키를 먼저 설정해주세요' };
   }
-  if (!byokConfig.provider) {
+  if (!config.provider) {
     return { valid: false, error: 'Provider를 선택해주세요' };
   }
 
-  byokConfig = { ...byokConfig, enabled: true };
+  updateBYOKStoreConfig((previous) => ({ ...previous, enabled: true }));
   return { valid: true };
 }
 
@@ -129,7 +154,16 @@ export function enableBYOK(): ValidationResult {
  * Disables BYOK.
  */
 export function disableBYOK(): void {
-  byokConfig = { ...byokConfig, enabled: false };
+  updateBYOKStoreConfig((previous) => ({ ...previous, enabled: false }));
+}
+
+/**
+ * Sets only the selected provider.
+ *
+ * @param provider - Selected LLM provider
+ */
+export function setProvider(provider: BYOKProviderType | null): void {
+  updateBYOKStoreConfig((previous) => ({ ...previous, provider }));
 }
 
 /**
@@ -146,11 +180,11 @@ export function setApiKey(provider: BYOKProviderType, apiKey: string): Validatio
     return validation;
   }
 
-  byokConfig = {
-    ...byokConfig,
+  updateBYOKStoreConfig((previous) => ({
+    ...previous,
     provider,
     apiKey: trimmedKey,
-  };
+  }));
 
   return { valid: true };
 }
@@ -159,11 +193,7 @@ export function setApiKey(provider: BYOKProviderType, apiKey: string): Validatio
  * Clears the stored API key.
  */
 export function clearApiKey(): void {
-  byokConfig = {
-    enabled: false,
-    provider: null,
-    apiKey: null,
-  };
+  resetBYOKStoreConfig();
 }
 
 /**
@@ -173,7 +203,7 @@ export function clearApiKey(): void {
  * @returns API key or null if not set
  */
 export function getApiKey(): string | null {
-  return byokConfig.apiKey;
+  return getBYOKStoreConfig().apiKey;
 }
 
 /**
@@ -182,5 +212,5 @@ export function getApiKey(): string | null {
  * @returns Provider type or null
  */
 export function getProvider(): BYOKProviderType | null {
-  return byokConfig.provider;
+  return getBYOKStoreConfig().provider;
 }
