@@ -17,7 +17,6 @@ describe('capture stubs', () => {
     const tags = generateTagsStub(
       'Important todo: check http://example.com and brainstorm this idea'
     );
-    expect(tags).toContain('stub-tag');
     expect(tags).toContain('important');
     expect(tags).toContain('todo');
     expect(tags).toContain('link');

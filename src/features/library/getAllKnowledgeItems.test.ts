@@ -30,6 +30,7 @@ describe('getAllKnowledgeItems', () => {
 
   test('returns items in success result', async () => {
     const items = [{ id: '1' }, { id: '2' }] as any;
+    const orderExpression = { type: 'desc', column: knowledgeItems.createdAt };
     const query = {
       from: mock(),
       orderBy: mock(),
@@ -37,6 +38,7 @@ describe('getAllKnowledgeItems', () => {
 
     query.from.mockReturnValue(query);
     query.orderBy.mockResolvedValue(items);
+    descMock.mockReturnValue(orderExpression);
     db.select.mockReturnValue(query);
 
     const result = await getAllKnowledgeItems();
@@ -46,7 +48,9 @@ describe('getAllKnowledgeItems', () => {
       expect(result.data).toEqual(items);
     }
     expect(descMock).toHaveBeenCalledTimes(1);
+    expect(descMock).toHaveBeenCalledWith(knowledgeItems.createdAt);
     expect(query.orderBy).toHaveBeenCalledTimes(1);
+    expect(query.orderBy).toHaveBeenCalledWith(orderExpression);
   });
 
   test('returns DATABASE_ERROR when query throws', async () => {

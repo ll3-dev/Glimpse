@@ -90,19 +90,31 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps = defaultDep
         continue;
       }
 
+      const isCollision = isIdCollisionError(insertResult.error.details);
       const isFinalAttempt = attempt === MAX_ID_COLLISION_RETRIES;
-      if (!isIdCollisionError(insertResult.error.details) || isFinalAttempt) {
+
+      if (isCollision && !isFinalAttempt) {
+        continue;
+      }
+
+      if (isCollision && isFinalAttempt) {
+        const exhaustedError = appError(
+          'DATABASE_ERROR',
+          'Failed to save knowledge item after ID collision retries'
+        );
+        deps.logger.error('saveKnowledgeItem failed', exhaustedError, { inputType: input.type });
+        return { success: false, error: exhaustedError };
+      }
+
+      if (!isCollision) {
         deps.logger.error('saveKnowledgeItem failed', insertResult.error, { inputType: input.type });
         return insertResult;
       }
     }
 
-    const exhaustedError = appError(
-      'DATABASE_ERROR',
-      'Failed to save knowledge item after ID collision retries'
-    );
-    deps.logger.error('saveKnowledgeItem failed', exhaustedError, { inputType: input.type });
-    return { success: false, error: exhaustedError };
+    const unexpectedError = appError('UNKNOWN_ERROR', 'Unexpected save flow');
+    deps.logger.error('saveKnowledgeItem failed', unexpectedError, { inputType: input.type });
+    return { success: false, error: unexpectedError };
   };
 }
 
