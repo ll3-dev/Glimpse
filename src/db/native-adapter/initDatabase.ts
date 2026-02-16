@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 import { NitroSQLite } from 'react-native-nitro-sqlite';
 import {
+  CREATE_INDEXES_SQL,
   CREATE_FEEDBACK_EVENTS_TABLE_SQL,
   CREATE_KNOWLEDGE_ITEMS_TABLE_SQL,
   CREATE_RECOMMENDATIONS_TABLE_SQL,
@@ -29,6 +30,9 @@ export function initDatabase(): Promise<void> {
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_FEEDBACK_EVENTS_TABLE_SQL)
       );
+      for (const createIndexSql of CREATE_INDEXES_SQL) {
+        yield* Effect.promise(() => NitroSQLite.executeAsync(DB_NAME, createIndexSql));
+      }
 
       yield* Effect.promise(() => ensureKnowledgeItemsSchema());
       yield* Effect.promise(() => sanitizeKnowledgeItemsRows());
