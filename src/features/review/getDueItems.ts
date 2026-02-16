@@ -11,7 +11,9 @@ import { Effect } from 'effect';
 import { logger } from '@/src/utils/logger';
 import {
   appError,
+  isFailure,
   type AppError,
+  runEffectSuccess,
   tryPromise,
 } from '@/src/lib/effect-result';
 
@@ -28,11 +30,18 @@ export interface GetDueItemsOptions {
 /**
  * Result type for getDueItems
  */
-export interface GetDueItemsResult {
+export interface GetDueItemsSuccessResult {
   success: true;
   items: KnowledgeItem[];
   count: number;
 }
+
+export interface GetDueItemsFailureResult {
+  success: false;
+  error: AppError;
+}
+
+export type GetDueItemsResult = GetDueItemsSuccessResult | GetDueItemsFailureResult;
 
 export interface GetDueItemsDeps {
   db: typeof db;
@@ -102,19 +111,22 @@ export function createGetDueItems(deps: GetDueItemsDeps = defaultDeps) {
         count: items.length,
       };
     }).pipe(
-      Effect.catchAll((error) =>
+      Effect.tapError((error) =>
         Effect.sync(() => {
           deps.logger.error('Failed to get due items', error);
-          return {
-            success: true as const,
-            items: [],
-            count: 0,
-          };
         })
       )
     );
 
-    return Effect.runPromise(program);
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+
+    return result;
   };
 }
 

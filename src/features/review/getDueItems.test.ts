@@ -87,11 +87,14 @@ describe('getDueItems', () => {
 
     const result = await getDueItems({ limit: 1, now: 999 });
 
-    expect(result.count).toBe(1);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.count).toBe(1);
+    }
     expect(query.limit).toHaveBeenCalledWith(1);
   });
 
-  test('returns empty result when query fails', async () => {
+  test('returns failure result when query fails', async () => {
     const query = createAwaitableQuery([], true);
     db.select.mockReturnValue({
       from: mock(() => query),
@@ -99,11 +102,10 @@ describe('getDueItems', () => {
 
     const result = await getDueItems();
 
-    expect(result).toEqual({
-      success: true,
-      items: [],
-      count: 0,
-    });
+    expect(result.success).toBe(false);
+    if (result.success === false) {
+      expect(result.error.code).toBe('DATABASE_ERROR');
+    }
     expect(logger.error).toHaveBeenCalledTimes(1);
   });
 });
