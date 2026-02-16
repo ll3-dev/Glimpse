@@ -1,4 +1,6 @@
 import { ScrollView, TextInput, View, Text, Image as RNImage, Linking, Pressable } from 'react-native';
+import { Effect } from 'effect';
+import { appError, tryPromise } from '@/src/lib/effect-result';
 import { Link, FileText, Image } from '@/src/ui/icons';
 
 export type SharedContent = {
@@ -28,12 +30,24 @@ export function ShareForm({
     sharedContent.text || sharedContent.url || sharedContent.imageUri;
 
   const handleOpenUrl = async () => {
-    if (sharedContent.url) {
-      const supported = await Linking.canOpenURL(sharedContent.url);
-      if (supported) {
-        await Linking.openURL(sharedContent.url);
+    if (!sharedContent.url) return;
+
+    const program = Effect.gen(function* () {
+      const supported = yield* tryPromise(
+        () => Linking.canOpenURL(sharedContent.url as string),
+        (error) => appError('UNKNOWN_ERROR', 'Failed to check URL support', error)
+      );
+      if (!supported) {
+        return;
       }
-    }
+
+      yield* tryPromise(
+        () => Linking.openURL(sharedContent.url as string),
+        (error) => appError('UNKNOWN_ERROR', 'Failed to open URL', error)
+      );
+    });
+
+    await Effect.runPromise(program);
   };
 
   const getContentTypeLabel = () => {

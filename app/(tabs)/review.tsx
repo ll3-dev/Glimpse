@@ -8,9 +8,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, RefreshControl, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Effect } from 'effect';
 import { getDueItems, markAsReviewed, postponeReview, type KnowledgeItem } from '@/src/features/review';
 import { ReviewItemCard } from '@/src/components/review';
 import { logger } from '@/src/utils/logger';
+import { appError, tryPromise } from '@/src/lib/effect-result';
 import { ScreenHeader } from '@/src/ui/primitives';
 
 export default function ReviewScreen() {
@@ -20,25 +22,43 @@ export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
 
   const loadDueItems = useCallback(async () => {
-    try {
-      const result = await getDueItems();
-      if (result.success) {
-        setItems(result.items);
-      } else {
-        logger.error('ReviewScreen.loadDueItems failed');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('ReviewScreen.loadDueItems error', { message: errorMessage });
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+    const program = Effect.gen(function* () {
+      const result = yield* tryPromise(
+        () => getDueItems(),
+        (error) => appError('UNKNOWN_ERROR', 'ReviewScreen.loadDueItems failed', error)
+      );
+      setItems(result.items);
+    }).pipe(
+      Effect.catchAll((error) =>
+        Effect.sync(() => {
+          logger.error('ReviewScreen.loadDueItems error', error);
+        })
+      ),
+      Effect.ensuring(
+        Effect.sync(() => {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        })
+      )
+    );
+    await Effect.runPromise(program);
   }, []);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await loadDueItems();
+    await Effect.runPromise(
+      tryPromise(
+        () => loadDueItems(),
+        (error) => appError('UNKNOWN_ERROR', 'ReviewScreen.handleRefresh failed', error)
+      ).pipe(
+        Effect.catchAll((error) =>
+          Effect.sync(() => {
+            logger.error('ReviewScreen.handleRefresh failed', error);
+            setIsRefreshing(false);
+          })
+        )
+      )
+    );
   }, [loadDueItems]);
 
   useEffect(() => {
@@ -46,23 +66,55 @@ export default function ReviewScreen() {
   }, [loadDueItems]);
 
   const handleComplete = useCallback(async (itemId: string) => {
-    const result = await markAsReviewed(itemId);
-    if (result.success) {
-      // Remove completed item from list
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-    } else {
-      logger.error('Failed to mark item as reviewed', { itemId });
-    }
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const result = yield* tryPromise(
+          () => markAsReviewed(itemId),
+          (error) => appError('UNKNOWN_ERROR', 'ReviewScreen.handleComplete failed', error)
+        );
+        if (result.success === false) {
+          logger.error('Failed to mark item as reviewed', {
+            itemId,
+            code: result.error.code,
+            message: result.error.message,
+          });
+          return;
+        }
+        setItems((prev) => prev.filter((item) => item.id !== itemId));
+      }).pipe(
+        Effect.catchAll((error) =>
+          Effect.sync(() => {
+            logger.error('ReviewScreen.handleComplete failed', error);
+          })
+        )
+      )
+    );
   }, []);
 
   const handlePostpone = useCallback(async (itemId: string) => {
-    const result = await postponeReview(itemId);
-    if (result.success) {
-      // Remove postponed item from list
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-    } else {
-      logger.error('Failed to postpone review', { itemId });
-    }
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const result = yield* tryPromise(
+          () => postponeReview(itemId),
+          (error) => appError('UNKNOWN_ERROR', 'ReviewScreen.handlePostpone failed', error)
+        );
+        if (result.success === false) {
+          logger.error('Failed to postpone review', {
+            itemId,
+            code: result.error.code,
+            message: result.error.message,
+          });
+          return;
+        }
+        setItems((prev) => prev.filter((item) => item.id !== itemId));
+      }).pipe(
+        Effect.catchAll((error) =>
+          Effect.sync(() => {
+            logger.error('ReviewScreen.handlePostpone failed', error);
+          })
+        )
+      )
+    );
   }, []);
 
   return (
