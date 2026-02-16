@@ -26,16 +26,16 @@ MVP v2(망각곡선, 빈도 자동조절, BYOK/Apple Intelligence)는 기술 난
 - 유료 결제/플랜 정책 연동 제외.
 
 ## 작업 단위 목록 (각 10분 내외)
-1. `2026-02-14_mvp2-01-review-state-fields.md` - 복습 상태 필드 확장
-2. `2026-02-14_mvp2-02-initial-review-schedule.md` - 최초 복습 스케줄 계산
-3. `2026-02-14_mvp2-03-due-items-query.md` - 복습 도래 항목 조회
-4. `2026-02-14_mvp2-04-review-queue-ui.md` - 다시 보기 큐 UI
-5. `2026-02-14_mvp2-05-interval-adjustment-rule.md` - 반응 기반 간격 조절
-6. `2026-02-14_mvp2-06-recommendation-frequency-control.md` - 추천 빈도 자동 조절
-7. `2026-02-14_mvp2-07-byok-settings-stub.md` - BYOK 설정 스텁
-8. `2026-02-14_mvp2-08-apple-intelligence-toggle-stub.md` - Apple Intelligence 토글 스텁
+1. `01-review-state-fields.md` - 복습 상태 필드 확장
+2. `02-initial-review-schedule.md` - 최초 복습 스케줄 계산
+3. `03-due-items-query.md` - 복습 도래 항목 조회
+4. `04-review-queue-ui.md` - 다시 보기 큐 UI
+5. `05-interval-adjustment-rule.md` - 반응 기반 간격 조절
+6. `06-recommendation-frequency-control.md` - 추천 빈도 자동 조절
+7. `07-byok-settings-stub.md` - BYOK 설정 스텁
+8. `08-apple-intelligence-toggle-stub.md` - Apple Intelligence 토글 스텁
 
 ## 참고 자료
-- 비전/MVP 원문: `/Users/loopy/dev/ll3/Glimpse/thoughts/shared/inputs/glimpse-vision-mvp-roadmap.md`
-- v1 반응 수집: `/Users/loopy/dev/ll3/Glimpse/thoughts/shared/specs/2026-02-14_mvp1-08-feedback-event-logging.md`
-- 기술 기준: `/Users/loopy/dev/ll3/Glimpse/package.json`
+- 비전/MVP 원문: `../../inputs/glimpse-vision-mvp-roadmap.md`
+- v1 반응 수집: `../mvp1/08-feedback-event-logging.md`
+- 기술 기준: `../../../../package.json`

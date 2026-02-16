@@ -26,16 +26,16 @@ MVP v1(입력 채널 확장 + 주간 연결 추천 + 반응 수집)은 기능 �
 - 추천 품질 고도화(LLM ranker, 벡터 검색)는 제외.
 
 ## 작업 단위 목록 (각 10분 내외)
-1. `2026-02-14_mvp1-01-collect-channel-switch.md` - 수집 채널 전환 UI(하이라이트/스크린샷/공유)
-2. `2026-02-14_mvp1-02-highlight-capture-form.md` - 하이라이트 입력 폼
-3. `2026-02-14_mvp1-03-screenshot-capture-stub.md` - 스크린샷 입력 스텁
-4. `2026-02-14_mvp1-04-share-intent-ingest-stub.md` - 공유 시트 유입 스텁
-5. `2026-02-14_mvp1-05-weekly-digest-query.md` - 최근 7일 데이터 조회
-6. `2026-02-14_mvp1-06-link-recommendation-rule-stub.md` - 연결 추천 규칙 스텁
-7. `2026-02-14_mvp1-07-digest-ui-accept-ignore.md` - 주간 다이제스트 UI + 수락/무시 액션
-8. `2026-02-14_mvp1-08-feedback-event-logging.md` - 반응 이벤트 저장
+1. `01-collect-channel-switch.md` - 수집 채널 전환 UI(하이라이트/스크린샷/공유)
+2. `02-highlight-capture-form.md` - 하이라이트 입력 폼
+3. `03-screenshot-capture-stub.md` - 스크린샷 입력 스텁
+4. `04-share-intent-ingest-stub.md` - 공유 시트 유입 스텁
+5. `05-weekly-digest-query.md` - 최근 7일 데이터 조회
+6. `06-link-recommendation-rule-stub.md` - 연결 추천 규칙 스텁
+7. `07-digest-ui-accept-ignore.md` - 주간 다이제스트 UI + 수락/무시 액션
+8. `08-feedback-event-logging.md` - 반응 이벤트 저장
 
 ## 참고 자료
-- 비전/MVP 원문: `/Users/loopy/dev/ll3/Glimpse/thoughts/shared/inputs/glimpse-vision-mvp-roadmap.md`
-- 기존 v0 분할: `/Users/loopy/dev/ll3/Glimpse/thoughts/shared/specs/2026-02-14_glimpse-mvp0-split-spec-index.md`
-- 기술 기준: `/Users/loopy/dev/ll3/Glimpse/package.json`
+- 비전/MVP 원문: `../../inputs/glimpse-vision-mvp-roadmap.md`
+- 기존 v0 분할: `../mvp0/index.md`
+- 기술 기준: `../../../../package.json`
