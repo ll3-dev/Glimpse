@@ -29,7 +29,10 @@ export function useDueItemsQuery(options?: GetDueItemsOptions): UseQueryResult<D
     queryKey: queryKeys.review.dueItems(options),
     queryFn: async (): Promise<DueItemsData> => {
       const result = await getDueItems(options);
-      // getDueItems always returns success: true (errors are caught internally)
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+
       return {
         items: result.items,
         count: result.count,
