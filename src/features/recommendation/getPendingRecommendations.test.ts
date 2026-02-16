@@ -86,7 +86,7 @@ describe('getPendingRecommendations', () => {
     const result = await getPendingRecommendations();
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
   });

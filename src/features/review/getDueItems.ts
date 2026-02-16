@@ -6,8 +6,14 @@
  */
 
 import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
-import { lte, asc, isNotNull } from 'drizzle-orm';
+import { lte, asc, and, isNotNull } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { logger } from '@/src/utils/logger';
+import {
+  appError,
+  type AppError,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 /**
  * Options for getting due items
@@ -33,6 +39,7 @@ export interface GetDueItemsDeps {
   knowledgeItems: typeof knowledgeItems;
   lte: typeof lte;
   asc: typeof asc;
+  and: typeof and;
   isNotNull: typeof isNotNull;
   logger: Pick<typeof logger, 'error'>;
 }
@@ -42,6 +49,7 @@ const defaultDeps: GetDueItemsDeps = {
   knowledgeItems,
   lte,
   asc,
+  and,
   isNotNull,
   logger,
 };
@@ -67,38 +75,46 @@ export function createGetDueItems(deps: GetDueItemsDeps = defaultDeps) {
   ): Promise<GetDueItemsResult> {
     const { limit, now = Date.now() } = options;
 
-    try {
-      // Build query - items with nextReviewAt that is not null and <= now
+    const program = Effect.gen(function* () {
       let query = deps.db
         .select()
         .from(deps.knowledgeItems)
         .where(
-          deps.isNotNull(deps.knowledgeItems.nextReviewAt),
-          deps.lte(deps.knowledgeItems.nextReviewAt, now)
+          deps.and(
+            deps.isNotNull(deps.knowledgeItems.nextReviewAt),
+            deps.lte(deps.knowledgeItems.nextReviewAt, now)
+          )
         )
         .orderBy(deps.asc(deps.knowledgeItems.nextReviewAt));
 
-      // Apply limit if specified
       if (limit !== undefined && limit > 0) {
         query = query.limit(limit) as typeof query;
       }
 
-      const items = await query;
+      const items = (yield* tryPromise(
+        () => query,
+        (error): AppError => appError('DATABASE_ERROR', 'Failed to get due items', error)
+      )) as KnowledgeItem[];
 
       return {
-        success: true,
+        success: true as const,
         items,
         count: items.length,
       };
-    } catch (error) {
-      deps.logger.error('Failed to get due items', error);
-      // Return empty result on error instead of throwing
-      return {
-        success: true,
-        items: [],
-        count: 0,
-      };
-    }
+    }).pipe(
+      Effect.catchAll((error) =>
+        Effect.sync(() => {
+          deps.logger.error('Failed to get due items', error);
+          return {
+            success: true as const,
+            items: [],
+            count: 0,
+          };
+        })
+      )
+    );
+
+    return Effect.runPromise(program);
   };
 }
 

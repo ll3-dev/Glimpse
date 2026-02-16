@@ -65,7 +65,7 @@ describe('respondToRecommendation', () => {
     const result = await respondToRecommendation('rec-4', 'accept');
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
   });

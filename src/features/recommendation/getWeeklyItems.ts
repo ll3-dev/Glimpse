@@ -5,25 +5,22 @@
  */
 
 import { desc, gte } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
+import {
+  appError,
+  type AppError,
+  type FailureResult,
+  type Result,
+  runEffectResult,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-export interface WeeklyItemsSuccessResult {
-  success: true;
-  data: KnowledgeItem[];
-}
-
-export interface WeeklyItemsFailureResult {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-}
-
-export type WeeklyItemsResult = WeeklyItemsSuccessResult | WeeklyItemsFailureResult;
+export type WeeklyItemsSuccessResult = { success: true; data: KnowledgeItem[] };
+export type WeeklyItemsFailureResult = FailureResult;
+export type WeeklyItemsResult = Result<KnowledgeItem[]>;
 
 export interface GetWeeklyItemsDeps {
   db: typeof db;
@@ -45,29 +42,19 @@ const defaultDeps: GetWeeklyItemsDeps = {
  */
 export function createGetWeeklyItems(deps: GetWeeklyItemsDeps = defaultDeps) {
   return async function getWeeklyItems(): Promise<WeeklyItemsResult> {
-    try {
-      const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
+    const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
+    const queryEffect = tryPromise(
+      () =>
+        deps.db
+          .select()
+          .from(deps.knowledgeItems)
+          .where(deps.gte(deps.knowledgeItems.createdAt, sevenDaysAgo))
+          .orderBy(deps.desc(deps.knowledgeItems.createdAt)),
+      (error): AppError =>
+        appError('DATABASE_ERROR', 'Failed to retrieve weekly items', error)
+    );
 
-      const items = await deps.db
-        .select()
-        .from(deps.knowledgeItems)
-        .where(deps.gte(deps.knowledgeItems.createdAt, sevenDaysAgo))
-        .orderBy(deps.desc(deps.knowledgeItems.createdAt));
-
-      return {
-        success: true,
-        data: items,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to retrieve weekly items',
-          details: error instanceof Error ? error.message : error,
-        },
-      };
-    }
+    return runEffectResult(queryEffect.pipe(Effect.map((items) => items as KnowledgeItem[])));
   };
 }
 

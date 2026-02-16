@@ -6,8 +6,16 @@
  */
 
 import { nanoid } from 'nanoid';
+import { Effect } from 'effect';
 import { db, recommendations, type KnowledgeItem, type NewRecommendation } from '@/src/db';
 import { getWeeklyItems } from './getWeeklyItems';
+import {
+  appError,
+  isFailure,
+  type AppError,
+  runEffectSuccess,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 export interface GeneratedRecommendation {
   itemA: KnowledgeItem;
@@ -22,11 +30,7 @@ export interface GenerateResult {
 
 export interface GenerateFailureResult {
   success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
+  error: AppError;
 }
 
 export type GenerateRecommendationsResult = GenerateResult | GenerateFailureResult;
@@ -76,11 +80,14 @@ function calculateTagOverlap(a: KnowledgeItem, b: KnowledgeItem): number {
  */
 export function createGenerateRecommendations(deps: GenerateRecommendationsDeps = defaultGenerateDeps) {
   return async function generateRecommendations(): Promise<GenerateRecommendationsResult> {
-    try {
-      // Get items from last 7 days
-      const weeklyResult = await deps.getWeeklyItems();
-      if (!weeklyResult.success) {
-        return weeklyResult;
+    const program = Effect.gen(function* () {
+      const weeklyResult = yield* tryPromise(
+        () => deps.getWeeklyItems(),
+        (error): AppError =>
+          appError('GENERATION_ERROR', 'Failed to generate recommendations', error)
+      );
+      if (weeklyResult.success === false) {
+        return yield* Effect.fail(weeklyResult.error);
       }
 
       const items = weeklyResult.data;
@@ -88,15 +95,19 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps 
       // Need at least 2 items to make recommendations
       if (items.length < 2) {
         return {
-          success: true,
+          success: true as const,
           data: [],
         };
       }
 
-      // Get existing recommendations to avoid duplicates
-      const existingRecommendations = await deps.db
-        .select()
-        .from(deps.recommendations);
+      const existingRecommendations = (yield* tryPromise(
+        () =>
+          deps.db
+            .select()
+            .from(deps.recommendations),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to generate recommendations', error)
+      )) as { itemA_id: string; itemB_id: string }[];
 
       const existingPairs = new Set(
         existingRecommendations.map((r) => `${r.itemA_id}-${r.itemB_id}`)
@@ -133,19 +144,20 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps 
       // Sort by overlap count (descending) and take top recommendations
       // For MVP, we'll just return all candidates
       return {
-        success: true,
+        success: true as const,
         data: candidates,
       };
-    } catch (error) {
+    });
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'GENERATION_ERROR',
-          message: 'Failed to generate recommendations',
-          details: error instanceof Error ? error.message : error,
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 
@@ -155,8 +167,8 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps 
 export function createSaveRecommendations(deps: SaveRecommendationsDeps = defaultSaveDeps) {
   return async function saveRecommendations(
     recommendationsList: GeneratedRecommendation[]
-  ): Promise<{ success: true } | { success: false; error: string }> {
-    try {
+  ): Promise<{ success: true } | { success: false; error: AppError }> {
+    const program = Effect.gen(function* () {
       const now = Date.now();
 
       const newRecommendations: NewRecommendation[] = recommendationsList.map((r) => ({
@@ -170,16 +182,25 @@ export function createSaveRecommendations(deps: SaveRecommendationsDeps = defaul
       }));
 
       if (newRecommendations.length > 0) {
-        await deps.db.insert(deps.recommendations).values(newRecommendations);
+        yield* tryPromise(
+          () => deps.db.insert(deps.recommendations).values(newRecommendations),
+          (error): AppError =>
+            appError('DATABASE_ERROR', 'Failed to save recommendations', error)
+        );
       }
 
-      return { success: true };
-    } catch (error) {
+      return { success: true as const };
+    });
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 

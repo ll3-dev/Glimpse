@@ -6,32 +6,23 @@
  */
 
 import { desc } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
+import {
+  appError,
+  type AppError,
+  type FailureResult,
+  type Result,
+  runEffectResult,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 /**
  * Result type for successful retrieval
  */
-export interface GetItemsSuccessResult {
-  success: true;
-  data: KnowledgeItem[];
-}
-
-/**
- * Result type for failed retrieval
- */
-export interface GetItemsFailureResult {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-}
-
-/**
- * Union result type for get operation
- */
-export type GetItemsResult = GetItemsSuccessResult | GetItemsFailureResult;
+export type GetItemsSuccessResult = { success: true; data: KnowledgeItem[] };
+export type GetItemsFailureResult = FailureResult;
+export type GetItemsResult = Result<KnowledgeItem[]>;
 
 export interface GetAllKnowledgeItemsDeps {
   db: typeof db;
@@ -67,29 +58,17 @@ const defaultDeps: GetAllKnowledgeItemsDeps = {
  */
 export function createGetAllKnowledgeItems(deps: GetAllKnowledgeItemsDeps = defaultDeps) {
   return async function getAllKnowledgeItems(): Promise<GetItemsResult> {
-    try {
-      // Query all items, ordered by creation date (newest first)
-      const items = await deps.db
-        .select()
-        .from(deps.knowledgeItems)
-        .orderBy(deps.desc(deps.knowledgeItems.createdAt));
+    const queryEffect = tryPromise(
+      () =>
+        deps.db
+          .select()
+          .from(deps.knowledgeItems)
+          .orderBy(deps.desc(deps.knowledgeItems.createdAt)),
+      (error): AppError =>
+        appError('DATABASE_ERROR', 'Failed to retrieve knowledge items', error)
+    );
 
-      // Return success with items
-      return {
-        success: true,
-        data: items,
-      };
-    } catch (error) {
-      // Handle database or unexpected errors
-      return {
-        success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to retrieve knowledge items',
-          details: error instanceof Error ? error.message : error,
-        },
-      };
-    }
+    return runEffectResult(queryEffect.pipe(Effect.map((items) => items as KnowledgeItem[])));
   };
 }
 

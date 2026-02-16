@@ -4,7 +4,7 @@ import {
   type SaveKnowledgeItemDeps,
 } from './saveKnowledgeItem';
 
-const insertValues = mock(async () => undefined);
+const insertValues = mock(async (_value: unknown) => undefined);
 const db = {
   insert: mock(() => ({
     values: insertValues,
@@ -50,7 +50,7 @@ describe('saveKnowledgeItem', () => {
     });
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('VALIDATION_ERROR');
     }
     expect(db.insert).not.toHaveBeenCalled();
@@ -63,7 +63,7 @@ describe('saveKnowledgeItem', () => {
     });
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.message).toBe('Invalid URL format');
     }
     expect(db.insert).not.toHaveBeenCalled();

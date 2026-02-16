@@ -33,7 +33,7 @@ describe('getWeeklyItems', () => {
   });
 
   test('returns recent items on success', async () => {
-    const items = [{ id: 'a' }, { id: 'b' }];
+    const items = [{ id: 'a' }, { id: 'b' }] as any;
     const query = {
       from: mock(),
       where: mock(),
@@ -68,7 +68,7 @@ describe('getWeeklyItems', () => {
     const result = await getWeeklyItems();
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
   });

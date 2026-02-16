@@ -5,8 +5,11 @@
  * Higher engagement = more frequent recommendations.
  */
 
-import { getRecentFeedbackEvents, type FeedbackActionType } from './logRecommendationFeedback';
+import type { FeedbackActionType } from '@/src/db';
+import { Effect } from 'effect';
+import { getRecentFeedbackEvents } from './logRecommendationFeedback';
 import { logger } from '@/src/utils/logger';
+import { appError, tryPromise } from '@/src/lib/effect-result';
 
 /**
  * Cadence levels (in milliseconds)
@@ -107,23 +110,25 @@ export function setCadence(cadence: number): void {
  * @returns The new cadence interval
  */
 export async function updateRecommendationCadence(): Promise<number> {
-  try {
-    // Get recent feedback events
-    const result = await getRecentFeedbackEvents(SAMPLE_SIZE);
+  const program = Effect.gen(function* () {
+    const result = yield* tryPromise(
+      () => getRecentFeedbackEvents(SAMPLE_SIZE),
+      (error) =>
+        appError('UNKNOWN_ERROR', 'Failed to get recent feedback for cadence update', error)
+    );
 
-    if (!result.success) {
-      logger.warn('Failed to get recent feedback for cadence update');
+    if (result.success === false) {
+      logger.warn('Failed to get recent feedback for cadence update', {
+        code: result.error.code,
+        message: result.error.message,
+      });
       return currentCadence;
     }
 
-    // Calculate response rate
     const responseRate = calculateResponseRate(result.data);
-
-    // Determine cadence level
     const level = determineCadenceLevel(responseRate);
     const newCadence = getCadenceInterval(level);
 
-    // Update if changed
     if (newCadence !== currentCadence) {
       setCadence(newCadence);
     }
@@ -135,10 +140,16 @@ export async function updateRecommendationCadence(): Promise<number> {
     });
 
     return newCadence;
-  } catch (error) {
-    logger.error('Failed to update recommendation cadence', error);
-    return currentCadence;
-  }
+  }).pipe(
+    Effect.catchAll((error) =>
+      Effect.sync(() => {
+        logger.error('Failed to update recommendation cadence', error);
+        return currentCadence;
+      })
+    )
+  );
+
+  return Effect.runPromise(program);
 }
 
 /**

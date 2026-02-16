@@ -7,6 +7,16 @@
 import { nanoid } from 'nanoid';
 import { db, feedbackEvents, type FeedbackEvent, type NewFeedbackEvent, type FeedbackActionType } from '@/src/db';
 import { desc } from 'drizzle-orm';
+import { Effect } from 'effect';
+import {
+  appError,
+  isFailure,
+  type AppError,
+  runEffectSuccess,
+  tryPromise,
+} from '@/src/lib/effect-result';
+
+export type { FeedbackActionType };
 
 export interface LogFeedbackResult {
   success: true;
@@ -15,11 +25,7 @@ export interface LogFeedbackResult {
 
 export interface LogFeedbackFailureResult {
   success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
+  error: AppError;
 }
 
 export type LogRecommendationFeedbackResult = LogFeedbackResult | LogFeedbackFailureResult;
@@ -31,11 +37,7 @@ export interface RecentFeedbackResult {
 
 export interface RecentFeedbackFailureResult {
   success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
+  error: AppError;
 }
 
 export type GetRecentFeedbackResult = RecentFeedbackResult | RecentFeedbackFailureResult;
@@ -62,7 +64,7 @@ export function createLogRecommendationFeedback(deps: RecommendationFeedbackDeps
     recommendationId: string,
     action: FeedbackActionType
   ): Promise<LogRecommendationFeedbackResult> {
-    try {
+    const program = Effect.gen(function* () {
       const now = Date.now();
       const newEvent: NewFeedbackEvent = {
         id: deps.nanoid(),
@@ -71,22 +73,27 @@ export function createLogRecommendationFeedback(deps: RecommendationFeedbackDeps
         createdAt: now,
       };
 
-      await deps.db.insert(deps.feedbackEvents).values(newEvent);
+      yield* tryPromise(
+        () => deps.db.insert(deps.feedbackEvents).values(newEvent),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to log feedback event', error)
+      );
 
       return {
-        success: true,
+        success: true as const,
         event: newEvent as FeedbackEvent,
       };
-    } catch (error) {
+    });
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to log feedback event',
-          details: error instanceof Error ? error.message : error,
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 
@@ -94,27 +101,33 @@ export function createGetRecentFeedbackEvents(deps: RecommendationFeedbackDeps =
   return async function getRecentFeedbackEvents(
     limit: number = 50
   ): Promise<GetRecentFeedbackResult> {
-    try {
-      const events = await deps.db
-        .select()
-        .from(deps.feedbackEvents)
-        .orderBy(deps.desc(deps.feedbackEvents.createdAt))
-        .limit(limit);
+    const program = Effect.gen(function* () {
+      const events = (yield* tryPromise(
+        () =>
+          deps.db
+            .select()
+            .from(deps.feedbackEvents)
+            .orderBy(deps.desc(deps.feedbackEvents.createdAt))
+            .limit(limit),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to retrieve feedback events', error)
+      )) as FeedbackEvent[];
 
       return {
-        success: true,
+        success: true as const,
         data: events,
       };
-    } catch (error) {
+    });
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to retrieve feedback events',
-          details: error instanceof Error ? error.message : error,
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 

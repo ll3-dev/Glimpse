@@ -4,6 +4,8 @@
  * Handles spaced repetition review scheduling for knowledge items.
  */
 
+export type { KnowledgeItem } from '@/src/db';
+
 export {
   calculateInitialReviewAt,
   initializeReviewSchedule,

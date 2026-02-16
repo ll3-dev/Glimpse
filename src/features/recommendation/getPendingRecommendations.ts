@@ -6,6 +6,14 @@
 
 import { db, recommendations, knowledgeItems, type Recommendation, type KnowledgeItem } from '@/src/db';
 import { eq } from 'drizzle-orm';
+import { Effect } from 'effect';
+import {
+  appError,
+  isFailure,
+  type AppError,
+  runEffectSuccess,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 export interface RecommendationWithItems {
   recommendation: Recommendation;
@@ -20,11 +28,7 @@ export interface PendingResult {
 
 export interface PendingFailureResult {
   success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
+  error: AppError;
 }
 
 export type GetPendingResult = PendingResult | PendingFailureResult;
@@ -50,39 +54,32 @@ export function createGetPendingRecommendations(
   deps: GetPendingRecommendationsDeps = defaultDeps
 ) {
   return async function getPendingRecommendations(): Promise<GetPendingResult> {
-    try {
-      // Get all pending recommendations
-      const pendingRecs = await deps.db
-        .select()
-        .from(deps.recommendations)
-        .where(deps.eq(deps.recommendations.status, 'pending'));
+    const program = Effect.gen(function* () {
+      const pendingRecs = (yield* tryPromise(
+        () =>
+          deps.db
+            .select()
+            .from(deps.recommendations)
+            .where(deps.eq(deps.recommendations.status, 'pending')),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to retrieve pending recommendations', error)
+      )) as Recommendation[];
 
       if (pendingRecs.length === 0) {
-        return {
-          success: true,
-          data: [],
-        };
+        return { success: true as const, data: [] };
       }
 
-      // Get all unique item IDs
-      const itemIds = new Set<string>();
-      pendingRecs.forEach((r) => {
-        itemIds.add(r.itemA_id);
-        itemIds.add(r.itemB_id);
-      });
+      const items = (yield* tryPromise(
+        () => deps.db.select().from(deps.knowledgeItems),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to retrieve pending recommendations', error)
+      )) as KnowledgeItem[];
 
-      // Fetch all items
-      const items = await deps.db
-        .select()
-        .from(deps.knowledgeItems);
-
-      // Create item lookup map
       const itemMap = new Map<string, KnowledgeItem>();
       items.forEach((item) => {
         itemMap.set(item.id, item);
       });
 
-      // Combine recommendations with items
       const result: RecommendationWithItems[] = [];
       for (const rec of pendingRecs) {
         const itemA = itemMap.get(rec.itemA_id);
@@ -98,19 +95,20 @@ export function createGetPendingRecommendations(
       }
 
       return {
-        success: true,
+        success: true as const,
         data: result,
       };
-    } catch (error) {
+    });
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to retrieve pending recommendations',
-          details: error instanceof Error ? error.message : error,
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 
