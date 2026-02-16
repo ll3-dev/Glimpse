@@ -23,10 +23,26 @@
 
 ## Testing instructions
 
-- There is currently no dedicated test script in `package.json`.
+- Run tests: `bun test` or `bun test <file>`
 - Minimum validation before finishing work:
 - Run `bun run lint`.
 - Smoke-check the target platform with one of: `bun run ios`, `bun run android`, `bun run web`.
+
+## Database schema synchronization
+
+The database schema has two related files that must stay in sync:
+- `src/db/schema.ts` - Drizzle ORM schema (single source of truth)
+- `src/db/constants.ts` - SQL and column definitions for native SQLite
+
+**When modifying the schema, you MUST:**
+1. Update `src/db/schema.ts` with new columns
+2. Update `src/db/constants.ts`:
+   - `CREATE_*_TABLE_SQL` for new installations
+   - `REQUIRED_COLUMNS` for migrations
+   - `*_SELECT_COLUMNS` for queries
+3. Run sync verification: `bun test src/db/schema-sync.test.ts`
+
+The sync test will fail if schema and constants diverge, preventing runtime database errors.
 
 ## Code style
 
