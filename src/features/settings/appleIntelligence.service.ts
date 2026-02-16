@@ -1,7 +1,6 @@
 import {
   createAppleIntelligenceStore,
   getAppleIntelligenceEnabled,
-  setAppleIntelligenceEnabledValue,
   useAppleIntelligenceStoreValue,
 } from '@/src/stores/settings/appleIntelligence.store';
 import { checkAppleIntelligenceAvailability as checkAvailability } from './appleIntelligence.version';
@@ -26,14 +25,14 @@ export function createAppleIntelligenceToggleService(deps: AppleIntelligenceTogg
   }
 
   function useAppleIntelligenceConfig(): AppleIntelligenceConfig {
-    return useAppleIntelligenceStoreValue(appleIntelligenceStore, (state) => {
-      const { available, reason } = checkAppleIntelligenceAvailability();
-      return {
-        enabled: available && state.enabled,
-        isAvailable: available,
-        unavailableReason: reason,
-      };
-    });
+    const enabled = useAppleIntelligenceStoreValue(appleIntelligenceStore, (state) => state.enabled);
+    const { available, reason } = checkAppleIntelligenceAvailability();
+
+    return {
+      enabled: available && enabled,
+      isAvailable: available,
+      unavailableReason: reason,
+    };
   }
 
   function isAppleIntelligenceEnabled(): boolean {
@@ -47,12 +46,12 @@ export function createAppleIntelligenceToggleService(deps: AppleIntelligenceTogg
       return false;
     }
 
-    setAppleIntelligenceEnabledValue(appleIntelligenceStore, true);
+    appleIntelligenceStore.getState().actions.enable();
     return true;
   }
 
   function disableAppleIntelligence(): void {
-    setAppleIntelligenceEnabledValue(appleIntelligenceStore, false);
+    appleIntelligenceStore.getState().actions.disable();
   }
 
   function setAppleIntelligenceEnabled(enabled: boolean): boolean {
