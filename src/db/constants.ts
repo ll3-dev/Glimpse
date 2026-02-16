@@ -1,3 +1,16 @@
+/**
+ * Database Constants
+ *
+ * IMPORTANT: These constants must stay in sync with schema.ts
+ *
+ * When adding columns to schema.ts, you MUST also update:
+ * 1. CREATE_*_TABLE_SQL (for new installations)
+ * 2. REQUIRED_COLUMNS (for migrations)
+ * 3. *_SELECT_COLUMNS (for queries)
+ *
+ * Run `bun test src/db/schema-sync.test.ts` to verify synchronization.
+ */
+
 export const DB_NAME = "glimpse.db";
 export const KNOWLEDGE_ITEMS_TABLE_NAME = "knowledge_items";
 export const RECOMMENDATIONS_TABLE_NAME = "recommendations";
@@ -12,7 +25,11 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
   summary TEXT,
   tags TEXT,
   created_at REAL NOT NULL,
-  updated_at REAL NOT NULL
+  updated_at REAL NOT NULL,
+  stability REAL,
+  difficulty REAL,
+  last_reviewed_at REAL,
+  next_review_at REAL
 );
 `;
 
@@ -74,6 +91,10 @@ export const REQUIRED_COLUMNS: RequiredColumn[] = [
   { name: "tags", definition: "tags TEXT" },
   { name: "created_at", definition: "created_at REAL NOT NULL DEFAULT 0" },
   { name: "updated_at", definition: "updated_at REAL NOT NULL DEFAULT 0" },
+  { name: "stability", definition: "stability REAL" },
+  { name: "difficulty", definition: "difficulty REAL" },
+  { name: "last_reviewed_at", definition: "last_reviewed_at REAL" },
+  { name: "next_review_at", definition: "next_review_at REAL" },
 ];
 
 export const KNOWLEDGE_ITEMS_SELECT_COLUMNS = [
@@ -86,4 +107,8 @@ export const KNOWLEDGE_ITEMS_SELECT_COLUMNS = [
   "tags",
   "created_at",
   "updated_at",
+  "stability",
+  "difficulty",
+  "last_reviewed_at",
+  "next_review_at",
 ] as const;
