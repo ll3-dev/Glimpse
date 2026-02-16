@@ -60,6 +60,7 @@ export const knowledgeItems = sqliteTable(
     nextReviewAt: real('next_review_at'),
   },
   (table) => ({
+    typeIdx: index('knowledge_items_type_idx').on(table.type),
     createdAtIdx: index('knowledge_items_created_at_idx').on(table.createdAt),
     nextReviewAtIdx: index('knowledge_items_next_review_at_idx').on(table.nextReviewAt),
   })
