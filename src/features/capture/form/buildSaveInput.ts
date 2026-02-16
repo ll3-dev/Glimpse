@@ -1,5 +1,5 @@
 import { type KnowledgeItemType } from '@/src/db/schema';
-import type { BuildSaveInputResult, CollectFormState } from './collectForm.types';
+import type { BuildSaveInputResult, CollectFormState } from './types';
 
 export function buildSaveInputByChannel(
   channel: KnowledgeItemType,

@@ -28,7 +28,7 @@ export function HighlightForm({
       <Text className="mb-2 text-sm font-semibold text-app-muted">
         하이라이트 텍스트
       </Text>
-      <View className="min-h-[160px] mb-6 rounded-md border border-app-border bg-white p-4">
+      <View className="min-h-40 mb-6 rounded-md border border-app-border bg-white p-4">
         <TextInput
           className="text-lg leading-7 text-app-text"
           value={text}

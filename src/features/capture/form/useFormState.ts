@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useReducer } from 'react';
 import { useShareIntentContext } from 'expo-share-intent';
-import { buildSaveInputByChannel } from "./collectForm.buildSaveInput";
-import { collectFormReducer, createInitialState } from "./collectForm.reducer";
-import { parseShareIntent } from "./collectForm.shareIntent";
-import type { CollectFormActions, CollectFormState } from "./collectForm.types";
+import { buildSaveInputByChannel } from "./buildSaveInput";
+import { collectFormReducer, createInitialState } from "./reducer";
+import { parseShareIntent } from "./shareIntent";
+import type { CollectFormActions, CollectFormState } from "./types";
 import { type KnowledgeItemType } from "@/src/db/schema";
 
 export type {
   BuildSaveInputResult,
   CollectFormActions,
   CollectFormState,
-} from "./collectForm.types";
+  SharedContent,
+} from "./types";
 
 export function useCollectFormState() {
   const [reducerState, dispatch] = useReducer(collectFormReducer, undefined, createInitialState);

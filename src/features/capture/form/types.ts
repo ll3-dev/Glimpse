@@ -1,6 +1,11 @@
 import { type KnowledgeItemInput } from '@/src/features/capture';
 import { type KnowledgeItemType } from '@/src/db/schema';
-import { type SharedContent } from './ShareForm';
+
+export type SharedContent = {
+  text?: string;
+  url?: string;
+  imageUri?: string;
+};
 
 export type BuildSaveInputResult =
   | { input: KnowledgeItemInput }
@@ -48,3 +53,9 @@ export type ReducerAction =
       shareText?: string;
       shareUrl?: string;
     };
+
+export type ShareIntentPayload = {
+  sharedContent: SharedContent;
+  shareText?: string;
+  shareUrl?: string;
+};

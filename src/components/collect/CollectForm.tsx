@@ -36,7 +36,7 @@ export function CollectForm({
         multiline={false}
       />
 
-      <View className="min-h-[400px]">
+      <View className="min-h-100">
         <TextInput
           className="text-lg leading-7 text-app-text"
           value={body}
