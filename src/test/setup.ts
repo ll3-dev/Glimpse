@@ -1,4 +1,5 @@
 import { afterEach, mock } from 'bun:test';
+import { randomUUID as nodeRandomUUID } from "node:crypto";
 
 type LocalStorageLike = Pick<
   Storage,
@@ -13,6 +14,10 @@ const globalWithDev = globalThis as typeof globalThis & {
 if (typeof globalWithDev.__DEV__ === 'undefined') {
   globalWithDev.__DEV__ = false;
 }
+
+mock.module("expo-crypto", () => ({
+  randomUUID: nodeRandomUUID,
+}));
 
 if (typeof globalWithDev.localStorage === 'undefined') {
   const storage = new Map<string, string>();
