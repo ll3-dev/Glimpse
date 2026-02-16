@@ -45,7 +45,7 @@ export function useMarkAsReviewedMutation(): UseMutationResult<
       return result.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
     },
   });
 }
@@ -82,7 +82,7 @@ export function usePostponeReviewMutation(): UseMutationResult<
       return result.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
     },
   });
 }

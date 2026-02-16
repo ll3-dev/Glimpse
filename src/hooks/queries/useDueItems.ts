@@ -26,7 +26,7 @@ interface DueItemsData {
  */
 export function useDueItemsQuery(options?: GetDueItemsOptions): UseQueryResult<DueItemsData, Error> {
   return useQuery({
-    queryKey: queryKeys.review.dueItems(options),
+    queryKey: queryKeys.review.dueItemsList(options),
     queryFn: async (): Promise<DueItemsData> => {
       const result = await getDueItems(options);
       if (result.success === false) {

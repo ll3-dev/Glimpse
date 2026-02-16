@@ -14,8 +14,10 @@ export const queryKeys = {
       [...queryKeys.knowledgeItems.all, 'detail', id] as const,
   },
   review: {
-    dueItems: (options?: { limit?: number }) =>
-      ['review', 'dueItems', options] as const,
+    all: ['review'] as const,
+    dueItems: ['review', 'dueItems'] as const,
+    dueItemsList: (options?: { limit?: number }) =>
+      [...queryKeys.review.dueItems, options] as const,
   },
   recommendations: {
     pending: ['recommendations', 'pending'] as const,
