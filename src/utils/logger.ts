@@ -1,3 +1,5 @@
+import { Effect } from 'effect';
+
 type LogContext = Record<string, unknown>;
 
 type GlobalErrorHandler = (error: Error, isFatal?: boolean) => void;
@@ -29,11 +31,12 @@ function formatError(error: unknown): string {
   if (typeof error === 'string') {
     return error;
   }
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
+  return Effect.runSync(
+    Effect.try({
+      try: () => JSON.stringify(error),
+      catch: () => String(error),
+    })
+  );
 }
 
 export const logger = {
