@@ -10,15 +10,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Key, Eye, EyeOff, Cpu } from 'lucide-react-native';
 import {
-  getBYOKConfig,
-  isBYOKReady,
+  useBYOKConfig,
+  useBYOKReady,
+  useBYOKCredentialsConfigured,
   enableBYOK,
   disableBYOK,
+  setProvider,
   setApiKey,
   maskApiKey,
   type BYOKProviderType,
   BYOKProvider,
-  getAppleIntelligenceConfig,
+  useAppleIntelligenceConfig,
   setAppleIntelligenceEnabled,
 } from '@/src/features/settings';
 import { ScreenHeader, Card, Input } from '@/src/ui/primitives';
@@ -27,42 +29,41 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  // BYOK state
-  const config = getBYOKConfig();
-  const [byokEnabled, setByokEnabled] = useState(config.enabled);
-  const [selectedProvider, setSelectedProvider] = useState<BYOKProviderType | null>(config.provider);
-  const [apiKey, setApiKeyState] = useState(config.apiKey || '');
+  // BYOK shared state
+  const byokEnabled = useBYOKConfig((config) => config.enabled);
+  const selectedProvider = useBYOKConfig((config) => config.provider);
+  const storedApiKey = useBYOKConfig((config) => config.apiKey);
+  const [apiKeyInput, setApiKeyInput] = useState(storedApiKey || '');
   const [showKey, setShowKey] = useState(false);
 
-  // Apple Intelligence state
-  const appleConfig = getAppleIntelligenceConfig();
-  const [appleIntelligenceEnabled, setAppleIntelligenceEnabledState] = useState(appleConfig.enabled);
+  // Apple Intelligence shared state
+  const appleConfig = useAppleIntelligenceConfig();
 
-  // Refresh Apple Intelligence config on mount
+  // Keep input field in sync with persisted state.
   useEffect(() => {
-    setAppleIntelligenceEnabledState(appleConfig.enabled);
-  }, [appleConfig.enabled]);
+    setApiKeyInput(storedApiKey || '');
+  }, [storedApiKey]);
+
+  const byokReady = useBYOKReady();
+  const byokConfigured = useBYOKCredentialsConfigured();
 
   const handleToggleBYOK = useCallback(() => {
     if (byokEnabled) {
       disableBYOK();
-      setByokEnabled(false);
     } else {
       const result = enableBYOK();
-      if (result.valid) {
-        setByokEnabled(true);
-      } else {
+      if (!result.valid) {
         Alert.alert('BYOK 활성화 실패', result.error);
       }
     }
   }, [byokEnabled]);
 
   const handleProviderSelect = useCallback((provider: BYOKProviderType) => {
-    setSelectedProvider(provider);
-    if (apiKey) {
-      setApiKey(provider, apiKey);
+    setProvider(provider);
+    if (apiKeyInput) {
+      setApiKey(provider, apiKeyInput);
     }
-  }, [apiKey]);
+  }, [apiKeyInput]);
 
   const handleSaveKey = useCallback(() => {
     if (!selectedProvider) {
@@ -70,25 +71,24 @@ export default function SettingsScreen() {
       return;
     }
 
-    if (!apiKey) {
+    if (!apiKeyInput) {
       Alert.alert('오류', 'API 키를 입력해주세요');
       return;
     }
 
-    const result = setApiKey(selectedProvider, apiKey);
+    const result = setApiKey(selectedProvider, apiKeyInput);
     if (result.valid) {
       Alert.alert('저장 완료', 'API 키가 저장되었습니다');
     } else {
       Alert.alert('저장 실패', result.error);
     }
-  }, [selectedProvider, apiKey]);
+  }, [selectedProvider, apiKeyInput]);
 
   const handleToggleAppleIntelligence = useCallback((value: boolean) => {
-    const success = setAppleIntelligenceEnabled(value);
-    if (success) {
-      setAppleIntelligenceEnabledState(value);
+    if (!setAppleIntelligenceEnabled(value) && value) {
+      Alert.alert('설정 실패', appleConfig.unavailableReason || '현재 기기에서 Apple Intelligence를 사용할 수 없습니다');
     }
-  }, []);
+  }, [appleConfig.unavailableReason]);
 
   return (
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
@@ -130,7 +130,7 @@ export default function SettingsScreen() {
                 )}
               </View>
               <Switch
-                value={appleIntelligenceEnabled}
+                value={appleConfig.enabled}
                 onValueChange={handleToggleAppleIntelligence}
                 disabled={!appleConfig.isAvailable}
                 trackColor={{ false: '#e5e5e5', true: '#2383e2' }}
@@ -189,8 +189,8 @@ export default function SettingsScreen() {
                 <Input
                   className="pr-12"
                   placeholder="API 키를 입력하세요"
-                  value={showKey ? apiKey : maskApiKey(apiKey)}
-                  onChangeText={setApiKeyState}
+                  value={showKey ? apiKeyInput : maskApiKey(apiKeyInput)}
+                  onChangeText={setApiKeyInput}
                   secureTextEntry={!showKey}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -206,9 +206,9 @@ export default function SettingsScreen() {
                   )}
                 </TouchableOpacity>
               </View>
-              {apiKey && (
+              {apiKeyInput && (
                 <Text className="mt-1.5 text-[10px] text-app-subtle font-medium">
-                  저장된 키: {maskApiKey(apiKey)}
+                  저장된 키: {maskApiKey(apiKeyInput)}
                 </Text>
               )}
             </View>
@@ -224,18 +224,18 @@ export default function SettingsScreen() {
             {/* Enable/Disable Toggle */}
             <TouchableOpacity
               className={`py-2.5 rounded-md items-center ${
-                isBYOKReady() ? 'bg-app-primary' : 'bg-app-border'
+                byokConfigured ? 'bg-app-primary' : 'bg-app-border'
               }`}
               onPress={handleToggleBYOK}
-              disabled={!isBYOKReady() && !byokEnabled}
+              disabled={!byokConfigured && !byokEnabled}
             >
-              <Text className={`text-xs font-bold ${isBYOKReady() ? 'text-white' : 'text-app-muted'}`}>
+              <Text className={`text-xs font-bold ${byokConfigured ? 'text-white' : 'text-app-muted'}`}>
                 {byokEnabled ? 'BYOK 비활성화' : 'BYOK 활성화'}
               </Text>
             </TouchableOpacity>
           </Card>
 
-          {!isBYOKReady() && !byokEnabled && (
+          {!byokReady && !byokEnabled && (
             <Text className="mt-3 text-[10px] text-app-subtle font-medium text-center">
               BYOK를 활성화하려면 먼저 API 키를 저장해주세요
             </Text>

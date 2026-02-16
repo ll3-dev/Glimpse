@@ -10,6 +10,11 @@ import { Effect } from 'effect';
 import { getRecentFeedbackEvents } from './logRecommendationFeedback';
 import { logger } from '@/src/utils/logger';
 import { appError, tryPromise } from '@/src/lib/effect-result';
+import {
+  getRecommendationCadenceValue,
+  setRecommendationCadenceValue,
+  useRecommendationCadenceStoreValue,
+} from '@/src/stores/recommendation/cadence.store';
 
 /**
  * Cadence levels (in milliseconds)
@@ -37,9 +42,11 @@ const RATE_THRESHOLDS = {
 const SAMPLE_SIZE = 20;
 
 /**
- * In-memory cadence storage (can be upgraded to AsyncStorage later)
+ * React hook for recommendation cadence.
  */
-let currentCadence: number = CADENCE.MEDIUM;
+export function useRecommendationCadence(): number {
+  return useRecommendationCadenceStoreValue();
+}
 
 /**
  * Calculates the acceptance rate from recent feedback events.
@@ -88,7 +95,7 @@ export function getCadenceInterval(level: CadenceLevel): number {
  * @returns Current cadence interval in milliseconds
  */
 export function getCadence(): number {
-  return currentCadence;
+  return getRecommendationCadenceValue();
 }
 
 /**
@@ -97,7 +104,7 @@ export function getCadence(): number {
  * @param cadence - New cadence interval in milliseconds
  */
 export function setCadence(cadence: number): void {
-  currentCadence = cadence;
+  setRecommendationCadenceValue(cadence);
   logger.info('Recommendation cadence updated', {
     cadenceDays: Math.round(cadence / (24 * 60 * 60 * 1000)),
   });
@@ -122,14 +129,14 @@ export async function updateRecommendationCadence(): Promise<number> {
         code: result.error.code,
         message: result.error.message,
       });
-      return currentCadence;
+      return getCadence();
     }
 
     const responseRate = calculateResponseRate(result.data);
     const level = determineCadenceLevel(responseRate);
     const newCadence = getCadenceInterval(level);
 
-    if (newCadence !== currentCadence) {
+    if (newCadence !== getCadence()) {
       setCadence(newCadence);
     }
 
@@ -144,7 +151,7 @@ export async function updateRecommendationCadence(): Promise<number> {
     Effect.catchAll((error) =>
       Effect.sync(() => {
         logger.error('Failed to update recommendation cadence', error);
-        return currentCadence;
+        return getCadence();
       })
     )
   );
@@ -159,7 +166,7 @@ export async function updateRecommendationCadence(): Promise<number> {
  * @returns Timestamp for next recommendation
  */
 export function getNextRecommendationAt(lastRecommendationAt: number): number {
-  return lastRecommendationAt + currentCadence;
+  return lastRecommendationAt + getCadence();
 }
 
 /**
