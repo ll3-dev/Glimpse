@@ -26,15 +26,15 @@ MVP를 한 번에 구현하면 범위가 너무 커서 진행 속도가 느려�
 - Local LLM 모델 선택/BYOK/Apple Intelligence 연동의 세부 기술 검토는 제외합니다.
 
 ## 작업 단위 목록 (각 10분 내외)
-1. [x] `2026-02-14_mvp0-01-routing-shell.md` - 수집/목록 기본 라우팅 골격 ✅
-2. [x] `2026-02-14_mvp0-02-note-capture-form.md` - 메모 입력 폼 ✅
-3. [x] `2026-02-14_mvp0-03-link-capture-form.md` - 링크 입력 폼 ✅
-4. [x] `2026-02-14_mvp0-04-local-storage-schema.md` - 로컬 저장 스키마 ✅
-5. [x] `2026-02-14_mvp0-05-save-usecase-and-meta-stub.md` - 저장 유스케이스 + 요약/태깅 스텁 ✅
-6. [x] `2026-02-14_mvp0-06-item-list-screen.md` - 저장 항목 리스트 ✅
-7. [x] `2026-02-14_mvp0-07-keyword-search.md` - 키워드 수동 검색 ✅
-8. [x] `2026-02-14_mvp0-08-query-style-search.md` - "OO 관련 있어?" 질의형 검색 ✅
+1. [x] `01-routing-shell.md` - 수집/목록 기본 라우팅 골격 ✅
+2. [x] `02-note-capture-form.md` - 메모 입력 폼 ✅
+3. [x] `03-link-capture-form.md` - 링크 입력 폼 ✅
+4. [x] `04-local-storage-schema.md` - 로컬 저장 스키마 ✅
+5. [x] `05-save-usecase-and-meta-stub.md` - 저장 유스케이스 + 요약/태깅 스텁 ✅
+6. [x] `06-item-list-screen.md` - 저장 항목 리스트 ✅
+7. [x] `07-keyword-search.md` - 키워드 수동 검색 ✅
+8. [x] `08-query-style-search.md` - "OO 관련 있어?" 질의형 검색 ✅
 
 ## 참고 자료
-- 비전/MVP 원문: `/Users/loopy/dev/ll3/Glimpse/thoughts/shared/inputs/glimpse-vision-mvp-roadmap.md`
-- 기술 기준: `/Users/loopy/dev/ll3/Glimpse/package.json`
+- 비전/MVP 원문: `../../inputs/glimpse-vision-mvp-roadmap.md`
+- 기술 기준: `../../../../package.json`
