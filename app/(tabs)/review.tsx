@@ -5,14 +5,16 @@
  * Users can mark items as complete or postpone them.
  */
 
-import { View, ScrollView, RefreshControl, Text } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDueItemsQuery, useReviewActionsMutation } from '@/src/hooks';
+import { QueryStateScrollView } from '@/src/components/common/QueryStateScrollView';
 import { ReviewItemCard } from '@/src/components/review';
 import { ScreenHeader } from '@/src/ui/primitives';
+import { logger } from '@/src/utils/logger';
 
 export default function ReviewScreen() {
-  const { data, isLoading, isFetching, refetch } = useDueItemsQuery();
+  const { data, isLoading, isFetching, error, refetch } = useDueItemsQuery();
   const { markAsReviewed, postponeReview } = useReviewActionsMutation();
   const insets = useSafeAreaInsets();
 
@@ -24,7 +26,7 @@ export default function ReviewScreen() {
       { itemId },
       {
         onError: (error) => {
-          console.error('Failed to mark item as reviewed', error);
+          logger.error('Failed to mark item as reviewed', error, { itemId });
         },
       }
     );
@@ -35,7 +37,7 @@ export default function ReviewScreen() {
       { itemId },
       {
         onError: (error) => {
-          console.error('Failed to postpone review', error);
+          logger.error('Failed to postpone review', error, { itemId });
         },
       }
     );
@@ -48,41 +50,26 @@ export default function ReviewScreen() {
         subtitle={`복습이 필요한 항목 ${items.length}개`}
       />
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{
-          paddingTop: 8,
-          paddingBottom: insets.bottom + 100,
-          paddingHorizontal: 24,
-        }}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => refetch()} />
-        }
-      >
-        {isLoading ? (
-          <View className="items-center justify-center py-20">
-            <Text className="text-muted-foreground">로딩 중...</Text>
-          </View>
-        ) : items.length === 0 ? (
-          <View className="items-center justify-center px-8 py-20">
-            <Text className="mb-2 text-lg font-medium text-app-text">
-              복습할 항목이 없습니다
-            </Text>
-            <Text className="text-center text-sm text-muted-foreground">
-              새로운 항목을 저장하면{'\n'}자동으로 복습 일정이 잡혀요
-            </Text>
-          </View>
-        ) : (
-          items.map((item) => (
-            <ReviewItemCard
-              key={item.id}
-              item={item}
-              onComplete={() => handleComplete(item.id)}
-              onPostpone={() => handlePostpone(item.id)}
-            />
-          ))
+      <QueryStateScrollView
+        data={items}
+        isLoading={isLoading}
+        isRefreshing={isRefreshing}
+        onRefresh={() => refetch()}
+        error={error}
+        bottomInset={insets.bottom}
+        topPadding={8}
+        emptyTitle="복습할 항목이 없습니다"
+        emptyDescription={"새로운 항목을 저장하면\n자동으로 복습 일정이 잡혀요"}
+        keyExtractor={(item) => item.id}
+        renderItem={(item) => (
+          <ReviewItemCard
+            key={item.id}
+            item={item}
+            onComplete={() => handleComplete(item.id)}
+            onPostpone={() => handlePostpone(item.id)}
+          />
         )}
-      </ScrollView>
+      />
     </View>
   );
 }
