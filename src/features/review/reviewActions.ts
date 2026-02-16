@@ -7,11 +7,19 @@
 
 import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
 import { eq } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { logger } from '@/src/utils/logger';
 import {
   calculateNextReviewFromFeedback,
   type ReviewFeedbackType,
 } from './adjustIntervalFromFeedback';
+import {
+  appError,
+  isFailure,
+  type AppError,
+  runEffectSuccess,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 /**
  * Default interval after successful review (fallback when no history)
@@ -33,10 +41,7 @@ export interface ReviewActionResult {
 
 export interface ReviewActionFailureResult {
   success: false;
-  error: {
-    code: string;
-    message: string;
-  };
+  error: AppError;
 }
 
 export interface ReviewActionsDeps {
@@ -68,42 +73,41 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps = defaultDeps) {
     itemId: string,
     feedbackType: ReviewFeedbackType = 'remembered'
   ): Promise<ReviewActionResult | ReviewActionFailureResult> {
-    try {
-      // First get the current item to calculate adjusted interval
-      const items = await deps.db
-        .select()
-        .from(deps.knowledgeItems)
-        .where(deps.eq(deps.knowledgeItems.id, itemId));
+    const program = Effect.gen(function* () {
+      const items = (yield* tryPromise(
+        () =>
+          deps.db
+            .select()
+            .from(deps.knowledgeItems)
+            .where(deps.eq(deps.knowledgeItems.id, itemId)),
+        (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error)
+      )) as KnowledgeItem[];
 
       if (items.length === 0) {
-        return {
-          success: false,
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Item not found',
-          },
-        };
+        yield* Effect.fail(appError('NOT_FOUND', 'Item not found'));
       }
 
       const item = items[0];
       const now = Date.now();
-
-      // Calculate next review based on feedback
       const { nextReviewAt, intervalMs } = deps.calculateNextReviewFromFeedback(
         item.lastReviewedAt,
         item.nextReviewAt,
         feedbackType
       );
 
-      const result = await deps.db
-        .update(deps.knowledgeItems)
-        .set({
-          lastReviewedAt: now,
-          nextReviewAt,
-          updatedAt: now,
-        })
-        .where(deps.eq(deps.knowledgeItems.id, itemId))
-        .returning();
+      const result = (yield* tryPromise(
+        () =>
+          deps.db
+            .update(deps.knowledgeItems)
+            .set({
+              lastReviewedAt: now,
+              nextReviewAt,
+              updatedAt: now,
+            })
+            .where(deps.eq(deps.knowledgeItems.id, itemId))
+            .returning(),
+        (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error)
+      )) as KnowledgeItem[];
 
       deps.logger.info('Item marked as reviewed', {
         itemId,
@@ -112,19 +116,26 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps = defaultDeps) {
       });
 
       return {
-        success: true,
+        success: true as const,
         data: result[0] as KnowledgeItem,
       };
-    } catch (error) {
-      deps.logger.error('Failed to mark item as reviewed', error, { itemId });
+    }).pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => {
+          deps.logger.error('Failed to mark item as reviewed', error, { itemId });
+        })
+      )
+    );
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to update item',
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 
@@ -141,21 +152,18 @@ export function createPostponeReview(deps: ReviewActionsDeps = defaultDeps) {
     itemId: string,
     intervalMs: number = DEFAULT_POSTPONE_INTERVAL_MS
   ): Promise<ReviewActionResult | ReviewActionFailureResult> {
-    try {
-      // First get the current item to calculate new nextReviewAt
-      const items = await deps.db
-        .select()
-        .from(deps.knowledgeItems)
-        .where(deps.eq(deps.knowledgeItems.id, itemId));
+    const program = Effect.gen(function* () {
+      const items = (yield* tryPromise(
+        () =>
+          deps.db
+            .select()
+            .from(deps.knowledgeItems)
+            .where(deps.eq(deps.knowledgeItems.id, itemId)),
+        (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error)
+      )) as KnowledgeItem[];
 
       if (items.length === 0) {
-        return {
-          success: false,
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Item not found',
-          },
-        };
+        yield* Effect.fail(appError('NOT_FOUND', 'Item not found'));
       }
 
       const item = items[0];
@@ -163,31 +171,42 @@ export function createPostponeReview(deps: ReviewActionsDeps = defaultDeps) {
       const nextReviewAt = currentNextReview + intervalMs;
       const now = Date.now();
 
-      const result = await deps.db
-        .update(deps.knowledgeItems)
-        .set({
-          nextReviewAt,
-          updatedAt: now,
-        })
-        .where(deps.eq(deps.knowledgeItems.id, itemId))
-        .returning();
+      const result = (yield* tryPromise(
+        () =>
+          deps.db
+            .update(deps.knowledgeItems)
+            .set({
+              nextReviewAt,
+              updatedAt: now,
+            })
+            .where(deps.eq(deps.knowledgeItems.id, itemId))
+            .returning(),
+        (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error)
+      )) as KnowledgeItem[];
 
       deps.logger.info('Review postponed', { itemId, nextReviewAt });
 
       return {
-        success: true,
+        success: true as const,
         data: result[0] as KnowledgeItem,
       };
-    } catch (error) {
-      deps.logger.error('Failed to postpone review', error, { itemId });
+    }).pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => {
+          deps.logger.error('Failed to postpone review', error, { itemId });
+        })
+      )
+    );
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to update item',
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 

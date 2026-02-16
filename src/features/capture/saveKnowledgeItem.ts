@@ -10,10 +10,19 @@
  * 5. Database insertion
  */
 
+import { Effect } from 'effect';
 import { db, knowledgeItems, type KnowledgeItem, type NewKnowledgeItem } from '@/src/db';
 import { generateSummaryStub, generateTagsStub } from './stubs';
 import { logger } from '@/src/utils/logger';
 import { initializeReviewSchedule } from '../review';
+import {
+  appError,
+  isFailure,
+  type FailureResult,
+  type Result,
+  runEffectResult,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 /**
  * Input type for creating a note
@@ -65,32 +74,27 @@ export interface ShareInput {
 /**
  * Union type for all knowledge item inputs
  */
-export type KnowledgeItemInput = NoteInput | LinkInput | HighlightInput | ScreenshotInput | ShareInput;
+export type KnowledgeItemInput =
+  | NoteInput
+  | LinkInput
+  | HighlightInput
+  | ScreenshotInput
+  | ShareInput;
 
 /**
  * Success result type
  */
-export interface SaveSuccessResult {
-  success: true;
-  data: KnowledgeItem;
-}
+export type SaveSuccessResult = { success: true; data: KnowledgeItem };
 
 /**
  * Failure result type
  */
-export interface SaveFailureResult {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-}
+export type SaveFailureResult = FailureResult;
 
 /**
  * Union result type for save operation
  */
-export type SaveResult = SaveSuccessResult | SaveFailureResult;
+export type SaveResult = Result<KnowledgeItem>;
 
 export interface SaveKnowledgeItemDeps {
   db: typeof db;
@@ -120,6 +124,21 @@ function generateId(): string {
   return `${timestamp}-${randomPart}`;
 }
 
+function isValidUrl(value: string): boolean {
+  return Effect.runSync(
+    Effect.match(
+      Effect.try({
+        try: () => new URL(value),
+        catch: () => null,
+      }),
+      {
+        onFailure: () => false,
+        onSuccess: () => true,
+      }
+    )
+  );
+}
+
 /**
  * Validates note input
  */
@@ -138,10 +157,7 @@ function validateLinkInput(input: LinkInput): string | null {
     return 'Link URL is required and cannot be empty';
   }
 
-  // Basic URL validation
-  try {
-    new URL(input.url);
-  } catch {
+  if (!isValidUrl(input.url)) {
     return 'Invalid URL format';
   }
 
@@ -175,12 +191,8 @@ function validateShareInput(input: ShareInput): string | null {
   if (!input.body?.trim() && !input.url?.trim()) {
     return 'Share content is required (body or URL)';
   }
-  if (input.url) {
-    try {
-      new URL(input.url);
-    } catch {
-      return 'Invalid URL format';
-    }
+  if (input.url && !isValidUrl(input.url)) {
+    return 'Invalid URL format';
   }
   return null;
 }
@@ -242,66 +254,34 @@ function createContentForProcessing(input: KnowledgeItemInput): string {
 
 /**
  * Saves a knowledge item (note, link, or highlight) to the database.
- *
- * This function:
- * 1. Validates the input
- * 2. Generates a unique ID
- * 3. Sets timestamps
- * 4. Generates summary and tags using stub functions
- * 5. Inserts the item into the database
- *
- * @param input - The knowledge item input (NoteInput, LinkInput, or HighlightInput)
- * @returns A SaveResult indicating success or failure
- *
- * @example
- * // Save a note
- * const result = await saveKnowledgeItem({
- *   type: 'note',
- *   title: 'My Note',
- *   body: 'This is the content of my note'
- * });
- *
- * @example
- * // Save a link
- * const result = await saveKnowledgeItem({
- *   type: 'link',
- *   url: 'https://example.com',
- *   body: 'Interesting article about something'
- * });
  */
 export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps = defaultDeps) {
   return async function saveKnowledgeItem(input: KnowledgeItemInput): Promise<SaveResult> {
-    try {
-      // Validate input
-      const validationError = validateInput(input);
-      if (validationError) {
-        return {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: validationError,
-          },
-        };
-      }
+    const validationError = validateInput(input);
+    if (validationError) {
+      return {
+        success: false,
+        error: appError('VALIDATION_ERROR', validationError),
+      };
+    }
 
-      // Generate ID and timestamps
+    const program = Effect.gen(function* () {
       const id = generateId();
       const now = Date.now();
 
-      // Create content for processing
       const contentForProcessing = createContentForProcessing(input);
-
-      // Generate summary and tags using stub functions
       const summary = deps.generateSummaryStub(contentForProcessing);
       const tags = deps.generateTagsStub(contentForProcessing);
 
-      // Build the new knowledge item
       const newKnowledgeItem: NewKnowledgeItem = {
         id,
         type: input.type,
         title: normalizeText(input.title),
         body: normalizeText(input.body),
-        url: (input.type === 'link' || input.type === 'share') && input.url ? input.url.trim() : null,
+        url:
+          (input.type === 'link' || input.type === 'share') && input.url
+            ? input.url.trim()
+            : null,
         summary,
         tags,
         createdAt: now,
@@ -309,27 +289,20 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps = defaultDep
         ...deps.initializeReviewSchedule(now),
       };
 
-      // Insert into database
-      await deps.db.insert(deps.knowledgeItems).values(newKnowledgeItem);
+      yield* tryPromise(
+        () => deps.db.insert(deps.knowledgeItems).values(newKnowledgeItem),
+        (error) => appError('DATABASE_ERROR', 'Failed to save knowledge item', error)
+      );
 
-      // Return success with the created item
-      return {
-        success: true,
-        data: newKnowledgeItem as KnowledgeItem,
-      };
-    } catch (error) {
-      deps.logger.error('saveKnowledgeItem failed', error, { inputType: input.type });
+      return newKnowledgeItem as KnowledgeItem;
+    });
 
-      // Handle database or unexpected errors
-      return {
-        success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to save knowledge item',
-          details: error instanceof Error ? error.message : error,
-        },
-      };
+    const result = await runEffectResult(program);
+    if (isFailure(result)) {
+      deps.logger.error('saveKnowledgeItem failed', result.error, { inputType: input.type });
     }
+
+    return result;
   };
 }
 

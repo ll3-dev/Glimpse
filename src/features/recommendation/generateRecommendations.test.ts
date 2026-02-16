@@ -15,7 +15,7 @@ const recommendations = { table: 'recommendations' };
 
 const getWeeklyItems = mock();
 const nanoid = mock(() => 'generated-id');
-const insertValues = mock(async () => undefined);
+const insertValues = mock(async (_value: unknown) => undefined);
 
 const generateDeps = {
   db,
@@ -39,6 +39,7 @@ describe('generateRecommendations', () => {
     getWeeklyItems.mockReset();
     nanoid.mockClear();
     insertValues.mockReset();
+    insertValues.mockImplementation(async (_value: unknown) => undefined);
     db.insert.mockReturnValue({ values: insertValues });
   });
 

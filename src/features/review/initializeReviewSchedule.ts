@@ -8,8 +8,10 @@
  */
 
 import { db, knowledgeItems } from '@/src/db';
-import { isNull } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { logger } from '@/src/utils/logger';
+import { appError, tryPromise } from '@/src/lib/effect-result';
 
 /**
  * Default initial review interval in milliseconds
@@ -56,6 +58,7 @@ export function initializeReviewSchedule(createdAt: number): {
 export interface BatchInitializeReviewSchedulesDeps {
   db: typeof db;
   knowledgeItems: typeof knowledgeItems;
+  eq: typeof eq;
   isNull: typeof isNull;
   logger: Pick<typeof logger, 'info' | 'error'>;
 }
@@ -63,6 +66,7 @@ export interface BatchInitializeReviewSchedulesDeps {
 const defaultDeps: BatchInitializeReviewSchedulesDeps = {
   db,
   knowledgeItems,
+  eq,
   isNull,
   logger,
 };
@@ -80,38 +84,49 @@ export function createBatchInitializeReviewSchedules(
   return async function batchInitializeReviewSchedules(
     intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS
   ): Promise<number> {
-    try {
-      // Find items without nextReviewAt
-      const itemsWithoutSchedule = await deps.db
-        .select()
-        .from(deps.knowledgeItems)
-        .where(deps.isNull(deps.knowledgeItems.nextReviewAt));
+    const program = Effect.gen(function* () {
+      const itemsWithoutSchedule = yield* tryPromise(
+        () =>
+          deps.db
+            .select()
+            .from(deps.knowledgeItems)
+            .where(deps.isNull(deps.knowledgeItems.nextReviewAt)),
+        (error) =>
+          appError('DATABASE_ERROR', 'Failed to batch initialize review schedules', error)
+      );
 
       if (itemsWithoutSchedule.length === 0) {
         deps.logger.info('No items need review schedule initialization');
         return 0;
       }
 
-      // Update each item with initial review schedule
       let updatedCount = 0;
 
       for (const item of itemsWithoutSchedule) {
         const nextReviewAt = calculateInitialReviewAt(item.createdAt, intervalMs);
-
-        await deps.db
-          .update(deps.knowledgeItems)
-          .set({ nextReviewAt })
-          .where(deps.knowledgeItems.id.eq?.(item.id) as any);
-
+        yield* tryPromise(
+          () =>
+            deps.db
+              .update(deps.knowledgeItems)
+              .set({ nextReviewAt })
+              .where(deps.eq(deps.knowledgeItems.id, item.id)),
+          (error) =>
+            appError('DATABASE_ERROR', 'Failed to batch initialize review schedules', error)
+        );
         updatedCount++;
       }
 
       deps.logger.info(`Initialized review schedules for ${updatedCount} items`);
       return updatedCount;
-    } catch (error) {
-      deps.logger.error('Failed to batch initialize review schedules', error);
-      throw error;
-    }
+    }).pipe(
+      Effect.tapError((error) =>
+        Effect.sync(() => {
+          deps.logger.error('Failed to batch initialize review schedules', error);
+        })
+      )
+    );
+
+    return Effect.runPromise(program);
   };
 }
 

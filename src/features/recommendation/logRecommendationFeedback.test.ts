@@ -57,13 +57,13 @@ describe('logRecommendationFeedback', () => {
     const result = await logRecommendationFeedback('rec-2', 'ignore');
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
   });
 
   test('returns recent feedback events with limit', async () => {
-    const events = [{ id: 'e1' }, { id: 'e2' }];
+    const events = [{ id: 'e1' }, { id: 'e2' }] as any;
     const limit = mock(async () => events);
     const orderBy = mock(() => ({ limit }));
     const from = mock(() => ({ orderBy }));
@@ -84,7 +84,7 @@ describe('logRecommendationFeedback', () => {
     const result = await getRecentFeedbackEvents();
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
   });

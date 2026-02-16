@@ -34,6 +34,7 @@ const knowledgeItems = {
 
 const lteMock = mock((column: unknown, value: unknown) => ({ type: 'lte', column, value }));
 const ascMock = mock((column: unknown) => ({ type: 'asc', column }));
+const andMock = mock((...conditions: unknown[]) => ({ type: 'and', conditions }));
 const isNotNullMock = mock((column: unknown) => ({ type: 'isNotNull', column }));
 const logger = { error: mock() };
 
@@ -42,6 +43,7 @@ const deps = {
   knowledgeItems,
   lte: lteMock,
   asc: ascMock,
+  and: andMock,
   isNotNull: isNotNullMock,
   logger,
 } as unknown as GetDueItemsDeps;
@@ -53,12 +55,13 @@ describe('getDueItems', () => {
     db.select.mockReset();
     lteMock.mockClear();
     ascMock.mockClear();
+    andMock.mockClear();
     isNotNullMock.mockClear();
     logger.error.mockClear();
   });
 
   test('returns due items and count', async () => {
-    const rows = [{ id: 'a' }, { id: 'b' }];
+    const rows = [{ id: 'a' }, { id: 'b' }] as any;
     const query = createAwaitableQuery(rows);
     db.select.mockReturnValue({
       from: mock(() => query),
@@ -76,7 +79,7 @@ describe('getDueItems', () => {
   });
 
   test('applies limit when provided and positive', async () => {
-    const rows = [{ id: 'a' }];
+    const rows = [{ id: 'a' }] as any;
     const query = createAwaitableQuery(rows);
     db.select.mockReturnValue({
       from: mock(() => query),

@@ -11,17 +11,17 @@ const db = {
 
 const knowledgeItems = {
   nextReviewAt: 'next_review_at_col',
-  id: {
-    eq: (value: string) => ({ type: 'eq', value }),
-  },
+  id: 'id_col',
 };
 
+const eqMock = mock((left: unknown, right: unknown) => ({ type: 'eq', left, right }));
 const isNullMock = mock((column: unknown) => ({ type: 'isNull', column }));
 const logger = { info: mock(), error: mock() };
 
 const deps = {
   db,
   knowledgeItems,
+  eq: eqMock,
   isNull: isNullMock,
   logger,
 } as unknown as BatchInitializeReviewSchedulesDeps;
@@ -32,6 +32,7 @@ describe('batchInitializeReviewSchedules', () => {
   beforeEach(() => {
     db.select.mockReset();
     db.update.mockReset();
+    eqMock.mockClear();
     isNullMock.mockClear();
     logger.info.mockClear();
     logger.error.mockClear();
@@ -76,7 +77,15 @@ describe('batchInitializeReviewSchedules', () => {
       throw new Error('db unavailable');
     });
 
-    await expect(batchInitializeReviewSchedules()).rejects.toThrow('db unavailable');
+    let thrown: unknown;
+    try {
+      await batchInitializeReviewSchedules();
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeDefined();
+    expect(String(thrown)).toContain('DATABASE_ERROR');
     expect(logger.error).toHaveBeenCalledTimes(1);
   });
 });

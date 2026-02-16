@@ -7,7 +7,15 @@
 
 import { db, recommendations, type RecommendationStatus } from '@/src/db';
 import { eq } from 'drizzle-orm';
+import { Effect } from 'effect';
 import { logRecommendationFeedback } from './logRecommendationFeedback';
+import {
+  appError,
+  isFailure,
+  type AppError,
+  runEffectSuccess,
+  tryPromise,
+} from '@/src/lib/effect-result';
 
 export interface RespondResult {
   success: true;
@@ -16,11 +24,7 @@ export interface RespondResult {
 
 export interface RespondFailureResult {
   success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
+  error: AppError;
 }
 
 export type RespondToRecommendationResult = RespondResult | RespondFailureResult;
@@ -51,7 +55,7 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
     recommendationId: string,
     action: 'accept' | 'ignore' | 'dismiss'
   ): Promise<RespondToRecommendationResult> {
-    try {
+    const program = Effect.gen(function* () {
       const statusMap: Record<string, RecommendationStatus> = {
         accept: 'accepted',
         ignore: 'ignored',
@@ -61,32 +65,43 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
       const newStatus = statusMap[action];
       const now = Date.now();
 
-      // Update recommendation status
-      await deps.db
-        .update(deps.recommendations)
-        .set({
-          status: newStatus,
-          respondedAt: now,
-        })
-        .where(deps.eq(deps.recommendations.id, recommendationId));
+      yield* tryPromise(
+        () =>
+          deps.db
+            .update(deps.recommendations)
+            .set({
+              status: newStatus,
+              respondedAt: now,
+            })
+            .where(deps.eq(deps.recommendations.id, recommendationId)),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to update recommendation status', error)
+      );
 
-      // Log feedback event
-      await deps.logRecommendationFeedback(recommendationId, action);
+      const feedbackResult = yield* tryPromise(
+        () => deps.logRecommendationFeedback(recommendationId, action),
+        (error): AppError =>
+          appError('DATABASE_ERROR', 'Failed to update recommendation status', error)
+      );
+      if (feedbackResult.success === false) {
+        yield* Effect.fail(feedbackResult.error);
+      }
 
       return {
-        success: true,
+        success: true as const,
         status: newStatus,
       };
-    } catch (error) {
+    });
+
+    const result = await runEffectSuccess(program);
+    if (isFailure(result)) {
       return {
         success: false,
-        error: {
-          code: 'DATABASE_ERROR',
-          message: 'Failed to update recommendation status',
-          details: error instanceof Error ? error.message : error,
-        },
+        error: result.error,
       };
     }
+
+    return result;
   };
 }
 

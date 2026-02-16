@@ -6,6 +6,8 @@
  * integration will be added in future updates.
  */
 
+import { Effect } from 'effect';
+
 /**
  * Minimum OS versions supporting Apple Intelligence
  */
@@ -38,16 +40,19 @@ function resolveDefaultPlatform(): AppleIntelligencePlatform {
   };
 
   if (typeof maybeRequire.require === 'function') {
-    try {
-      const reactNativeModule = maybeRequire.require('react-native') as {
-        Platform?: AppleIntelligencePlatform;
-      };
+    const maybePlatform = Effect.try({
+      try: () => {
+        const reactNativeModule = maybeRequire.require?.('react-native') as {
+          Platform?: AppleIntelligencePlatform;
+        };
+        return reactNativeModule?.Platform;
+      },
+      catch: () => undefined,
+    });
 
-      if (reactNativeModule?.Platform) {
-        return reactNativeModule.Platform;
-      }
-    } catch {
-      // Fall through to web-like default when react-native is unavailable.
+    const platform = Effect.runSync(maybePlatform);
+    if (platform) {
+      return platform;
     }
   }
 

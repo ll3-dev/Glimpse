@@ -29,7 +29,7 @@ describe('getAllKnowledgeItems', () => {
   });
 
   test('returns items in success result', async () => {
-    const items = [{ id: '1' }, { id: '2' }];
+    const items = [{ id: '1' }, { id: '2' }] as any;
     const query = {
       from: mock(),
       orderBy: mock(),
@@ -62,7 +62,7 @@ describe('getAllKnowledgeItems', () => {
     const result = await getAllKnowledgeItems();
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
       expect(result.error.message).toBe('Failed to retrieve knowledge items');
     }

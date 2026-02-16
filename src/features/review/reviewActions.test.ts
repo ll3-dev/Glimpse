@@ -56,7 +56,7 @@ describe('reviewActions', () => {
 
     const result = await markAsReviewed('missing-id');
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       success: false,
       error: {
         code: 'NOT_FOUND',
@@ -74,7 +74,7 @@ describe('reviewActions', () => {
 
     const returning = mock(async () => [{ id: 'k1', nextReviewAt: 1_700_000_123_000 }]);
     const where = mock(() => ({ returning }));
-    const set = mock(() => ({ where }));
+    const set = mock((_values: unknown) => ({ where }));
     db.update.mockReturnValue({ set });
 
     const result = await markAsReviewed('k1', 'remembered');
@@ -95,7 +95,7 @@ describe('reviewActions', () => {
 
     const returning = mock(async () => [{ id: 'k2', nextReviewAt: 1_700_000_000_000 }]);
     const where = mock(() => ({ returning }));
-    const set = mock(() => ({ where }));
+    const set = mock((_values: unknown) => ({ where }));
     db.update.mockReturnValue({ set });
 
     const result = await postponeReview('k2');
@@ -121,7 +121,7 @@ describe('reviewActions', () => {
     const result = await markAsReviewed('k3');
 
     expect(result.success).toBe(false);
-    if (!result.success) {
+    if (result.success === false) {
       expect(result.error.code).toBe('DATABASE_ERROR');
     }
     expect(logger.error).toHaveBeenCalledTimes(1);
