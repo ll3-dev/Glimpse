@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Text,
 } from 'react-native';
+import { Effect } from 'effect';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShareIntentContext } from 'expo-share-intent';
@@ -24,6 +25,7 @@ import {
 } from '@/src/components/collect';
 import { KnowledgeItemType } from '@/src/db/schema';
 import { logger } from '@/src/utils/logger';
+import { appError, isFailure, tryPromise } from '@/src/lib/effect-result';
 import { ScreenHeader } from '@/src/ui/primitives';
 
 function formatErrorDetails(details: unknown): string | undefined {
@@ -39,11 +41,12 @@ function formatErrorDetails(details: unknown): string | undefined {
     return details.message;
   }
 
-  try {
-    return JSON.stringify(details);
-  } catch {
-    return String(details);
-  }
+  return Effect.runSync(
+    Effect.try({
+      try: () => JSON.stringify(details),
+      catch: () => String(details),
+    })
+  );
 }
 
 export default function CollectScreen() {
@@ -182,29 +185,48 @@ export default function CollectScreen() {
 
     setIsSaving(true);
 
-    try {
-      const result = await saveKnowledgeItem(saveInput);
+    const program = Effect.gen(function* () {
+      const result = yield* tryPromise(
+        () => saveKnowledgeItem(saveInput),
+        (error) => appError('UNKNOWN_ERROR', 'CollectScreen.handleSave failed', error)
+      );
 
-      if (!result.success) {
+      if (isFailure(result)) {
         const details = formatErrorDetails(result.error.details);
-        logger.error('CollectScreen.handleSave failed (SaveFailureResult)', details ?? result.error.message, {
-          code: result.error.code,
-          message: result.error.message,
-          details: result.error.details,
-        });
+        logger.error(
+          'CollectScreen.handleSave failed (SaveFailureResult)',
+          details ?? result.error.message,
+          {
+            code: result.error.code,
+            message: result.error.message,
+            details: result.error.details,
+          }
+        );
         Alert.alert('저장 실패', result.error.message);
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['knowledgeItems'] });
+      yield* tryPromise(
+        () => queryClient.invalidateQueries({ queryKey: ['knowledgeItems'] }),
+        (error) => appError('UNKNOWN_ERROR', 'CollectScreen.handleSave failed', error)
+      );
       resetForm();
       Alert.alert('저장 완료', '저장되었습니다.');
-    } catch (error) {
-      logger.error('CollectScreen.handleSave failed', error);
-      Alert.alert('저장 실패', '저장 중 예상치 못한 오류가 발생했습니다.');
-    } finally {
-      setIsSaving(false);
-    }
+    }).pipe(
+      Effect.catchAll((error) =>
+        Effect.sync(() => {
+          logger.error('CollectScreen.handleSave failed', error);
+          Alert.alert('저장 실패', '저장 중 예상치 못한 오류가 발생했습니다.');
+        })
+      ),
+      Effect.ensuring(
+        Effect.sync(() => {
+          setIsSaving(false);
+        })
+      )
+    );
+
+    await Effect.runPromise(program);
   };
 
   const renderForm = () => {

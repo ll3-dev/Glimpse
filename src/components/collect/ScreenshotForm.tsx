@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Effect } from 'effect';
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { appError, tryPromise } from '@/src/lib/effect-result';
 import { ImagePlus, X } from '@/src/ui/icons';
 
 type ScreenshotFormProps = {
@@ -26,34 +28,54 @@ export function ScreenshotForm({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      return;
-    }
+    const program = Effect.gen(function* () {
+      const permission = yield* tryPromise(
+        () => ImagePicker.requestMediaLibraryPermissionsAsync(),
+        (error) => appError('UNKNOWN_ERROR', 'Failed to request media permission', error)
+      );
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
+      if (permission.status !== 'granted') {
+        return;
+      }
+
+      const result = yield* tryPromise(
+        () =>
+          ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            quality: 0.8,
+          }),
+        (error) => appError('UNKNOWN_ERROR', 'Failed to open image picker', error)
+      );
+
+      if (!result.canceled && result.assets[0]) {
+        const uri = result.assets[0].uri;
+        setSelectedImage(uri);
+        yield* tryPromise(
+          () => processImage(uri),
+          (error) => appError('UNKNOWN_ERROR', 'Failed to process image', error)
+        );
+      }
     });
 
-    if (!result.canceled && result.assets[0]) {
-      const uri = result.assets[0].uri;
-      setSelectedImage(uri);
-      await processImage(uri);
-    }
+    await Effect.runPromise(program);
   };
 
   const processImage = async (uri: string) => {
     setIsProcessing(true);
-    try {
-      // OCR 스텁: 실제 OCR 대신 더미 텍스트 반환
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    const program = Effect.sync(() => {
       const stubText = `[OCR 스텁]\n\n이미지에서 추출된 텍스트가 여기에 표시됩니다.\n\n현재는 MVP 단계로, 실제 OCR 기능은 추후 구현 예정입니다.\n\n이미지 URI: ${uri.split('/').pop()}`;
       onChangeExtractedText(stubText);
-    } finally {
-      setIsProcessing(false);
-    }
+    }).pipe(
+      Effect.delay(1000),
+      Effect.ensuring(
+        Effect.sync(() => {
+          setIsProcessing(false);
+        })
+      )
+    );
+
+    await Effect.runPromise(program);
   };
 
   const clearImage = () => {
