@@ -6,7 +6,7 @@ import { ShareForm } from './ShareForm';
 import {
   type CollectFormActions,
   type CollectFormState,
-} from './useCollectFormState';
+} from './collectForm.types';
 
 type CollectChannelFormProps = {
   channel: KnowledgeItemType;
