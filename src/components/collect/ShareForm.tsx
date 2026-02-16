@@ -2,12 +2,7 @@ import { ScrollView, TextInput, View, Text, Image as RNImage, Linking, Pressable
 import { Effect } from 'effect';
 import { appError, tryPromise } from '@/src/lib/effect-result';
 import { Link, FileText, Image } from '@/src/ui/icons';
-
-export type SharedContent = {
-  text?: string;
-  url?: string;
-  imageUri?: string;
-};
+import { type SharedContent } from '@/src/features/capture';
 
 type ShareFormProps = {
   sharedContent: SharedContent;
@@ -82,7 +77,7 @@ export function ShareForm({
             공유 대기 중
           </Text>
           <Text className="text-center text-sm font-medium text-app-muted">
-            다른 앱에서 공유 버튼을 눌러{'\n'}Glimpse로 내용을 보내세요
+            다른 앱에서 공유 버튼을 눌러{"\n"}Glimpse로 내용을 보내세요
           </Text>
         </View>
       ) : (
@@ -101,21 +96,27 @@ export function ShareForm({
             {sharedContent.imageUri && (
               <RNImage
                 source={{ uri: sharedContent.imageUri }}
-                className="mb-3 h-[180px] w-full rounded-md"
+                className="mb-3 h-45 w-full rounded-md"
                 resizeMode="cover"
               />
             )}
 
             {sharedContent.url && (
               <Pressable onPress={handleOpenUrl} className="mb-2">
-                <Text className="text-sm text-app-primary underline" numberOfLines={1}>
+                <Text
+                  className="text-sm text-app-primary underline"
+                  numberOfLines={1}
+                >
                   {sharedContent.url}
                 </Text>
               </Pressable>
             )}
 
             {sharedContent.text && !sharedContent.url && (
-              <Text className="text-sm leading-5 text-app-text" numberOfLines={5}>
+              <Text
+                className="text-sm leading-5 text-app-text"
+                numberOfLines={5}
+              >
                 {sharedContent.text}
               </Text>
             )}
@@ -140,7 +141,7 @@ export function ShareForm({
           <Text className="mb-2 text-sm font-semibold text-app-muted">
             본문
           </Text>
-          <View className="min-h-[150px] rounded-md border border-app-border bg-white p-4">
+          <View className="min-h-37.5 rounded-md border border-app-border bg-white p-4">
             <TextInput
               className="text-base leading-6 text-app-text"
               value={editedBody}

@@ -2,7 +2,7 @@ import type {
   CollectFormState,
   ReducerAction,
   ReducerState,
-} from './collectForm.types';
+} from './types';
 
 export function createInitialFormState(): CollectFormState {
   return {

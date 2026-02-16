@@ -96,7 +96,7 @@ export function ScreenshotForm({
       {!selectedImage ? (
         <Pressable
           onPress={pickImage}
-          className="min-h-[160px] items-center justify-center rounded-md border-2 border-dashed border-app-border bg-white"
+          className="min-h-40 items-center justify-center rounded-md border-2 border-dashed border-app-border bg-white"
         >
           <View className="items-center">
             <ImagePlus size={32} className="mb-2 text-app-muted" />
@@ -110,7 +110,7 @@ export function ScreenshotForm({
           <View className="relative">
             <Image
               source={{ uri: selectedImage }}
-              className="h-[200px] w-full rounded-md"
+              className="h-50 w-full rounded-md"
               resizeMode="contain"
             />
             <Pressable
@@ -134,7 +134,7 @@ export function ScreenshotForm({
       <Text className="mb-2 mt-4 text-sm font-semibold text-app-muted">
         추출된 텍스트
       </Text>
-      <View className="min-h-[150px] rounded-md border border-app-border bg-white p-4">
+      <View className="min-h-37.5 rounded-md border border-app-border bg-white p-4">
         <TextInput
           className="text-base leading-6 text-app-text"
           value={extractedText}

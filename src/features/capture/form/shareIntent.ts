@@ -1,10 +1,4 @@
-import type { SharedContent } from "./ShareForm";
-
-export type ShareIntentPayload = {
-  sharedContent: SharedContent;
-  shareText?: string;
-  shareUrl?: string;
-};
+import type { SharedContent, ShareIntentPayload } from './types';
 
 type IncomingShareIntent = {
   text?: string | null;
