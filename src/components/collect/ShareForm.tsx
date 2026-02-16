@@ -1,6 +1,7 @@
 import { ScrollView, TextInput, View, Text, Image as RNImage, Linking, Pressable } from 'react-native';
 import { Effect } from 'effect';
 import { appError, tryPromise } from '@/src/lib/effect-result';
+import { logger } from '@/src/utils/logger';
 import { Link, FileText, Image } from '@/src/ui/icons';
 import { type SharedContent } from '@/src/features/capture';
 
@@ -42,7 +43,9 @@ export function ShareForm({
       );
     });
 
-    await Effect.runPromise(program);
+    await Effect.runPromise(program).catch((error) => {
+      logger.error('Failed to open shared URL', error, { url: sharedContent.url });
+    });
   };
 
   const getContentTypeLabel = () => {

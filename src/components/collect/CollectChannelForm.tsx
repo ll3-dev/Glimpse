@@ -1,12 +1,9 @@
 import { type KnowledgeItemType } from '@/src/db/schema';
+import { type CollectFormActions, type CollectFormState } from '@/src/features/capture';
 import { CollectForm } from './CollectForm';
 import { HighlightForm } from './HighlightForm';
 import { ScreenshotForm } from './ScreenshotForm';
 import { ShareForm } from './ShareForm';
-import {
-  type CollectFormActions,
-  type CollectFormState,
-} from './collectForm.types';
 
 type CollectChannelFormProps = {
   channel: KnowledgeItemType;
