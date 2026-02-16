@@ -6,3 +6,5 @@
  */
 
 export * from './getAllKnowledgeItems';
+export * from './getLibraryEmptyState';
+export * from './resolveLibrarySearch';
