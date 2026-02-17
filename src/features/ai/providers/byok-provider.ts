@@ -8,6 +8,7 @@
  */
 
 import type { Result } from '@/src/lib/effect-result';
+import { isFailure } from '@/src/lib/effect-result';
 import {
   aiProviderError,
   type MetadataProvider,
@@ -269,14 +270,14 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
 
       // Generate summary
       const summaryResult = await callAPI(provider, buildSummaryPrompt(input), apiKey, fetchFn);
-      if (!summaryResult.success) {
-        return summaryResult;
+      if (isFailure(summaryResult)) {
+        return { success: false, error: summaryResult.error };
       }
 
       // Generate tags
       const tagsResult = await callAPI(provider, buildTagsPrompt(input), apiKey, fetchFn);
-      if (!tagsResult.success) {
-        return tagsResult;
+      if (isFailure(tagsResult)) {
+        return { success: false, error: tagsResult.error };
       }
 
       return {

@@ -3,8 +3,6 @@
  *
  * Uses on-device LLM for metadata generation.
  * Requires a downloaded model and enabled configuration.
- *
- * TODO: Integrate with react-native-llm or @react-native-ai/local
  */
 
 import type { Result } from '@/src/lib/effect-result';
@@ -15,6 +13,11 @@ import {
   isLocalLLMReady,
 } from '@/src/features/settings/local-llm.selectors';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
+import {
+  createLlamaService,
+  type LlamaService,
+  type GenerateOptions,
+} from '../llama-service';
 
 /**
  * Local LLM provider configuration
@@ -24,7 +27,18 @@ export interface LocalLLMProviderConfig {
   isReady?: () => boolean;
   /** Get selected model (defaults to getSelectedLocalModel selector) */
   getSelectedModel?: () => LocalModel | null;
+  /** Llama service instance (defaults to new createLlamaService()) */
+  llamaService?: LlamaService;
 }
+
+/**
+ * Default generation options for metadata
+ */
+const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
+  maxTokens: 256,
+  temperature: 0.3,
+  topP: 0.9,
+};
 
 /**
  * Build a prompt for summary generation
@@ -82,6 +96,10 @@ function parseTagsResponse(response: string): string[] {
 export function createLocalLLMProvider(config: LocalLLMProviderConfig = {}): MetadataProvider {
   const checkIsReady = config.isReady ?? isLocalLLMReady;
   const getSelected = config.getSelectedModel ?? getSelectedLocalModel;
+  const service = config.llamaService ?? createLlamaService();
+
+  // Track currently loaded model
+  let loadedModelId: string | null = null;
 
   return {
     name: 'local',
@@ -115,38 +133,62 @@ export function createLocalLLMProvider(config: LocalLLMProviderConfig = {}): Met
         };
       }
 
-      try {
-        // TODO: Integrate with react-native-llm
-        // Example integration pattern:
-        //
-        // const { GoogleLLM } = require('react-native-llm');
-        //
-        // const summaryResponse = await GoogleLLM.generate({
-        //   prompt: buildSummaryPrompt(input),
-        //   modelPath: model.path,
-        // });
-        //
-        // const tagsResponse = await GoogleLLM.generate({
-        //   prompt: buildTagsPrompt(input),
-        //   modelPath: model.path,
-        // });
-
-        // For now, return unavailable to trigger fallback
-        // Once native module is integrated, replace with actual implementation
+      // Check model path
+      if (!model.path) {
         return {
           success: false,
           error: aiProviderError(
             'AI_PROVIDER_UNAVAILABLE',
             'local',
-            'Local LLM SDK integration pending. Falling back to next provider.',
-            {
-              modelId: model.id,
-              modelName: model.name,
-              pendingIntegration: true
-            }
+            'Selected model has no path configured',
+            { modelId: model.id }
           ),
         };
+      }
+
+      try {
+        // Load model if not already loaded or if different model
+        if (loadedModelId !== model.id) {
+          // Unload previous model if any
+          if (service.isModelLoaded()) {
+            await service.unloadModel();
+          }
+
+          // Load new model
+          await service.loadModel(model.path, {
+            contextSize: 2048,
+            gpuLayers: 0, // CPU by default, can be configured later
+          });
+
+          loadedModelId = model.id;
+        }
+
+        // Generate summary
+        const summaryPrompt = buildSummaryPrompt(input);
+        const summaryResult = await service.generate(summaryPrompt, {
+          ...DEFAULT_GENERATE_OPTIONS,
+          maxTokens: 128, // Shorter for summary
+        });
+
+        // Generate tags
+        const tagsPrompt = buildTagsPrompt(input);
+        const tagsResult = await service.generate(tagsPrompt, {
+          ...DEFAULT_GENERATE_OPTIONS,
+          maxTokens: 64, // Shorter for tags
+        });
+
+        // Parse tags from response
+        const tags = parseTagsResponse(tagsResult.text);
+
+        return {
+          success: true,
+          data: {
+            summary: summaryResult.text.trim(),
+            tags,
+          },
+        };
       } catch (error) {
+        // Map to provider error
         return {
           success: false,
           error: aiProviderError(

@@ -2,14 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   BYOKProvider,
   disableBYOK,
+  disableLocalLLM,
   enableBYOK,
+  enableLocalLLM,
+  selectLocalLLMModel,
   setApiKey,
   setAppleIntelligenceEnabled,
   setProvider,
   useAppleIntelligenceConfig,
+  useAvailableLocalModels,
   useBYOKConfig,
   useBYOKCredentialsConfigured,
   useBYOKReady,
+  useLocalLLMEnabled,
+  useLocalLLMReady,
+  useSelectedLocalModelId,
   type BYOKProviderType,
 } from '@/src/features/settings';
 
@@ -19,12 +26,21 @@ export type ActionFeedback = {
 };
 
 export function useSettingsScreenState() {
+  // BYOK state
   const byokEnabled = useBYOKConfig((config) => config.enabled);
   const selectedProvider = useBYOKConfig((config) => config.provider);
   const storedApiKey = useBYOKConfig((config) => config.apiKey);
   const byokReady = useBYOKReady();
   const byokConfigured = useBYOKCredentialsConfigured();
+
+  // Apple Intelligence state
   const appleConfig = useAppleIntelligenceConfig();
+
+  // Local LLM state
+  const localLLMEnabled = useLocalLLMEnabled();
+  const localLLMReady = useLocalLLMReady();
+  const localLLMModels = useAvailableLocalModels();
+  const localLLMSelectedModelId = useSelectedLocalModelId();
 
   const [apiKeyInput, setApiKeyInput] = useState(storedApiKey || '');
   const [showKey, setShowKey] = useState(false);
@@ -33,6 +49,7 @@ export function useSettingsScreenState() {
     setApiKeyInput(storedApiKey || '');
   }, [storedApiKey]);
 
+  // BYOK actions
   const toggleBYOK = useCallback((): ActionFeedback | null => {
     if (byokEnabled) {
       disableBYOK();
@@ -89,6 +106,7 @@ export function useSettingsScreenState() {
     };
   }, [selectedProvider, apiKeyInput]);
 
+  // Apple Intelligence actions
   const toggleAppleIntelligence = useCallback(
     (enabled: boolean): ActionFeedback | null => {
       if (!setAppleIntelligenceEnabled(enabled) && enabled) {
@@ -105,6 +123,26 @@ export function useSettingsScreenState() {
     [appleConfig.unavailableReason]
   );
 
+  // Local LLM actions
+  const toggleLocalLLM = useCallback((value: boolean): ActionFeedback | null => {
+    if (value) {
+      const result = enableLocalLLM();
+      if (!result.success) {
+        return {
+          title: '활성화 실패',
+          message: result.error ?? '로컬 LLM을 활성화할 수 없습니다.',
+        };
+      }
+    } else {
+      disableLocalLLM();
+    }
+    return null;
+  }, []);
+
+  const selectLocalModel = useCallback((modelId: string) => {
+    selectLocalLLMModel(modelId);
+  }, []);
+
   return {
     state: {
       byokEnabled,
@@ -115,6 +153,10 @@ export function useSettingsScreenState() {
       byokConfigured,
       appleConfig,
       providers: BYOKProvider,
+      localLLMEnabled,
+      localLLMReady,
+      localLLMModels,
+      localLLMSelectedModelId,
     },
     actions: {
       setApiKeyInput,
@@ -123,6 +165,8 @@ export function useSettingsScreenState() {
       selectProvider,
       saveApiKey,
       toggleAppleIntelligence,
+      toggleLocalLLM,
+      selectLocalModel,
     },
   };
 }
