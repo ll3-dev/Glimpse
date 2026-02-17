@@ -11,6 +11,9 @@ import {
   type LocalModel,
 } from '@/src/stores/settings/local-llm.store';
 
+// Re-export types for convenience
+export type { LocalLLMConfig, LocalModel };
+
 /**
  * Get the full Local LLM configuration
  */

@@ -41,3 +41,35 @@ export {
   setAppleIntelligenceEnabled,
   getInferenceProvider,
 } from './appleIntelligenceToggle';
+
+// Local LLM - Types (re-exported from store)
+export { type LocalLLMConfig, type LocalModel } from './local-llm.selectors';
+
+// Local LLM - Selectors
+export {
+  getLocalLLMConfig,
+  useLocalLLMConfig,
+  isLocalLLMEnabled,
+  useLocalLLMEnabled,
+  isLocalLLMReady,
+  useLocalLLMReady,
+  getSelectedLocalModel,
+  useSelectedLocalModel,
+  getAvailableLocalModels,
+  useAvailableLocalModels,
+  getSelectedLocalModelId,
+  useSelectedLocalModelId,
+} from './local-llm.selectors';
+
+// Local LLM - Commands
+export {
+  enableLocalLLM,
+  disableLocalLLM,
+  selectModel as selectLocalLLMModel,
+  addModel as addLocalLLMModel,
+  removeModel as removeLocalLLMModel,
+  updateModel as updateLocalLLMModel,
+  markModelReady,
+  clearLocalLLMSettings,
+  setAvailableModels,
+} from './local-llm.commands';
