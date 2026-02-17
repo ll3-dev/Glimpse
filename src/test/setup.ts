@@ -19,6 +19,31 @@ mock.module("expo-crypto", () => ({
   randomUUID: nodeRandomUUID,
 }));
 
+// Mock react-native to avoid runtime errors in test environment
+mock.module("react-native", () => ({
+  Platform: {
+    OS: 'ios',
+    Version: '17.0',
+  },
+  NativeModules: {},
+  NativeEventEmitter: class NativeEventEmitter {
+    addListener() { return { remove: () => {} }; }
+    removeListener() {}
+    removeAllListeners() {}
+  },
+}));
+
+// Mock llama.rn for tests - provides stub implementation
+mock.module("llama.rn", () => ({
+  initLlama: mock(async () => ({
+    completion: mock(async () => ({
+      text: 'Generated text',
+      tokens_evaluated: 10,
+    })),
+    release: mock(async () => {}),
+  })),
+}));
+
 if (typeof globalWithDev.localStorage === 'undefined') {
   const storage = new Map<string, string>();
   globalWithDev.localStorage = {
