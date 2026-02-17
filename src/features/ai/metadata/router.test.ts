@@ -471,7 +471,7 @@ describe("metadata router", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.code).toBe("GENERATION_ERROR");
-        expect(result.error.message).toBe("All metadata providers failed");
+        expect(result.error.message).toContain("All metadata providers failed");
       }
     });
 
@@ -488,7 +488,7 @@ describe("metadata router", () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.message).toBe("All metadata providers failed");
+        expect(result.error.message).toContain("All metadata providers failed");
       }
     });
 
@@ -506,8 +506,9 @@ describe("metadata router", () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         // Should have error details from all providers
-        const details = result.error.details as { errors: unknown[] };
-        expect(details.errors.length).toBe(3);
+        const details = result.error.details as { failedProviders: unknown[]; totalErrors: number };
+        expect(details.failedProviders.length).toBe(3);
+        expect(details.totalErrors).toBe(3);
       }
     });
   });
