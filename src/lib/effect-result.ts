@@ -5,11 +5,12 @@ export type AppErrorCode =
   | 'DATABASE_ERROR'
   | 'NOT_FOUND'
   | 'GENERATION_ERROR'
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  | 'AI_PROVIDER_ERROR';
 
 export interface AppError {
-  readonly _tag: AppErrorCode;
-  readonly code: AppErrorCode;
+  readonly _tag: AppErrorCode | string;
+  readonly code: AppErrorCode | string;
   readonly message: string;
   readonly details?: unknown;
 }

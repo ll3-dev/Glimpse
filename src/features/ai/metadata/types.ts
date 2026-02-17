@@ -39,14 +39,17 @@ export type AIProviderErrorCode =
   | 'AI_PROVIDER_INTERNAL_ERROR';
 
 /**
- * AI Provider 에러
+ * AI Provider 에러 (AppError 호환)
  */
 export interface AIProviderError {
   readonly _tag: 'AI_PROVIDER_ERROR';
-  readonly code: AIProviderErrorCode;
+  readonly code: AIProviderErrorCode | string;
   readonly provider: string; // 'apple' | 'local' | 'byok' | 'stub'
   readonly message: string;
-  readonly cause?: unknown;
+  readonly details?: {
+    provider: string;
+    cause?: unknown;
+  };
 }
 
 /**
@@ -102,7 +105,10 @@ export function aiProviderError(
     code,
     provider,
     message,
-    cause,
+    details: {
+      provider,
+      cause,
+    },
   };
 }
 
