@@ -22,7 +22,7 @@ function AlertDialogOverlayWeb({
   return (
     <AlertDialogPrimitive.Overlay
       className={cn(
-        "z-50 bg-black/80 flex justify-center items-center p-2 absolute top-0 right-0 bottom-0 left-0",
+        "absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-2",
         open
           ? "web:animate-in web:fade-in-0"
           : "web:animate-out web:fade-out-0",
@@ -43,7 +43,7 @@ function AlertDialogOverlayNative({
   return (
     <AlertDialogPrimitive.Overlay
       className={cn(
-        "z-50 absolute top-0 right-0 bottom-0 left-0 bg-black/80 flex justify-center items-center p-2",
+        "absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-2",
         className
       )}
       {...props}
@@ -79,7 +79,7 @@ function AlertDialogContent({
       <AlertDialogOverlay>
         <AlertDialogPrimitive.Content
           className={cn(
-            "z-50 max-w-lg gap-4 border border-border bg-background p-6 shadow-lg shadow-foreground/10 web:duration-200 rounded-lg",
+            "z-50 max-w-lg gap-4 rounded-lg border border-border bg-background p-6 shadow-lg shadow-foreground/10 web:duration-200",
             open
               ? "web:animate-in web:fade-in-0 web:zoom-in-95"
               : "web:animate-out web:fade-out-0 web:zoom-out-95",
@@ -100,7 +100,7 @@ function AlertDialogFooter({ className, ...props }: ViewProps) {
   return (
     <View
       className={cn(
-        "flex flex-col-reverse sm:flex-row sm:justify-end gap-2",
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -117,7 +117,7 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       className={cn(
-        "text-lg native:text-xl text-foreground font-semibold",
+        "text-lg font-semibold text-foreground native:text-xl",
         className
       )}
       {...props}
@@ -134,7 +134,7 @@ function AlertDialogDescription({
   return (
     <AlertDialogPrimitive.Description
       className={cn(
-        "text-sm native:text-base text-muted-foreground",
+        "text-sm text-muted-foreground native:text-base",
         className
       )}
       {...props}
