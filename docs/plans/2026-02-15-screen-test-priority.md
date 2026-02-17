@@ -6,7 +6,7 @@ UI 작업 이후, 회귀 위험이 큰 화면부터 낮은 비용으로 테스�
 ## Why Screen Tests
 - Feature 테스트는 비즈니스 규칙 회귀를 막는다.
 - 화면 테스트는 상태 연결, 액션 wiring, 조건부 렌더 회귀를 막는다.
-- 이 프로젝트에서는 `review`, `digest`, `collect`의 사용자 플로우 리스크가 높다.
+- 이 프로젝트에서는 `review`, `digest`, `capture`의 사용자 플로우 리스크가 높다.
 
 ## Priority Rule
 - P0: 사용자 핵심 플로우 + 상태 전이 + 저장/응답 액션
@@ -32,7 +32,7 @@ UI 작업 이후, 회귀 위험이 큰 화면부터 낮은 비용으로 테스�
 - accept/ignore/dismiss 액션 시 카드 상태 반영
 - refresh 시 `generateRecommendations -> saveRecommendations -> reload` 호출
 
-### 3) `app/(tabs)/collect.tsx`
+### 3) `app/capture.tsx` (Modal)
 - 채널별 필수 입력 검증(note/link/highlight/screenshot/share)
 - 유효 입력 저장 시 `saveKnowledgeItem` 호출 payload 검증
 - 저장 성공 시 form reset + invalidateQueries 호출
@@ -46,11 +46,11 @@ UI 작업 이후, 회귀 위험이 큰 화면부터 낮은 비용으로 테스�
 - 빈 결과 시 `EmptyLibraryState` 노출
 
 ### 5) `app/(tabs)/_layout.tsx`
-- 탭 구성 `collect/library/review/digest` 존재 확인
+- 탭 구성 `library/review/digest` 존재 확인
 - `index` 탭 `href: null` 확인
 
 ### 6) `app/(tabs)/index.tsx`
-- `collect`로 redirect 확인
+- `library`로 redirect 확인
 
 ## P2 Backlog
 ### 7) `app/settings.tsx`
@@ -63,7 +63,7 @@ UI 작업 이후, 회귀 위험이 큰 화면부터 낮은 비용으로 테스�
 ## Implementation Order
 1. P0 `review`
 2. P0 `digest`
-3. P0 `collect`
+3. P0 `capture`
 4. P1 `library`
 5. P1 탭/redirect
 6. P2 settings/components

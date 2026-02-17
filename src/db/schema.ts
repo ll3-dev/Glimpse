@@ -13,7 +13,7 @@ export type KnowledgeItemType = (typeof knowledgeItemType)[number];
 
 /**
  * Knowledge Items table schema
- * Central storage for all user-collected knowledge (notes and links)
+ * Central storage for all user-captured knowledge (notes and links)
  */
 export const knowledgeItems = sqliteTable(
   'knowledge_items',

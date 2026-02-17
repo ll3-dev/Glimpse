@@ -63,7 +63,7 @@ export default function TabsLayout() {
 
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => router.push("/collect")}
+        onPress={() => router.push("/capture")}
         className="absolute right-6 w-14 h-14 rounded-full bg-black items-center justify-center shadow-lg"
         style={{ bottom: insets.bottom + 70 }}
       >
