@@ -4,6 +4,7 @@ import {
   type SaveKnowledgeItemDeps,
 } from './saveKnowledgeItem';
 import { MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
+import type { MetadataInput, MetadataOutput } from '@/src/features/ai/metadata';
 
 const insertValues = mock(async (_value: unknown) => undefined);
 const db = {
@@ -19,16 +20,29 @@ const initializeReviewSchedule = mock((createdAt: number) => ({
   difficulty: null,
   lastReviewedAt: null,
 }));
-const generateSummaryStub = mock(() => 'summary');
-const generateTagsStub = mock(() => ['stub-tag']);
+
+const generateMetadata = mock(async (input: MetadataInput) => {
+  // Simulate router behavior - combine title and content for processing
+  const fullContent = input.title
+    ? `${input.title}\n${input.content}`
+    : input.content;
+
+  return {
+    success: true,
+    data: {
+      summary: `[Stub Summary] ${fullContent.substring(0, 30)}...`,
+      tags: ['stub-tag', input.type ?? 'unknown'],
+    } as MetadataOutput,
+  };
+});
+
 const logger = { error: mock() };
 
 const deps = {
   db,
   knowledgeItems,
   initializeReviewSchedule,
-  generateSummaryStub,
-  generateTagsStub,
+  generateMetadata,
   logger,
 } as unknown as SaveKnowledgeItemDeps;
 
@@ -39,8 +53,7 @@ describe('saveKnowledgeItem', () => {
     db.insert.mockClear();
     insertValues.mockClear();
     initializeReviewSchedule.mockClear();
-    generateSummaryStub.mockClear();
-    generateTagsStub.mockClear();
+    generateMetadata.mockClear();
     logger.error.mockClear();
   });
 
@@ -95,7 +108,7 @@ describe('saveKnowledgeItem', () => {
     expect(initializeReviewSchedule).toHaveBeenCalledWith(1_700_000_000_000);
   });
 
-  test('generates metadata stubs and stores them for link input', async () => {
+  test('generates metadata via generateMetadata and stores them for link input', async () => {
     Date.now = () => 1_700_000_100_000;
     Math.random = () => 0.234567891;
 
@@ -107,17 +120,35 @@ describe('saveKnowledgeItem', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(generateSummaryStub).toHaveBeenCalledWith(
-      'Article\nRead later\nhttps://example.com/post'
-    );
-    expect(generateTagsStub).toHaveBeenCalledWith(
-      'Article\nRead later\nhttps://example.com/post'
-    );
+    expect(generateMetadata).toHaveBeenCalledTimes(1);
+
+    const metadataInput = generateMetadata.mock.calls[0]?.[0] as MetadataInput;
+    expect(metadataInput.content).toBe('Article\nRead later\nhttps://example.com/post');
+    expect(metadataInput.title).toBe('Article');
+    expect(metadataInput.type).toBe('link');
 
     const inserted = insertValues.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(inserted.summary).toBe('summary');
-    expect(inserted.tags).toEqual(['stub-tag']);
+    expect(inserted.summary).toContain('Stub Summary');
+    expect(inserted.tags).toEqual(expect.arrayContaining(['stub-tag', 'link']));
     expect(inserted.url).toBe('https://example.com/post');
+  });
+
+  test('uses empty metadata on generateMetadata failure (graceful degradation)', async () => {
+    generateMetadata.mockResolvedValueOnce({
+      success: false,
+      error: { _tag: 'GENERATION_ERROR', code: 'GENERATION_ERROR', message: 'AI failed' },
+    });
+
+    const result = await saveKnowledgeItem({
+      type: 'note',
+      body: 'test content',
+    });
+
+    expect(result.success).toBe(true);
+
+    const inserted = insertValues.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.summary).toBe('');
+    expect(inserted.tags).toEqual([]);
   });
 
   test('retries once on ID collision and then succeeds', async () => {

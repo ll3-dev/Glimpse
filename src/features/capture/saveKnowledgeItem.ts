@@ -5,7 +5,6 @@ import {
   tryPromise,
 } from '@/src/lib/effect-result';
 import { db, knowledgeItems, type KnowledgeItem, type NewKnowledgeItem } from '@/src/db';
-import { generateSummaryStub, generateTagsStub } from './stubs';
 import { initializeReviewSchedule } from '../review';
 import { logger } from '@/src/utils/logger';
 import { isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
@@ -20,6 +19,7 @@ import type {
   SaveResult,
 } from './saveKnowledgeItem.types';
 import { validateInput } from './saveKnowledgeItem.validation';
+import { metadataRouter } from '@/src/features/ai/metadata';
 
 export type {
   HighlightInput,
@@ -32,13 +32,13 @@ export type {
   SaveSuccessResult,
   ScreenshotInput,
   ShareInput,
+  GenerateMetadata,
 } from './saveKnowledgeItem.types';
 
 const defaultDeps: SaveKnowledgeItemDeps = {
   db,
   knowledgeItems,
-  generateSummaryStub,
-  generateTagsStub,
+  generateMetadata: (input) => metadataRouter.generate(input),
   initializeReviewSchedule,
   logger,
 };
@@ -55,8 +55,17 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps = defaultDep
 
     const now = Date.now();
     const contentForProcessing = createContentForProcessing(input);
-    const summary = deps.generateSummaryStub(contentForProcessing);
-    const tags = deps.generateTagsStub(contentForProcessing);
+
+    // Generate metadata via router (falls back to stub on failure)
+    const metadataResult = await deps.generateMetadata({
+      content: contentForProcessing,
+      title: input.title,
+      type: input.type,
+    });
+
+    // Use generated metadata, or empty defaults on failure (graceful degradation)
+    const summary = metadataResult.success ? metadataResult.data.summary : '';
+    const tags = metadataResult.success ? metadataResult.data.tags : [];
 
     for (let attempt = 0; attempt <= MAX_ID_COLLISION_RETRIES; attempt++) {
       const id = generateId();
