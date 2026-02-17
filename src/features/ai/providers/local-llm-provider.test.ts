@@ -1,7 +1,13 @@
-import { describe, expect, test, mock } from 'bun:test';
+import { describe, expect, test, mock, beforeEach } from 'bun:test';
 import { createLocalLLMProvider, buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './local-llm-provider';
 import type { LlamaService, GenerateResult } from '../llama-service';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
+import {
+  clearLocalLLMSettings,
+  addLocalLLMModel,
+  selectLocalLLMModel,
+} from '@/src/features/settings';
+import { setLocalLLMEnabled as setStoreEnabled } from '@/src/stores/settings/local-llm.store';
 
 /**
  * Create a mock llama service for testing
@@ -244,6 +250,64 @@ describe('local-llm-provider', () => {
         // Should not load model again
         expect(secondLoadCalls).toBe(firstLoadCalls);
       });
+    });
+  });
+});
+
+/**
+ * Store Integration Tests
+ *
+ * These tests verify that createLocalLLMProvider correctly reads from the
+ * settings store when using default selectors.
+ */
+describe('local-llm-provider store integration', () => {
+  beforeEach(() => {
+    clearLocalLLMSettings();
+  });
+
+  describe('isAvailable with store', () => {
+    test('returns false when enabled=false', async () => {
+      addLocalLLMModel({ id: 'test', name: 'Test', isReady: true });
+      selectLocalLLMModel('test');
+      // enabled is false by default
+
+      const provider = createLocalLLMProvider();
+      const available = await provider.isAvailable();
+
+      expect(available).toBe(false);
+    });
+
+    test('returns false when no model is selected', async () => {
+      addLocalLLMModel({ id: 'test', name: 'Test', isReady: true });
+      setStoreEnabled(true);
+      // No model selected
+
+      const provider = createLocalLLMProvider();
+      const available = await provider.isAvailable();
+
+      expect(available).toBe(false);
+    });
+
+    test('returns false when selected model is not ready', async () => {
+      addLocalLLMModel({ id: 'test', name: 'Test', isReady: false });
+      selectLocalLLMModel('test');
+      setStoreEnabled(true);
+
+      const provider = createLocalLLMProvider();
+      const available = await provider.isAvailable();
+
+      expect(available).toBe(false);
+    });
+
+    test('returns true when enabled + model selected + model ready', async () => {
+      addLocalLLMModel({ id: 'test', name: 'Test', isReady: true });
+      selectLocalLLMModel('test');
+      setStoreEnabled(true);
+
+      const provider = createLocalLLMProvider();
+      const available = await provider.isAvailable();
+
+      expect(available).toBe(true);
     });
   });
 });
