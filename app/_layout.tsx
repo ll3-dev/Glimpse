@@ -42,7 +42,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="collect" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
             <Stack.Screen name="library/[id]" />
           </Stack>
         </QueryClientProvider>
