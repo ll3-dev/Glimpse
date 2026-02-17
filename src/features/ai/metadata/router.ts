@@ -11,6 +11,7 @@ import type { MetadataProvider, MetadataInput, MetadataOutput, AiMetadataService
 import { stubProvider } from './stub-provider';
 import { appleProvider } from '../providers/apple-provider';
 import { localLLMProvider } from '../providers/local-llm-provider';
+import { byokProvider } from '../providers/byok-provider';
 
 /**
  * Provider priority order (highest to lowest)
@@ -18,7 +19,7 @@ import { localLLMProvider } from '../providers/local-llm-provider';
 const PROVIDER_PRIORITY: readonly MetadataProvider[] = [
   appleProvider, // Apple Intelligence (iOS 18.1+, macOS 15.1+)
   localLLMProvider, // On-device LLM
-  // BYOK provider will be added in unit 7
+  byokProvider, // External APIs (OpenAI, Anthropic, Google)
   stubProvider, // Always last as fallback
 ];
 
