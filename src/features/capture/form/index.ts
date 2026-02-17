@@ -1,8 +1,8 @@
 export {
-  useCollectFormState,
+  useCaptureFormState,
   type BuildSaveInputResult,
-  type CollectFormActions,
-  type CollectFormState,
+  type CaptureFormActions,
+  type CaptureFormState,
   type SharedContent,
 } from './useFormState';
 
@@ -11,7 +11,7 @@ export {
 } from './buildSaveInput';
 
 export {
-  collectFormReducer,
+  captureFormReducer,
   createInitialState,
   createInitialFormState,
 } from './reducer';

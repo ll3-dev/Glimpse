@@ -5,7 +5,7 @@ describe('getLibraryEmptyState', () => {
   test('returns no-items state when there are no saved items', () => {
     const state = getLibraryEmptyState('', 0, 0);
     expect(state.title).toBe('아직 저장된 지식이 없습니다');
-    expect(state.description).toBe('수집 탭에서 메모나 링크를 저장해 보세요.');
+    expect(state.description).toBe('새로운 기록을 만들어 지식을 저장해 보세요.');
   });
 
   test('returns no-items state even with search query when total items are zero', () => {

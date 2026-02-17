@@ -5,7 +5,7 @@ export type LibraryEmptyState = {
 
 const NO_ITEMS_STATE: LibraryEmptyState = {
   title: '아직 저장된 지식이 없습니다',
-  description: '수집 탭에서 메모나 링크를 저장해 보세요.',
+  description: '새로운 기록을 만들어 지식을 저장해 보세요.',
 };
 
 const NO_SEARCH_RESULTS_STATE: LibraryEmptyState = {

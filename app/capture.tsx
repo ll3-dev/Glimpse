@@ -5,15 +5,15 @@ import { useRouter } from 'expo-router';
 import { X } from '@/src/ui/icons';
 import {
   ChannelSegment,
-  CollectChannelForm,
-  CollectSaveButton,
-  useCollectFormState,
-} from '@/src/components/collect';
+  CaptureChannelForm,
+  CaptureSaveButton,
+  useCaptureFormState,
+} from '@/src/components/capture';
 import { ScreenHeader } from '@/src/ui/primitives';
 
-export default function CollectScreen() {
+export default function CaptureScreen() {
   const { channel, setChannel, state, actions, resetForm, buildSaveInput } =
-    useCollectFormState();
+    useCaptureFormState();
   const { mutate: saveItem, isPending } = useSaveKnowledgeItemMutation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -59,11 +59,11 @@ export default function CollectScreen() {
             </TouchableOpacity>
           }
           rightElement={
-            <CollectSaveButton isSaving={isPending} onPress={handleSave} />
+            <CaptureSaveButton isSaving={isPending} onPress={handleSave} />
           }
         />
         <ChannelSegment value={channel} onChange={setChannel} />
-        <CollectChannelForm
+        <CaptureChannelForm
           channel={channel}
           bottomInset={insets.bottom}
           state={state}

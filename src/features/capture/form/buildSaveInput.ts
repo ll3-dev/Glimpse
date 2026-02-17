@@ -1,9 +1,9 @@
 import { type KnowledgeItemType } from '@/src/db/schema';
-import type { BuildSaveInputResult, CollectFormState } from './types';
+import type { BuildSaveInputResult, CaptureFormState } from './types';
 
 export function buildSaveInputByChannel(
   channel: KnowledgeItemType,
-  state: CollectFormState
+  state: CaptureFormState
 ): BuildSaveInputResult {
   switch (channel) {
     case 'note':

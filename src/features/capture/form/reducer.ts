@@ -1,10 +1,10 @@
 import type {
-  CollectFormState,
+  CaptureFormState,
   ReducerAction,
   ReducerState,
 } from './types';
 
-export function createInitialFormState(): CollectFormState {
+export function createInitialFormState(): CaptureFormState {
   return {
     title: '',
     body: '',
@@ -24,7 +24,7 @@ export function createInitialState(): ReducerState {
   };
 }
 
-export function collectFormReducer(
+export function captureFormReducer(
   state: ReducerState,
   action: ReducerAction
 ): ReducerState {
@@ -63,7 +63,7 @@ export function collectFormReducer(
       return { ...state, form: { ...state.form, shareBody: action.value } };
 
     case 'apply_share_intent': {
-      const nextForm: CollectFormState = {
+      const nextForm: CaptureFormState = {
         ...state.form,
         sharedContent: action.sharedContent,
       };

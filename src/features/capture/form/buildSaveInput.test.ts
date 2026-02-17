@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { buildSaveInputByChannel } from './buildSaveInput';
-import type { CollectFormState } from './types';
+import type { CaptureFormState } from './types';
 import type { KnowledgeItemType } from '@/src/db/schema';
 
-const createEmptyFormState = (): CollectFormState => ({
+const createEmptyFormState = (): CaptureFormState => ({
   title: '',
   body: '',
   highlightText: '',

@@ -1,28 +1,28 @@
 import { type KnowledgeItemType } from '@/src/db/schema';
-import { type CollectFormActions, type CollectFormState } from '@/src/features/capture';
-import { CollectForm } from './CollectForm';
+import { type CaptureFormActions, type CaptureFormState } from '@/src/features/capture';
+import { CaptureForm } from './CaptureForm';
 import { HighlightForm } from './HighlightForm';
 import { ScreenshotForm } from './ScreenshotForm';
 import { ShareForm } from './ShareForm';
 
-type CollectChannelFormProps = {
+type CaptureChannelFormProps = {
   channel: KnowledgeItemType;
   bottomInset: number;
-  state: CollectFormState;
-  actions: CollectFormActions;
+  state: CaptureFormState;
+  actions: CaptureFormActions;
 };
 
-export function CollectChannelForm({
+export function CaptureChannelForm({
   channel,
   bottomInset,
   state,
   actions,
-}: CollectChannelFormProps) {
+}: CaptureChannelFormProps) {
   switch (channel) {
     case 'note':
     case 'link':
       return (
-        <CollectForm
+        <CaptureForm
           title={state.title}
           body={state.body}
           bottomInset={bottomInset}

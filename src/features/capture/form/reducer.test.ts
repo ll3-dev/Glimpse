@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   createInitialFormState,
   createInitialState,
-  collectFormReducer,
+  captureFormReducer,
 } from './reducer';
 import type { ReducerState, ReducerAction, SharedContent } from './types';
 
@@ -28,7 +28,7 @@ describe('createInitialState', () => {
   });
 });
 
-describe('collectFormReducer', () => {
+describe('captureFormReducer', () => {
   let state: ReducerState;
 
   test('set_channel resets form to initial state', () => {
@@ -38,7 +38,7 @@ describe('collectFormReducer', () => {
     };
 
     const action: ReducerAction = { type: 'set_channel', value: 'link' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
 
     expect(newState.channel).toBe('link');
     expect(newState.form).toEqual(createInitialFormState());
@@ -51,7 +51,7 @@ describe('collectFormReducer', () => {
     };
 
     const action: ReducerAction = { type: 'reset_form' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
 
     expect(newState.channel).toBe('highlight');
     expect(newState.form).toEqual(createInitialFormState());
@@ -60,49 +60,49 @@ describe('collectFormReducer', () => {
   test('set_title updates title', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_title', value: 'New Title' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.title).toBe('New Title');
   });
 
   test('set_body updates body', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_body', value: 'New body content' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.body).toBe('New body content');
   });
 
   test('set_highlight_text updates highlightText', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_highlight_text', value: 'Highlighted' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.highlightText).toBe('Highlighted');
   });
 
   test('set_highlight_source updates highlightSource', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_highlight_source', value: 'Source' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.highlightSource).toBe('Source');
   });
 
   test('set_screenshot_text updates screenshotText', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_screenshot_text', value: 'OCR text' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.screenshotText).toBe('OCR text');
   });
 
   test('set_share_title updates shareTitle', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_share_title', value: 'Share Title' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.shareTitle).toBe('Share Title');
   });
 
   test('set_share_body updates shareBody', () => {
     state = createInitialState();
     const action: ReducerAction = { type: 'set_share_body', value: 'Share body' };
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState.form.shareBody).toBe('Share body');
   });
 
@@ -113,7 +113,7 @@ describe('collectFormReducer', () => {
         type: 'apply_share_intent',
         sharedContent: { text: 'shared' },
       };
-      const newState = collectFormReducer(state, action);
+      const newState = captureFormReducer(state, action);
       expect(newState.channel).toBe('share');
     });
 
@@ -128,7 +128,7 @@ describe('collectFormReducer', () => {
         type: 'apply_share_intent',
         sharedContent,
       };
-      const newState = collectFormReducer(state, action);
+      const newState = captureFormReducer(state, action);
       expect(newState.form.sharedContent).toEqual(sharedContent);
     });
 
@@ -139,7 +139,7 @@ describe('collectFormReducer', () => {
         sharedContent: {},
         shareText: 'Text from share',
       };
-      const newState = collectFormReducer(state, action);
+      const newState = captureFormReducer(state, action);
       expect(newState.form.shareBody).toBe('Text from share');
     });
 
@@ -150,7 +150,7 @@ describe('collectFormReducer', () => {
         sharedContent: {},
         shareUrl: 'https://example.com',
       };
-      const newState = collectFormReducer(state, action);
+      const newState = captureFormReducer(state, action);
       expect(newState.form.shareTitle).toBe('https://example.com');
     });
 
@@ -160,7 +160,7 @@ describe('collectFormReducer', () => {
         type: 'apply_share_intent',
         sharedContent: { url: 'https://example.com' },
       };
-      const newState = collectFormReducer(state, action);
+      const newState = captureFormReducer(state, action);
       expect(newState.form.shareBody).toBe('');
       expect(newState.form.shareTitle).toBe('');
     });
@@ -179,7 +179,7 @@ describe('collectFormReducer', () => {
         sharedContent: { text: 'New shared' },
         shareText: 'New text',
       };
-      const newState = collectFormReducer(state, action);
+      const newState = captureFormReducer(state, action);
       // Form should have new values
       expect(newState.form.sharedContent.text).toBe('New shared');
       expect(newState.form.shareBody).toBe('New text');
@@ -191,7 +191,7 @@ describe('collectFormReducer', () => {
   test('returns unchanged state for unknown action', () => {
     state = createInitialState();
     const action = { type: 'unknown_action' } as unknown as ReducerAction;
-    const newState = collectFormReducer(state, action);
+    const newState = captureFormReducer(state, action);
     expect(newState).toEqual(state);
   });
 });

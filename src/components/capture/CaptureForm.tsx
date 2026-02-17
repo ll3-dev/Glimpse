@@ -1,6 +1,6 @@
 import { ScrollView, TextInput, View } from 'react-native';
 
-type CollectFormProps = {
+type CaptureFormProps = {
   title: string;
   body: string;
   bottomInset: number;
@@ -9,14 +9,14 @@ type CollectFormProps = {
   onChangeBody: (value: string) => void;
 };
 
-export function CollectForm({
+export function CaptureForm({
   title,
   body,
   bottomInset,
   placeholder = '자유롭게 기록하세요...',
   onChangeTitle,
   onChangeBody,
-}: CollectFormProps) {
+}: CaptureFormProps) {
   return (
     <ScrollView
       className="flex-1"

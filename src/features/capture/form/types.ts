@@ -11,7 +11,7 @@ export type BuildSaveInputResult =
   | { input: KnowledgeItemInput }
   | { errorMessage: string };
 
-export type CollectFormState = {
+export type CaptureFormState = {
   title: string;
   body: string;
   highlightText: string;
@@ -22,7 +22,7 @@ export type CollectFormState = {
   sharedContent: SharedContent;
 };
 
-export type CollectFormActions = {
+export type CaptureFormActions = {
   setTitle: (value: string) => void;
   setBody: (value: string) => void;
   setHighlightText: (value: string) => void;
@@ -34,7 +34,7 @@ export type CollectFormActions = {
 
 export type ReducerState = {
   channel: KnowledgeItemType;
-  form: CollectFormState;
+  form: CaptureFormState;
 };
 
 export type ReducerAction =
