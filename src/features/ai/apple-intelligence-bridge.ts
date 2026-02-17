@@ -53,7 +53,7 @@ interface AppleIntelligenceNativeModule {
 /**
  * Map availability status code to reason
  */
-function mapAvailabilityStatus(status: number): AppleIntelligenceAvailability {
+export function mapAvailabilityStatus(status: number): AppleIntelligenceAvailability {
   switch (status) {
     case 0: // available
       return { available: true };
