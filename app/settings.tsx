@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { ScreenHeader, Card } from '@/src/ui/primitives';
 import { AppleIntelligenceSection } from '@/src/components/settings/AppleIntelligenceSection';
 import { BYOKSection } from '@/src/components/settings/BYOKSection';
+import { LocalLLMSection } from '@/src/components/settings/LocalLLMSection';
 import { useSettingsScreenState } from '@/src/components/settings/useSettingsScreenState';
 
 export default function SettingsScreen() {
@@ -26,6 +27,13 @@ export default function SettingsScreen() {
 
   const handleToggleAppleIntelligence = (value: boolean) => {
     const feedback = actions.toggleAppleIntelligence(value);
+    if (feedback) {
+      Alert.alert(feedback.title, feedback.message);
+    }
+  };
+
+  const handleToggleLocalLLM = (value: boolean) => {
+    const feedback = actions.toggleLocalLLM(value);
     if (feedback) {
       Alert.alert(feedback.title, feedback.message);
     }
@@ -53,6 +61,15 @@ export default function SettingsScreen() {
         <AppleIntelligenceSection
           config={state.appleConfig}
           onToggle={handleToggleAppleIntelligence}
+        />
+
+        <LocalLLMSection
+          enabled={state.localLLMEnabled}
+          ready={state.localLLMReady}
+          models={state.localLLMModels}
+          selectedModelId={state.localLLMSelectedModelId}
+          onToggle={handleToggleLocalLLM}
+          onSelectModel={actions.selectLocalModel}
         />
 
         <BYOKSection
