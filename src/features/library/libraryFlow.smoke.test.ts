@@ -10,11 +10,12 @@ import {
 import { filterKnowledgeItems } from '@/src/features/search/filterKnowledgeItems';
 import { parseQueryToKeyword } from '@/src/features/search/parseQueryToKeyword';
 import type { KnowledgeItem } from '@/src/db';
+import type { MetadataInput, MetadataOutput } from '@/src/features/ai/metadata';
 
 type InsertableItem = Omit<KnowledgeItem, 'id'> & { id: string };
 
 describe('library flow smoke', () => {
-  test('collect save -> library query -> query-style search', async () => {
+  test('capture save -> library query -> query-style search', async () => {
     const originalNow = Date.now;
     let now = 1_700_000_000_000;
     Date.now = () => {
@@ -44,8 +45,13 @@ describe('library flow smoke', () => {
       const saveDeps = {
         db,
         knowledgeItems,
-        generateSummaryStub: (content: string) => `[summary] ${content}`,
-        generateTagsStub: (content: string) => [content.includes('React') ? 'react' : 'general'],
+        generateMetadata: async (input: MetadataInput): Promise<{ success: true; data: MetadataOutput }> => ({
+          success: true,
+          data: {
+            summary: `[summary] ${input.content}`,
+            tags: [input.content?.includes('React') ? 'react' : 'general'],
+          },
+        }),
         initializeReviewSchedule: (createdAt: number) => ({
           nextReviewAt: createdAt + 1000,
           stability: null,

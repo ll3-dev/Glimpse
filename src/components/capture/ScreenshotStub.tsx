@@ -17,10 +17,10 @@ export function ScreenshotStub({ bottomInset }: ScreenshotStubProps) {
       <Text className="mb-2 text-xl font-semibold text-app-text">
         스크린샷 캡처
       </Text>
-      <Text className="mb-8 text-center text-base text-muted-foreground">
+      <Text className="mb-8 text-base text-center text-muted-foreground">
         스크린샷을 선택하면 OCR로 텍스트를 추출합니다
       </Text>
-      <Pressable className="rounded-full bg-foreground px-6 py-3 active:opacity-80">
+      <Pressable className="rounded-full px-6 py-3 bg-foreground active:opacity-80">
         <Text className="text-base font-medium text-background">
           이미지 선택
         </Text>

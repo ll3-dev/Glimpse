@@ -1,11 +1,11 @@
 import { TouchableOpacity, Text } from 'react-native';
 
-type CollectSaveButtonProps = {
+type CaptureSaveButtonProps = {
   isSaving: boolean;
   onPress: () => void;
 };
 
-export function CollectSaveButton({ isSaving, onPress }: CollectSaveButtonProps) {
+export function CaptureSaveButton({ isSaving, onPress }: CaptureSaveButtonProps) {
   return (
     <TouchableOpacity
       className={`px-4 py-2 rounded-md bg-app-primary ${isSaving ? 'opacity-30' : ''}`}

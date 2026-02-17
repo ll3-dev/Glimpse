@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useReducer } from 'react';
 import { useShareIntentContext } from 'expo-share-intent';
 import { buildSaveInputByChannel } from "./buildSaveInput";
-import { collectFormReducer, createInitialState } from "./reducer";
+import { captureFormReducer, createInitialState } from "./reducer";
 import { parseShareIntent } from "./shareIntent";
-import type { CollectFormActions, CollectFormState } from "./types";
+import type { CaptureFormActions, CaptureFormState } from "./types";
 import { type KnowledgeItemType } from "@/src/db/schema";
 
 export type {
   BuildSaveInputResult,
-  CollectFormActions,
-  CollectFormState,
+  CaptureFormActions,
+  CaptureFormState,
   SharedContent,
 } from "./types";
 
-export function useCollectFormState() {
-  const [reducerState, dispatch] = useReducer(collectFormReducer, undefined, createInitialState);
+export function useCaptureFormState() {
+  const [reducerState, dispatch] = useReducer(captureFormReducer, undefined, createInitialState);
   const { hasShareIntent, shareIntent, resetShareIntent } =
     useShareIntentContext();
   const { channel, form } = reducerState;
@@ -50,7 +50,7 @@ export function useCollectFormState() {
     [channel, form],
   );
 
-  const state: CollectFormState = {
+  const state: CaptureFormState = {
     title: form.title,
     body: form.body,
     highlightText: form.highlightText,
@@ -61,7 +61,7 @@ export function useCollectFormState() {
     sharedContent: form.sharedContent,
   };
 
-  const actions: CollectFormActions = {
+  const actions: CaptureFormActions = {
     setTitle: (value) => dispatch({ type: 'set_title', value }),
     setBody: (value) => dispatch({ type: 'set_body', value }),
     setHighlightText: (value) => dispatch({ type: 'set_highlight_text', value }),

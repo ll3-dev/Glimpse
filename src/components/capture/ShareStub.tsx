@@ -17,11 +17,11 @@ export function ShareStub({ bottomInset }: ShareStubProps) {
       <Text className="mb-2 text-xl font-semibold text-app-text">
         공유로 받기
       </Text>
-      <Text className="mb-8 text-center text-base text-muted-foreground">
+      <Text className="mb-8 text-base text-center text-muted-foreground">
         다른 앱에서 공유 버튼을 눌러{'\n'}Glimpse로 내용을 보내세요
       </Text>
-      <View className="rounded-lg bg-muted px-6 py-4">
-        <Text className="text-center text-sm text-muted-foreground">
+      <View className="rounded-lg px-6 py-4 bg-muted">
+        <Text className="text-sm text-center text-muted-foreground">
           OS 공유 시트에서 Glimpse 선택
         </Text>
       </View>

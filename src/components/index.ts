@@ -1,2 +1,2 @@
-export * from './collect';
+export * from './capture';
 export * from './library';

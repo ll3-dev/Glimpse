@@ -23,15 +23,15 @@ export { generateSummaryStub, generateTagsStub } from './stubs';
 
 // Form state management
 export {
-  useCollectFormState,
+  useCaptureFormState,
   buildSaveInputByChannel,
-  collectFormReducer,
+  captureFormReducer,
   createInitialState,
   createInitialFormState,
   parseShareIntent,
   type BuildSaveInputResult,
-  type CollectFormActions,
-  type CollectFormState,
+  type CaptureFormActions,
+  type CaptureFormState,
   type SharedContent,
   type ReducerState,
   type ReducerAction,

@@ -88,7 +88,7 @@ export function ShareForm({
           {/* 수신된 콘텐츠 미리보기 */}
           <View className="mb-6 rounded-md border border-app-border bg-white p-4">
             <View className="mb-3 flex-row items-center gap-2">
-              <View className="p-1 rounded bg-app-border/30">
+              <View className="rounded bg-app-border/30 p-1">
                 {getContentTypeIcon()}
               </View>
               <Text className="text-xs font-bold text-app-muted uppercase tracking-tight">
