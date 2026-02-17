@@ -2,6 +2,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Check, X, Minus } from '@/src/ui/icons';
 import type { KnowledgeItem, Recommendation, RecommendationStatus } from '@/src/db';
 import { Card } from '@/src/ui/primitives';
+import { cn } from '@/src/lib/utils';
 
 type RecommendationCardProps = {
   itemA: KnowledgeItem;
@@ -39,16 +40,16 @@ function StatusBadge({ status }: { status: RecommendationStatus }) {
   if (status === 'pending') return null;
 
   const statusConfig = {
-    accepted: { label: '수락함', className: 'bg-green-100 text-green-700' },
-    ignored: { label: '무시함', className: 'bg-red-100 text-red-700' },
-    dismissed: { label: '닫음', className: 'bg-app-border/40 text-app-muted' },
+    accepted: { label: '수락함', backgroundClassName: 'bg-green-100', textClassName: 'text-green-700' },
+    ignored: { label: '무시함', backgroundClassName: 'bg-red-100', textClassName: 'text-red-700' },
+    dismissed: { label: '닫음', backgroundClassName: 'bg-app-border/40', textClassName: 'text-app-muted' },
   };
 
   const config = statusConfig[status];
 
   return (
-    <View className={`rounded px-2 py-0.5 ${config.className.split(' ')[0]}`}>
-      <Text className={`text-[10px] font-bold uppercase ${config.className.split(' ')[1]}`}>
+    <View className={cn('rounded px-2 py-0.5', config.backgroundClassName)}>
+      <Text className={cn('text-[10px] font-bold uppercase', config.textClassName)}>
         {config.label}
       </Text>
     </View>
@@ -75,7 +76,7 @@ export function RecommendationCard({
       )}
 
       {/* Item A */}
-      <View className="flex-row items-start gap-3 mb-2">
+      <View className="mb-2 flex-row items-start gap-3">
         <Text className="text-base">{getTypeEmoji(itemA.type)}</Text>
         <View className="flex-1">
           <Text className="text-[10px] font-bold text-app-muted uppercase tracking-tight">항목 1</Text>
@@ -93,7 +94,7 @@ export function RecommendationCard({
       </View>
 
       {/* Item B */}
-      <View className="flex-row items-start gap-3 mb-3">
+      <View className="mb-3 flex-row items-start gap-3">
         <Text className="text-base">{getTypeEmoji(itemB.type)}</Text>
         <View className="flex-1">
           <Text className="text-[10px] font-bold text-app-muted uppercase tracking-tight">항목 2</Text>
@@ -104,7 +105,7 @@ export function RecommendationCard({
       </View>
 
       {/* Reason */}
-      <View className="mb-4 rounded-md bg-app-bg px-3 py-2 border border-app-border/50">
+      <View className="mb-4 rounded-md border border-app-border/50 bg-app-bg px-3 py-2">
         <Text className="text-xs leading-5 text-app-muted font-medium">
           💡 {recommendation.reason}
         </Text>

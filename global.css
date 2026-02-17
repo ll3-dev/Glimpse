@@ -10,4 +10,22 @@
   --color-app-subtle: #9b9a97;
   --color-app-primary: #2383e2;
   --color-app-accent: #eb5757;
+
+  /* Semantic tokens used by shared primitives */
+  --color-background: var(--color-app-surface);
+  --color-foreground: var(--color-app-text);
+  --color-muted: var(--color-app-border);
+  --color-muted-foreground: var(--color-app-muted);
+  --color-border: var(--color-app-border);
+  --color-input: var(--color-app-border);
+  --color-ring: var(--color-app-primary);
+  --color-primary: var(--color-app-primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-app-bg);
+  --color-secondary-foreground: var(--color-app-text);
+  --color-accent: var(--color-app-bg);
+  --color-accent-foreground: var(--color-app-text);
+  --color-destructive: var(--color-app-accent);
+  --color-destructive-foreground: #ffffff;
+  --color-popover-foreground: var(--color-app-text);
 }

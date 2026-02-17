@@ -53,14 +53,14 @@ export function QueryStateScrollView<T>({
           <Text className="mb-2 text-lg font-medium text-app-text">
             데이터를 불러오지 못했습니다
           </Text>
-          <Text className="text-center text-sm text-muted-foreground">
+          <Text className="text-sm text-center text-muted-foreground">
             {error.message || '다시 시도해주세요'}
           </Text>
         </View>
       ) : data.length === 0 ? (
         <View className="items-center justify-center px-8 py-20">
           <Text className="mb-2 text-lg font-medium text-app-text">{emptyTitle}</Text>
-          <Text className="text-center text-sm text-muted-foreground">{emptyDescription}</Text>
+          <Text className="text-sm text-center text-muted-foreground">{emptyDescription}</Text>
         </View>
       ) : (
         data.map((item) => (
