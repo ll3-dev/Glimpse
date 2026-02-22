@@ -31,6 +31,41 @@ mock.module("react-native", () => ({
     removeListener() {}
     removeAllListeners() {}
   },
+  TurboModuleRegistry: {
+    getEnforcing: () => ({}),
+  },
+}));
+
+// Mock react-native-nitro-modules for tests
+const nitroStorage = new Map<string, unknown>();
+
+mock.module("react-native-nitro-modules", () => ({
+  NitroModules: {
+    createHybridObject: () => null,
+  },
+  HybridObject: class {},
+}));
+
+// Mock react-native-mmkv for tests
+mock.module("react-native-mmkv", () => ({
+  createMMKV: () => ({
+    id: 'test-storage',
+    size: 0,
+    isReadOnly: false,
+    set: (key: string, value: unknown) => { nitroStorage.set(key, value); },
+    getBoolean: (key: string) => nitroStorage.get(key) as boolean | undefined,
+    getString: (key: string) => nitroStorage.get(key) as string | undefined,
+    getNumber: (key: string) => nitroStorage.get(key) as number | undefined,
+    getBuffer: () => undefined,
+    contains: (key: string) => nitroStorage.has(key),
+    remove: (key: string) => { nitroStorage.delete(key); return true; },
+    getAllKeys: () => Array.from(nitroStorage.keys()),
+    clearAll: () => nitroStorage.clear(),
+    recrypt: () => {},
+    trim: () => {},
+    addOnValueChangedListener: () => ({ remove: () => {} }),
+    importAllFrom: () => 0,
+  }),
 }));
 
 // Mock llama.rn for tests - provides stub implementation
