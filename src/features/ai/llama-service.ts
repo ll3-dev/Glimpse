@@ -45,6 +45,8 @@ export interface LoadModelOptions {
   gpuLayers?: number;
   /** Use memory lock for better performance */
   useMlock?: boolean;
+  /** Callback for loading progress updates */
+  onProgress?: (progress: number) => void;
 }
 
 /**
@@ -129,12 +131,18 @@ export function createLlamaService(): LlamaService {
 
       try {
         // Initialize llama context with the model
-        context = await initLlama({
-          model: modelPath,
-          use_mlock: options?.useMlock ?? true,
-          n_ctx: options?.contextSize ?? 2048,
-          n_gpu_layers: options?.gpuLayers ?? 0,
-        });
+        context = await initLlama(
+          {
+            model: modelPath,
+            use_mlock: options?.useMlock ?? true,
+            n_ctx: options?.contextSize ?? 2048,
+            n_gpu_layers: options?.gpuLayers ?? 0,
+          },
+          (progress) => {
+            // llama.rn provides progress as a number (0-100)
+            options?.onProgress?.(Math.round(progress));
+          }
+        );
       } catch (error) {
         context = null;
         throw new Error(
