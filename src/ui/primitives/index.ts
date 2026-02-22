@@ -28,3 +28,4 @@ export { Tooltip, TooltipContent, TooltipTrigger } from '@/src/ui/primitives/too
 export { View } from '@/src/ui/primitives/view';
 export { Badge, badgeTextVariants, badgeVariants } from '@/src/ui/primitives/badge';
 export { ScreenHeader } from '@/src/ui/primitives/screen-header';
+export { Switch } from '@/src/ui/primitives/switch';

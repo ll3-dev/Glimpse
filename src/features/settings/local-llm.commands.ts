@@ -13,6 +13,16 @@ import {
   addLocalLLMModel,
   removeLocalLLMModel,
   updateLocalLLMModel,
+  startLocalLLMDownload,
+  updateLocalLLMDownloadProgress,
+  finishLocalLLMDownload,
+  failLocalLLMDownload,
+  clearLocalLLMDownloadError,
+  startLocalLLMLoading,
+  updateLocalLLMLoadProgress,
+  finishLocalLLMLoading,
+  failLocalLLMLoading,
+  clearLocalLLMLoadError,
   type LocalModel,
 } from '@/src/stores/settings/local-llm.store';
 
@@ -117,4 +127,82 @@ export function setAvailableModels(models: LocalModel[]): void {
         ? config.selectedModelId
         : null,
   }));
+}
+
+// ============================================
+// Download Commands
+// ============================================
+
+/**
+ * Start downloading a model
+ */
+export function startDownload(modelId: string): void {
+  startLocalLLMDownload(modelId);
+}
+
+/**
+ * Update download progress
+ */
+export function updateDownloadProgress(progress: number): void {
+  updateLocalLLMDownloadProgress(progress);
+}
+
+/**
+ * Finish model download successfully
+ */
+export function finishDownload(modelId: string, path: string): void {
+  finishLocalLLMDownload(modelId, path);
+}
+
+/**
+ * Fail model download with error
+ */
+export function failDownload(error: string): void {
+  failLocalLLMDownload(error);
+}
+
+/**
+ * Clear download error
+ */
+export function clearDownloadError(): void {
+  clearLocalLLMDownloadError();
+}
+
+// ============================================
+// Loading Commands
+// ============================================
+
+/**
+ * Start loading a model into memory
+ */
+export function startLoading(): void {
+  startLocalLLMLoading();
+}
+
+/**
+ * Update model loading progress
+ */
+export function updateLoadProgress(progress: number): void {
+  updateLocalLLMLoadProgress(progress);
+}
+
+/**
+ * Finish loading model successfully
+ */
+export function finishLoading(): void {
+  finishLocalLLMLoading();
+}
+
+/**
+ * Fail loading with error
+ */
+export function failLoading(error: string): void {
+  failLocalLLMLoading(error);
+}
+
+/**
+ * Clear loading error
+ */
+export function clearLoadError(): void {
+  clearLocalLLMLoadError();
 }
