@@ -8,7 +8,7 @@
   --color-app-text: #37352f; /* Notion main text */
   --color-app-muted: #787774; /* Notion muted text */
   --color-app-subtle: #9b9a97;
-  --color-app-primary: #2383e2;
+  --color-app-primary: #2e2e2e; /* Neutral primary instead of blue */
   --color-app-accent: #eb5757;
 
   /* Semantic tokens used by shared primitives */
@@ -18,7 +18,7 @@
   --color-muted-foreground: var(--color-app-muted);
   --color-border: var(--color-app-border);
   --color-input: var(--color-app-border);
-  --color-ring: var(--color-app-primary);
+  --color-ring: #e5e5e5; /* Neutral ring */
   --color-primary: var(--color-app-primary);
   --color-primary-foreground: #ffffff;
   --color-secondary: var(--color-app-bg);

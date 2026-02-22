@@ -72,4 +72,16 @@ export {
   markModelReady,
   clearLocalLLMSettings,
   setAvailableModels,
+  // Download commands
+  startDownload,
+  updateDownloadProgress,
+  finishDownload,
+  failDownload,
+  clearDownloadError,
+  // Loading commands
+  startLoading,
+  updateLoadProgress,
+  finishLoading,
+  failLoading,
+  clearLoadError,
 } from './local-llm.commands';
