@@ -1,13 +1,21 @@
 // https://docs.expo.dev/guides/using-eslint/
-const { defineConfig } = require('eslint/config');
-const expoConfig = require('eslint-config-expo/flat');
+const { defineConfig } = require("eslint/config");
+const expoConfig = require("eslint-config-expo/flat");
+const prettierConfig = require("eslint-config-prettier");
 
 module.exports = defineConfig([
   expoConfig,
+  prettierConfig,
   {
     ignores: ["dist/*"],
   },
   {
-    extends: ["@tanstack/eslint-plugin-query"],
+    settings: {
+      "import/resolver": {
+        typescript: {
+          project: "./tsconfig.json",
+        },
+      },
+    },
   },
 ]);

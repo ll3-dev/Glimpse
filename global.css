@@ -1,49 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "uniwind";
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-  }
+@theme {
+  --color-app-bg: #f7f6f3; /* Notion-style off-white background */
+  --color-app-surface: #ffffff;
+  --color-app-border: #edece9;
+  --color-app-text: #37352f; /* Notion main text */
+  --color-app-muted: #787774; /* Notion muted text */
+  --color-app-subtle: #9b9a97;
+  --color-app-primary: #2e2e2e; /* Neutral primary instead of blue */
+  --color-app-accent: #eb5757;
 
-  .dark:root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-  }
+  /* Semantic tokens used by shared primitives */
+  --color-background: var(--color-app-surface);
+  --color-foreground: var(--color-app-text);
+  --color-muted: var(--color-app-border);
+  --color-muted-foreground: var(--color-app-muted);
+  --color-border: var(--color-app-border);
+  --color-input: var(--color-app-border);
+  --color-ring: #e5e5e5; /* Neutral ring */
+  --color-primary: var(--color-app-primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-app-bg);
+  --color-secondary-foreground: var(--color-app-text);
+  --color-accent: var(--color-app-bg);
+  --color-accent-foreground: var(--color-app-text);
+  --color-destructive: var(--color-app-accent);
+  --color-destructive-foreground: #ffffff;
+  --color-popover-foreground: var(--color-app-text);
 }

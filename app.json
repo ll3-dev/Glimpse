@@ -1,0 +1,39 @@
+{
+  "scheme": "ll3.kr",
+  "ios": {
+    "bundleIdentifier": "kr.ll3.glimpse"
+  },
+  "plugins": [
+    [
+      "expo-share-intent",
+      {
+        "iosActivationRules": {
+          "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+          "NSExtensionActivationSupportsTextWithMaxCount": 1,
+          "NSExtensionActivationSupportsImageWithMaxCount": 1
+        },
+        "androidIntentFilters": ["text/*", "image/*"]
+      }
+    ],
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "extraEntitlements": {
+            "com.apple.developer.kernel.extended-virtual-addressing": true,
+            "com.apple.developer.kernel.increased-memory-limit": true
+          }
+        }
+      }
+    ],
+    [
+      "llama.rn",
+      {
+        "enableEntitlements": true,
+        "entitlementsProfile": "production",
+        "forceCxx20": true,
+        "enableOpenCL": true
+      }
+    ]
+  ]
+}
