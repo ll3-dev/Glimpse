@@ -42,3 +42,11 @@ export function getApiKey(): string | null {
 export function getProvider(): BYOKProviderType | null {
   return getBYOKStoreConfig().provider;
 }
+
+export function getBaseUrl(): string | null {
+  return getBYOKStoreConfig().baseUrl;
+}
+
+export function getModel(): string | null {
+  return getBYOKStoreConfig().model;
+}

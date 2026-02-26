@@ -5,6 +5,9 @@ import {
   CREATE_FEEDBACK_EVENTS_TABLE_SQL,
   CREATE_KNOWLEDGE_ITEMS_TABLE_SQL,
   CREATE_RECOMMENDATIONS_TABLE_SQL,
+  CREATE_CONVERSATIONS_TABLE_SQL,
+  CREATE_MESSAGES_TABLE_SQL,
+  CREATE_EMBEDDINGS_TABLE_SQL,
   DB_NAME,
 } from '../constants';
 import { ensureKnowledgeItemsSchema, sanitizeKnowledgeItemsRows } from './schemaMaintenance';
@@ -29,6 +32,15 @@ export function initDatabase(): Promise<void> {
       );
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_FEEDBACK_EVENTS_TABLE_SQL)
+      );
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(DB_NAME, CREATE_CONVERSATIONS_TABLE_SQL)
+      );
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(DB_NAME, CREATE_MESSAGES_TABLE_SQL)
+      );
+      yield* Effect.promise(() =>
+        NitroSQLite.executeAsync(DB_NAME, CREATE_EMBEDDINGS_TABLE_SQL)
       );
       for (const createIndexSql of CREATE_INDEXES_SQL) {
         yield* Effect.promise(() => NitroSQLite.executeAsync(DB_NAME, createIndexSql));

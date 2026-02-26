@@ -16,8 +16,20 @@ import {
   type MetadataOutput,
   type AIProviderErrorCode,
 } from '../metadata/types';
-import { isBYOKReady, getApiKey, getProvider } from '@/src/features/settings/byok.selectors';
+import {
+  isBYOKReady,
+  getApiKey,
+  getBaseUrl,
+  getModel,
+  getProvider,
+} from '@/src/features/settings/byok.selectors';
 import type { BYOKProviderType } from '@/src/stores/settings/byok.store';
+import {
+  DEFAULT_OPENAI_BASE_URL,
+  getDefaultByokModel,
+  normalizeBaseUrl,
+} from '@/src/features/settings/byok.defaults';
+import { buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './metadata-text';
 
 /**
  * BYOK provider configuration
@@ -27,6 +39,10 @@ export interface BYOKProviderConfig {
   isReady?: () => boolean;
   /** Get API key (defaults to getApiKey selector) */
   getApiKey?: () => string | null;
+  /** Get base URL override (defaults to getBaseUrl selector) */
+  getBaseUrl?: () => string | null;
+  /** Get model override (defaults to getModel selector) */
+  getModel?: () => string | null;
   /** Get provider type (defaults to getProvider selector) */
   getProvider?: () => BYOKProviderType | null;
   /** Custom fetch function for testing */
@@ -40,15 +56,15 @@ const API_CONFIGS: Record<
   BYOKProviderType,
   {
     endpoint: string;
-    model: string;
+    defaultModel: string;
     buildHeaders: (apiKey: string) => Record<string, string>;
     buildBody: (prompt: string, model: string) => string;
     parseResponse: (data: unknown) => string;
   }
 > = {
   openai: {
-    endpoint: 'https://api.openai.com/v1/chat/completions',
-    model: 'gpt-4o-mini',
+    endpoint: '/chat/completions',
+    defaultModel: getDefaultByokModel('openai'),
     buildHeaders: (apiKey) => ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
@@ -67,7 +83,7 @@ const API_CONFIGS: Record<
   },
   anthropic: {
     endpoint: 'https://api.anthropic.com/v1/messages',
-    model: 'claude-3-haiku-20240307',
+    defaultModel: getDefaultByokModel('anthropic'),
     buildHeaders: (apiKey) => ({
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
@@ -85,8 +101,8 @@ const API_CONFIGS: Record<
     },
   },
   google: {
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-    model: 'gemini-1.5-flash',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
+    defaultModel: getDefaultByokModel('google'),
     buildHeaders: () => ({
       'Content-Type': 'application/json',
     }),
@@ -100,46 +116,6 @@ const API_CONFIGS: Record<
     },
   },
 };
-
-/**
- * Build a prompt for summary generation
- */
-function buildSummaryPrompt(input: MetadataInput): string {
-  const content = input.title
-    ? `Title: ${input.title}\n\nContent: ${input.content}`
-    : input.content;
-
-  return `Summarize the following content in 1-2 concise sentences. Only output the summary, nothing else.
-
-${content}`;
-}
-
-/**
- * Build a prompt for tag generation
- */
-function buildTagsPrompt(input: MetadataInput): string {
-  const content = input.title
-    ? `Title: ${input.title}\n\nContent: ${input.content}`
-    : input.content;
-
-  return `Extract 3-5 relevant tags from the following content. Output only the tags as a comma-separated list, nothing else.
-
-${content}`;
-}
-
-/**
- * Parse tags from API response
- */
-function parseTagsResponse(response: string): string[] {
-  const tags = response
-    .split(/[,\n]/)
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0 && tag.length < 50)
-    .map((tag) => tag.replace(/^["'#]+|["'#]+$/g, '').trim())
-    .filter((tag) => tag.length > 0);
-
-  return [...new Set(tags)].slice(0, 5);
-}
 
 /**
  * Map HTTP error codes to AI provider error codes
@@ -158,15 +134,20 @@ async function callAPI(
   provider: BYOKProviderType,
   prompt: string,
   apiKey: string,
+  baseUrl: string | null,
+  modelOverride: string | null,
   fetchFn: typeof fetch
 ): Promise<Result<string>> {
   const config = API_CONFIGS[provider];
+  const model = modelOverride || config.defaultModel;
 
-  // For Google, append API key to URL
-  const endpoint =
-    provider === 'google'
-      ? `${config.endpoint}?key=${apiKey}`
-      : config.endpoint;
+  let endpoint = config.endpoint;
+  if (provider === 'openai') {
+    const resolvedBaseUrl = normalizeBaseUrl(baseUrl) ?? DEFAULT_OPENAI_BASE_URL;
+    endpoint = `${resolvedBaseUrl}${config.endpoint}`;
+  } else if (provider === 'google') {
+    endpoint = `${config.endpoint}/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+  }
 
   const headers = config.buildHeaders(apiKey);
 
@@ -174,7 +155,7 @@ async function callAPI(
     const response = await fetchFn(endpoint, {
       method: 'POST',
       headers,
-      body: config.buildBody(prompt, config.model),
+      body: config.buildBody(prompt, model),
     });
 
     if (!response.ok) {
@@ -231,6 +212,8 @@ async function callAPI(
 export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataProvider {
   const checkIsReady = config.isReady ?? isBYOKReady;
   const getKey = config.getApiKey ?? getApiKey;
+  const getBaseUrlValue = config.getBaseUrl ?? getBaseUrl;
+  const getModelValue = config.getModel ?? getModel;
   const getProviderType = config.getProvider ?? getProvider;
   const fetchFn = config.fetch ?? fetch;
 
@@ -256,6 +239,8 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
 
       const apiKey = getKey();
       const provider = getProviderType();
+      const baseUrl = getBaseUrlValue();
+      const model = getModelValue();
 
       if (!apiKey || !provider) {
         return {
@@ -269,13 +254,27 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
       }
 
       // Generate summary
-      const summaryResult = await callAPI(provider, buildSummaryPrompt(input), apiKey, fetchFn);
+      const summaryResult = await callAPI(
+        provider,
+        buildSummaryPrompt(input),
+        apiKey,
+        baseUrl,
+        model,
+        fetchFn
+      );
       if (isFailure(summaryResult)) {
         return { success: false, error: summaryResult.error };
       }
 
       // Generate tags
-      const tagsResult = await callAPI(provider, buildTagsPrompt(input), apiKey, fetchFn);
+      const tagsResult = await callAPI(
+        provider,
+        buildTagsPrompt(input),
+        apiKey,
+        baseUrl,
+        model,
+        fetchFn
+      );
       if (isFailure(tagsResult)) {
         return { success: false, error: tagsResult.error };
       }

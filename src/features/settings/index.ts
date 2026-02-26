@@ -16,14 +16,21 @@ export {
   isBYOKReady,
   hasBYOKCredentials,
   getApiKey,
+  getBaseUrl,
+  getModel,
   getProvider,
   // Setters
   enableBYOK,
   disableBYOK,
   setProvider,
   setApiKey,
+  setBaseUrl,
+  setModel,
   clearApiKey,
   // Utilities
+  BYOK_MODEL_REGISTRY,
+  isAppOnlyModelRegistry,
+  isPreviewModelAllowed,
   maskApiKey,
   validateApiKey,
 } from './byokSettings';

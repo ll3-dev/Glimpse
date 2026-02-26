@@ -8,7 +8,10 @@ import {
   getProvider,
   isBYOKReady,
   maskApiKey,
+  setBaseUrl,
+  setModel,
   setApiKey,
+  setProvider,
   validateApiKey,
 } from './byokSettings';
 
@@ -32,10 +35,36 @@ describe('byokSettings', () => {
   });
 
   test('setApiKey persists trimmed key and provider', () => {
+    setProvider('anthropic');
     const result = setApiKey('anthropic', '  sk-ant-12345678901234567890  ');
     expect(result.valid).toBe(true);
     expect(getApiKey()).toBe('sk-ant-12345678901234567890');
     expect(getProvider()).toBe('anthropic');
+  });
+
+  test('supports storing base URL and model', () => {
+    setProvider('openai');
+    expect(setBaseUrl(' https://example.com/v1/ ')).toEqual({ valid: true });
+    expect(setModel('gpt-4.1-mini')).toEqual({ valid: true });
+
+    const config = getBYOKConfig();
+    expect(config.baseUrl).toBe('https://example.com/v1');
+    expect(config.model).toBe('gpt-4.1-mini');
+  });
+
+  test('allows preview model ids', () => {
+    setProvider('google');
+    expect(setModel('gemini-3-flash-preview')).toEqual({ valid: true });
+    expect(getBYOKConfig().model).toBe('gemini-3-flash-preview');
+  });
+
+  test('changing provider clears existing key', () => {
+    setProvider('openai');
+    setApiKey('openai', 'sk-12345678901234567890');
+    expect(getApiKey()).toBe('sk-12345678901234567890');
+
+    setProvider('anthropic');
+    expect(getApiKey()).toBeNull();
   });
 
   test('enableBYOK fails when key/provider are missing', () => {
