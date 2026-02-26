@@ -36,6 +36,14 @@ export interface GenerateResult {
 }
 
 /**
+ * Options for streaming text generation
+ */
+export interface StreamOptions extends GenerateOptions {
+  /** Callback for each token generated */
+  onToken?: (token: string) => void;
+}
+
+/**
  * Model loading options
  */
 export interface LoadModelOptions {
@@ -73,6 +81,13 @@ export interface LlamaService {
    * @param options - Generation options
    */
   generate(prompt: string, options?: GenerateOptions): Promise<GenerateResult>;
+
+  /**
+   * Generate text from a prompt with streaming
+   * @param prompt - The input prompt
+   * @param options - Streaming generation options
+   */
+  generateStream(prompt: string, options?: StreamOptions): Promise<GenerateResult>;
 
   /**
    * Unload the current model and release resources
@@ -179,6 +194,51 @@ export function createLlamaService(): LlamaService {
       } catch (error) {
         throw new Error(
           `Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
+    },
+
+    async generateStream(prompt: string, options?: StreamOptions): Promise<GenerateResult> {
+      if (!context) {
+        throw new Error('No model loaded. Call loadModel() first.');
+      }
+
+      const startTime = Date.now();
+      let fullText = '';
+
+      try {
+        const result = await context.completion(
+          {
+            prompt,
+            n_predict: options?.maxTokens ?? 256,
+            temperature: options?.temperature ?? 0.7,
+            top_p: options?.topP ?? 0.9,
+            stop: options?.stopTokens ?? DEFAULT_STOP_TOKENS,
+            // emit_partial_completion is not in the types but is supported by llama.rn
+          } as Parameters<typeof context.completion>[0],
+          (data) => {
+            // Handle streaming tokens
+            if (data && typeof data === 'object' && 'token' in data) {
+              const token = (data as { token: string }).token;
+              if (token) {
+                fullText += token;
+                options?.onToken?.(token);
+              }
+            }
+          }
+        );
+
+        // Use accumulated text if available, otherwise use result text
+        const text = fullText || result.text;
+
+        return {
+          text,
+          tokensGenerated: result.tokens_evaluated ?? 0,
+          timingMs: Date.now() - startTime,
+        };
+      } catch (error) {
+        throw new Error(
+          `Streaming generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
       }
     },

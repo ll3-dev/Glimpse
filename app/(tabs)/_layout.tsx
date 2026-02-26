@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { Library, Sparkles, RotateCcw } from "lucide-react-native";
+import { Library, Sparkles, RotateCcw, MessageCircle } from "lucide-react-native";
 import { View, TouchableOpacity } from "react-native";
 import { Plus } from "@/src/ui/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,6 +37,13 @@ export default function TabsLayout() {
           options={{
             title: "보관함",
             tabBarIcon: ({ color }) => <Library color={color} size={18} />,
+          }}
+        />
+        <Tabs.Screen
+          name="chat"
+          options={{
+            title: "채팅",
+            tabBarIcon: ({ color }) => <MessageCircle color={color} size={18} />,
           }}
         />
         <Tabs.Screen

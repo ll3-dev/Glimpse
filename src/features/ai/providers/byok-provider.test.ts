@@ -118,8 +118,8 @@ describe('parseTagsResponse', () => {
 describe('API_CONFIGS', () => {
   test('has config for openai', () => {
     expect(API_CONFIGS.openai).toBeDefined();
-    expect(API_CONFIGS.openai.endpoint).toContain('openai.com');
-    expect(API_CONFIGS.openai.model).toBeDefined();
+    expect(API_CONFIGS.openai.endpoint).toBe('/chat/completions');
+    expect(API_CONFIGS.openai.defaultModel).toBeDefined();
   });
 
   test('has config for anthropic', () => {
@@ -235,6 +235,72 @@ describe('createBYOKProvider', () => {
 
       // Verify fetch was called twice (summary + tags)
       expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    test('uses custom OpenAI base URL override', async () => {
+      const mockFetch = createMockFetch(
+        createJsonResponse({
+          choices: [{ message: { content: 'Test summary' } }],
+        })
+      );
+
+      const provider = createBYOKProvider({
+        isReady: () => true,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
+        getBaseUrl: () => 'http://localhost:11434/v1',
+        fetch: mockFetch as unknown as typeof fetch,
+      });
+
+      await provider.generate({ content: 'test' });
+
+      const firstCallArgs = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [string];
+      expect(firstCallArgs[0]).toBe('http://localhost:11434/v1/chat/completions');
+    });
+
+    test('uses model override when provided', async () => {
+      const mockFetch = mock(async (_url: string, options?: RequestInit) => ({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+        _options: options,
+      }));
+
+      const provider = createBYOKProvider({
+        isReady: () => true,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
+        getModel: () => 'gpt-4.1-mini',
+        fetch: mockFetch as unknown as typeof fetch,
+      });
+
+      await provider.generate({ content: 'test' });
+
+      const call = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(String(call[1]?.body ?? '{}')) as { model?: string };
+      expect(body.model).toBe('gpt-4.1-mini');
+    });
+
+    test('uses model override in Google endpoint (preview allowed)', async () => {
+      const modelId = 'gemini-3-flash-preview';
+      const mockFetch = createMockFetch(
+        createJsonResponse({
+          candidates: [{ content: { parts: [{ text: 'ok' }] } }],
+        })
+      );
+
+      const provider = createBYOKProvider({
+        isReady: () => true,
+        getApiKey: () => 'AIzaSy-test-key',
+        getProvider: () => 'google',
+        getModel: () => modelId,
+        fetch: mockFetch as unknown as typeof fetch,
+      });
+
+      await provider.generate({ content: 'test' });
+
+      const firstCallArgs = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [string];
+      expect(firstCallArgs[0]).toContain('/models/gemini-3-flash-preview:generateContent');
+      expect(firstCallArgs[0]).toContain('?key=AIzaSy-test-key');
     });
 
     test('handles rate limiting (429)', async () => {

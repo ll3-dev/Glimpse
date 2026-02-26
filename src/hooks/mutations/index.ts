@@ -19,3 +19,9 @@ export {
   useSaveKnowledgeItemMutation,
   useCaptureActionsMutation,
 } from './useCaptureActions';
+
+export {
+  useCreateConversationMutation,
+  useAddMessageMutation,
+  useUpdateConversationTitleMutation,
+} from './useChatMutations';

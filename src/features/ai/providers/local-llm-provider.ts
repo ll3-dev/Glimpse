@@ -9,6 +9,11 @@ import type { Result } from '@/src/lib/effect-result';
 import type { MetadataProvider, MetadataInput, MetadataOutput } from '../metadata/types';
 import { aiProviderError } from '../metadata/types';
 import {
+  buildSummaryPrompt,
+  buildTagsPrompt,
+  parseTagsResponse,
+} from './metadata-text';
+import {
   getSelectedLocalModel,
   isLocalLLMReady,
 } from '@/src/features/settings/local-llm.selectors';
@@ -39,51 +44,6 @@ const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
   temperature: 0.3,
   topP: 0.9,
 };
-
-/**
- * Build a prompt for summary generation
- */
-function buildSummaryPrompt(input: MetadataInput): string {
-  const content = input.title
-    ? `Title: ${input.title}\n\nContent: ${input.content}`
-    : input.content;
-
-  return `Summarize the following content in 1-2 concise sentences. Only output the summary, nothing else.
-
-${content}`;
-}
-
-/**
- * Build a prompt for tag generation
- */
-function buildTagsPrompt(input: MetadataInput): string {
-  const content = input.title
-    ? `Title: ${input.title}\n\nContent: ${input.content}`
-    : input.content;
-
-  return `Extract 3-5 relevant tags from the following content. Output only the tags as a comma-separated list, nothing else.
-
-${content}`;
-}
-
-/**
- * Parse tags from LLM response
- */
-function parseTagsResponse(response: string): string[] {
-  // Handle comma-separated or newline-separated tags
-  const tags = response
-    .split(/[,\n]/)
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0 && tag.length < 50)
-    .map((tag) => {
-      // Remove quotes and hash symbols
-      return tag.replace(/^["'#]+|["'#]+$/g, '').trim();
-    })
-    .filter((tag) => tag.length > 0);
-
-  // Return unique tags, max 5
-  return [...new Set(tags)].slice(0, 5);
-}
 
 /**
  * Create a Local LLM metadata provider.

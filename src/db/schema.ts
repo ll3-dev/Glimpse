@@ -168,3 +168,117 @@ export const feedbackEvents = sqliteTable(
 // Type exports for feedback events
 export type FeedbackEvent = typeof feedbackEvents.$inferSelect;
 export type NewFeedbackEvent = typeof feedbackEvents.$inferInsert;
+
+/**
+ * Message role enum
+ * - 'user': Message from the user
+ * - 'assistant': Message from the AI
+ */
+export const messageRole = ['user', 'assistant'] as const;
+export type MessageRole = (typeof messageRole)[number];
+
+/**
+ * Conversations table schema
+ * Stores chat conversations with optional context item
+ */
+export const conversations = sqliteTable(
+  'conversations',
+  {
+    // Unique identifier
+    id: text('id').primaryKey(),
+
+    // Conversation title (auto-generated or user-set)
+    title: text('title'),
+
+    // Optional context item ID (from library)
+    contextItemId: text('context_item_id'),
+
+    // Creation timestamp
+    createdAt: real('created_at').notNull(),
+
+    // Last update timestamp
+    updatedAt: real('updated_at').notNull(),
+  },
+  (table) => ({
+    createdAtIdx: index('conversations_created_at_idx').on(table.createdAt),
+    contextItemIdx: index('conversations_context_item_idx').on(table.contextItemId),
+  })
+);
+
+// Type exports for conversations
+export type Conversation = typeof conversations.$inferSelect;
+export type NewConversation = typeof conversations.$inferInsert;
+
+/**
+ * Messages table schema
+ * Stores individual messages within conversations
+ */
+export const messages = sqliteTable(
+  'messages',
+  {
+    // Unique identifier
+    id: text('id').primaryKey(),
+
+    // Reference to conversation
+    conversationId: text('conversation_id')
+      .notNull()
+      .references(() => conversations.id),
+
+    // Message role (user or assistant)
+    role: text('role', { enum: messageRole }).notNull(),
+
+    // Message content
+    content: text('content').notNull(),
+
+    // Creation timestamp
+    createdAt: real('created_at').notNull(),
+  },
+  (table) => ({
+    conversationIdx: index('messages_conversation_idx').on(table.conversationId),
+    createdAtIdx: index('messages_created_at_idx').on(table.createdAt),
+  })
+);
+
+// Type exports for messages
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
+
+/**
+ * Embedding source type enum
+ * - 'message': Embedding of a chat message
+ * - 'knowledge_item': Embedding of a library item
+ */
+export const embeddingSourceType = ['message', 'knowledge_item'] as const;
+export type EmbeddingSourceType = (typeof embeddingSourceType)[number];
+
+/**
+ * Embeddings table schema
+ * Stores vector embeddings for RAG (Retrieval Augmented Generation)
+ */
+export const embeddings = sqliteTable(
+  'embeddings',
+  {
+    // Unique identifier
+    id: text('id').primaryKey(),
+
+    // Source type
+    sourceType: text('source_type', { enum: embeddingSourceType }).notNull(),
+
+    // Source ID (message or knowledge item)
+    sourceId: text('source_id').notNull(),
+
+    // Vector embedding stored as JSON array
+    vector: text('vector', { mode: 'json' }).$type<number[]>().notNull(),
+
+    // Creation timestamp
+    createdAt: real('created_at').notNull(),
+  },
+  (table) => ({
+    sourceTypeIdx: index('embeddings_source_type_idx').on(table.sourceType),
+    sourceIdIdx: index('embeddings_source_id_idx').on(table.sourceId),
+  })
+);
+
+// Type exports for embeddings
+export type Embedding = typeof embeddings.$inferSelect;
+export type NewEmbedding = typeof embeddings.$inferInsert;

@@ -79,6 +79,13 @@ export const CREATE_INDEXES_SQL = [
   "CREATE UNIQUE INDEX IF NOT EXISTS recommendations_item_pair_unique_idx ON recommendations(item_a_id, item_b_id);",
   "CREATE INDEX IF NOT EXISTS feedback_events_recommendation_id_idx ON feedback_events(recommendation_id);",
   "CREATE INDEX IF NOT EXISTS feedback_events_created_at_idx ON feedback_events(created_at);",
+  // Chat tables indexes
+  "CREATE INDEX IF NOT EXISTS conversations_created_at_idx ON conversations(created_at);",
+  "CREATE INDEX IF NOT EXISTS conversations_context_item_idx ON conversations(context_item_id);",
+  "CREATE INDEX IF NOT EXISTS messages_conversation_idx ON messages(conversation_id);",
+  "CREATE INDEX IF NOT EXISTS messages_created_at_idx ON messages(created_at);",
+  "CREATE INDEX IF NOT EXISTS embeddings_source_type_idx ON embeddings(source_type);",
+  "CREATE INDEX IF NOT EXISTS embeddings_source_id_idx ON embeddings(source_id);",
 ] as const;
 
 export const FEEDBACK_EVENTS_SELECT_COLUMNS = [
@@ -123,4 +130,68 @@ export const KNOWLEDGE_ITEMS_SELECT_COLUMNS = [
   "difficulty",
   "last_reviewed_at",
   "next_review_at",
+] as const;
+
+// Conversations table
+export const CONVERSATIONS_TABLE_NAME = "conversations";
+
+export const CREATE_CONVERSATIONS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS conversations (
+  id TEXT PRIMARY KEY NOT NULL,
+  title TEXT,
+  context_item_id TEXT,
+  created_at REAL NOT NULL,
+  updated_at REAL NOT NULL
+);
+`;
+
+export const CONVERSATIONS_SELECT_COLUMNS = [
+  "id",
+  "title",
+  "context_item_id",
+  "created_at",
+  "updated_at",
+] as const;
+
+// Messages table
+export const MESSAGES_TABLE_NAME = "messages";
+
+export const CREATE_MESSAGES_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY NOT NULL,
+  conversation_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  created_at REAL NOT NULL,
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+);
+`;
+
+export const MESSAGES_SELECT_COLUMNS = [
+  "id",
+  "conversation_id",
+  "role",
+  "content",
+  "created_at",
+] as const;
+
+// Embeddings table
+export const EMBEDDINGS_TABLE_NAME = "embeddings";
+
+export const CREATE_EMBEDDINGS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS embeddings (
+  id TEXT PRIMARY KEY NOT NULL,
+  source_type TEXT NOT NULL CHECK(source_type IN ('message', 'knowledge_item')),
+  source_id TEXT NOT NULL,
+  vector TEXT NOT NULL,
+  created_at REAL NOT NULL
+);
+`;
+
+export const EMBEDDINGS_SELECT_COLUMNS = [
+  "id",
+  "source_type",
+  "source_id",
+  "vector",
+  "created_at",
 ] as const;

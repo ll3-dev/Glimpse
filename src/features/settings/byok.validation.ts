@@ -22,9 +22,32 @@ export function maskApiKey(key: string | null): string {
   return `${start}${masked}${end}`;
 }
 
-export function validateApiKey(key: string, provider: BYOKProviderType): ValidationResult {
+type ValidateApiKeyOptions = {
+  allowLooseFormat?: boolean;
+};
+
+export function validateApiKey(
+  key: string,
+  provider: BYOKProviderType,
+  options: ValidateApiKeyOptions = {}
+): ValidationResult {
+  return validateApiKeyInternal(key, provider, options);
+}
+
+function validateApiKeyInternal(
+  key: string,
+  provider: BYOKProviderType,
+  options: ValidateApiKeyOptions
+): ValidationResult {
   if (!key || key.trim().length === 0) {
     return { valid: false, error: 'API 키를 입력해주세요' };
+  }
+
+  if (options.allowLooseFormat) {
+    if (key.length < 8) {
+      return { valid: false, error: 'API 키가 너무 짧습니다' };
+    }
+    return { valid: true };
   }
 
   const prefix = KEY_PREFIXES[provider];

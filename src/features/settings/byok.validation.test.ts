@@ -58,6 +58,13 @@ describe('validateApiKey', () => {
       expect(result.valid).toBe(false);
       expect(result.error).toBe('API 키가 너무 짧습니다');
     });
+
+    test('allows non-sk format when loose validation is enabled', () => {
+      const result = validateApiKey('local-token-1234', provider, {
+        allowLooseFormat: true,
+      });
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('anthropic provider', () => {

@@ -18,6 +18,12 @@ export const StorageKeys = {
   // Local LLM settings
   LOCAL_LLM_ENABLED: 'local_llm_enabled',
   LOCAL_LLM_SELECTED_MODEL: 'local_llm_selected_model',
+  // BYOK settings
+  BYOK_ENABLED: 'byok_enabled',
+  BYOK_PROVIDER: 'byok_provider',
+  BYOK_API_KEY: 'byok_api_key',
+  BYOK_BASE_URL: 'byok_base_url',
+  BYOK_MODEL: 'byok_model',
 } as const;
 
 /**
