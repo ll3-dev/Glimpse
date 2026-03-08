@@ -12,7 +12,10 @@
           "NSExtensionActivationSupportsTextWithMaxCount": 1,
           "NSExtensionActivationSupportsImageWithMaxCount": 1
         },
-        "androidIntentFilters": ["text/*", "image/*"]
+        "androidIntentFilters": [
+          "text/*",
+          "image/*"
+        ]
       }
     ],
     [
@@ -32,8 +35,16 @@
         "enableEntitlements": true,
         "entitlementsProfile": "production",
         "forceCxx20": true,
-        "enableOpenCL": true
+        "enableOpenCLAndHexagon": true
       }
-    ]
-  ]
+    ],
+    "expo-background-task",
+    "expo-font",
+    "expo-image",
+    "expo-router",
+    "expo-web-browser"
+  ],
+  "android": {
+    "package": "kr.ll3.glimpse"
+  }
 }
