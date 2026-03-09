@@ -4,7 +4,6 @@
  * Creates a new chat conversation.
  */
 
-import { nanoid } from 'nanoid';
 import { db, conversations, type Conversation, type NewConversation } from '@/src/db';
 import {
   appError,
@@ -14,6 +13,7 @@ import {
   runEffectResult,
   tryPromise,
 } from '@/src/lib/effect-result';
+import { generateId } from '@/src/lib/id';
 
 export type CreateConversationSuccessResult = { success: true; data: Conversation };
 export type CreateConversationFailureResult = FailureResult;
@@ -27,13 +27,13 @@ export interface CreateConversationInput {
 export interface CreateConversationDeps {
   db: typeof db;
   conversations: typeof conversations;
-  nanoid: () => string;
+  generateId: () => string;
 }
 
 const defaultDeps: CreateConversationDeps = {
   db,
   conversations,
-  nanoid: () => nanoid(),
+  generateId,
 };
 
 /**
@@ -45,7 +45,7 @@ export function createCreateConversation(deps: CreateConversationDeps = defaultD
   ): Promise<CreateConversationResult> {
     const now = Date.now();
     const newConversation: NewConversation = {
-      id: deps.nanoid(),
+      id: deps.generateId(),
       title: input.title ?? null,
       contextItemId: input.contextItemId ?? null,
       createdAt: now,

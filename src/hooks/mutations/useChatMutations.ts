@@ -4,33 +4,27 @@
  * React Query mutation hooks for chat operations.
  */
 
-import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createConversation,
   addMessage,
   updateConversationTitle,
-  type CreateConversationInput,
-  type AddMessageInput,
-  type UpdateConversationTitleInput,
-} from '@/src/features/chat';
-import { type Conversation, type Message } from '@/src/db';
+} from "@/src/features/chat";
 import { queryKeys } from '@/src/lib/query-keys';
 import { createMutationOptions } from '@/src/lib/effect-query';
 
 /**
  * Hook to create a new conversation.
  */
-export function useCreateConversationMutation(): UseMutationResult<
-  Conversation,
-  Error,
-  CreateConversationInput
-> {
+export function useCreateConversationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     ...createMutationOptions(createConversation),
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+      // Return data so that component-level onSuccess can access it
+      return data;
     },
   });
 }
@@ -38,7 +32,7 @@ export function useCreateConversationMutation(): UseMutationResult<
 /**
  * Hook to add a message to a conversation.
  */
-export function useAddMessageMutation(): UseMutationResult<Message, Error, AddMessageInput> {
+export function useAddMessageMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -57,11 +51,7 @@ export function useAddMessageMutation(): UseMutationResult<Message, Error, AddMe
 /**
  * Hook to update a conversation title.
  */
-export function useUpdateConversationTitleMutation(): UseMutationResult<
-  Conversation,
-  Error,
-  UpdateConversationTitleInput
-> {
+export function useUpdateConversationTitleMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
