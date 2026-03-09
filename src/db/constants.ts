@@ -163,6 +163,8 @@ CREATE TABLE IF NOT EXISTS messages (
   role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
   content TEXT NOT NULL,
   created_at REAL NOT NULL,
+  updated_at REAL,
+  deleted_at REAL,
   FOREIGN KEY (conversation_id) REFERENCES conversations(id)
 );
 `;
@@ -173,6 +175,8 @@ export const MESSAGES_SELECT_COLUMNS = [
   "role",
   "content",
   "created_at",
+  "updated_at",
+  "deleted_at",
 ] as const;
 
 // Embeddings table

@@ -5,6 +5,12 @@ import {
   KNOWLEDGE_ITEMS_TABLE_NAME,
   RECOMMENDATIONS_SELECT_COLUMNS,
   RECOMMENDATIONS_TABLE_NAME,
+  MESSAGES_SELECT_COLUMNS,
+  MESSAGES_TABLE_NAME,
+  CONVERSATIONS_SELECT_COLUMNS,
+  CONVERSATIONS_TABLE_NAME,
+  EMBEDDINGS_SELECT_COLUMNS,
+  EMBEDDINGS_TABLE_NAME,
 } from '../constants';
 import { Effect } from 'effect';
 import type { NativeQueryMetadata, NativeQueryRow } from './types';
@@ -35,6 +41,27 @@ export function getOrderedColumnNames(
     sqlLower.includes(`from ${FEEDBACK_EVENTS_TABLE_NAME}`)
   ) {
     return [...FEEDBACK_EVENTS_SELECT_COLUMNS];
+  }
+
+  if (
+    sqlLower.includes(`from "${MESSAGES_TABLE_NAME}"`) ||
+    sqlLower.includes(`from ${MESSAGES_TABLE_NAME}`)
+  ) {
+    return [...MESSAGES_SELECT_COLUMNS];
+  }
+
+  if (
+    sqlLower.includes(`from "${CONVERSATIONS_TABLE_NAME}"`) ||
+    sqlLower.includes(`from ${CONVERSATIONS_TABLE_NAME}`)
+  ) {
+    return [...CONVERSATIONS_SELECT_COLUMNS];
+  }
+
+  if (
+    sqlLower.includes(`from "${EMBEDDINGS_TABLE_NAME}"`) ||
+    sqlLower.includes(`from ${EMBEDDINGS_TABLE_NAME}`)
+  ) {
+    return [...EMBEDDINGS_SELECT_COLUMNS];
   }
 
   if (metadata && Object.keys(metadata).length > 0) {

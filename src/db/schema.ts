@@ -232,6 +232,12 @@ export const messages = sqliteTable(
 
     // Creation timestamp
     createdAt: real('created_at').notNull(),
+
+    // Last update timestamp (null if never edited)
+    updatedAt: real('updated_at'),
+
+    // Soft delete timestamp (null if not deleted)
+    deletedAt: real('deleted_at'),
   },
   (table) => ({
     conversationIdx: index('messages_conversation_idx').on(table.conversationId),
