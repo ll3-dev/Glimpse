@@ -24,4 +24,6 @@ export {
   useCreateConversationMutation,
   useAddMessageMutation,
   useUpdateConversationTitleMutation,
+  useUpdateMessageMutation,
+  useDeleteMessageMutation,
 } from './useChatMutations';

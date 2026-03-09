@@ -4,17 +4,31 @@
  * Individual conversation view with AI chat.
  */
 
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Alert, BackHandler } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import {
   useMessagesQuery,
   useKnowledgeItemsQuery,
+  useUpdateMessageMutation,
+  useDeleteMessageMutation,
 } from '@/src/hooks';
-import { ChatMessage, ChatInput, ContextBadge } from '@/src/components/chat';
+import { ChatMessage, ChatInput, ContextBadge, MessageEditModal } from '@/src/components/chat';
 import { useChat } from '@/src/components/chat/hooks/useChat';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/src/ui/primitives/alert-dialog';
+import { ScreenHeader } from '@/src/ui/primitives/screen-header';
+import type { Message } from '@/src/db';
 
 export default function ChatDetailScreen() {
   const { id, contextItem: contextItemId } = useLocalSearchParams<{ id: string; contextItem?: string }>();
@@ -34,6 +48,16 @@ export default function ChatDetailScreen() {
     conversationId: id,
     contextItem,
   });
+
+  // Edit/Delete state
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
+  const [showBackDialog, setShowBackDialog] = useState(false);
+
+  // Mutations
+  const updateMessage = useUpdateMessageMutation();
+  const deleteMessage = useDeleteMessageMutation();
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -55,26 +79,17 @@ export default function ChatDetailScreen() {
   // Handle back press during generation
   const handleBackPress = useCallback(() => {
     if (isGenerating) {
-      Alert.alert(
-        '응답 생성 중',
-        'AI가 응답을 생성하고 있습니다. 나가면 지금까지 생성된 내용이 저장됩니다.',
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '나가기',
-            style: 'destructive',
-            onPress: async () => {
-              await abortAndSave();
-              router.back();
-            },
-          },
-        ]
-      );
+      setShowBackDialog(true);
       return true; // Prevent default back behavior
     }
     router.back();
     return true;
-  }, [isGenerating, router, abortAndSave]);
+  }, [isGenerating, router]);
+
+  const handleConfirmBack = async () => {
+    await abortAndSave();
+    router.back();
+  };
 
   // Intercept hardware back button on Android
   useEffect(() => {
@@ -96,6 +111,40 @@ export default function ChatDetailScreen() {
     }, 100);
   };
 
+  // Handlers for edit/delete
+  const handleEdit = (message: Message) => {
+    setEditingMessage(message);
+  };
+
+  const handleDelete = (message: Message) => {
+    setMessageToDelete(message);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (messageToDelete) {
+      await deleteMessage({
+        messageId: messageToDelete.id,
+        conversationId: id,
+      });
+      setShowDeleteDialog(false);
+      setMessageToDelete(null);
+    }
+  };
+
+  const handleSaveEdit = async (messageId: string, content: string) => {
+    await updateMessage({
+      messageId,
+      content,
+      conversationId: id,
+    });
+    setEditingMessage(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+  };
+
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-app-bg"
@@ -103,28 +152,35 @@ export default function ChatDetailScreen() {
       style={{ paddingTop: insets.top }}
       keyboardVerticalOffset={0}
     >
-      <View className="flex-row items-center px-4 py-3 bg-app-bg">
-        <TouchableOpacity
-          onPress={handleBackPress}
-          className="p-2 -ml-2"
-        >
-          <ChevronLeft size={24} color="#37352f" />
-        </TouchableOpacity>
-        <Text className="flex-1 text-lg font-semibold text-gray-900 ml-2" numberOfLines={1}>
-          채팅
-        </Text>
-      </View>
+      <ScreenHeader
+        title="채팅"
+        leftElement={
+          <TouchableOpacity
+            onPress={handleBackPress}
+            className="h-10 w-10 items-center justify-center -ml-3"
+          >
+            <ChevronLeft size={24} color="#37352f" />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Context badge */}
       {contextItem && (
-        <ContextBadge item={contextItem} />
+        <View className="px-4 pb-2">
+          <ContextBadge item={contextItem} />
+        </View>
       )}
 
       {/* Messages */}
       <ScrollView
         ref={scrollViewRef}
-        className="flex-1 px-4"
-        contentContainerStyle={{ paddingBottom: 16, flexGrow: 1 }}
+        className="flex-1"
+        contentContainerStyle={{ 
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: 20, 
+          flexGrow: 1 
+        }}
         keyboardShouldPersistTaps="handled"
       >
         {isLoadingMessages ? (
@@ -133,7 +189,12 @@ export default function ChatDetailScreen() {
           </View>
         ) : messages && messages.length > 0 ? (
           messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
+            <ChatMessage
+              key={message.id}
+              message={message}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           ))
         ) : (
           <View className="flex-1 items-center justify-center py-8">
@@ -161,6 +222,50 @@ export default function ChatDetailScreen() {
 
       {/* Input */}
       <ChatInput onSend={handleSend} isLoading={isGenerating} />
+
+      {/* Edit Modal */}
+      <MessageEditModal
+        visible={editingMessage !== null}
+        message={editingMessage}
+        onSave={handleSaveEdit}
+        onCancel={handleCancelEdit}
+      />
+
+      {/* Back Confirmation Dialog */}
+      <AlertDialog open={showBackDialog} onOpenChange={setShowBackDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>응답 생성 중</AlertDialogTitle>
+            <AlertDialogDescription>
+              AI가 응답을 생성하고 있습니다. 나가면 지금까지 생성된 내용이 저장됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onPress={handleConfirmBack} className="bg-destructive">
+              나가기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>메시지 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 메시지를 삭제하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onPress={handleConfirmDelete} className="bg-destructive">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </KeyboardAvoidingView>
   );
 }

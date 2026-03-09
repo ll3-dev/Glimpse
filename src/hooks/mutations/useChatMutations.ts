@@ -8,6 +8,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createConversation,
   addMessage,
+  updateMessage,
+  deleteMessage,
   updateConversationTitle,
 } from "@/src/features/chat";
 import { queryKeys } from '@/src/lib/query-keys';
@@ -57,6 +59,40 @@ export function useUpdateConversationTitleMutation() {
   return useMutation({
     ...createMutationOptions(updateConversationTitle),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+    },
+  });
+}
+
+/**
+ * Hook to update a message's content.
+ */
+export function useUpdateMessageMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...createMutationOptions(updateMessage),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.messages(variables.conversationId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+    },
+  });
+}
+
+/**
+ * Hook to soft delete a message.
+ */
+export function useDeleteMessageMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...createMutationOptions(deleteMessage),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.messages(variables.conversationId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
     },
   });
