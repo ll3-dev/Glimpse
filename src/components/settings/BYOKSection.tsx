@@ -1,6 +1,7 @@
-import { View, TouchableOpacity } from 'react-native';
+import { Activity } from 'react';
+import { Alert, View, TouchableOpacity } from 'react-native';
 import { Eye, EyeOff, Key } from 'lucide-react-native';
-import { Input, Button, Text } from '@/src/ui/primitives';
+import { Input, Button, Text, Switch } from '@/src/ui/primitives';
 import { SettingsSection } from './SettingsSection';
 import { type BYOKProviderType } from '@/src/features/settings';
 
@@ -53,130 +54,155 @@ export function BYOKSection({
   onSaveKey,
   onToggleBYOK,
 }: BYOKSectionProps) {
+  const disabled = !byokConfigured && !byokEnabled;
+  const disabledReason = selectedProvider
+    ? 'BYOK를 사용하려면 API 키를 먼저 저장해주세요.'
+    : 'BYOK를 사용하려면 Provider를 선택하고 API 키를 저장해주세요.';
+
+  const handleTogglePress = () => {
+    if (disabled) {
+      Alert.alert('BYOK 사용 불가', disabledReason);
+      return;
+    }
+
+    onToggleBYOK();
+  };
+
   return (
     <SettingsSection
       title="Bring Your Own Key"
       icon={<Key size={18} color="#787774" />}
       footer={
         !byokReady && !byokEnabled
-          ? "BYOK를 활성화하려면 먼저 API 키를 저장해주세요"
+          ? disabledReason
           : undefined
       }
     >
-      <View className="mb-5">
-        <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
-          Provider
-        </Text>
-        <View className="flex-row flex-wrap gap-2">
-          {providers.map((provider) => (
-            <TouchableOpacity
-              key={provider}
-              className={`px-3 py-1.5 rounded-md border ${
-                selectedProvider === provider
-                  ? 'bg-app-text border-app-text'
-                  : 'bg-white border-app-border'
-              }`}
-              onPress={() => onProviderSelect(provider)}
-            >
-              <Text
-                className={`text-xs font-bold uppercase ${
-                  selectedProvider === provider ? 'text-white' : 'text-app-text'
-                }`}
-              >
-                {provider}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      {/* BYOK Enable/Disable toggle */}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-1 pr-4">
+          <Text className="text-base font-semibold text-app-text">BYOK 사용</Text>
+          <Text className="text-xs text-app-muted mt-0.5">
+            저장된 API 키로 외부 AI 모델 사용
+          </Text>
         </View>
+        <TouchableOpacity onPress={handleTogglePress} activeOpacity={0.8}>
+          <Switch
+            checked={byokEnabled}
+            onCheckedChange={onToggleBYOK}
+            disabled={disabled}
+          />
+        </TouchableOpacity>
       </View>
 
-      <View className="mb-5">
-        <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
-          연결 설정
-        </Text>
-        <Input
-          className="mb-2"
-          placeholder="Base URL (OpenAI에서만 override 적용)"
-          value={baseUrlInput}
-          onChangeText={onBaseUrlChange}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Input
-          placeholder="Model (예: gpt-4o-mini)"
-          value={modelInput}
-          onChangeText={onModelChange}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-
-      <Button onPress={onSaveConnectionConfig} variant="outline" className="mb-5">
-        <Text>연결 설정 저장</Text>
-      </Button>
-
-      <View className="mb-5">
-        <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
-          API 키
-        </Text>
-        {hasStoredApiKey && !isEditingApiKey ? (
-          <View className="rounded-md border border-app-border bg-white px-3 py-3">
-            <Text className="text-xs text-app-subtle font-medium mb-3">
-              저장된 키: {maskedStoredApiKey}
+      <Activity mode="visible">
+        <View className="mt-4">
+          <View className="mb-4">
+            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
+              Provider
             </Text>
-            <Button onPress={onStartApiKeyEdit} variant="outline">
-              <Text>API 키 변경</Text>
-            </Button>
-          </View>
-        ) : (
-          <View>
-            <View className="relative">
-              <Input
-                className="pr-12"
-                placeholder="새 API 키를 입력하세요"
-                value={apiKeyInput}
-                onChangeText={onApiKeyChange}
-                secureTextEntry={!showKey}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                className="absolute right-0 top-0 bottom-0 px-4 justify-center"
-                onPress={onToggleShowKey}
-              >
-                {showKey ? (
-                  <EyeOff size={16} color="#787774" />
-                ) : (
-                  <Eye size={16} color="#787774" />
-                )}
-              </TouchableOpacity>
+            <View className="flex-row flex-wrap gap-2">
+              {providers.map((provider) => (
+                <TouchableOpacity
+                  key={provider}
+                  className={`px-3 py-1.5 rounded-md border ${
+                    selectedProvider === provider
+                      ? 'bg-app-text border-app-text'
+                      : 'bg-white border-app-border'
+                  }`}
+                  onPress={() => onProviderSelect(provider)}
+                >
+                  <Text
+                    className={`text-xs font-bold uppercase ${
+                      selectedProvider === provider ? 'text-white' : 'text-app-text'
+                    }`}
+                  >
+                    {provider}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            {hasStoredApiKey && (
-              <Button onPress={onCancelApiKeyEdit} variant="ghost" className="mt-2">
-                <Text>키 변경 취소</Text>
-              </Button>
+          </View>
+
+          <View className="mb-4">
+            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
+              연결 설정
+            </Text>
+            <Input
+              className="mb-2"
+              placeholder="Base URL (OpenAI에서만 override 적용)"
+              value={baseUrlInput}
+              onChangeText={onBaseUrlChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Input
+              placeholder="Model (예: gpt-4o-mini)"
+              value={modelInput}
+              onChangeText={onModelChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <Button onPress={onSaveConnectionConfig} variant="outline" className="mb-4">
+            <Text>연결 설정 저장</Text>
+          </Button>
+
+          <View className="mb-4">
+            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
+              API 키
+            </Text>
+            {hasStoredApiKey && !isEditingApiKey ? (
+              <View className="rounded-md border border-app-border bg-white px-3 py-3">
+                <Text className="text-xs text-app-subtle font-medium mb-3">
+                  저장된 키: {maskedStoredApiKey}
+                </Text>
+                <Button onPress={onStartApiKeyEdit} variant="outline">
+                  <Text>API 키 변경</Text>
+                </Button>
+              </View>
+            ) : (
+              <View>
+                <View className="relative">
+                  <Input
+                    className="pr-12"
+                    placeholder="새 API 키를 입력하세요"
+                    value={apiKeyInput}
+                    onChangeText={onApiKeyChange}
+                    secureTextEntry={!showKey}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    className="absolute right-0 top-0 bottom-0 px-4 justify-center"
+                    onPress={onToggleShowKey}
+                  >
+                    {showKey ? (
+                      <EyeOff size={16} color="#787774" />
+                    ) : (
+                      <Eye size={16} color="#787774" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {hasStoredApiKey && (
+                  <Button onPress={onCancelApiKeyEdit} variant="ghost" className="mt-2">
+                    <Text>키 변경 취소</Text>
+                  </Button>
+                )}
+              </View>
             )}
           </View>
-        )}
-      </View>
 
-      {(!hasStoredApiKey || isEditingApiKey) && (
-        <Button onPress={onSaveKey} className="mb-3">
-          <Text>
-            {hasStoredApiKey ? '새 API 키 저장' : 'API 키 저장'}
-          </Text>
-        </Button>
-      )}
-
-      <Button
-        variant={byokConfigured ? "default" : "outline"}
-        onPress={onToggleBYOK}
-        disabled={!byokConfigured && !byokEnabled}
-      >
-        <Text>
-          {byokEnabled ? 'BYOK 비활성화' : 'BYOK 활성화'}
-        </Text>
-      </Button>
+          {(!hasStoredApiKey || isEditingApiKey) && (
+            <Button onPress={onSaveKey}>
+              <Text>
+                {hasStoredApiKey ? '새 API 키 저장' : 'API 키 저장'}
+              </Text>
+            </Button>
+          )}
+        </View>
+      </Activity>
     </SettingsSection>
   );
 }

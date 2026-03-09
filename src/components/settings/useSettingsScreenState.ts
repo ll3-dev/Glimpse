@@ -29,6 +29,22 @@ export function useSettingsScreenState() {
   // Apple Intelligence actions
   const toggleAppleIntelligence = useCallback(
     (enabled: boolean): ActionFeedback | null => {
+      if (enabled && appleConfig.isCheckingAvailability) {
+        return {
+          title: '확인 중',
+          message: '이 기기의 Apple Intelligence 지원 여부를 확인하고 있습니다.',
+        };
+      }
+
+      if (enabled && !appleConfig.isAvailable) {
+        return {
+          title: '설정 실패',
+          message:
+            appleConfig.unavailableReason ||
+            '현재 기기에서 Apple Intelligence를 사용할 수 없습니다',
+        };
+      }
+
       if (!setAppleIntelligenceEnabled(enabled) && enabled) {
         return {
           title: '설정 실패',
@@ -40,7 +56,7 @@ export function useSettingsScreenState() {
 
       return null;
     },
-    [appleConfig.unavailableReason]
+    [appleConfig.isAvailable, appleConfig.isCheckingAvailability, appleConfig.unavailableReason]
   );
 
   // Local LLM actions

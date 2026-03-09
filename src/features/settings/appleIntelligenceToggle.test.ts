@@ -1,12 +1,24 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createAppleIntelligenceToggle } from './appleIntelligenceToggle';
+import type { AppleIntelligenceBridge } from '@/src/features/ai/apple-intelligence-bridge';
 
 const platform = {
   OS: 'ios',
   Version: '18.2',
 };
 
-const toggle = createAppleIntelligenceToggle({ platform });
+function createBridge(
+  overrides: Partial<AppleIntelligenceBridge> = {},
+): AppleIntelligenceBridge {
+  return {
+    isAvailable: mock(async () => ({ available: true as const })),
+    generate: mock(async () => ({ text: 'unused' })),
+    ...overrides,
+  };
+}
+
+const bridge = createBridge();
+const toggle = createAppleIntelligenceToggle({ platform, bridge });
 
 describe('appleIntelligenceToggle', () => {
   beforeEach(() => {
@@ -53,7 +65,53 @@ describe('appleIntelligenceToggle', () => {
     platform.Version = '18.3';
     toggle.enableAppleIntelligence();
     const config = toggle.getAppleIntelligenceConfig();
-    expect(config.isAvailable).toBe(true);
-    expect(config.enabled).toBe(true);
+    expect(config.isAvailable).toBe(false);
+    expect(config.isCheckingAvailability).toBe(true);
+    expect(config.enabled).toBe(false);
+  });
+
+  test('resolveAppleIntelligenceAvailability returns unsupported device from native bridge', async () => {
+    const unsupportedDeviceToggle = createAppleIntelligenceToggle({
+      platform,
+      bridge: createBridge({
+        isAvailable: mock(async () => ({
+          available: false,
+          reason: 'unsupported_device',
+        })),
+      }),
+    });
+
+    const availability = await unsupportedDeviceToggle.resolveAppleIntelligenceAvailability();
+
+    expect(availability.available).toBe(false);
+    expect(availability.reasonCode).toBe('unsupported_device');
+    expect(availability.reason).toBe('이 기기는 Apple Intelligence를 지원하지 않습니다');
+  });
+
+  test('resolveAppleIntelligenceAvailability keeps supported devices available', async () => {
+    platform.OS = 'ios';
+    platform.Version = '18.3';
+
+    const availability = await toggle.resolveAppleIntelligenceAvailability();
+
+    expect(availability).toEqual({ available: true });
+  });
+
+  test('resolveAppleIntelligenceAvailability returns setup guidance when native is not configured', async () => {
+    const unavailableToggle = createAppleIntelligenceToggle({
+      platform,
+      bridge: createBridge({
+        isAvailable: mock(async () => ({
+          available: false,
+          reason: 'not_configured',
+        })),
+      }),
+    });
+
+    const availability = await unavailableToggle.resolveAppleIntelligenceAvailability();
+
+    expect(availability.available).toBe(false);
+    expect(availability.reasonCode).toBe('not_configured');
+    expect(availability.reason).toContain('기기 설정');
   });
 });

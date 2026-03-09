@@ -4,11 +4,12 @@
  * Displays Local LLM settings including model download and selection.
  */
 
-import { View, Text, ActivityIndicator } from 'react-native';
-import { useEffect, useCallback, useRef } from 'react';
+import { Activity, useCallback, useEffect, useRef } from 'react';
+import { Alert, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Bot, Loader } from 'lucide-react-native';
 import { Switch } from '@/src/ui/primitives';
 import { SettingsSection } from './SettingsSection';
+import { canToggleLocalLLM, getLocalLLMToggleDisabledReason } from './localLLMToggle';
 import { ModelDownloadCard } from './ModelDownloadCard';
 import {
   RECOMMENDED_MODELS,
@@ -55,7 +56,7 @@ function getDownloadStatus(
 
 export function LocalLLMSection({
   enabled,
-  ready,
+  ready: _ready,
   models,
   selectedModelId,
   onToggle,
@@ -170,32 +171,52 @@ export function LocalLLMSection({
     onToggle(value);
   }, [onToggle]);
 
+  // Show details when enabled or any activity (downloading/loading)
+  const canToggle = canToggleLocalLLM(enabled, selectedModelId, availableModels);
+  const disabledReason = getLocalLLMToggleDisabledReason(enabled, selectedModelId, availableModels);
+
+  const handleTogglePress = useCallback(() => {
+    if (!canToggle) {
+      Alert.alert('로컬 LLM 사용 불가', disabledReason || '현재는 로컬 LLM을 켤 수 없습니다.');
+      return;
+    }
+
+    if (isLoading) {
+      Alert.alert('모델 로딩 중', '모델 로딩이 끝난 뒤 다시 시도해주세요.');
+      return;
+    }
+
+    onToggle(!enabled);
+  }, [canToggle, disabledReason, isLoading, onToggle, enabled]);
+
   return (
     <SettingsSection
       title="로컬 LLM"
       icon={<Bot size={18} color="#787774" />}
       footer="ⓘ Apple Silicon Mac 또는 iOS 18+에서 사용할 수 있습니다"
     >
-      <View className="gap-6">
-        {/* Enable/Disable toggle */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 pr-4">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-base font-semibold text-app-text">로컬 모델 사용</Text>
-              {isLoading && <Loader size={14} className="text-app-muted animate-spin" />}
-            </View>
-            <Text className="text-xs text-app-muted mt-0.5">
-              기기에서 직접 실행되는 AI 모델
-            </Text>
+      {/* Enable/Disable toggle */}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-1 pr-4">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-base font-semibold text-app-text">로컬 모델 사용</Text>
+            {isLoading && <Loader size={14} className="text-app-muted animate-spin" />}
           </View>
+          <Text className="text-xs text-app-muted mt-0.5">
+            기기에서 직접 실행되는 AI 모델
+          </Text>
+        </View>
+        <TouchableOpacity onPress={handleTogglePress} activeOpacity={0.8}>
           <Switch
             checked={enabled}
             onCheckedChange={handleToggle}
-            disabled={(!ready && !enabled) || isLoading}
+            disabled={!canToggle || isLoading}
           />
-        </View>
+        </TouchableOpacity>
+      </View>
 
-        <View>
+      <Activity mode="visible">
+        <View className="mt-4">
           {/* Loading progress */}
           {isLoading && (
             <View className="mb-4 p-3 bg-app-bg rounded-lg">
@@ -237,11 +258,15 @@ export function LocalLLMSection({
                     status={status}
                     isSelected={selectedModelId === model.id}
                     downloadProgress={
-                      status === 'downloading'
+                      status === "downloading"
                         ? { written: 0, total: 0, percentage: downloadProgress }
                         : undefined
                     }
-                    errorMessage={status === 'idle' ? downloadError : undefined}
+                    errorMessage={
+                      status === "idle"
+                        ? (downloadError ?? undefined)
+                        : undefined
+                    }
                     onDownload={() => handleDownload(model)}
                     onDelete={() => handleDelete(model)}
                     onSelect={() => handleSelect(model.id)}
@@ -252,7 +277,7 @@ export function LocalLLMSection({
             </View>
           </View>
         </View>
-      </View>
+      </Activity>
     </SettingsSection>
   );
 }

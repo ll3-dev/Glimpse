@@ -40,6 +40,7 @@ export {
   type AppleIntelligenceConfig,
   // Functions
   checkAppleIntelligenceAvailability,
+  resolveAppleIntelligenceAvailability,
   getAppleIntelligenceConfig,
   useAppleIntelligenceConfig,
   isAppleIntelligenceEnabled,

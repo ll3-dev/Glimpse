@@ -15,11 +15,13 @@ type ModelDownloadProgressProps = {
   total: number;
   /** Progress percentage (0-100) */
   percentage: number;
+  /** Expected model size for display when total is unknown */
+  expectedSize?: string;
 };
 
-export function ModelDownloadProgress({ written, total, percentage }: ModelDownloadProgressProps) {
+export function ModelDownloadProgress({ written, total, percentage, expectedSize }: ModelDownloadProgressProps) {
   const writtenFormatted = ModelDownloader.formatBytes(written);
-  const totalFormatted = total > 0 ? ModelDownloader.formatBytes(total) : '알 수 없음';
+  const totalFormatted = total > 0 ? ModelDownloader.formatBytes(total) : (expectedSize ?? '계산 중...');
 
   return (
     <View className="mt-2">

@@ -78,8 +78,8 @@ export function ModelDownloadCard({
           </View>
         )}
         {isDownloading && (
-          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-0.5 rounded-full">
-            <ActivityIndicator size={10} color="#37352f" />
+          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-0.5 rounded-full overflow-hidden">
+            <ActivityIndicator size="small" color="#37352f" />
             <Text className="text-xs text-app-text">다운로드 중</Text>
           </View>
         )}
@@ -97,6 +97,7 @@ export function ModelDownloadCard({
           written={downloadProgress.written}
           total={downloadProgress.total}
           percentage={downloadProgress.percentage}
+          expectedSize={model.size}
         />
       )}
 

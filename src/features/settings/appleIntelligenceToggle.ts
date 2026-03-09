@@ -20,6 +20,8 @@ const appleIntelligenceToggle = createAppleIntelligenceToggle();
 
 export const checkAppleIntelligenceAvailability =
   appleIntelligenceToggle.checkAppleIntelligenceAvailability;
+export const resolveAppleIntelligenceAvailability =
+  appleIntelligenceToggle.resolveAppleIntelligenceAvailability;
 export const getAppleIntelligenceConfig = appleIntelligenceToggle.getAppleIntelligenceConfig;
 export const useAppleIntelligenceConfig = appleIntelligenceToggle.useAppleIntelligenceConfig;
 export const isAppleIntelligenceEnabled = appleIntelligenceToggle.isAppleIntelligenceEnabled;
