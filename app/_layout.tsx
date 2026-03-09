@@ -40,7 +40,12 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ShareIntentProvider>
         <QueryClientProvider client={queryClient}>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              freezeOnBlur: true,
+            }}
+          >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
             <Stack.Screen name="library/[id]" />

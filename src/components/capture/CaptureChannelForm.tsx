@@ -1,3 +1,4 @@
+import { Activity } from 'react';
 import { type KnowledgeItemType } from '@/src/db/schema';
 import { type CaptureFormActions, type CaptureFormState } from '@/src/features/capture';
 import { CaptureForm } from './CaptureForm';
@@ -18,10 +19,9 @@ export function CaptureChannelForm({
   state,
   actions,
 }: CaptureChannelFormProps) {
-  switch (channel) {
-    case 'note':
-    case 'link':
-      return (
+  return (
+    <>
+      <Activity mode={channel === 'note' || channel === 'link' ? 'visible' : 'hidden'}>
         <CaptureForm
           title={state.title}
           body={state.body}
@@ -30,10 +30,9 @@ export function CaptureChannelForm({
           onChangeBody={actions.setBody}
           placeholder={channel === 'link' ? 'URL을 입력하세요...' : '자유롭게 기록하세요...'}
         />
-      );
+      </Activity>
 
-    case 'highlight':
-      return (
+      <Activity mode={channel === 'highlight' ? 'visible' : 'hidden'}>
         <HighlightForm
           text={state.highlightText}
           source={state.highlightSource}
@@ -41,19 +40,17 @@ export function CaptureChannelForm({
           onChangeText={actions.setHighlightText}
           onChangeSource={actions.setHighlightSource}
         />
-      );
+      </Activity>
 
-    case 'screenshot':
-      return (
+      <Activity mode={channel === 'screenshot' ? 'visible' : 'hidden'}>
         <ScreenshotForm
           extractedText={state.screenshotText}
           onChangeExtractedText={actions.setScreenshotText}
           bottomInset={bottomInset}
         />
-      );
+      </Activity>
 
-    case 'share':
-      return (
+      <Activity mode={channel === 'share' ? 'visible' : 'hidden'}>
         <ShareForm
           sharedContent={state.sharedContent}
           editedTitle={state.shareTitle}
@@ -62,9 +59,7 @@ export function CaptureChannelForm({
           onChangeTitle={actions.setShareTitle}
           onChangeBody={actions.setShareBody}
         />
-      );
-
-    default:
-      return null;
-  }
+      </Activity>
+    </>
+  );
 }

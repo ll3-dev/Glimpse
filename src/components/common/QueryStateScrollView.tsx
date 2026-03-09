@@ -1,5 +1,5 @@
-import { Fragment, type ReactNode } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Activity, Fragment, type ReactNode } from "react";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 
 type QueryStateScrollViewProps<T> = {
   data: readonly T[];
@@ -27,11 +27,20 @@ export function QueryStateScrollView<T>({
   emptyTitle,
   emptyDescription,
   error,
-  loadingText = '로딩 중...',
+  loadingText = "로딩 중...",
   topPadding = 16,
   horizontalPadding = 24,
   bottomInset,
 }: QueryStateScrollViewProps<T>) {
+  const hasData = data.length > 0;
+  const showLoading = isLoading;
+  const showError = !isLoading && Boolean(error);
+  const showEmpty = !isLoading && !error && !hasData;
+  const showData = !isLoading && !error && hasData;
+  const renderedItems = data.map((item) => (
+    <Fragment key={keyExtractor(item)}>{renderItem(item)}</Fragment>
+  ));
+
   return (
     <ScrollView
       className="flex-1"
@@ -44,31 +53,37 @@ export function QueryStateScrollView<T>({
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      {isLoading ? (
+      <Activity mode={showLoading ? "visible" : "hidden"}>
         <View className="items-center justify-center py-20">
           <Text className="text-muted-foreground">{loadingText}</Text>
         </View>
-      ) : error ? (
+      </Activity>
+
+      <Activity mode={showError ? "visible" : "hidden"}>
         <View className="items-center justify-center px-8 py-20">
-          <Text className="mb-2 text-lg font-medium text-app-text">
+          <Text className="text-app-text mb-2 text-lg font-medium">
             데이터를 불러오지 못했습니다
           </Text>
-          <Text className="text-sm text-center text-muted-foreground">
-            {error.message || '다시 시도해주세요'}
+          <Text className="text-muted-foreground text-center text-sm">
+            {error?.message || "다시 시도해주세요"}
           </Text>
         </View>
-      ) : data.length === 0 ? (
+      </Activity>
+
+      <Activity mode={showEmpty ? "visible" : "hidden"}>
         <View className="items-center justify-center px-8 py-20">
-          <Text className="mb-2 text-lg font-medium text-app-text">{emptyTitle}</Text>
-          <Text className="text-sm text-center text-muted-foreground">{emptyDescription}</Text>
+          <Text className="text-app-text mb-2 text-lg font-medium">
+            {emptyTitle}
+          </Text>
+          <Text className="text-muted-foreground text-center text-sm">
+            {emptyDescription}
+          </Text>
         </View>
-      ) : (
-        data.map((item) => (
-          <Fragment key={keyExtractor(item)}>
-            {renderItem(item)}
-          </Fragment>
-        ))
-      )}
+      </Activity>
+
+      <Activity mode={showData ? "visible" : "hidden"}>
+        {renderedItems}
+      </Activity>
     </ScrollView>
   );
 }
