@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AppState, InteractionManager } from 'react-native';
+import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { KnowledgeItem } from '@/src/db';
 import { runForegroundLabeling } from '@/src/features/labeling';
@@ -24,19 +24,39 @@ export function useForegroundLabeling(items: KnowledgeItem[] | undefined) {
     }
 
     isRunningRef.current = true;
-    const task = InteractionManager.runAfterInteractions(async () => {
-      try {
-        const result = await runForegroundLabeling(1);
-        if (result.success && result.data.processedCount > 0) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
-        }
-      } finally {
-        isRunningRef.current = false;
+    let idleCallbackId: number | null = null;
+    const timeoutId = setTimeout(() => {
+      if (typeof globalThis.requestIdleCallback === 'function') {
+        idleCallbackId = globalThis.requestIdleCallback(async () => {
+          try {
+            const result = await runForegroundLabeling(1);
+            if (result.success && result.data.processedCount > 0) {
+              queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+            }
+          } finally {
+            isRunningRef.current = false;
+          }
+        });
+        return;
       }
-    });
+
+      void (async () => {
+        try {
+          const result = await runForegroundLabeling(1);
+          if (result.success && result.data.processedCount > 0) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+          }
+        } finally {
+          isRunningRef.current = false;
+        }
+      })();
+    }, 750);
 
     return () => {
-      task.cancel();
+      clearTimeout(timeoutId);
+      if (idleCallbackId !== null && typeof globalThis.cancelIdleCallback === 'function') {
+        globalThis.cancelIdleCallback(idleCallbackId);
+      }
       isRunningRef.current = false;
     };
   }, [items, queryClient]);

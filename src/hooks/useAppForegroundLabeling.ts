@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AppState, InteractionManager } from 'react-native';
+import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { runForegroundLabeling } from '@/src/features/labeling';
 import { queryKeys } from '@/src/lib/query-keys';
@@ -11,25 +11,48 @@ export function useAppForegroundLabeling() {
   useEffect(() => {
     const run = () => {
       if (isRunningRef.current) {
-        return;
+        return undefined;
       }
 
       isRunningRef.current = true;
-      const task = InteractionManager.runAfterInteractions(async () => {
-        try {
-          const result = await runForegroundLabeling(2);
-          if (result.success && result.data.processedCount > 0) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
-          }
-        } finally {
-          isRunningRef.current = false;
+      let idleCallbackId: number | null = null;
+      const timeoutId = setTimeout(() => {
+        if (typeof globalThis.requestIdleCallback === 'function') {
+          idleCallbackId = globalThis.requestIdleCallback(async () => {
+            try {
+              const result = await runForegroundLabeling(2);
+              if (result.success && result.data.processedCount > 0) {
+                queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+              }
+            } finally {
+              isRunningRef.current = false;
+            }
+          });
+          return;
         }
-      });
 
-      return task;
+        void (async () => {
+          try {
+            const result = await runForegroundLabeling(2);
+            if (result.success && result.data.processedCount > 0) {
+              queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+            }
+          } finally {
+            isRunningRef.current = false;
+          }
+        })();
+      }, 750);
+
+      return {
+        cancel: () => {
+          clearTimeout(timeoutId);
+          if (idleCallbackId !== null && typeof globalThis.cancelIdleCallback === 'function') {
+            globalThis.cancelIdleCallback(idleCallbackId);
+          }
+        },
+      };
     };
 
-    const initialTask = AppState.currentState === 'active' ? run() : undefined;
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         run();
@@ -37,7 +60,6 @@ export function useAppForegroundLabeling() {
     });
 
     return () => {
-      initialTask?.cancel();
       subscription.remove();
       isRunningRef.current = false;
     };
