@@ -68,8 +68,13 @@ export function createAddMessage(deps: AddMessageDeps = defaultDeps) {
 
         return newMessage as Message;
       },
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to add message', error)
+      (error): AppError => {
+        console.error('[addMessage] Failed', {
+          input,
+          error,
+        });
+        return appError('DATABASE_ERROR', 'Failed to add message', error);
+      }
     );
 
     return runEffectResult(queryEffect);
