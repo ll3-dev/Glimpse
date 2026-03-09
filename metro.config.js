@@ -5,5 +5,5 @@ const config = getDefaultConfig(__dirname);
 
 module.exports = withUniwindConfig(config, {
   cssEntryFile: './global.css',
-  dtsFile: './app/uniwind-types.d.ts',
+  dtsFile: './src/types/uniwind.d.ts',
 });
