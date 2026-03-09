@@ -1618,6 +1618,12 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-nitro-buffer (0.0.15):
+    - NitroModules
+    - React-Core
+  - react-native-nitro-crypto (0.2.4):
+    - NitroModules
+    - React-Core
   - react-native-safe-area-context (5.6.2):
     - hermes-engine
     - RCTRequired
@@ -2460,6 +2466,8 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-blob-util (from `../node_modules/react-native-blob-util`)
+  - react-native-nitro-buffer (from `../node_modules/react-native-nitro-buffer`)
+  - react-native-nitro-crypto (from `../node_modules/react-native-nitro-crypto`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-webview (from `../node_modules/react-native-webview`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2656,6 +2664,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-blob-util:
     :path: "../node_modules/react-native-blob-util"
+  react-native-nitro-buffer:
+    :path: "../node_modules/react-native-nitro-buffer"
+  react-native-nitro-crypto:
+    :path: "../node_modules/react-native-nitro-crypto"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-webview:
@@ -2819,6 +2831,8 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 8f8cbeb5bedb521cce0897a71274e3a72b5236a1
   React-microtasksnativemodule: bef4a47c7efd42421de52201e6d76a73cf6c816e
   react-native-blob-util: 5926090844c5d8081f065066cdb262854351777d
+  react-native-nitro-buffer: 2703f7748a35d39676772773506227eaa233608c
+  react-native-nitro-crypto: b55983b59b7f899ce169dcecc6c82995ec3b8c35
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2
   react-native-webview: 3e303e80cadb5f17118c8c1502aa398e9287e415
   React-NativeModulesApple: f9fa097fc24cec967b77bfc05f72d2ea7db05b87
