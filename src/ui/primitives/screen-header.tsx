@@ -11,19 +11,19 @@ type ScreenHeaderProps = {
 
 export function ScreenHeader({ title, subtitle, leftElement, rightElement, className }: ScreenHeaderProps) {
   return (
-    <View className={cn("px-6 pt-4 pb-4 flex-row items-center justify-between", className)}>
+    <View className={cn("px-4 pt-3 pb-2 flex-row items-center justify-between", className)}>
       <View className="flex-row items-center flex-1">
         {leftElement && (
-          <View className="mr-4">
+          <View className="mr-3">
             {leftElement}
           </View>
         )}
         <View className="flex-1">
-          <Text className="text-xl font-bold text-app-text tracking-tight">{title}</Text>
+          <Text className="text-lg font-bold text-app-text tracking-tight">{title}</Text>
           {subtitle && (
-            <View className="mt-2 flex-row items-center">
+            <View className="mt-1 flex-row items-center">
               <View className="w-1.5 h-1.5 rounded-full bg-app-subtle mr-2" />
-              <Text className="text-sm text-app-muted font-medium">{subtitle}</Text>
+              <Text className="text-xs text-app-muted font-medium">{subtitle}</Text>
             </View>
           )}
         </View>
