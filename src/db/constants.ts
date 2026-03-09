@@ -136,6 +136,15 @@ export const REQUIRED_COLUMNS: RequiredColumn[] = [
   { name: "next_review_at", definition: "next_review_at REAL" },
 ];
 
+export const REQUIRED_CONVERSATION_COLUMNS: RequiredColumn[] = [
+  { name: "id", definition: "id TEXT PRIMARY KEY NOT NULL" },
+  { name: "title", definition: "title TEXT" },
+  { name: "icon", definition: "icon TEXT" },
+  { name: "context_item_id", definition: "context_item_id TEXT" },
+  { name: "created_at", definition: "created_at REAL NOT NULL DEFAULT 0" },
+  { name: "updated_at", definition: "updated_at REAL NOT NULL DEFAULT 0" },
+];
+
 export const KNOWLEDGE_ITEMS_SELECT_COLUMNS = [
   "id",
   "type",
@@ -168,6 +177,7 @@ export const CREATE_CONVERSATIONS_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS conversations (
   id TEXT PRIMARY KEY NOT NULL,
   title TEXT,
+  icon TEXT,
   context_item_id TEXT,
   created_at REAL NOT NULL,
   updated_at REAL NOT NULL
@@ -177,6 +187,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 export const CONVERSATIONS_SELECT_COLUMNS = [
   "id",
   "title",
+  "icon",
   "context_item_id",
   "created_at",
   "updated_at",
@@ -207,6 +218,16 @@ export const MESSAGES_SELECT_COLUMNS = [
   "updated_at",
   "deleted_at",
 ] as const;
+
+export const REQUIRED_MESSAGE_COLUMNS: RequiredColumn[] = [
+  { name: "id", definition: "id TEXT PRIMARY KEY NOT NULL" },
+  { name: "conversation_id", definition: "conversation_id TEXT NOT NULL" },
+  { name: "role", definition: "role TEXT NOT NULL DEFAULT 'user'" },
+  { name: "content", definition: "content TEXT NOT NULL DEFAULT ''" },
+  { name: "created_at", definition: "created_at REAL NOT NULL DEFAULT 0" },
+  { name: "updated_at", definition: "updated_at REAL" },
+  { name: "deleted_at", definition: "deleted_at REAL" },
+];
 
 // Embeddings table
 export const EMBEDDINGS_TABLE_NAME = "embeddings";

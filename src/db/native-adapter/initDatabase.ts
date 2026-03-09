@@ -10,7 +10,11 @@ import {
   CREATE_EMBEDDINGS_TABLE_SQL,
   DB_NAME,
 } from '../constants';
-import { ensureKnowledgeItemsSchema, sanitizeKnowledgeItemsRows } from './schemaMaintenance';
+import {
+  ensureChatSchema,
+  ensureKnowledgeItemsSchema,
+  sanitizeKnowledgeItemsRows,
+} from './schemaMaintenance';
 
 let isInitialized = false;
 let initPromise: Promise<void> | null = null;
@@ -22,16 +26,12 @@ function isAlreadyOpenError(error: unknown): boolean {
 function openDatabaseConnection(): void {
   try {
     NitroSQLite.open({ name: DB_NAME });
-    console.log('[InitDatabase] Database opened');
   } catch (error) {
     if (!isAlreadyOpenError(error)) {
       throw error;
     }
-
-    console.log('[InitDatabase] Database already open, resetting stale native connection...');
     NitroSQLite.close(DB_NAME);
     NitroSQLite.open({ name: DB_NAME });
-    console.log('[InitDatabase] Database reopened');
   }
 }
 
@@ -44,61 +44,49 @@ async function executeNonCriticalStatement(sql: string): Promise<void> {
 }
 
 export function initDatabase(): Promise<void> {
-  console.log('[InitDatabase] Called, isInitialized:', isInitialized);
-
   if (isInitialized) {
-    console.log('[InitDatabase] Already initialized, skipping');
     return Promise.resolve();
   }
 
   if (!initPromise) {
-    console.log('[InitDatabase] Starting initialization...');
+    console.log('[InitDatabase] Initializing...');
     const initEffect = Effect.gen(function* () {
-      console.log('[InitDatabase] Opening database...');
       openDatabaseConnection();
 
-      console.log('[InitDatabase] Creating knowledge_items table...');
+      // Create tables
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_KNOWLEDGE_ITEMS_TABLE_SQL)
       );
-      console.log('[InitDatabase] Creating recommendations table...');
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_RECOMMENDATIONS_TABLE_SQL)
       );
-      console.log('[InitDatabase] Creating feedback_events table...');
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_FEEDBACK_EVENTS_TABLE_SQL)
       );
-      console.log('[InitDatabase] Creating conversations table...');
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_CONVERSATIONS_TABLE_SQL)
       );
-      console.log('[InitDatabase] Creating messages table...');
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_MESSAGES_TABLE_SQL)
       );
-      console.log('[InitDatabase] Creating embeddings table...');
       yield* Effect.promise(() =>
         NitroSQLite.executeAsync(DB_NAME, CREATE_EMBEDDINGS_TABLE_SQL)
       );
 
       // Run schema migration BEFORE creating indexes
-      // This ensures all columns exist before we try to create indexes on them
-      console.log('[InitDatabase] Running schema migration...');
       yield* Effect.promise(() => ensureKnowledgeItemsSchema());
+      yield* Effect.promise(() => ensureChatSchema());
 
-      // Now create indexes (after all columns exist)
-      console.log('[InitDatabase] Creating indexes...');
+      // Create indexes (after all columns exist)
       for (const createIndexSql of CREATE_INDEXES_SQL) {
-        console.log('[InitDatabase] Creating index statement:', createIndexSql);
         yield* Effect.promise(() => executeNonCriticalStatement(createIndexSql));
       }
 
-      console.log('[InitDatabase] Sanitizing rows...');
       yield* Effect.promise(() => sanitizeKnowledgeItemsRows());
-      console.log('[InitDatabase] Initialization complete!');
+
       yield* Effect.sync(() => {
         isInitialized = true;
+        console.log('[InitDatabase] Ready');
       });
     }).pipe(
       Effect.tapError((error) =>

@@ -1,38 +1,64 @@
 import { Effect } from 'effect';
 import { NitroSQLite } from 'react-native-nitro-sqlite';
 import {
+  CONVERSATIONS_TABLE_NAME,
   DB_NAME,
   KNOWLEDGE_ITEMS_TABLE_NAME,
+  MESSAGES_TABLE_NAME,
   REQUIRED_COLUMNS,
+  REQUIRED_CONVERSATION_COLUMNS,
+  REQUIRED_MESSAGE_COLUMNS,
 } from '../constants';
 import type { NativeQueryRow } from './types';
+
+async function ensureTableColumns(
+  tableName: string,
+  requiredColumns: { name: string; definition: string }[]
+): Promise<void> {
+  const pragmaResult = await NitroSQLite.executeAsync(
+    DB_NAME,
+    `PRAGMA table_info(${tableName});`
+  );
+
+  const existingColumns = new Set(
+    (pragmaResult.results as NativeQueryRow[]).map((row) => String(row.name))
+  );
+
+  console.log(`[SchemaMigration] ${tableName} existing columns:`, [...existingColumns]);
+
+  if (!existingColumns.has('id')) {
+    throw new Error(`${tableName} table exists without id column. Please reset local DB.`);
+  }
+
+  const missingColumns = requiredColumns.filter(
+    (col) => !existingColumns.has(col.name) && col.name !== 'id'
+  );
+
+  console.log(`[SchemaMigration] ${tableName} missing columns:`, missingColumns.map((c) => c.name));
+
+  for (const col of missingColumns) {
+    console.log(`[SchemaMigration] ${tableName} adding column: ${col.definition}`);
+    await NitroSQLite.executeAsync(
+      DB_NAME,
+      `ALTER TABLE ${tableName} ADD COLUMN ${col.definition};`
+    );
+  }
+}
 
 export async function ensureKnowledgeItemsSchema(): Promise<void> {
   console.log('[SchemaMigration] Function called');
 
   try {
-    // Get existing columns
     const pragmaResult = await NitroSQLite.executeAsync(
       DB_NAME,
       `PRAGMA table_info(${KNOWLEDGE_ITEMS_TABLE_NAME});`
     );
-
     const existingColumns = new Set(
       (pragmaResult.results as NativeQueryRow[]).map((row) => String(row.name))
     );
-
-    console.log('[SchemaMigration] Existing columns:', [...existingColumns]);
-
-    if (!existingColumns.has('id')) {
-      throw new Error('knowledge_items table exists without id column. Please reset local DB.');
-    }
-
-    // Find and add missing columns
     const missingColumns = REQUIRED_COLUMNS.filter(
       (col) => !existingColumns.has(col.name) && col.name !== 'id'
     );
-
-    console.log('[SchemaMigration] Missing columns:', missingColumns.map((c) => c.name));
 
     for (const col of missingColumns) {
       console.log(`[SchemaMigration] Adding column: ${col.definition}`);
@@ -66,6 +92,13 @@ export async function ensureKnowledgeItemsSchema(): Promise<void> {
     console.error('[SchemaMigration] Error:', error);
     throw error;
   }
+}
+
+export async function ensureChatSchema(): Promise<void> {
+  console.log('[SchemaMigration] Ensuring chat schema');
+  await ensureTableColumns(CONVERSATIONS_TABLE_NAME, REQUIRED_CONVERSATION_COLUMNS);
+  await ensureTableColumns(MESSAGES_TABLE_NAME, REQUIRED_MESSAGE_COLUMNS);
+  console.log('[SchemaMigration] Chat schema migration complete');
 }
 
 function normalizeTags(rawValue: unknown): string[] | null | 'invalid' {
