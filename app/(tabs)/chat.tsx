@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, MessageCircle } from 'lucide-react-native';
 import { useConversationsQuery, useCreateConversationMutation } from '@/src/hooks';
-import { ScreenHeader } from '@/src/ui/primitives';
+import { ScreenHeader, Skeleton } from '@/src/ui/primitives';
 import { ConversationList } from '@/src/components/chat';
 import { FlashList } from "@shopify/flash-list";
 
@@ -18,7 +18,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const { data: conversations } = useConversationsQuery();
+  const { data: conversations, isLoading } = useConversationsQuery();
   const { mutate: createConversation, isPending: isCreating } = useCreateConversationMutation();
 
   const handleCreateConversation = () => {
@@ -32,14 +32,20 @@ export default function ChatScreen() {
     });
   };
 
-  const hasConversations = conversations && conversations.length > 0;
+  const showLoading = isLoading;
+  const showEmpty = !isLoading && (!conversations || conversations.length === 0);
+  const showData = !isLoading && conversations && conversations.length > 0;
 
   return (
     <View className="bg-app-bg flex-1" style={{ paddingTop: insets.top }}>
       <ScreenHeader
         title="채팅"
         subtitle={
-          conversations ? `${conversations.length}개의 대화` : undefined
+          isLoading
+            ? "로딩 중..."
+            : conversations
+              ? `${conversations.length}개의 대화`
+              : undefined
         }
         rightElement={
           <TouchableOpacity
@@ -56,7 +62,26 @@ export default function ChatScreen() {
         }
       />
 
-      <Activity mode={hasConversations ? "visible" : "hidden"}>
+      {/* Loading skeleton */}
+      <Activity mode={showLoading ? "visible" : "hidden"}>
+        <View className="flex-1 px-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <View
+              key={i}
+              className="flex-row items-center p-4 bg-white rounded-xl mb-2"
+            >
+              <Skeleton width={40} height={40} radius={20} />
+              <View className="flex-1 ml-3">
+                <Skeleton width="70%" height={16} className="mb-1" />
+                <Skeleton width={60} height={12} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </Activity>
+
+      {/* Conversation list */}
+      <Activity mode={showData ? "visible" : "hidden"}>
         <View className="flex-1 px-4">
           <FlashList
             data={conversations}
@@ -72,7 +97,8 @@ export default function ChatScreen() {
         </View>
       </Activity>
 
-      <Activity mode={hasConversations ? "hidden" : "visible"}>
+      {/* Empty state */}
+      <Activity mode={showEmpty ? "visible" : "hidden"}>
         <View className="flex-1 items-center justify-center px-6">
           <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-gray-100">
             <MessageCircle size={32} color="#9ca3af" />
