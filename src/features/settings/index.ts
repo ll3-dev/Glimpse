@@ -93,3 +93,5 @@ export {
   failLoading,
   clearLoadError,
 } from './local-llm.commands';
+
+export { syncRecommendedLocalModels } from './local-llm.sync';

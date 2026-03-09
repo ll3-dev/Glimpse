@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { LogBox, Platform } from "react-native";
 
-import { useAppForegroundLabeling } from "@/src/hooks";
+import { useAppForegroundLabeling, useWarmLocalLLM } from "@/src/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
@@ -14,6 +14,7 @@ import { ShareIntentProvider } from "expo-share-intent";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
+  useWarmLocalLLM();
   return <>{children}</>;
 }
 

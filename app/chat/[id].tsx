@@ -7,16 +7,34 @@
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, SquarePen } from 'lucide-react-native';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import {
+  useConversationsQuery,
   useMessagesQuery,
   useKnowledgeItemsQuery,
+  useUpdateConversationDetailsMutation,
   useUpdateMessageMutation,
   useDeleteMessageMutation,
 } from '@/src/hooks';
-import { ChatMessage, ChatInput, ContextBadge, MessageEditModal } from '@/src/components/chat';
+import {
+  ChatMessage,
+  ChatInput,
+  ConversationEditModal,
+  ContextBadge,
+  MessageEditModal,
+  ChatStreamingMessage,
+} from '@/src/components/chat';
+import { ChatAISetupDialog } from "@/src/components/chat/ChatAISetupDialog";
 import { useChat } from '@/src/components/chat/hooks/useChat';
+import {
+  enableLocalLLM,
+  isLocalLLMReady,
+  selectLocalLLMModel,
+  syncRecommendedLocalModels,
+  useAvailableLocalModels,
+  useSelectedLocalModelId,
+} from "@/src/features/settings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +44,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/src/ui/primitives/alert-dialog';
+} from "@/src/ui/primitives/alert-dialog";
 import { ScreenHeader } from '@/src/ui/primitives/screen-header';
 import type { Message } from '@/src/db';
 
@@ -36,28 +54,73 @@ export default function ChatDetailScreen() {
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const { data: conversations } = useConversationsQuery();
   const { data: messages, isLoading: isLoadingMessages } = useMessagesQuery(id);
   const { data: knowledgeItems } = useKnowledgeItemsQuery();
+  const conversation = conversations?.find((item) => item.id === id) ?? null;
 
   // Find context item if provided
   const contextItem = contextItemId && knowledgeItems
     ? knowledgeItems.find((item) => item.id === contextItemId)
     : null;
 
-  const { sendMessage, isGenerating, streamingText, abortAndSave } = useChat({
-    conversationId: id,
-    contextItem,
-  });
+  const { sendMessage, isGenerating, streamingText, error, abortAndSave } =
+    useChat({
+      conversationId: id,
+      contextItem,
+    });
 
   // Edit/Delete state
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
   const [showBackDialog, setShowBackDialog] = useState(false);
+  const [showConversationEditModal, setShowConversationEditModal] = useState(false);
+  const [showAISetupDialog, setShowAISetupDialog] = useState(false);
+  const [isCheckingAIOptions, setIsCheckingAIOptions] = useState(true);
+
+  const selectedLocalModelId = useSelectedLocalModelId();
+  const availableLocalModels = useAvailableLocalModels();
+
+  const ensureChatAIReady = useCallback(async () => {
+    if (isLocalLLMReady()) {
+      setShowAISetupDialog(false);
+      return true;
+    }
+
+    const syncedModels = await syncRecommendedLocalModels();
+    const selectedModel = selectedLocalModelId
+      ? syncedModels.find(
+          (model) => model.id === selectedLocalModelId && model.isReady,
+        )
+      : null;
+
+    if (selectedModel) {
+      const result = enableLocalLLM();
+      if (result.success) {
+        setShowAISetupDialog(false);
+        return true;
+      }
+    }
+
+    const readyModels = syncedModels.filter((model) => model.isReady);
+    if (readyModels.length === 1) {
+      selectLocalLLMModel(readyModels[0].id);
+      const result = enableLocalLLM();
+      if (result.success) {
+        setShowAISetupDialog(false);
+        return true;
+      }
+    }
+
+    setShowAISetupDialog(true);
+    return false;
+  }, [selectedLocalModelId]);
 
   // Mutations
-  const updateMessage = useUpdateMessageMutation();
-  const deleteMessage = useDeleteMessageMutation();
+  const { mutateAsync: updateConversationDetails } = useUpdateConversationDetailsMutation();
+  const { mutate: updateMessage } = useUpdateMessageMutation();
+  const { mutate: deleteMessage } = useDeleteMessageMutation();
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -66,8 +129,31 @@ export default function ChatDetailScreen() {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages?.length]);
+  }, [messages]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initializeAIOptions = async () => {
+      setIsCheckingAIOptions(true);
+      try {
+        const ready = await ensureChatAIReady();
+        if (!cancelled) {
+          setShowAISetupDialog(!ready);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingAIOptions(false);
+        }
+      }
+    };
+
+    void initializeAIOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureChatAIReady]);
 
   // Scroll to bottom when streaming text updates
   useEffect(() => {
@@ -104,11 +190,39 @@ export default function ChatDetailScreen() {
   }, [isGenerating, handleBackPress]);
 
   const handleSend = async (text: string) => {
-    await sendMessage(text);
+    if (!isLocalLLMReady()) {
+      setIsCheckingAIOptions(true);
+      try {
+        const ready = await ensureChatAIReady();
+        if (!ready) {
+          return false;
+        }
+      } finally {
+        setIsCheckingAIOptions(false);
+      }
+    }
+
+    const didSend = await sendMessage(text);
     // Scroll to bottom after sending
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    if (didSend) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+    return didSend;
+  };
+
+  const handleSelectChatModel = async (modelId: string) => {
+    selectLocalLLMModel(modelId);
+    const result = enableLocalLLM();
+    if (result.success) {
+      setShowAISetupDialog(false);
+    }
+  };
+
+  const handleOpenSettings = () => {
+    setShowAISetupDialog(false);
+    router.push("/settings");
   };
 
   // Handlers for edit/delete
@@ -145,15 +259,31 @@ export default function ChatDetailScreen() {
     setEditingMessage(null);
   };
 
+  const handleSaveConversationDetails = async ({
+    title,
+    icon,
+  }: {
+    title: string;
+    icon: string | null;
+  }) => {
+    await updateConversationDetails({
+      conversationId: id,
+      title,
+      icon,
+    });
+    setShowConversationEditModal(false);
+  };
+
+  const conversationTitle = conversation?.title?.trim() || '새 대화';
+  const conversationIcon = conversation?.icon ?? null;
+  const headerTitle = conversationIcon
+    ? `${conversationIcon} ${conversationTitle}`
+    : conversationTitle;
+
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-app-bg"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ paddingTop: insets.top }}
-      keyboardVerticalOffset={0}
-    >
+    <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
       <ScreenHeader
-        title="채팅"
+        title={headerTitle}
         leftElement={
           <TouchableOpacity
             onPress={handleBackPress}
@@ -162,110 +292,158 @@ export default function ChatDetailScreen() {
             <ChevronLeft size={24} color="#37352f" />
           </TouchableOpacity>
         }
+        rightElement={
+          conversation ? (
+            <TouchableOpacity
+              onPress={() => setShowConversationEditModal(true)}
+              className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
+            >
+              <SquarePen size={18} color="#37352f" />
+            </TouchableOpacity>
+          ) : null
+        }
       />
 
-      {/* Context badge */}
-      {contextItem && (
-        <View className="px-4 pb-2">
-          <ContextBadge item={contextItem} />
-        </View>
-      )}
-
-      {/* Messages */}
-      <ScrollView
-        ref={scrollViewRef}
+      <KeyboardAvoidingView
         className="flex-1"
-        contentContainerStyle={{ 
-          paddingHorizontal: 16,
-          paddingTop: 8,
-          paddingBottom: 20, 
-          flexGrow: 1 
-        }}
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
-        {isLoadingMessages ? (
-          <View className="flex-1 items-center justify-center py-8">
-            <Text className="text-gray-500">로딩 중...</Text>
-          </View>
-        ) : messages && messages.length > 0 ? (
-          messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))
-        ) : (
-          <View className="flex-1 items-center justify-center py-8">
-            <Text className="text-gray-400 text-center">
-              {contextItem
-                ? '이 항목에 대해 질문해 보세요'
-                : '메시지를 입력해 대화를 시작하세요'}
-            </Text>
+        {/* Context badge */}
+        {contextItem && (
+          <View className="px-4 pb-2">
+            <ContextBadge item={contextItem} />
           </View>
         )}
 
-        {/* Generating indicator / streaming response */}
-        {isGenerating && (
-          <View className="flex-row justify-start mb-3">
-            <View className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-md max-w-[85%]">
-              {streamingText ? (
-                <Text className="text-gray-900 text-base leading-5">{streamingText}</Text>
-              ) : (
-                <Text className="text-gray-500">생각 중...</Text>
-              )}
+        {/* Messages */}
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1"
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 8,
+            paddingBottom: 20,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {isLoadingMessages ? (
+            <View className="flex-1 items-center justify-center py-8">
+              <Text className="text-gray-500">로딩 중...</Text>
+            </View>
+          ) : messages && messages.length > 0 ? (
+            messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ))
+          ) : (
+            <View className="flex-1 items-center justify-center py-8">
+              <Text className="text-center text-gray-400">
+                {contextItem
+                  ? "이 항목에 대해 질문해 보세요"
+                  : "메시지를 입력해 대화를 시작하세요"}
+              </Text>
+            </View>
+          )}
+
+          {/* Generating indicator / streaming response */}
+          {isGenerating && <ChatStreamingMessage content={streamingText} />}
+        </ScrollView>
+
+        {error && (
+          <View className="px-4 pb-2">
+            <View className="rounded-2xl bg-red-50 px-3 py-2">
+              <Text className="text-sm text-red-700">{error}</Text>
             </View>
           </View>
         )}
-      </ScrollView>
 
-      {/* Input */}
-      <ChatInput onSend={handleSend} isLoading={isGenerating} />
+        {/* Input */}
+        <ChatInput onSend={handleSend} isLoading={isGenerating} />
 
-      {/* Edit Modal */}
-      <MessageEditModal
-        visible={editingMessage !== null}
-        message={editingMessage}
-        onSave={handleSaveEdit}
-        onCancel={handleCancelEdit}
-      />
+        <ChatAISetupDialog
+          open={showAISetupDialog}
+          isCheckingOptions={isCheckingAIOptions}
+          models={availableLocalModels}
+          selectedModelId={selectedLocalModelId}
+          onSelectModel={handleSelectChatModel}
+          onOpenSettings={handleOpenSettings}
+          onBack={() => router.back()}
+        />
 
-      {/* Back Confirmation Dialog */}
-      <AlertDialog open={showBackDialog} onOpenChange={setShowBackDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>응답 생성 중</AlertDialogTitle>
-            <AlertDialogDescription>
-              AI가 응답을 생성하고 있습니다. 나가면 지금까지 생성된 내용이 저장됩니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onPress={handleConfirmBack} className="bg-destructive">
-              나가기
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Edit Modal */}
+        <ConversationEditModal
+          visible={showConversationEditModal}
+          conversation={conversation}
+          onSave={handleSaveConversationDetails}
+          onCancel={() => setShowConversationEditModal(false)}
+        />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>메시지 삭제</AlertDialogTitle>
-            <AlertDialogDescription>
-              이 메시지를 삭제하시겠습니까?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onPress={handleConfirmDelete} className="bg-destructive">
-              삭제
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </KeyboardAvoidingView>
+        <MessageEditModal
+          visible={editingMessage !== null}
+          message={editingMessage}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
+
+        {/* Back Confirmation Dialog */}
+        <AlertDialog open={showBackDialog} onOpenChange={setShowBackDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                <Text>응답 생성 중</Text>
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                <Text>
+                  AI가 응답을 생성하고 있습니다. 나가면 지금까지 생성된 내용이
+                  저장됩니다.
+                </Text>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                <Text>취소</Text>
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onPress={handleConfirmBack}
+                className="bg-destructive"
+              >
+                <Text>나가기</Text>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                <Text>메시지 삭제</Text>
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                <Text>이 메시지를 삭제하시겠습니까?</Text>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                <Text>취소</Text>
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onPress={handleConfirmDelete}
+                className="bg-destructive"
+              >
+                <Text>삭제</Text>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </KeyboardAvoidingView>
+    </View>
   );
 }

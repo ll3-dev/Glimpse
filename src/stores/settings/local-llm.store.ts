@@ -61,8 +61,8 @@ export interface LocalLLMConfig {
   // Download state
   /** ID of model currently being downloaded */
   downloadingModelId: string | null;
-  /** Download progress (0-100) */
-  downloadProgress: number;
+  /** Detailed download progress information */
+  downloadProgress: DownloadProgress | null;
   /** Download error message */
   downloadError: string | null;
 
@@ -100,7 +100,7 @@ const initialLocalLLMConfig: LocalLLMConfig = {
   availableModels: [],
 
   downloadingModelId: null,
-  downloadProgress: 0,
+  downloadProgress: null,
   downloadError: null,
 
   isLoading: false,
@@ -190,12 +190,16 @@ export function startLocalLLMDownload(modelId: string): void {
   updateLocalLLMStoreConfig((config) => ({
     ...config,
     downloadingModelId: modelId,
-    downloadProgress: 0,
+    downloadProgress: {
+      written: 0,
+      total: 0,
+      percentage: 0,
+    },
     downloadError: null,
   }));
 }
 
-export function updateLocalLLMDownloadProgress(progress: number): void {
+export function updateLocalLLMDownloadProgress(progress: DownloadProgress): void {
   updateLocalLLMStoreConfig((config) => ({ ...config, downloadProgress: progress }));
 }
 
@@ -203,7 +207,11 @@ export function finishLocalLLMDownload(modelId: string, path: string): void {
   updateLocalLLMStoreConfig((config) => ({
     ...config,
     downloadingModelId: null,
-    downloadProgress: 100,
+    downloadProgress: {
+      written: 0,
+      total: 0,
+      percentage: 100,
+    },
     downloadError: null,
     availableModels: config.availableModels.map((m) =>
       m.id === modelId ? { ...m, isReady: true, path } : m
@@ -215,7 +223,7 @@ export function failLocalLLMDownload(error: string): void {
   updateLocalLLMStoreConfig((config) => ({
     ...config,
     downloadingModelId: null,
-    downloadProgress: 0,
+    downloadProgress: null,
     downloadError: error,
   }));
 }

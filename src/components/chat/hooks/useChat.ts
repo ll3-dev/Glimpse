@@ -21,7 +21,7 @@ interface UseChatOptions {
 }
 
 interface UseChatResult {
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string) => Promise<boolean>;
   isGenerating: boolean;
   streamingText: string;
   error: string | null;
@@ -40,7 +40,7 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
   const { mutateAsync: addMessage } = useAddMessageMutation();
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || isGenerating) return;
+    if (!text.trim() || isGenerating) return false;
 
     setError(null);
     setIsGenerating(true);
@@ -73,10 +73,12 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
 
       streamingTextRef.current = '';
       setStreamingText('');
+      return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '응답 생성에 실패했습니다.';
       setError(errorMessage);
       logger.error('Chat generation failed', err);
+      return false;
     } finally {
       setIsGenerating(false);
     }

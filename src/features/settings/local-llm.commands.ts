@@ -24,6 +24,7 @@ import {
   failLocalLLMLoading,
   clearLocalLLMLoadError,
   type LocalModel,
+  type DownloadProgress,
 } from '@/src/stores/settings/local-llm.store';
 
 /**
@@ -143,7 +144,7 @@ export function startDownload(modelId: string): void {
 /**
  * Update download progress
  */
-export function updateDownloadProgress(progress: number): void {
+export function updateDownloadProgress(progress: DownloadProgress): void {
   updateLocalLLMDownloadProgress(progress);
 }
 
