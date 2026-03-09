@@ -1,35 +1,49 @@
 import { cn } from '@/src/lib/utils';
-import * as SwitchPrimitives from '@rn-primitives/switch';
-import { Platform } from 'react-native';
+import { TouchableOpacity, Animated, View } from 'react-native';
+import { useEffect, useRef } from 'react';
 
-function Switch({
-  className,
-  ...props
-}: SwitchPrimitives.RootProps & React.RefAttributes<SwitchPrimitives.RootRef>) {
+type SwitchProps = {
+  checked?: boolean;
+  disabled?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  className?: string;
+};
+
+function Switch({ checked = false, disabled = false, onCheckedChange, className }: SwitchProps) {
+  const translateX = useRef(new Animated.Value(checked ? 14 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: checked ? 14 : 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [checked, translateX]);
+
+  const handlePress = () => {
+    if (!disabled && onCheckedChange) {
+      onCheckedChange(!checked);
+    }
+  };
+
   return (
-    <SwitchPrimitives.Root
+    <TouchableOpacity
+      onPress={handlePress}
+      disabled={disabled}
+      activeOpacity={0.8}
       className={cn(
-        'flex h-[1.15rem] w-8 shrink-0 flex-row items-center rounded-full border border-transparent shadow-sm shadow-black/5',
-        Platform.select({
-          web: 'peer inline-flex outline-none transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed',
-        }),
-        props.checked ? 'bg-primary' : 'bg-input dark:bg-input/80',
-        props.disabled && 'opacity-50',
+        'w-10 h-6 rounded-full p-1 justify-center',
+        checked ? 'bg-primary' : 'bg-input',
+        disabled && 'opacity-50',
         className
       )}
-      {...props}>
-      <SwitchPrimitives.Thumb
-        className={cn(
-          'size-4 rounded-full bg-background transition-transform',
-          Platform.select({
-            web: 'pointer-events-none block ring-0',
-          }),
-          props.checked
-            ? 'dark:bg-primary-foreground translate-x-3.5'
-            : 'dark:bg-foreground translate-x-0'
-        )}
-      />
-    </SwitchPrimitives.Root>
+    >
+      <Animated.View
+        style={{ transform: [{ translateX }] }}
+      >
+        <View className="w-4 h-4 rounded-full bg-white" />
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
 

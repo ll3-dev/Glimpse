@@ -9,6 +9,10 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+const AnimatedProgressIndicator = Animated.createAnimatedComponent(
+  ProgressPrimitive.Indicator,
+);
+
 function Progress({
   className,
   value,
@@ -71,9 +75,10 @@ function NativeIndicator({ value, className }: IndicatorProps) {
   }
 
   return (
-    <ProgressPrimitive.Indicator asChild>
-      <Animated.View style={indicator} className={cn('h-full bg-foreground', className)} />
-    </ProgressPrimitive.Indicator>
+    <AnimatedProgressIndicator
+      style={indicator}
+      className={cn("bg-foreground h-full", className)}
+    />
   );
 }
 
