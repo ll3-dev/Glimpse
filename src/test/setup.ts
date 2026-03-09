@@ -68,6 +68,47 @@ mock.module("react-native-mmkv", () => ({
   }),
 }));
 
+mock.module("expo-task-manager", () => {
+  const definedTasks = new Map<string, unknown>();
+  const registeredTasks = new Set<string>();
+
+  return {
+    defineTask: (taskName: string, taskExecutor: unknown) => {
+      definedTasks.set(taskName, taskExecutor);
+    },
+    isTaskDefined: (taskName: string) => definedTasks.has(taskName),
+    isTaskRegisteredAsync: async (taskName: string) => registeredTasks.has(taskName),
+    isAvailableAsync: async () => true,
+    unregisterTaskAsync: async (taskName: string) => {
+      registeredTasks.delete(taskName);
+    },
+    __definedTasks: definedTasks,
+    __registeredTasks: registeredTasks,
+  };
+});
+
+mock.module("expo-background-task", () => ({
+  BackgroundTaskStatus: {
+    Restricted: 1,
+    Available: 2,
+  },
+  BackgroundTaskResult: {
+    Success: 1,
+    Failed: 2,
+  },
+  getStatusAsync: async () => 2,
+  registerTaskAsync: async (taskName: string) => {
+    const taskManager = await import("expo-task-manager");
+    taskManager.__registeredTasks.add(taskName);
+  },
+  unregisterTaskAsync: async (taskName: string) => {
+    const taskManager = await import("expo-task-manager");
+    taskManager.__registeredTasks.delete(taskName);
+  },
+  triggerTaskWorkerForTestingAsync: async () => true,
+  addExpirationListener: () => ({ remove: () => {} }),
+}));
+
 // Mock llama.rn for tests - provides stub implementation
 mock.module("llama.rn", () => ({
   initLlama: mock(async () => ({

@@ -3,6 +3,7 @@ import { onlineManager } from "@tanstack/react-query";
 import * as Network from "expo-network";
 import { withUniwind } from "uniwind";
 import { Calendar, LocaleConfig } from "react-native-calendars";
+import "@/src/features/labeling/background-task";
 
 onlineManager.setEventListener((setOnline) => {
   const eventSubscription = Network.addNetworkStateListener((state) => {
