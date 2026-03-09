@@ -10,4 +10,6 @@ export * from './createConversation';
 export * from './addMessage';
 export * from './updateMessage';
 export * from './deleteMessage';
+export * from './deleteConversation';
 export * from './updateConversationTitle';
+export * from './updateConversationDetails';

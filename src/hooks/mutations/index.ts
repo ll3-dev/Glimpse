@@ -23,6 +23,8 @@ export {
 export {
   useCreateConversationMutation,
   useAddMessageMutation,
+  useDeleteConversationMutation,
+  useUpdateConversationDetailsMutation,
   useUpdateConversationTitleMutation,
   useUpdateMessageMutation,
   useDeleteMessageMutation,

@@ -5,7 +5,7 @@
  * Ordered by last updated time, most recent first.
  */
 
-import { desc } from 'drizzle-orm';
+import { desc, isNull } from 'drizzle-orm';
 import { Effect } from 'effect';
 import { db, conversations, type Conversation } from '@/src/db';
 import {
@@ -25,12 +25,14 @@ export interface GetAllConversationsDeps {
   db: typeof db;
   conversations: typeof conversations;
   desc: typeof desc;
+  isNull: typeof isNull;
 }
 
 const defaultDeps: GetAllConversationsDeps = {
   db,
   conversations,
   desc,
+  isNull,
 };
 
 /**
@@ -43,6 +45,7 @@ export function createGetAllConversations(deps: GetAllConversationsDeps = defaul
         deps.db
           .select()
           .from(deps.conversations)
+          .where(deps.isNull(deps.conversations.deletedAt))
           .orderBy(deps.desc(deps.conversations.updatedAt)),
       (error): AppError =>
         appError('DATABASE_ERROR', 'Failed to retrieve conversations', error)

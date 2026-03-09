@@ -10,7 +10,9 @@ import {
   addMessage,
   updateMessage,
   deleteMessage,
+  deleteConversation,
   updateConversationTitle,
+  updateConversationDetails,
 } from "@/src/features/chat";
 import { queryKeys } from '@/src/lib/query-keys';
 import { createMutationOptions } from '@/src/lib/effect-query';
@@ -60,6 +62,45 @@ export function useUpdateConversationTitleMutation() {
     ...createMutationOptions(updateConversationTitle),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+    },
+  });
+}
+
+/**
+ * Hook to update conversation metadata.
+ */
+export function useUpdateConversationDetailsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...createMutationOptions(updateConversationDetails),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+    },
+  });
+}
+
+/**
+ * Hook to delete a conversation and its messages.
+ */
+export function useDeleteConversationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...createMutationOptions(deleteConversation),
+    onSuccess: (_, variables) => {
+      queryClient.setQueryData(
+        queryKeys.chat.conversations,
+        (current: { id: string }[] | undefined) =>
+          current?.filter((conversation) => conversation.id !== variables.conversationId) ?? []
+      );
+      queryClient.removeQueries({
+        queryKey: queryKeys.chat.conversation(variables.conversationId),
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.chat.messages(variables.conversationId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.all });
     },
   });
 }

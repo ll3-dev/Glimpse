@@ -238,6 +238,9 @@ export const conversations = sqliteTable(
     // Conversation title (auto-generated or user-set)
     title: text('title'),
 
+    // Optional icon selected by the user
+    icon: text('icon'),
+
     // Optional context item ID (from library)
     contextItemId: text('context_item_id'),
 
@@ -246,6 +249,9 @@ export const conversations = sqliteTable(
 
     // Last update timestamp
     updatedAt: real('updated_at').notNull(),
+
+    // Soft delete timestamp
+    deletedAt: real('deleted_at'),
   },
   (table) => ({
     createdAtIdx: index('conversations_created_at_idx').on(table.createdAt),

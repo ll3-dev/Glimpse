@@ -21,6 +21,7 @@ export type CreateConversationResult = Result<Conversation>;
 
 export interface CreateConversationInput {
   title?: string;
+  icon?: string;
   contextItemId?: string;
 }
 
@@ -47,9 +48,11 @@ export function createCreateConversation(deps: CreateConversationDeps = defaultD
     const newConversation: NewConversation = {
       id: deps.generateId(),
       title: input.title ?? null,
+      icon: input.icon ?? null,
       contextItemId: input.contextItemId ?? null,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     };
 
     const queryEffect = tryPromise(

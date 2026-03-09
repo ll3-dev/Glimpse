@@ -143,6 +143,7 @@ export const REQUIRED_CONVERSATION_COLUMNS: RequiredColumn[] = [
   { name: "context_item_id", definition: "context_item_id TEXT" },
   { name: "created_at", definition: "created_at REAL NOT NULL DEFAULT 0" },
   { name: "updated_at", definition: "updated_at REAL NOT NULL DEFAULT 0" },
+  { name: "deleted_at", definition: "deleted_at REAL" },
 ];
 
 export const KNOWLEDGE_ITEMS_SELECT_COLUMNS = [
@@ -180,7 +181,8 @@ CREATE TABLE IF NOT EXISTS conversations (
   icon TEXT,
   context_item_id TEXT,
   created_at REAL NOT NULL,
-  updated_at REAL NOT NULL
+  updated_at REAL NOT NULL,
+  deleted_at REAL
 );
 `;
 
@@ -191,6 +193,7 @@ export const CONVERSATIONS_SELECT_COLUMNS = [
   "context_item_id",
   "created_at",
   "updated_at",
+  "deleted_at",
 ] as const;
 
 // Messages table

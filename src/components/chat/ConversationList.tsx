@@ -32,6 +32,7 @@ function formatRelativeTime(timestamp: number): string {
 export function ConversationList({ conversation, onPress }: ConversationListProps) {
   const displayTitle = conversation.title || '새 대화';
   const relativeTime = formatRelativeTime(conversation.updatedAt);
+  const hasCustomIcon = Boolean(conversation.icon);
 
   return (
     <TouchableOpacity
@@ -40,7 +41,11 @@ export function ConversationList({ conversation, onPress }: ConversationListProp
       activeOpacity={0.7}
     >
       <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-3">
-        <MessageCircle size={20} color="#6b7280" />
+        {hasCustomIcon ? (
+          <Text className="text-xl">{conversation.icon}</Text>
+        ) : (
+          <MessageCircle size={20} color="#6b7280" />
+        )}
       </View>
       <View className="flex-1">
         <Text

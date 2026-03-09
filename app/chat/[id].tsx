@@ -4,13 +4,14 @@
  * Individual conversation view with AI chat.
  */
 
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, BackHandler, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, SquarePen } from 'lucide-react-native';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import {
   useConversationsQuery,
+  useDeleteConversationMutation,
   useMessagesQuery,
   useKnowledgeItemsQuery,
   useUpdateConversationDetailsMutation,
@@ -74,6 +75,7 @@ export default function ChatDetailScreen() {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
+  const [showDeleteConversationDialog, setShowDeleteConversationDialog] = useState(false);
   const [showBackDialog, setShowBackDialog] = useState(false);
   const [showConversationEditModal, setShowConversationEditModal] = useState(false);
   const [showAISetupDialog, setShowAISetupDialog] = useState(false);
@@ -118,6 +120,7 @@ export default function ChatDetailScreen() {
   }, [selectedLocalModelId]);
 
   // Mutations
+  const { mutateAsync: deleteConversation } = useDeleteConversationMutation();
   const { mutateAsync: updateConversationDetails } = useUpdateConversationDetailsMutation();
   const { mutate: updateMessage } = useUpdateMessageMutation();
   const { mutate: deleteMessage } = useDeleteMessageMutation();
@@ -274,6 +277,23 @@ export default function ChatDetailScreen() {
     setShowConversationEditModal(false);
   };
 
+  const handleRequestDeleteConversation = () => {
+    setShowConversationEditModal(false);
+    setShowDeleteConversationDialog(true);
+  };
+
+  const handleConfirmDeleteConversation = async () => {
+    try {
+      await deleteConversation({ conversationId: id });
+      setShowDeleteConversationDialog(false);
+      router.back();
+    } catch (deleteError) {
+      const message =
+        deleteError instanceof Error ? deleteError.message : '대화를 삭제하지 못했습니다.';
+      Alert.alert('대화 삭제 실패', message);
+    }
+  };
+
   const conversationTitle = conversation?.title?.trim() || '새 대화';
   const conversationIcon = conversation?.icon ?? null;
   const headerTitle = conversationIcon
@@ -382,6 +402,7 @@ export default function ChatDetailScreen() {
           conversation={conversation}
           onSave={handleSaveConversationDetails}
           onCancel={() => setShowConversationEditModal(false)}
+          onDelete={handleRequestDeleteConversation}
         />
 
         <MessageEditModal
@@ -436,6 +457,33 @@ export default function ChatDetailScreen() {
               </AlertDialogCancel>
               <AlertDialogAction
                 onPress={handleConfirmDelete}
+                className="bg-destructive"
+              >
+                <Text>삭제</Text>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={showDeleteConversationDialog}
+          onOpenChange={setShowDeleteConversationDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                <Text>대화 삭제</Text>
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                <Text>이 대화와 포함된 메시지를 모두 삭제하시겠습니까?</Text>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                <Text>취소</Text>
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onPress={handleConfirmDeleteConversation}
                 className="bg-destructive"
               >
                 <Text>삭제</Text>
