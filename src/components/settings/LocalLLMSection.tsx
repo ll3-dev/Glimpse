@@ -22,10 +22,11 @@ import {
   updateLocalLLMDownloadProgress,
   finishLocalLLMDownload,
   failLocalLLMDownload,
-  addLocalLLMModel,
   removeLocalLLMModel,
+  updateLocalLLMModel,
   type LocalModel,
 } from '@/src/stores/settings/local-llm.store';
+import { syncRecommendedLocalModels } from '@/src/features/settings';
 
 type LocalLLMSectionProps = {
   enabled: boolean;
@@ -57,7 +58,7 @@ function getDownloadStatus(
 export function LocalLLMSection({
   enabled,
   ready: _ready,
-  models,
+  models: _models,
   selectedModelId,
   onToggle,
   onSelectModel,
@@ -79,46 +80,7 @@ export function LocalLLMSection({
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    const initializeModels = async () => {
-      for (const model of RECOMMENDED_MODELS) {
-        const exists = availableModels.some((m) => m.id === model.id);
-        if (!exists) {
-          // Check if model is already downloaded
-          const isDownloaded = await ModelDownloader.isModelDownloaded(model.filename);
-          const localModel: LocalModel = {
-            id: model.id,
-            name: model.name,
-            family: model.family,
-            repo: model.repo,
-            filename: model.filename,
-            size: isDownloaded ? await ModelDownloader.getModelSize(model.filename) ?? undefined : undefined,
-            isReady: isDownloaded,
-            path: isDownloaded ? ModelDownloader.getModelPath(model.filename) : undefined,
-          };
-          addLocalLLMModel(localModel);
-        } else {
-          // Update existing model's ready status based on file existence
-          const existingModel = availableModels.find((m) => m.id === model.id);
-          if (existingModel && !existingModel.isReady) {
-            const isDownloaded = await ModelDownloader.isModelDownloaded(model.filename);
-            if (isDownloaded) {
-              const path = ModelDownloader.getModelPath(model.filename);
-              const size = await ModelDownloader.getModelSize(model.filename) ?? undefined;
-              addLocalLLMModel({
-                ...existingModel,
-                family: model.family,
-                isReady: true,
-                path,
-                size,
-              });
-            }
-          }
-        }
-      }
-    };
-
-    initializeModels();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void syncRecommendedLocalModels();
   }, []);
 
   // Handle model download
@@ -128,7 +90,7 @@ export function LocalLLMSection({
     const downloader = new ModelDownloader();
     try {
       const path = await downloader.downloadModel(model, (progress) => {
-        updateLocalLLMDownloadProgress(progress.percentage);
+        updateLocalLLMDownloadProgress(progress);
       });
       finishLocalLLMDownload(model.id, path);
 
@@ -137,7 +99,7 @@ export function LocalLLMSection({
       if (size) {
         const storeModel = availableModels.find((m) => m.id === model.id);
         if (storeModel) {
-          addLocalLLMModel({ ...storeModel, family: model.family, size });
+          updateLocalLLMModel(model.id, { family: model.family, size });
         }
       }
     } catch (error) {
@@ -265,9 +227,7 @@ export function LocalLLMSection({
                     status={status}
                     isSelected={selectedModelId === model.id}
                     downloadProgress={
-                      status === "downloading"
-                        ? { written: 0, total: 0, percentage: downloadProgress }
-                        : undefined
+                      status === 'downloading' ? downloadProgress ?? undefined : undefined
                     }
                     errorMessage={
                       status === "idle"

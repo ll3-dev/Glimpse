@@ -50,6 +50,7 @@ export function ModelDownloadCard({
   const isDownloading = status === 'downloading';
   const isCompleted = status === 'completed';
   const hasError = status === 'error';
+  const showReadyBadge = isCompleted && !isSelected;
 
   return (
     <View
@@ -63,7 +64,9 @@ export function ModelDownloadCard({
         <View className="flex-1 pr-2">
           <View className="flex-row items-center gap-2">
             <Text className="text-sm font-medium text-app-text">{model.name}</Text>
-            {model.size && <Text className="text-xs text-app-subtle">{model.size}</Text>}
+            {model.size && !isDownloading && (
+              <Text className="text-xs text-app-subtle">{model.size}</Text>
+            )}
           </View>
           {model.description && (
             <Text className="text-xs text-app-muted mt-0.5">{model.description}</Text>
@@ -71,10 +74,16 @@ export function ModelDownloadCard({
         </View>
 
         {/* Status indicator */}
-        {isCompleted && (
-          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-0.5 rounded-full">
+        {isSelected && (
+          <View className="flex-row items-center gap-1 bg-app-text px-2.5 py-1 rounded-full">
+            <Check size={12} color="#fff" />
+            <Text className="text-xs font-medium text-white">사용 중</Text>
+          </View>
+        )}
+        {showReadyBadge && (
+          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-1 rounded-full">
             <Check size={12} color="#37352f" />
-            <Text className="text-xs text-app-text">완료</Text>
+            <Text className="text-xs text-app-text">다운로드됨</Text>
           </View>
         )}
         {isDownloading && (
@@ -137,13 +146,6 @@ export function ModelDownloadCard({
         )}
 
         {/* Selected indicator */}
-        {isSelected && (
-          <View className="flex-row items-center gap-1.5 px-3 py-1.5">
-            <Check size={14} color="#37352f" />
-            <Text className="text-xs font-medium text-app-text">선택됨</Text>
-          </View>
-        )}
-
         {/* Delete button (for completed models) */}
         {isCompleted && (
           <TouchableOpacity
