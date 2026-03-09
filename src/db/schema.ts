@@ -11,6 +11,25 @@ import { index, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-
 export const knowledgeItemType = ['note', 'link', 'highlight', 'screenshot', 'share'] as const;
 export type KnowledgeItemType = (typeof knowledgeItemType)[number];
 
+export const knowledgeItemLabelStatus = [
+  'idle',
+  'pending',
+  'provisional',
+  'final',
+  'failed',
+] as const;
+export type KnowledgeItemLabelStatus = (typeof knowledgeItemLabelStatus)[number];
+
+export const knowledgeItemLabelSource = [
+  'none',
+  'rules',
+  'apple',
+  'local_small',
+  'local_full',
+  'byok',
+] as const;
+export type KnowledgeItemLabelSource = (typeof knowledgeItemLabelSource)[number];
+
 /**
  * Knowledge Items table schema
  * Central storage for all user-captured knowledge (notes and links)
@@ -39,6 +58,17 @@ export const knowledgeItems = sqliteTable(
     // Tags stored as JSON array string - parsed at application layer
     tags: text('tags', { mode: 'json' }).$type<string[]>(),
 
+    // Lightweight taxonomy labels for archive classification
+    labels: text('labels', { mode: 'json' }).$type<string[]>(),
+    provisionalLabels: text('provisional_labels', { mode: 'json' }).$type<string[]>(),
+    labelStatus: text('label_status', { enum: knowledgeItemLabelStatus }).default('idle'),
+    labelSource: text('label_source', { enum: knowledgeItemLabelSource }).default('none'),
+    labelVersion: text('label_version'),
+    labelScore: real('label_score'),
+    labelRequestedAt: real('label_requested_at'),
+    labelCompletedAt: real('label_completed_at'),
+    labelError: text('label_error'),
+
     // Creation timestamp (Unix epoch in milliseconds)
     createdAt: real('created_at').notNull(),
 
@@ -63,12 +93,30 @@ export const knowledgeItems = sqliteTable(
     typeIdx: index('knowledge_items_type_idx').on(table.type),
     createdAtIdx: index('knowledge_items_created_at_idx').on(table.createdAt),
     nextReviewAtIdx: index('knowledge_items_next_review_at_idx').on(table.nextReviewAt),
+    labelStatusIdx: index('knowledge_items_label_status_idx').on(table.labelStatus),
+    labelRequestedAtIdx: index('knowledge_items_label_requested_at_idx').on(table.labelRequestedAt),
   })
 );
 
-// Type exports for use in application code
-export type KnowledgeItem = typeof knowledgeItems.$inferSelect;
-export type NewKnowledgeItem = typeof knowledgeItems.$inferInsert;
+type KnowledgeItemRow = typeof knowledgeItems.$inferSelect;
+type NewKnowledgeItemRow = typeof knowledgeItems.$inferInsert;
+
+type OptionalKnowledgeItemLabelFields =
+  | 'labels'
+  | 'provisionalLabels'
+  | 'labelStatus'
+  | 'labelSource'
+  | 'labelVersion'
+  | 'labelScore'
+  | 'labelRequestedAt'
+  | 'labelCompletedAt'
+  | 'labelError';
+
+// Keep new labeling fields optional at the type boundary while the feature rolls out.
+export type KnowledgeItem = Omit<KnowledgeItemRow, OptionalKnowledgeItemLabelFields> &
+  Partial<Pick<KnowledgeItemRow, OptionalKnowledgeItemLabelFields>>;
+export type NewKnowledgeItem = Omit<NewKnowledgeItemRow, OptionalKnowledgeItemLabelFields> &
+  Partial<Pick<NewKnowledgeItemRow, OptionalKnowledgeItemLabelFields>>;
 
 /**
  * Recommendation status enum

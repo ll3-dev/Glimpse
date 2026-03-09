@@ -6,6 +6,15 @@ export interface StoredItem {
   url: string | null;
   summary: string | null;
   tags: string[] | null;
+  labels?: string[] | null;
+  provisionalLabels?: string[] | null;
+  labelStatus?: string | null;
+  labelSource?: string | null;
+  labelVersion?: string | null;
+  labelScore?: number | null;
+  labelRequestedAt?: number | null;
+  labelCompletedAt?: number | null;
+  labelError?: string | null;
   createdAt: number;
   updatedAt: number;
   stability: number | null;

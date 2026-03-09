@@ -98,7 +98,12 @@ export function mapRowToColumnArray(
       ? row[columnName]
       : null;
 
-    if (columnName === 'tags' && typeof rawValue === 'string') {
+    if (
+      (columnName === 'tags' ||
+        columnName === 'labels' ||
+        columnName === 'provisional_labels') &&
+      typeof rawValue === 'string'
+    ) {
       const parsedTags = Effect.runSync(
         Effect.try({
           try: () => JSON.parse(rawValue),
