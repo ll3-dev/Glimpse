@@ -5,7 +5,7 @@
  * Ordered by creation time, oldest first.
  */
 
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { Effect } from 'effect';
 import { db, messages, type Message } from '@/src/db';
 import {
@@ -26,6 +26,8 @@ export interface GetConversationMessagesDeps {
   messages: typeof messages;
   eq: typeof eq;
   asc: typeof asc;
+  and: typeof and;
+  isNull: typeof isNull;
 }
 
 const defaultDeps: GetConversationMessagesDeps = {
@@ -33,6 +35,8 @@ const defaultDeps: GetConversationMessagesDeps = {
   messages,
   eq,
   asc,
+  and,
+  isNull,
 };
 
 /**
@@ -45,7 +49,12 @@ export function createGetConversationMessages(deps: GetConversationMessagesDeps 
         deps.db
           .select()
           .from(deps.messages)
-          .where(deps.eq(deps.messages.conversationId, conversationId))
+          .where(
+            deps.and(
+              deps.eq(deps.messages.conversationId, conversationId),
+              deps.isNull(deps.messages.deletedAt)
+            )
+          )
           .orderBy(deps.asc(deps.messages.createdAt)),
       (error): AppError =>
         appError('DATABASE_ERROR', 'Failed to retrieve messages', error)

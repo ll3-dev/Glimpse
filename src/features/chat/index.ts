@@ -8,4 +8,6 @@ export * from './getAllConversations';
 export * from './getConversationMessages';
 export * from './createConversation';
 export * from './addMessage';
+export * from './updateMessage';
+export * from './deleteMessage';
 export * from './updateConversationTitle';
