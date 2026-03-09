@@ -88,6 +88,7 @@ export function LocalLLMSection({
           const localModel: LocalModel = {
             id: model.id,
             name: model.name,
+            family: model.family,
             repo: model.repo,
             filename: model.filename,
             size: isDownloaded ? await ModelDownloader.getModelSize(model.filename) ?? undefined : undefined,
@@ -103,7 +104,13 @@ export function LocalLLMSection({
             if (isDownloaded) {
               const path = ModelDownloader.getModelPath(model.filename);
               const size = await ModelDownloader.getModelSize(model.filename) ?? undefined;
-              addLocalLLMModel({ ...existingModel, isReady: true, path, size });
+              addLocalLLMModel({
+                ...existingModel,
+                family: model.family,
+                isReady: true,
+                path,
+                size,
+              });
             }
           }
         }
@@ -130,7 +137,7 @@ export function LocalLLMSection({
       if (size) {
         const storeModel = availableModels.find((m) => m.id === model.id);
         if (storeModel) {
-          addLocalLLMModel({ ...storeModel, size });
+          addLocalLLMModel({ ...storeModel, family: model.family, size });
         }
       }
     } catch (error) {

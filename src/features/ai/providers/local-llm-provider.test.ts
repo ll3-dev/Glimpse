@@ -31,6 +31,7 @@ function createMockLlamaService(overrides: Partial<LlamaService> = {}): LlamaSer
         timingMs: 100,
       }),
     ),
+    stopGeneration: mock(async () => {}),
     unloadModel: mock(async () => {}),
     ...overrides,
   };

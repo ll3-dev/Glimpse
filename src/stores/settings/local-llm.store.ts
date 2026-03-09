@@ -1,6 +1,7 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { storage, StorageKeys } from '@/src/lib/storage';
+import type { LocalLLMModelFamily } from '@/src/features/ai/local-llm';
 
 /**
  * Local LLM model metadata
@@ -10,6 +11,8 @@ export interface LocalModel {
   id: string;
   /** Display name */
   name: string;
+  /** Prompt/template family used for this model */
+  family?: LocalLLMModelFamily;
   /** Model file path (for native module) */
   path?: string;
   /** Model size in bytes */
@@ -259,4 +262,3 @@ export function failLocalLLMLoading(error: string): void {
 export function clearLocalLLMLoadError(): void {
   updateLocalLLMStoreConfig((config) => ({ ...config, loadError: null }));
 }
-

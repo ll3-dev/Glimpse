@@ -19,10 +19,9 @@ import {
 } from '@/src/features/settings/local-llm.selectors';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
 import {
-  createLlamaService,
   type LlamaService,
-  type GenerateOptions,
 } from '../llama-service';
+import { createLocalLLMRuntime } from '../local-llm';
 
 /**
  * Local LLM provider configuration
@@ -37,15 +36,6 @@ export interface LocalLLMProviderConfig {
 }
 
 /**
- * Default generation options for metadata
- */
-const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
-  maxTokens: 256,
-  temperature: 0.3,
-  topP: 0.9,
-};
-
-/**
  * Create a Local LLM metadata provider.
  *
  * Availability requirements:
@@ -56,10 +46,7 @@ const DEFAULT_GENERATE_OPTIONS: GenerateOptions = {
 export function createLocalLLMProvider(config: LocalLLMProviderConfig = {}): MetadataProvider {
   const checkIsReady = config.isReady ?? isLocalLLMReady;
   const getSelected = config.getSelectedModel ?? getSelectedLocalModel;
-  const service = config.llamaService ?? createLlamaService();
-
-  // Track currently loaded model
-  let loadedModelId: string | null = null;
+  const runtime = createLocalLLMRuntime(config.llamaService);
 
   return {
     name: 'local',
@@ -107,34 +94,16 @@ export function createLocalLLMProvider(config: LocalLLMProviderConfig = {}): Met
       }
 
       try {
-        // Load model if not already loaded or if different model
-        if (loadedModelId !== model.id) {
-          // Unload previous model if any
-          if (service.isModelLoaded()) {
-            await service.unloadModel();
-          }
-
-          // Load new model
-          await service.loadModel(model.path, {
-            contextSize: 2048,
-            gpuLayers: 0, // CPU by default, can be configured later
-          });
-
-          loadedModelId = model.id;
-        }
-
         // Generate summary
-        const summaryPrompt = buildSummaryPrompt(input);
-        const summaryResult = await service.generate(summaryPrompt, {
-          ...DEFAULT_GENERATE_OPTIONS,
-          maxTokens: 128, // Shorter for summary
+        const summaryPrompt = runtime.buildMetadataPrompt(model, 'summary', input);
+        const summaryResult = await runtime.generate(model, summaryPrompt, {
+          maxTokens: 128,
         });
 
         // Generate tags
-        const tagsPrompt = buildTagsPrompt(input);
-        const tagsResult = await service.generate(tagsPrompt, {
-          ...DEFAULT_GENERATE_OPTIONS,
-          maxTokens: 64, // Shorter for tags
+        const tagsPrompt = runtime.buildMetadataPrompt(model, 'tags', input);
+        const tagsResult = await runtime.generate(model, tagsPrompt, {
+          maxTokens: 64,
         });
 
         // Parse tags from response

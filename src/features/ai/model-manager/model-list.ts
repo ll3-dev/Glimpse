@@ -4,6 +4,8 @@
  * Curated list of GGUF models that work well on mobile devices.
  */
 
+import type { LocalLLMModelFamily } from '../local-llm';
+
 /**
  * Model metadata for download and display
  */
@@ -16,6 +18,8 @@ export interface ModelInfo {
   repo: string;
   /** GGUF filename in the repository */
   filename: string;
+  /** Prompt/template family */
+  family: LocalLLMModelFamily;
   /** Display size (e.g., "~1GB") */
   size?: string;
   /** Model description */
@@ -36,6 +40,7 @@ export const RECOMMENDED_MODELS: ModelInfo[] = [
     name: "Qwen 3.5 4B Unsloth (Q4_K_M)",
     repo: "unsloth/Qwen3.5-4B-GGUF",
     filename: "Qwen3.5-4B-Q4_K_M.gguf",
+    family: 'qwen-chatml',
     size: "~2.7GB",
     description: "Unsloth 최적화 버전",
   },
@@ -44,6 +49,7 @@ export const RECOMMENDED_MODELS: ModelInfo[] = [
     name: "Gemma 3N E2B IT (Q3_K_M)",
     repo: "unsloth/gemma-3n-E2B-it-GGUF",
     filename: "gemma-3n-E2B-it-Q3_K_M.gguf",
+    family: 'generic-instruct',
     size: "~2.3GB",
     description: "균형 잡힌 성능",
   },
