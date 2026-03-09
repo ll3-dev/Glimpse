@@ -16,11 +16,21 @@ function createMockLlamaService(overrides: Partial<LlamaService> = {}): LlamaSer
   return {
     loadModel: mock(async () => {}),
     isModelLoaded: mock(() => false),
-    generate: mock(async (): Promise<GenerateResult> => ({
-      text: 'Mock generated text',
-      tokensGenerated: 10,
-      timingMs: 100,
-    })),
+    generate: mock(
+      async (): Promise<GenerateResult> => ({
+        text: "Mock generated text",
+        tokensGenerated: 10,
+        timingMs: 100,
+      }),
+    ),
+    // generateStream is required by LlamaService, so provide a default stub
+    generateStream: mock(
+      async (): Promise<GenerateResult> => ({
+        text: "Mock generated text",
+        tokensGenerated: 10,
+        timingMs: 100,
+      }),
+    ),
     unloadModel: mock(async () => {}),
     ...overrides,
   };
