@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKnowledgeItemsQuery } from "@/src/hooks";
+import { formatKnowledgeLabel, getDisplayLabels } from "@/src/features/labeling";
 import { Card, ScreenHeader } from "@/src/ui/primitives";
 
 function readParam(value: string | string[] | undefined): string | undefined {
@@ -45,13 +46,10 @@ export default function LibraryDetailScreen() {
   const itemId = readParam(params.id);
   const { data: items, isLoading } = useKnowledgeItemsQuery();
   const item = items?.find((entry) => entry.id === itemId);
-  if (!item) {
-    console.warn(`Item with id ${itemId} not found`);
-    return null;
-  }
   const showLoading = isLoading;
   const showMissing = !isLoading && !item;
   const showItem = !isLoading && Boolean(item);
+  const displayLabels = item ? getDisplayLabels(item) : [];
 
   return (
     <View className="bg-app-bg flex-1" style={{ paddingTop: insets.top }}>
@@ -85,17 +83,17 @@ export default function LibraryDetailScreen() {
         >
           <Card className="mb-3 p-4">
             <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
-              {getTypeLabel(item.type)}
+              {item ? getTypeLabel(item.type) : ""}
             </Text>
             <Text className="text-app-text mt-2 text-lg font-bold">
-              {item.title || item.body || item.url || "제목 없음"}
+              {item ? item.title || item.body || item.url || "제목 없음" : ""}
             </Text>
             <Text className="text-app-muted mt-2 text-xs">
-              {format(item.createdAt, "yyyy.MM.dd HH:mm", { locale: ko })}
+              {item ? format(item.createdAt, "yyyy.MM.dd HH:mm", { locale: ko }) : ""}
             </Text>
           </Card>
 
-          {item.body ? (
+          {item?.body ? (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 내용
@@ -106,7 +104,7 @@ export default function LibraryDetailScreen() {
             </Card>
           ) : null}
 
-          {item.url ? (
+          {item?.url ? (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 링크
@@ -126,7 +124,7 @@ export default function LibraryDetailScreen() {
             </Card>
           ) : null}
 
-          {item.summary ? (
+          {item?.summary ? (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 요약
@@ -137,7 +135,27 @@ export default function LibraryDetailScreen() {
             </Card>
           ) : null}
 
-          {item.tags && item.tags.length > 0 ? (
+          {displayLabels.length > 0 ? (
+            <Card className="mb-3 p-4">
+              <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
+                라벨
+              </Text>
+              <View className="mt-2 flex-row flex-wrap">
+                {displayLabels.map((label) => (
+                  <View
+                    key={label}
+                    className="bg-app-border/40 mr-2 mb-2 rounded px-2 py-1"
+                  >
+                    <Text className="text-app-muted text-xs">
+                      {formatKnowledgeLabel(label)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
+          ) : null}
+
+          {item?.tags && item.tags.length > 0 ? (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 태그

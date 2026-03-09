@@ -192,10 +192,26 @@ describe('createMarkAsReviewed', () => {
     await markAsReviewed('test-id');
 
     const setValues = capturedSetValues as {
+      provisionalLabels: null;
+      labelStatus: string;
+      labelSource: string;
+      labelVersion: null;
+      labelScore: null;
+      labelRequestedAt: number;
+      labelCompletedAt: null;
+      labelError: null;
       lastReviewedAt: number;
       nextReviewAt: number;
       updatedAt: number;
     };
+    expect(setValues.provisionalLabels).toBeNull();
+    expect(setValues.labelStatus).toBe('pending');
+    expect(setValues.labelSource).toBe('none');
+    expect(setValues.labelVersion).toBeNull();
+    expect(setValues.labelScore).toBeNull();
+    expect(typeof setValues.labelRequestedAt).toBe('number');
+    expect(setValues.labelCompletedAt).toBeNull();
+    expect(setValues.labelError).toBeNull();
     expect(typeof setValues.lastReviewedAt).toBe('number');
     expect(typeof setValues.nextReviewAt).toBe('number');
     expect(typeof setValues.updatedAt).toBe('number');

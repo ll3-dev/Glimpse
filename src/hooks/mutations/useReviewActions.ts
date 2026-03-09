@@ -11,6 +11,7 @@ import {
   type KnowledgeItem,
   type ReviewFeedbackType,
 } from '@/src/features/review';
+import { ensureLabelingBackgroundTaskRegistered } from '@/src/features/labeling';
 import { queryKeys } from '@/src/lib/query-keys';
 
 /**
@@ -46,6 +47,8 @@ export function useMarkAsReviewedMutation(): UseMutationResult<
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+      void ensureLabelingBackgroundTaskRegistered();
     },
   });
 }
@@ -83,6 +86,7 @@ export function usePostponeReviewMutation(): UseMutationResult<
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
     },
   });
 }

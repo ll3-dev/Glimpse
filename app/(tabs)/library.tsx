@@ -10,7 +10,7 @@ import {
   LibrarySearchInput,
 } from "@/src/components/library";
 import { resolveLibrarySearch } from "@/src/features/library";
-import { useKnowledgeItemsQuery } from "@/src/hooks";
+import { useForegroundLabeling, useKnowledgeItemsQuery } from "@/src/hooks";
 import { ScreenHeader } from "@/src/ui/primitives";
 
 export default function LibraryScreen() {
@@ -19,6 +19,7 @@ export default function LibraryScreen() {
   const router = useRouter();
 
   const { data: items } = useKnowledgeItemsQuery();
+  useForegroundLabeling(items);
 
   const { filteredItems, emptyState } = useMemo(() => {
     return resolveLibrarySearch(items, searchQuery);

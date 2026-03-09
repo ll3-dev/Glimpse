@@ -36,6 +36,14 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps) {
             .set({
               lastReviewedAt: now,
               nextReviewAt,
+              provisionalLabels: null,
+              labelStatus: 'pending',
+              labelSource: 'none',
+              labelVersion: null,
+              labelScore: null,
+              labelRequestedAt: now,
+              labelCompletedAt: null,
+              labelError: null,
               updatedAt: now,
             })
             .where(deps.eq(deps.knowledgeItems.id, itemId))

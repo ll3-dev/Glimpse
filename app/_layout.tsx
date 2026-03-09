@@ -6,9 +6,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { LogBox, Platform } from "react-native";
 
+import { useAppForegroundLabeling } from "@/src/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { installGlobalErrorTraceLogger } from "@/src/utils/logger";
+import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
+import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
 import { ShareIntentProvider } from "expo-share-intent";
+
+function RootProviders({ children }: { children: React.ReactNode }) {
+  useAppForegroundLabeling();
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
   const [queryClient] = useState(
@@ -25,6 +32,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     installGlobalErrorTraceLogger();
+    void ensureLabelingBackgroundTaskRegistered().catch((error) => {
+      logger.error('Failed to register labeling background task', error);
+    });
 
     // iOS simulator can emit noisy CoreHaptics keyboard logs that are not app failures.
     if (__DEV__ && Platform.OS === "ios") {
@@ -40,16 +50,18 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ShareIntentProvider>
         <QueryClientProvider client={queryClient}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              freezeOnBlur: true,
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="library/[id]" />
-          </Stack>
+          <RootProviders>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                freezeOnBlur: true,
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="library/[id]" />
+            </Stack>
+          </RootProviders>
         </QueryClientProvider>
       </ShareIntentProvider>
     </SafeAreaProvider>
