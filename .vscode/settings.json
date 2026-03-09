@@ -6,5 +6,6 @@
     "reusables",
     "Usecase",
     "worklets"
-  ]
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
