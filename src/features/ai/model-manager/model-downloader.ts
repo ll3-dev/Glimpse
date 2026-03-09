@@ -139,10 +139,12 @@ export class ModelDownloader {
           Accept: 'application/octet-stream',
         })
         .progress({ count: 100 }, (received: number, total: number) => {
+          const effectiveTotal = expectedSize ?? total;
           const progress: DownloadProgress = {
             written: received,
-            total: expectedSize ?? total,
-            percentage: expectedSize ? Math.round((received / expectedSize) * 100) : 0,
+            total: effectiveTotal,
+            percentage:
+              effectiveTotal > 0 ? Math.min(100, Math.round((received / effectiveTotal) * 100)) : 0,
           };
           onProgress?.(progress);
         })

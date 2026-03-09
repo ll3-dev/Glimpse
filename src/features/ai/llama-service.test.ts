@@ -152,6 +152,74 @@ describe('createLlamaService', () => {
       expect(service.isModelLoaded()).toBe(true);
       expect(releaseCalls).toHaveLength(1);
     });
+
+    test('retries with use_mlock=false when initial load fails', async () => {
+      const capturedOptions: Record<string, unknown>[] = [];
+
+      mock.module('llama.rn', () => ({
+        initLlama: mock(async (options: Record<string, unknown>) => {
+          capturedOptions.push(options);
+
+          if (capturedOptions.length === 1) {
+            throw new Error('mlock failed');
+          }
+
+          return {
+            completion: mock(async () => ({
+              text: 'Generated text',
+              tokens_evaluated: 10,
+            })),
+            stopCompletion: mock(async () => {}),
+            release: mock(async () => {}),
+          };
+        }),
+      }));
+
+      const { createLlamaService: createService } = await import('./llama-service');
+      const service = createService();
+
+      await service.loadModel('/path/to/model.gguf');
+
+      expect(capturedOptions).toHaveLength(2);
+      expect(capturedOptions[0]?.use_mlock).toBe(true);
+      expect(capturedOptions[1]?.use_mlock).toBe(false);
+      expect(service.isModelLoaded()).toBe(true);
+    });
+
+    test('retries with smaller context sizes when model load keeps failing', async () => {
+      const capturedOptions: Record<string, unknown>[] = [];
+
+      mock.module('llama.rn', () => ({
+        initLlama: mock(async (options: Record<string, unknown>) => {
+          capturedOptions.push(options);
+
+          if (capturedOptions.length < 3) {
+            throw new Error('Failed to load model');
+          }
+
+          return {
+            completion: mock(async () => ({
+              text: 'Generated text',
+              tokens_evaluated: 10,
+            })),
+            stopCompletion: mock(async () => {}),
+            release: mock(async () => {}),
+          };
+        }),
+      }));
+
+      const { createLlamaService: createService } = await import('./llama-service');
+      const service = createService();
+
+      await service.loadModel('/path/to/model.gguf', {
+        contextSize: 4096,
+      });
+
+      expect(capturedOptions[0]?.n_ctx).toBe(4096);
+      expect(capturedOptions[1]?.n_ctx).toBe(4096);
+      expect(capturedOptions[2]?.n_ctx).toBe(2048);
+      expect(service.isModelLoaded()).toBe(true);
+    });
   });
 
   describe('isModelLoaded', () => {
@@ -285,6 +353,38 @@ describe('createLlamaService', () => {
       // Note: Error message partial match is intentional for flexibility
       // The actual error is wrapped with context: "Generation failed: GPU out of memory"
       await expect(service.generate('test prompt')).rejects.toThrow('Generation failed');
+    });
+  });
+
+  describe('generateStream', () => {
+    test('streams with completion callback when queueCompletion is unavailable', async () => {
+      const streamedTokens: string[] = [];
+
+      mock.module('llama.rn', () => ({
+        initLlama: mock(async () => ({
+          completion: mock(async (_options: Record<string, unknown>, onToken?: (data: { token?: string }) => void) => {
+            onToken?.({ token: '안녕' });
+            onToken?.({ token: '!' });
+            return {
+              text: '안녕!',
+              tokens_evaluated: 2,
+            };
+          }),
+          stopCompletion: mock(async () => {}),
+          release: mock(async () => {}),
+        })),
+      }));
+
+      const { createLlamaService: createService } = await import('./llama-service');
+      const service = createService();
+
+      await service.loadModel('/path/to/model.gguf');
+      const result = await service.generateStream('test prompt', {
+        onToken: (token) => streamedTokens.push(token),
+      });
+
+      expect(result.text).toBe('안녕!');
+      expect(streamedTokens).toEqual(['안녕', '!']);
     });
   });
 

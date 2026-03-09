@@ -36,6 +36,24 @@ export interface ModelInfo {
  */
 export const RECOMMENDED_MODELS: ModelInfo[] = [
   {
+    id: "qwen3.5-0.8b-unsloth-q4",
+    name: "Qwen 3.5 0.8B Unsloth (Q4_K_M)",
+    repo: "unsloth/Qwen3.5-0.8B-GGUF",
+    filename: "Qwen3.5-0.8B-Q4_K_M.gguf",
+    family: 'qwen-chatml',
+    size: "~535MB",
+    description: "가장 가벼운 Qwen 3.5",
+  },
+  {
+    id: "qwen3.5-2b-unsloth-q4",
+    name: "Qwen 3.5 2B Unsloth (Q4_K_M)",
+    repo: "unsloth/Qwen3.5-2B-GGUF",
+    filename: "Qwen3.5-2B-Q4_K_M.gguf",
+    family: 'qwen-chatml',
+    size: "~1.29GB",
+    description: "속도와 성능의 균형",
+  },
+  {
     id: "qwen3.5-4b-unsloth-q4",
     name: "Qwen 3.5 4B Unsloth (Q4_K_M)",
     repo: "unsloth/Qwen3.5-4B-GGUF",

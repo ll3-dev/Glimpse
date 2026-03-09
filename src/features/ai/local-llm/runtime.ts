@@ -32,6 +32,8 @@ export interface LocalLLMRuntime {
 
 export function createLocalLLMRuntime(service: LlamaService = createLlamaService()): LocalLLMRuntime {
   let loadedModelId: string | null = null;
+  let loadingModelId: string | null = null;
+  let loadingPromise: Promise<void> | null = null;
 
   async function ensureModelLoaded(model: LocalModel): Promise<void> {
     if (!model.path) {
@@ -42,15 +44,30 @@ export function createLocalLLMRuntime(service: LlamaService = createLlamaService
       return;
     }
 
+    if (loadingPromise && loadingModelId === model.id) {
+      await loadingPromise;
+      return;
+    }
+
     if (service.isModelLoaded()) {
       await service.unloadModel();
     }
 
-    await service.loadModel(model.path, {
-      contextSize: 4096,
-      gpuLayers: 0,
-    });
-    loadedModelId = model.id;
+    loadingModelId = model.id;
+    loadingPromise = service
+      .loadModel(model.path, {
+        contextSize: 4096,
+        gpuLayers: 0,
+      })
+      .then(() => {
+        loadedModelId = model.id;
+      })
+      .finally(() => {
+        loadingModelId = null;
+        loadingPromise = null;
+      });
+
+    await loadingPromise;
   }
 
   function resolveOptions(model: LocalModel, options?: GenerateOptions | StreamOptions) {
