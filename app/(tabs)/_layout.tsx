@@ -1,12 +1,16 @@
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, useRouter, usePathname } from "expo-router";
 import { Library, Sparkles, RotateCcw, MessageCircle } from "lucide-react-native";
 import { View, TouchableOpacity } from "react-native";
 import { Plus } from "@/src/ui/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Activity } from "react";
 
 export default function TabsLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+
+  const showFab = pathname === "/library";
 
   return (
     <View className="flex-1">
@@ -70,14 +74,16 @@ export default function TabsLayout() {
         />
       </Tabs>
 
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => router.push("/capture")}
-        className="absolute right-6 w-14 h-14 rounded-full bg-black items-center justify-center shadow-lg"
-        style={{ bottom: insets.bottom + 70 }}
-      >
-        <Plus color="white" size={30} />
-      </TouchableOpacity>
+      <Activity mode={showFab ? "visible" : "hidden"}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => router.push("/capture")}
+          className="absolute right-6 w-14 h-14 rounded-full bg-black items-center justify-center shadow-lg"
+          style={{ bottom: insets.bottom + 70 }}
+        >
+          <Plus color="white" size={30} />
+        </TouchableOpacity>
+      </Activity>
     </View>
   );
 }

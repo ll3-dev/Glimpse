@@ -4,11 +4,11 @@
  * Individual conversation view with AI chat.
  */
 
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Alert, BackHandler } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import {
   useMessagesQuery,
   useKnowledgeItemsQuery,
@@ -30,7 +30,7 @@ export default function ChatDetailScreen() {
     ? knowledgeItems.find((item) => item.id === contextItemId)
     : null;
 
-  const { sendMessage, isGenerating, streamingText } = useChat({
+  const { sendMessage, isGenerating, streamingText, abortAndSave } = useChat({
     conversationId: id,
     contextItem,
   });
@@ -52,6 +52,42 @@ export default function ChatDetailScreen() {
     }
   }, [streamingText]);
 
+  // Handle back press during generation
+  const handleBackPress = useCallback(() => {
+    if (isGenerating) {
+      Alert.alert(
+        '응답 생성 중',
+        'AI가 응답을 생성하고 있습니다. 나가면 지금까지 생성된 내용이 저장됩니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '나가기',
+            style: 'destructive',
+            onPress: async () => {
+              await abortAndSave();
+              router.back();
+            },
+          },
+        ]
+      );
+      return true; // Prevent default back behavior
+    }
+    router.back();
+    return true;
+  }, [isGenerating, router, abortAndSave]);
+
+  // Intercept hardware back button on Android
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isGenerating) {
+        handleBackPress();
+        return true;
+      }
+      return false;
+    });
+    return () => subscription.remove();
+  }, [isGenerating, handleBackPress]);
+
   const handleSend = async (text: string) => {
     await sendMessage(text);
     // Scroll to bottom after sending
@@ -69,7 +105,7 @@ export default function ChatDetailScreen() {
     >
       <View className="flex-row items-center px-4 py-3 bg-app-bg">
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={handleBackPress}
           className="p-2 -ml-2"
         >
           <ChevronLeft size={24} color="#37352f" />

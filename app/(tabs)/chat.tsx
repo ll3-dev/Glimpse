@@ -4,14 +4,15 @@
  * Displays list of conversations and allows creating new ones.
  */
 
-import { Activity, useCallback } from "react";
-import { View, TouchableOpacity, Text, FlatList } from 'react-native';
+import { Activity } from "react";
+import { View, TouchableOpacity, Text } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, MessageCircle } from 'lucide-react-native';
 import { useConversationsQuery, useCreateConversationMutation } from '@/src/hooks';
 import { ScreenHeader } from '@/src/ui/primitives';
 import { ConversationList } from '@/src/components/chat';
+import { FlashList } from "@shopify/flash-list";
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -21,7 +22,7 @@ export default function ChatScreen() {
   const { mutate: createConversation, isPending: isCreating } = useCreateConversationMutation();
 
   const handleCreateConversation = () => {
-    createConversation(undefined, {
+    createConversation({}, {
       onSuccess: (conversation) => {
         router.push(`/chat/${conversation.id}`);
       },
@@ -31,23 +32,7 @@ export default function ChatScreen() {
     });
   };
 
-  const handleSelectConversation = useCallback(
-    (id: string) => {
-      router.push(`/chat/${id}`);
-    },
-    [router],
-  );
-
   const hasConversations = conversations && conversations.length > 0;
-  const renderConversationItem = useCallback(
-    ({ item }: { item: NonNullable<typeof conversations>[number] }) => (
-      <ConversationList
-        conversation={item}
-        onPress={() => handleSelectConversation(item.id)}
-      />
-    ),
-    [handleSelectConversation],
-  );
 
   return (
     <View className="bg-app-bg flex-1" style={{ paddingTop: insets.top }}>
@@ -56,13 +41,27 @@ export default function ChatScreen() {
         subtitle={
           conversations ? `${conversations.length}개의 대화` : undefined
         }
+        rightElement={
+          <TouchableOpacity
+            className="h-10 w-10 items-center justify-center rounded-full bg-black"
+            onPress={handleCreateConversation}
+            disabled={isCreating}
+          >
+            <Plus size={20} color="white" />
+          </TouchableOpacity>
+        }
       />
 
       <Activity mode={hasConversations ? "visible" : "hidden"}>
         <View className="flex-1 px-4">
-          <FlatList
+          <FlashList
             data={conversations}
-            renderItem={renderConversationItem}
+            renderItem={({ item }) => (
+              <ConversationList
+                conversation={item}
+                onPress={() => router.push(`/chat/${item.id}`)}
+              />
+            )}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           />
