@@ -1,4 +1,4 @@
-import { randomUUID } from 'expo-crypto';
+import { randomUUID } from 'react-native-nitro-crypto';
 
 export const MAX_ID_COLLISION_RETRIES = 3;
 

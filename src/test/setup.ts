@@ -15,7 +15,7 @@ if (typeof globalWithDev.__DEV__ === 'undefined') {
   globalWithDev.__DEV__ = false;
 }
 
-mock.module("expo-crypto", () => ({
+mock.module("react-native-nitro-crypto", () => ({
   randomUUID: nodeRandomUUID,
 }));
 
@@ -74,6 +74,13 @@ mock.module("llama.rn", () => ({
     completion: mock(async () => ({
       text: 'Generated text',
       tokens_evaluated: 10,
+    })),
+    queueCompletion: mock(async () => ({
+      promise: Promise.resolve({
+        text: 'Generated text',
+        tokens_evaluated: 10,
+      }),
+      stop: async () => {},
     })),
     release: mock(async () => {}),
   })),
