@@ -27,7 +27,7 @@ import {
   ChatStreamingMessage,
 } from '@/src/components/chat';
 import { ChatAISetupDialog } from "@/src/components/chat/ChatAISetupDialog";
-import { useChat } from '@/src/components/chat/hooks/useChat';
+import { useChat } from '@/src/hooks/chat/useChat';
 import {
   enableLocalLLM,
   isLocalLLMReady,

@@ -4,7 +4,7 @@ import {
   useLocalLLMEnabled,
   useSelectedLocalModel,
 } from '@/src/features/settings';
-import { getLocalLLMRuntime } from '@/src/components/chat/hooks/chatRuntime';
+import { getLocalLLMRuntime } from '@/src/hooks/chat/chatRuntime';
 import { logger } from '@/src/utils/logger';
 
 export function useWarmLocalLLM() {
