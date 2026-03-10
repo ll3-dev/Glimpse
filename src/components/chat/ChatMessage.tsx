@@ -7,17 +7,8 @@
 import { useState } from 'react';
 import { Clipboard, TouchableOpacity, View } from 'react-native';
 import { Check, ChevronDown, ChevronUp, Copy } from 'lucide-react-native';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/src/ui/primitives/alert-dialog';
-import { Text } from '@/src/ui/primitives';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/src/ui/primitives/alert-dialog';
+import { Button, Text } from '@/src/ui/primitives';
 import type { Message } from '@/src/db';
 import { ChatMarkdown } from './ChatMarkdown';
 import { parseChatMessageContent } from './chatMessageContent';
@@ -42,26 +33,26 @@ export function ChatMessage({ message, onEdit, onDelete }: ChatMessageProps) {
   };
 
   const handleEdit = () => {
-    setActionType('edit');
+    setDialogOpen(false);
+    if (onEdit) {
+      onEdit(message);
+    }
   };
 
   const handleDelete = () => {
     setActionType('delete');
   };
 
-  const handleConfirm = () => {
-    if (actionType === 'edit' && onEdit) {
-      onEdit(message);
-    } else if (actionType === 'delete' && onDelete) {
+  const handleConfirmAction = () => {
+    if (actionType === 'delete' && onDelete) {
       onDelete(message);
     }
     setActionType(null);
     setDialogOpen(false);
   };
 
-  const handleCancel = () => {
+  const handleCancelAction = () => {
     setActionType(null);
-    setDialogOpen(false);
   };
 
   const handleCopy = () => {
@@ -167,43 +158,55 @@ export function ChatMessage({ message, onEdit, onDelete }: ChatMessageProps) {
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2">
             {isUser && (
-              <AlertDialogAction onPress={handleEdit} className="w-full">
+              <Button
+                variant="outline"
+                onPress={handleEdit}
+                className="w-full rounded-2xl"
+              >
                 <Text>수정</Text>
-              </AlertDialogAction>
+              </Button>
             )}
-            <AlertDialogAction onPress={handleDelete} className="w-full bg-destructive">
-              <Text>삭제</Text>
-            </AlertDialogAction>
-            <AlertDialogCancel onPress={handleCancel} className="w-full">
-              <Text>취소</Text>
+            <Button
+              variant="outline"
+              onPress={handleDelete}
+              className="w-full rounded-2xl border-destructive/20 active:bg-destructive/10"
+            >
+              <Text className="text-destructive">삭제</Text>
+            </Button>
+            <AlertDialogCancel asChild>
+              <Button variant="ghost" className="w-full rounded-2xl">
+                <Text>취소</Text>
+              </Button>
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog
-        open={actionType !== null}
-        onOpenChange={(open) => !open && handleCancel()}
+        open={actionType === 'delete'}
+        onOpenChange={(open) => !open && handleCancelAction()}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <Text>{actionType === 'edit' ? '메시지 수정' : '메시지 삭제'}</Text>
+              <Text>메시지 삭제</Text>
             </AlertDialogTitle>
             <AlertDialogDescription>
               <Text>
-                {actionType === 'edit'
-                  ? '이 메시지를 수정하시겠습니까?'
-                  : '이 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'}
+                이 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
               </Text>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onPress={handleCancel}>
-              <Text>취소</Text>
+            <AlertDialogCancel asChild>
+              <Button variant="outline">
+                <Text>취소</Text>
+              </Button>
             </AlertDialogCancel>
-            <AlertDialogAction onPress={handleConfirm}>
-              <Text>{actionType === 'edit' ? '수정' : '삭제'}</Text>
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onPress={handleConfirmAction}>
+                <Text>삭제</Text>
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -2,8 +2,7 @@
  * ChatInput Component
  *
  * Text input area for sending messages.
- * Synchronized with the app's Notion-inspired Tone & Manner.
- * Fixed padding asymmetry and color tokens.
+ * Perfectly harmonized colors using app-wide design tokens.
  */
 
 import { View, TextInput, TouchableOpacity, ActivityIndicator, Platform, Keyboard } from 'react-native';
@@ -29,11 +28,11 @@ export function ChatInput({
   // Unified theme colors from global.css
   const theme = {
     bg: '#ffffff',
-    inputBg: '#f7f6f3',    // --color-app-bg
+    inputBg: '#f7f6f3',    // --color-app-bg (Notion-style off-white)
     text: '#37352f',       // --color-app-text
     muted: '#787774',      // --color-app-muted
     border: '#edece9',     // --color-app-border
-    primary: '#2e2e2e',    // --color-app-primary
+    primary: '#2e2e2e',    // --color-app-primary (Main brand color)
   };
 
   useEffect(() => {
@@ -80,6 +79,8 @@ export function ChatInput({
           style={{ 
             backgroundColor: theme.inputBg,
             borderColor: theme.border,
+            minHeight: 44,
+            justifyContent: 'center',
           }}
         >
           <TextInput
@@ -93,21 +94,23 @@ export function ChatInput({
             style={{ 
               color: theme.text,
               fontSize: 16,
-              lineHeight: 20,
-              // iOS multiline asymmetry fix:
-              paddingTop: Platform.OS === 'ios' ? 10 : 8,
-              paddingBottom: Platform.OS === 'ios' ? 10 : 8,
-              minHeight: 40,
+              paddingTop: Platform.OS === 'ios' ? 10 : 0,
+              paddingBottom: Platform.OS === 'ios' ? 10 : 0,
               textAlignVertical: 'center',
+              includeFontPadding: false,
             }}
             editable={!isLoading}
           />
         </View>
         <TouchableOpacity
-          className="w-10 h-10 rounded-full items-center justify-center mb-0.5"
+          className="w-11 h-11 rounded-full items-center justify-center mb-0"
           style={{ 
-            backgroundColor: canSend ? theme.primary : '#e5e5e5',
-            opacity: isLoading ? 0.7 : 1
+            // 비활성 시 입력창 배경색과 동일하게 맞추어 조화롭게 만듦
+            backgroundColor: canSend ? theme.primary : theme.inputBg,
+            opacity: isLoading ? 0.7 : 1,
+            // 비활성 시에도 테두리를 주어 버튼임을 인지하게 함
+            borderWidth: canSend ? 0 : 1,
+            borderColor: theme.border,
           }}
           onPress={handleSend}
           disabled={!canSend}

@@ -1,20 +1,16 @@
-/**
- * MessageEditModal Component
- *
- * Modal for editing message content.
- */
-
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
+  Animated,
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   Modal,
   KeyboardAvoidingView,
   Platform,
+  TextInput,
+  TouchableOpacity,
 } from 'react-native';
+import { Button, Text, Textarea } from '@/src/ui/primitives';
 import type { Message } from '@/src/db';
+import { X } from 'lucide-react-native';
 
 interface MessageEditModalProps {
   visible: boolean;
@@ -30,13 +26,31 @@ export function MessageEditModal({
   onCancel,
 }: MessageEditModalProps) {
   const [content, setContent] = useState(message?.content ?? '');
+  const textareaRef = useRef<TextInput>(null);
+  const slideAnim = useRef(new Animated.Value(400)).current;
 
-  // Update local state when message changes
-  useState(() => {
-    if (message) {
+  useEffect(() => {
+    if (visible && message) {
       setContent(message.content);
+      
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
     }
-  });
+  }, [visible, message, slideAnim]);
+
+  const animateClose = (callback: () => void) => {
+    Animated.timing(slideAnim, {
+      toValue: 400,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      callback();
+    });
+  };
 
   const handleSave = () => {
     if (message && content.trim()) {
@@ -45,8 +59,9 @@ export function MessageEditModal({
   };
 
   const handleClose = () => {
-    setContent(message?.content ?? '');
-    onCancel();
+    animateClose(() => {
+      onCancel();
+    });
   };
 
   if (!message) return null;
@@ -55,7 +70,7 @@ export function MessageEditModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
@@ -63,50 +78,47 @@ export function MessageEditModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <TouchableOpacity
-          className="flex-1 bg-black/50 justify-end"
+          className="flex-1 justify-end bg-black/50"
           activeOpacity={1}
           onPress={handleClose}
         >
-          <View
-            className="bg-white rounded-t-2xl p-4"
+          <Animated.View
+            style={{ transform: [{ translateY: slideAnim }] }}
+            className="rounded-t-[32px] bg-app-surface p-6 pb-10"
             onStartShouldSetResponder={() => true}
           >
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-lg font-semibold text-gray-900">
-                메시지 수정
-              </Text>
-              <TouchableOpacity onPress={handleClose} className="p-2 -mr-2">
-                <Text className="text-gray-500">취소</Text>
+            <View className="mb-4 flex-row items-center justify-between px-1">
+              <Text className="text-lg font-bold text-app-text">메시지 수정</Text>
+              <TouchableOpacity onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
+                <X size={16} color="#9b9a97" />
               </TouchableOpacity>
             </View>
 
-            <TextInput
-              className="bg-gray-100 rounded-lg p-3 text-base text-gray-900 min-h-[100px]"
-              value={content}
-              onChangeText={setContent}
-              multiline
-              autoFocus
-              placeholder="메시지 내용"
-            />
-
-            <View className="flex-row gap-3 mt-4">
-              <TouchableOpacity
-                className="flex-1 bg-gray-200 py-3 rounded-lg items-center"
-                onPress={handleClose}
-              >
-                <Text className="text-gray-700 font-medium">취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className={`flex-1 py-3 rounded-lg items-center ${
-                  content.trim() ? 'bg-black' : 'bg-gray-300'
-                }`}
-                onPress={handleSave}
-                disabled={!content.trim()}
-              >
-                <Text className="text-white font-medium">저장</Text>
-              </TouchableOpacity>
+            <View className="mb-6 h-40">
+              <Textarea
+                ref={textareaRef}
+                className="flex-1 rounded-2xl border-app-border bg-app-bg px-4 py-3 text-sm leading-6 text-app-text"
+                value={content}
+                onChangeText={setContent}
+                placeholder="내용을 입력하세요..."
+                textAlignVertical="top"
+              />
             </View>
-          </View>
+
+            <View className="flex-row gap-3">
+              <Button variant="outline" className="flex-1 h-11 rounded-2xl border-app-border" onPress={handleClose}>
+                <Text className="text-xs font-bold text-app-muted">취소</Text>
+              </Button>
+              <Button 
+                variant="default" 
+                className="flex-[2] h-11 rounded-2xl" 
+                onPress={handleSave} 
+                disabled={!content.trim() || content.trim() === message.content}
+              >
+                <Text className="text-sm font-bold text-white">수정 완료</Text>
+              </Button>
+            </View>
+          </Animated.View>
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </Modal>
