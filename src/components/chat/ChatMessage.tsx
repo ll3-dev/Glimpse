@@ -17,9 +17,10 @@ interface ChatMessageProps {
   message: Message;
   onEdit?: (message: Message) => void;
   onDelete?: (message: Message) => void;
+  isPending?: boolean;
 }
 
-export function ChatMessage({ message, onEdit, onDelete }: ChatMessageProps) {
+export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isEdited = message.updatedAt !== null;
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -110,11 +111,17 @@ export function ChatMessage({ message, onEdit, onDelete }: ChatMessageProps) {
             </View>
           )}
 
-          <ChatMarkdown
-            content={parsedContent.answer || message.content}
-            textClassName={bubbleTextClassName}
-            mutedTextClassName={mutedTextClassName}
-          />
+          {isPending ? (
+            <Text className={bubbleTextClassName} numberOfLines={1}>
+              {message.content}
+            </Text>
+          ) : (
+            <ChatMarkdown
+              content={parsedContent.answer || message.content}
+              textClassName={bubbleTextClassName}
+              mutedTextClassName={mutedTextClassName}
+            />
+          )}
 
           {!isUser && (
             <View className="mt-3 flex-row items-center justify-end">

@@ -4,7 +4,7 @@
  * Displays Local LLM settings including model download and selection.
  */
 
-import { Activity, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Alert, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Bot, Loader } from 'lucide-react-native';
 import { Switch } from '@/src/ui/primitives';
@@ -18,21 +18,21 @@ import {
 } from '@/src/features/ai/model-manager';
 import {
   useLocalLLMStoreConfig,
-  startLocalLLMDownload,
-  updateLocalLLMDownloadProgress,
-  finishLocalLLMDownload,
-  failLocalLLMDownload,
   removeLocalLLMModel,
-  updateLocalLLMModel,
   type LocalModel,
-} from '@/src/stores/settings/local-llm.store';
-import { syncRecommendedLocalModels } from '@/src/features/settings';
+} from "@/src/stores/settings/local-llm.store";
+import {
+  cancelLocalModelDownload,
+  downloadLocalModel,
+  syncRecommendedLocalModels,
+} from "@/src/features/settings";
 
 type LocalLLMSectionProps = {
   enabled: boolean;
   ready: boolean;
   models: LocalModel[];
   selectedModelId: string | null;
+  sourceRoute?: string | null;
   onToggle: (value: boolean) => void;
   onSelectModel: (modelId: string) => void;
 };
@@ -60,11 +60,14 @@ export function LocalLLMSection({
   ready: _ready,
   models: _models,
   selectedModelId,
+  sourceRoute,
   onToggle,
   onSelectModel,
 }: LocalLLMSectionProps) {
   // Get download and loading state from store
-  const downloadingModelId = useLocalLLMStoreConfig((c) => c.downloadingModelId);
+  const downloadingModelId = useLocalLLMStoreConfig(
+    (c) => c.downloadingModelId,
+  );
   const downloadProgress = useLocalLLMStoreConfig((c) => c.downloadProgress);
   const downloadError = useLocalLLMStoreConfig((c) => c.downloadError);
   const isLoading = useLocalLLMStoreConfig((c) => c.isLoading);
@@ -84,74 +87,85 @@ export function LocalLLMSection({
   }, []);
 
   // Handle model download
-  const handleDownload = useCallback(async (model: ModelInfo) => {
-    startLocalLLMDownload(model.id);
-
-    const downloader = new ModelDownloader();
-    try {
-      const path = await downloader.downloadModel(model, (progress) => {
-        updateLocalLLMDownloadProgress(progress);
-      });
-      finishLocalLLMDownload(model.id, path);
-
-      // Update model size
-      const size = await ModelDownloader.getModelSize(model.filename);
-      if (size) {
-        const storeModel = availableModels.find((m) => m.id === model.id);
-        if (storeModel) {
-          updateLocalLLMModel(model.id, { family: model.family, size });
-        }
+  const handleDownload = useCallback(
+    async (model: ModelInfo) => {
+      const result = await downloadLocalModel(model, { sourceRoute });
+      if (!result.success && 'error' in result) {
+        Alert.alert("다운로드 실패", result.error);
       }
-    } catch (error) {
-      failLocalLLMDownload(error instanceof Error ? error.message : '다운로드 실패');
-    }
-  }, [availableModels]);
+    },
+    [sourceRoute],
+  );
+
+  const handleCancelDownload = useCallback(async () => {
+    await cancelLocalModelDownload();
+  }, []);
 
   // Handle model deletion
-  const handleDelete = useCallback(async (model: ModelInfo) => {
-    try {
-      await ModelDownloader.deleteModel(model.filename);
-      removeLocalLLMModel(model.id);
+  const handleDelete = useCallback(
+    async (model: ModelInfo) => {
+      try {
+        await ModelDownloader.deleteModel(model.filename);
+        removeLocalLLMModel(model.id);
 
-      // If this was the selected model, clear selection via parent
-      if (selectedModelId === model.id) {
-        onSelectModel(''); // Clear selection via parent callback
+        // If this was the selected model, clear selection via parent
+        if (selectedModelId === model.id) {
+          onSelectModel(""); // Clear selection via parent callback
+        }
+      } catch (error) {
+        console.error("Failed to delete model:", error);
       }
-    } catch (error) {
-      console.error('Failed to delete model:', error);
-    }
-  }, [selectedModelId, onSelectModel]);
+    },
+    [selectedModelId, onSelectModel],
+  );
 
   // Handle model selection - also enable Local LLM automatically
-  const handleSelect = useCallback(async (modelId: string) => {
-    const model = availableModels.find((m) => m.id === modelId);
-    if (!model?.isReady) return;
+  const handleSelect = useCallback(
+    async (modelId: string) => {
+      const model = availableModels.find((m) => m.id === modelId);
+      if (!model?.isReady) return;
 
-    onSelectModel(modelId);
+      onSelectModel(modelId);
 
-    // Auto-enable Local LLM when selecting a model
-    if (!enabled) {
-      onToggle(true);
-    }
-  }, [availableModels, onSelectModel, enabled, onToggle]);
+      // Auto-enable Local LLM when selecting a model
+      if (!enabled) {
+        onToggle(true);
+      }
+    },
+    [availableModels, onSelectModel, enabled, onToggle],
+  );
 
   // Handle toggle - just call parent callback
-  const handleToggle = useCallback((value: boolean) => {
-    onToggle(value);
-  }, [onToggle]);
+  const handleToggle = useCallback(
+    (value: boolean) => {
+      onToggle(value);
+    },
+    [onToggle],
+  );
 
   // Show details when enabled or any activity (downloading/loading)
-  const canToggle = canToggleLocalLLM(enabled, selectedModelId, availableModels);
-  const disabledReason = getLocalLLMToggleDisabledReason(enabled, selectedModelId, availableModels);
+  const canToggle = canToggleLocalLLM(
+    enabled,
+    selectedModelId,
+    availableModels,
+  );
+  const disabledReason = getLocalLLMToggleDisabledReason(
+    enabled,
+    selectedModelId,
+    availableModels,
+  );
 
   const handleTogglePress = useCallback(() => {
     if (!canToggle) {
-      Alert.alert('로컬 LLM 사용 불가', disabledReason || '현재는 로컬 LLM을 켤 수 없습니다.');
+      Alert.alert(
+        "로컬 LLM 사용 불가",
+        disabledReason || "현재는 로컬 LLM을 켤 수 없습니다.",
+      );
       return;
     }
 
     if (isLoading) {
-      Alert.alert('모델 로딩 중', '모델 로딩이 끝난 뒤 다시 시도해주세요.');
+      Alert.alert("모델 로딩 중", "모델 로딩이 끝난 뒤 다시 시도해주세요.");
       return;
     }
 
@@ -168,10 +182,14 @@ export function LocalLLMSection({
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-4">
           <View className="flex-row items-center gap-2">
-            <Text className="text-base font-semibold text-app-text">로컬 모델 사용</Text>
-            {isLoading && <Loader size={14} className="text-app-muted animate-spin" />}
+            <Text className="text-app-text text-base font-semibold">
+              로컬 모델 사용
+            </Text>
+            {isLoading && (
+              <Loader size={14} className="text-app-muted animate-spin" />
+            )}
           </View>
-          <Text className="text-xs text-app-muted mt-0.5">
+          <Text className="text-app-muted mt-0.5 text-xs">
             기기에서 직접 실행되는 AI 모델
           </Text>
         </View>
@@ -184,40 +202,47 @@ export function LocalLLMSection({
         </TouchableOpacity>
       </View>
 
-      <Activity mode="visible">
+      {/* Show details only when enabled */}
+      {enabled && (
         <View className="mt-4">
           {/* Loading progress */}
           {isLoading && (
-            <View className="mb-4 p-3 bg-app-bg rounded-lg">
+            <View className="bg-app-bg mb-4 rounded-lg p-3">
               <View className="flex-row items-center gap-2">
                 <ActivityIndicator size="small" color="#37352f" />
-                <Text className="text-sm text-app-text">모델 로딩 중... {loadProgress}%</Text>
+                <Text className="text-app-text text-sm">
+                  모델 로딩 중... {loadProgress}%
+                </Text>
               </View>
             </View>
           )}
 
           {/* Load error */}
           {loadError && (
-            <View className="mb-4 p-3 bg-app-bg rounded-lg">
-              <Text className="text-sm text-app-accent">{loadError}</Text>
+            <View className="bg-app-bg mb-4 rounded-lg p-3">
+              <Text className="text-app-accent text-sm">{loadError}</Text>
             </View>
           )}
 
           {/* Download error */}
           {downloadError && (
-            <View className="mb-4 p-3 bg-app-bg rounded-lg">
-              <Text className="text-sm text-app-accent">{downloadError}</Text>
+            <View className="bg-app-bg mb-4 rounded-lg p-3">
+              <Text className="text-app-accent text-sm">{downloadError}</Text>
             </View>
           )}
 
           {/* Model list */}
           <View>
-            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
+            <Text className="text-app-muted mb-2 text-xs font-bold tracking-tight uppercase">
               모델 다운로드
             </Text>
             <View className="gap-2">
               {RECOMMENDED_MODELS.map((model) => {
-                const status = getDownloadStatus(model.id, downloadingModelId, availableModels);
+                const status = getDownloadStatus(
+                  model.id,
+                  downloadingModelId,
+                  availableModels,
+                );
                 const localModel = availableModels.find((m) => m.id === model.id);
 
                 return (
@@ -227,24 +252,27 @@ export function LocalLLMSection({
                     status={status}
                     isSelected={selectedModelId === model.id}
                     downloadProgress={
-                      status === 'downloading' ? downloadProgress ?? undefined : undefined
-                    }
-                    errorMessage={
-                      status === "idle"
-                        ? (downloadError ?? undefined)
+                      status === "downloading"
+                        ? (downloadProgress ?? undefined)
                         : undefined
                     }
-                    onDownload={() => handleDownload(model)}
-                    onDelete={() => handleDelete(model)}
-                    onSelect={() => handleSelect(model.id)}
-                    canSelect={localModel?.isReady ?? false}
+                  errorMessage={
+                    status === "idle" ? (downloadError ?? undefined) : undefined
+                  }
+                  onDownload={() => handleDownload(model)}
+                  onCancelDownload={
+                    status === 'downloading' ? handleCancelDownload : undefined
+                  }
+                  onDelete={() => handleDelete(model)}
+                  onSelect={() => handleSelect(model.id)}
+                  canSelect={localModel?.isReady ?? false}
                   />
                 );
               })}
             </View>
           </View>
         </View>
-      </Activity>
+      )}
     </SettingsSection>
   );
 }

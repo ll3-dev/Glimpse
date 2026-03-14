@@ -10,8 +10,6 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
 
-  const showFab = pathname === "/library";
-
   return (
     <View className="flex-1">
       <Tabs
@@ -73,17 +71,6 @@ export default function TabsLayout() {
           }}
         />
       </Tabs>
-
-      <Activity mode={showFab ? "visible" : "hidden"}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push("/capture")}
-          className="absolute right-6 w-14 h-14 rounded-full bg-black items-center justify-center shadow-lg"
-          style={{ bottom: insets.bottom + 70 }}
-        >
-          <Plus color="white" size={30} />
-        </TouchableOpacity>
-      </Activity>
     </View>
   );
 }

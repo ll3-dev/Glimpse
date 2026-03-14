@@ -1,6 +1,6 @@
 import { Alert, ScrollView, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { ScreenHeader, Card } from '@/src/ui/primitives';
 import { AppleIntelligenceSection } from '@/src/components/settings/AppleIntelligenceSection';
@@ -11,6 +11,7 @@ import { useSettingsScreenState } from '@/src/components/settings/useSettingsScr
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { state, actions } = useSettingsScreenState();
 
   const handleToggleAppleIntelligence = (value: boolean) => {
@@ -56,6 +57,7 @@ export default function SettingsScreen() {
           ready={state.localLLMReady}
           models={state.localLLMModels}
           selectedModelId={state.localLLMSelectedModelId}
+          sourceRoute={typeof returnTo === 'string' ? returnTo : null}
           onToggle={handleToggleLocalLLM}
           onSelectModel={actions.selectLocalModel}
         />

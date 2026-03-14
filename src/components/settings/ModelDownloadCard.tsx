@@ -5,7 +5,7 @@
  */
 
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Download, Trash2, Check, AlertCircle } from 'lucide-react-native';
+import { Download, Trash2, Check, AlertCircle, X } from 'lucide-react-native';
 import type { ModelInfo } from '@/src/features/ai/model-manager';
 import { ModelDownloadProgress } from './ModelDownloadProgress';
 
@@ -28,6 +28,8 @@ type ModelDownloadCardProps = {
   errorMessage?: string;
   /** Callback when download button is pressed */
   onDownload: () => void;
+  /** Callback when active download is cancelled */
+  onCancelDownload?: () => void;
   /** Callback when delete button is pressed */
   onDelete: () => void;
   /** Callback when model is selected */
@@ -43,6 +45,7 @@ export function ModelDownloadCard({
   downloadProgress,
   errorMessage,
   onDownload,
+  onCancelDownload,
   onDelete,
   onSelect,
   canSelect,
@@ -54,48 +57,49 @@ export function ModelDownloadCard({
 
   return (
     <View
-      className={`
-        p-3 rounded-lg border
-        ${isSelected ? 'bg-app-bg border-app-text' : 'bg-app-bg border-transparent'}
-      `}
+      className={`rounded-lg border p-3 ${isSelected ? "bg-app-bg border-app-text" : "bg-app-bg border-transparent"} `}
     >
       {/* Header: Model info */}
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-2">
           <View className="flex-row items-center gap-2">
-            <Text className="text-sm font-medium text-app-text">{model.name}</Text>
-            {model.size && !isDownloading && (
-              <Text className="text-xs text-app-subtle">{model.size}</Text>
-            )}
+            <Text className="text-app-text text-sm font-medium">
+              {model.name}
+            </Text>
           </View>
           {model.description && (
-            <Text className="text-xs text-app-muted mt-0.5">{model.description}</Text>
+            <Text className="text-app-muted mt-0.5 text-xs">
+              {model.description}
+              {model.size && !isDownloading && (
+                <Text className="text-app-subtle text-xs"> {model.size}</Text>
+              )}
+            </Text>
           )}
         </View>
 
         {/* Status indicator */}
         {isSelected && (
-          <View className="flex-row items-center gap-1 bg-app-text px-2.5 py-1 rounded-full">
+          <View className="bg-app-text flex-row items-center gap-1 rounded-full px-2.5 py-1">
             <Check size={12} color="#fff" />
             <Text className="text-xs font-medium text-white">사용 중</Text>
           </View>
         )}
         {showReadyBadge && (
-          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-1 rounded-full">
+          <View className="bg-app-border/50 flex-row items-center gap-1 rounded-full px-2 py-1">
             <Check size={12} color="#37352f" />
-            <Text className="text-xs text-app-text">다운로드됨</Text>
+            <Text className="text-app-text text-xs">다운로드됨</Text>
           </View>
         )}
         {isDownloading && (
-          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-0.5 rounded-full overflow-hidden">
+          <View className="bg-app-border/50 flex-row items-center gap-1 overflow-hidden rounded-full px-2 py-0.5">
             <ActivityIndicator size="small" color="#37352f" />
-            <Text className="text-xs text-app-text">다운로드 중</Text>
+            <Text className="text-app-text text-xs">다운로드 중</Text>
           </View>
         )}
         {hasError && (
-          <View className="flex-row items-center gap-1 bg-app-border/50 px-2 py-0.5 rounded-full">
+          <View className="bg-app-border/50 flex-row items-center gap-1 rounded-full px-2 py-0.5">
             <AlertCircle size={12} color="#37352f" />
-            <Text className="text-xs text-app-text">오류</Text>
+            <Text className="text-app-text text-xs">오류</Text>
           </View>
         )}
       </View>
@@ -112,19 +116,29 @@ export function ModelDownloadCard({
 
       {/* Error message */}
       {hasError && errorMessage && (
-        <Text className="text-xs text-app-accent mt-2">{errorMessage}</Text>
+        <Text className="text-app-accent mt-2 text-xs">{errorMessage}</Text>
       )}
 
       {/* Action buttons */}
-      <View className="flex-row items-center justify-end gap-2 mt-2">
+      <View className="mt-2 flex-row items-center justify-end gap-2">
         {/* Download button */}
         {!isCompleted && !isDownloading && (
           <TouchableOpacity
             onPress={onDownload}
-            className="flex-row items-center gap-1.5 bg-app-text px-3 py-1.5 rounded-md"
+            className="bg-app-text flex-row items-center gap-1.5 rounded-md px-3 py-1.5"
           >
             <Download size={14} color="#fff" />
             <Text className="text-xs font-medium text-white">다운로드</Text>
+          </TouchableOpacity>
+        )}
+
+        {isDownloading && onCancelDownload && (
+          <TouchableOpacity
+            onPress={onCancelDownload}
+            className="flex-row items-center gap-1.5 rounded-md border border-app-border bg-white px-3 py-1.5"
+          >
+            <X size={14} color="#37352f" />
+            <Text className="text-app-text text-xs font-medium">중단</Text>
           </TouchableOpacity>
         )}
 
@@ -133,13 +147,12 @@ export function ModelDownloadCard({
           <TouchableOpacity
             onPress={onSelect}
             disabled={!canSelect}
-            className={`
-              flex-row items-center gap-1.5 px-3 py-1.5 rounded-md border
-              ${canSelect ? 'border-app-text bg-white' : 'border-app-border bg-gray-50'}
-            `}
+            className={`flex-row items-center gap-1.5 rounded-md border px-3 py-1.5 ${canSelect ? "border-app-text bg-white" : "border-app-border bg-gray-50"} `}
           >
-            <Check size={14} color={canSelect ? '#37352f' : '#9ca3af'} />
-            <Text className={`text-xs font-medium ${canSelect ? 'text-app-text' : 'text-app-subtle'}`}>
+            <Check size={14} color={canSelect ? "#37352f" : "#9ca3af"} />
+            <Text
+              className={`text-xs font-medium ${canSelect ? "text-app-text" : "text-app-subtle"}`}
+            >
               선택
             </Text>
           </TouchableOpacity>
@@ -150,7 +163,7 @@ export function ModelDownloadCard({
         {isCompleted && (
           <TouchableOpacity
             onPress={onDelete}
-            className="flex-row items-center gap-1.5 px-2 py-1.5 rounded-md border border-app-border bg-app-bg"
+            className="border-app-border bg-app-bg flex-row items-center gap-1.5 rounded-md border px-2 py-1.5"
           >
             <Trash2 size={14} color="#787774" />
           </TouchableOpacity>

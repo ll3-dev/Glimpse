@@ -93,49 +93,49 @@ export default function LibraryDetailScreen() {
             </Text>
           </Card>
 
-          {item?.body ? (
+          <Activity mode={item?.body ? "visible" : "hidden"}>
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 내용
               </Text>
               <Text className="text-app-text mt-2 text-sm leading-6">
-                {item.body}
+                {item?.body}
               </Text>
             </Card>
-          ) : null}
+          </Activity>
 
-          {item?.url ? (
+          <Activity mode={item?.url ? "visible" : "hidden"}>
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 링크
               </Text>
               <TouchableOpacity
                 className="mt-2 flex-row items-center"
-                onPress={() => Linking.openURL(item.url)}
+                onPress={() => item?.url && Linking.openURL(item.url)}
               >
                 <Text
                   className="flex-1 text-sm text-blue-600"
                   numberOfLines={2}
                 >
-                  {item.url}
+                  {item?.url}
                 </Text>
                 <ExternalLink size={16} color="#2563eb" />
               </TouchableOpacity>
             </Card>
-          ) : null}
+          </Activity>
 
-          {item?.summary ? (
+          <Activity mode={item?.summary ? "visible" : "hidden"}>
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 요약
               </Text>
               <Text className="text-app-text mt-2 text-sm leading-6">
-                {item.summary}
+                {item?.summary}
               </Text>
             </Card>
-          ) : null}
+          </Activity>
 
-          {displayLabels.length > 0 ? (
+          <Activity mode={displayLabels.length > 0 ? "visible" : "hidden"}>
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 라벨
@@ -153,15 +153,15 @@ export default function LibraryDetailScreen() {
                 ))}
               </View>
             </Card>
-          ) : null}
+          </Activity>
 
-          {item?.tags && item.tags.length > 0 ? (
+          <Activity mode={item?.tags && item.tags.length > 0 ? "visible" : "hidden"}>
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 태그
               </Text>
               <View className="mt-2 flex-row flex-wrap">
-                {item.tags.map((tag) => (
+                {item?.tags?.map((tag) => (
                   <View
                     key={tag}
                     className="bg-app-border/40 mr-2 mb-2 rounded px-2 py-1"
@@ -171,7 +171,7 @@ export default function LibraryDetailScreen() {
                 ))}
               </View>
             </Card>
-          ) : null}
+          </Activity>
         </ScrollView>
       </Activity>
     </View>

@@ -1,4 +1,3 @@
-import { Activity } from 'react';
 import { Alert, View, TouchableOpacity } from 'react-native';
 import { Eye, EyeOff, Key } from 'lucide-react-native';
 import { Input, Button, Text, Switch } from '@/src/ui/primitives';
@@ -95,7 +94,8 @@ export function BYOKSection({
         </TouchableOpacity>
       </View>
 
-      <Activity mode="visible">
+      {/* Show details only when enabled */}
+      {byokEnabled && (
         <View className="mt-4">
           <View className="mb-4">
             <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
@@ -202,7 +202,7 @@ export function BYOKSection({
             </Button>
           )}
         </View>
-      </Activity>
+      )}
     </SettingsSection>
   );
 }

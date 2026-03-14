@@ -5,12 +5,14 @@ import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { LogBox, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useAppForegroundLabeling, useWarmLocalLLM } from "@/src/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
 import { ShareIntentProvider } from "expo-share-intent";
+import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
@@ -48,23 +50,28 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <ShareIntentProvider>
-        <QueryClientProvider client={queryClient}>
-          <RootProviders>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                freezeOnBlur: true,
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="library/[id]" />
-            </Stack>
-          </RootProviders>
-        </QueryClientProvider>
-      </ShareIntentProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ShareIntentProvider>
+          <QueryClientProvider client={queryClient}>
+            <RootProviders>
+              <>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    freezeOnBlur: true,
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
+                  <Stack.Screen name="library/[id]" />
+                </Stack>
+                <GlobalModelDownloadBanner />
+              </>
+            </RootProviders>
+          </QueryClientProvider>
+        </ShareIntentProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

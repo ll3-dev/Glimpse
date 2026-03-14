@@ -16,6 +16,8 @@ type ChatAISetupDialogProps = {
   isCheckingOptions: boolean;
   models: LocalModel[];
   selectedModelId: string | null;
+  isDownloading?: boolean;
+  downloadProgress?: number | null;
   onSelectModel: (modelId: string) => void | Promise<void>;
   onOpenSettings: () => void;
   onBack: () => void;
@@ -26,6 +28,8 @@ export function ChatAISetupDialog({
   isCheckingOptions,
   models,
   selectedModelId,
+  isDownloading = false,
+  downloadProgress = null,
   onSelectModel,
   onOpenSettings,
   onBack,
@@ -74,6 +78,14 @@ export function ChatAISetupDialog({
                 </TouchableOpacity>
               );
             })}
+          </View>
+        ) : isDownloading ? (
+          <View className="rounded-2xl bg-gray-50 px-4 py-3">
+            <Text className="text-sm text-gray-700">
+              모델 다운로드가 진행 중입니다.
+              {typeof downloadProgress === 'number' ? ` ${downloadProgress}%` : ''} 앱은 계속 사용할 수 있고,
+              완료되면 바로 채팅에 사용할 수 있습니다.
+            </Text>
           </View>
         ) : (
           <View className="rounded-2xl bg-gray-50 px-4 py-3">

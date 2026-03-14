@@ -4,11 +4,11 @@
  * Individual conversation view with AI chat.
  */
 
+import { Activity, useEffect, useRef, useCallback, useState } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, BackHandler, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, SquarePen } from 'lucide-react-native';
-import { useEffect, useRef, useCallback, useState } from 'react';
 import {
   useConversationsQuery,
   useDeleteConversationMutation,
@@ -48,6 +48,7 @@ import {
 } from "@/src/ui/primitives/alert-dialog";
 import { ScreenHeader } from '@/src/ui/primitives/screen-header';
 import type { Message } from '@/src/db';
+import { useLocalLLMStoreConfig } from '@/src/stores/settings/local-llm.store';
 
 export default function ChatDetailScreen() {
   const { id, contextItem: contextItemId } = useLocalSearchParams<{ id: string; contextItem?: string }>();
@@ -83,6 +84,8 @@ export default function ChatDetailScreen() {
 
   const selectedLocalModelId = useSelectedLocalModelId();
   const availableLocalModels = useAvailableLocalModels();
+  const downloadStatus = useLocalLLMStoreConfig((config) => config.downloadStatus);
+  const downloadProgress = useLocalLLMStoreConfig((config) => config.downloadProgress);
 
   const ensureChatAIReady = useCallback(async () => {
     if (isLocalLLMReady()) {
@@ -225,7 +228,10 @@ export default function ChatDetailScreen() {
 
   const handleOpenSettings = () => {
     setShowAISetupDialog(false);
-    router.push("/settings");
+    router.push({
+      pathname: "/settings",
+      params: { returnTo: `/chat/${id}` },
+    });
   };
 
   // Handlers for edit/delete
@@ -313,14 +319,14 @@ export default function ChatDetailScreen() {
           </TouchableOpacity>
         }
         rightElement={
-          conversation ? (
+          <Activity mode={conversation ? "visible" : "hidden"}>
             <TouchableOpacity
               onPress={() => setShowConversationEditModal(true)}
               className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
             >
               <SquarePen size={18} color="#37352f" />
             </TouchableOpacity>
-          ) : null
+          </Activity>
         }
       />
 
@@ -330,11 +336,11 @@ export default function ChatDetailScreen() {
         keyboardVerticalOffset={0}
       >
         {/* Context badge */}
-        {contextItem && (
+        <Activity mode={contextItem ? "visible" : "hidden"}>
           <View className="px-4 pb-2">
-            <ContextBadge item={contextItem} />
+            <ContextBadge item={contextItem!} />
           </View>
-        )}
+        </Activity>
 
         {/* Messages */}
         <ScrollView
@@ -348,20 +354,25 @@ export default function ChatDetailScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {isLoadingMessages ? (
+          <Activity mode={isLoadingMessages ? "visible" : "hidden"}>
             <View className="flex-1 items-center justify-center py-8">
               <Text className="text-gray-500">로딩 중...</Text>
             </View>
-          ) : messages && messages.length > 0 ? (
-            messages.map((message) => (
+          </Activity>
+
+          <Activity mode={!isLoadingMessages && messages && messages.length > 0 ? "visible" : "hidden"}>
+            {messages?.map((message, index) => (
               <ChatMessage
                 key={message.id}
                 message={message}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                isPending={isGenerating && index === messages.length - 1 && message.role === 'user'}
               />
-            ))
-          ) : (
+            ))}
+          </Activity>
+
+          <Activity mode={!isLoadingMessages && (!messages || messages.length === 0) ? "visible" : "hidden"}>
             <View className="flex-1 items-center justify-center py-8">
               <Text className="text-center text-gray-400">
                 {contextItem
@@ -369,19 +380,21 @@ export default function ChatDetailScreen() {
                   : "메시지를 입력해 대화를 시작하세요"}
               </Text>
             </View>
-          )}
+          </Activity>
 
           {/* Generating indicator / streaming response */}
-          {isGenerating && <ChatStreamingMessage content={streamingText} />}
+          <Activity mode={isGenerating ? "visible" : "hidden"}>
+            <ChatStreamingMessage content={streamingText} />
+          </Activity>
         </ScrollView>
 
-        {error && (
+        <Activity mode={error ? "visible" : "hidden"}>
           <View className="px-4 pb-2">
             <View className="rounded-2xl bg-red-50 px-3 py-2">
               <Text className="text-sm text-red-700">{error}</Text>
             </View>
           </View>
-        )}
+        </Activity>
 
         {/* Input */}
         <ChatInput onSend={handleSend} isLoading={isGenerating} />
@@ -391,6 +404,8 @@ export default function ChatDetailScreen() {
           isCheckingOptions={isCheckingAIOptions}
           models={availableLocalModels}
           selectedModelId={selectedLocalModelId}
+          isDownloading={downloadStatus === 'downloading'}
+          downloadProgress={downloadProgress?.percentage ?? null}
           onSelectModel={handleSelectChatModel}
           onOpenSettings={handleOpenSettings}
           onBack={() => router.back()}

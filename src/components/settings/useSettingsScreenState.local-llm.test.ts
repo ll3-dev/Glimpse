@@ -16,6 +16,9 @@ import {
   isLocalLLMReady,
   getSelectedLocalModelId,
   getAvailableLocalModels,
+  startDownload,
+  finishDownload,
+  markDownloadCompletionHandled,
 } from '@/src/features/settings';
 
 describe('Local LLM 상태 관리', () => {
@@ -145,6 +148,40 @@ describe('Local LLM 상태 관리', () => {
       const result = selectLocalLLMModel(null);
       expect(result.success).toBe(true);
       expect(getSelectedLocalModelId()).toBeNull();
+    });
+  });
+
+  describe('다운로드 세션', () => {
+    test('다운로드 시작 시 전역 세션 상태와 복귀 경로를 저장한다', () => {
+      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
+
+      startDownload('test-model', '/chat/123');
+
+      const config = getLocalLLMConfig();
+      expect(config.downloadStatus).toBe('downloading');
+      expect(config.downloadingModelId).toBe('test-model');
+      expect(config.downloadSourceRoute).toBe('/chat/123');
+      expect(config.downloadProgress?.percentage).toBe(0);
+    });
+
+    test('다운로드 완료 시 모델이 자동 선택 가능 상태가 되고 완료 배너를 유지한다', () => {
+      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
+
+      startDownload('test-model', '/chat/123');
+      finishDownload('test-model', 'file:///tmp/test-model.gguf');
+      selectLocalLLMModel('test-model');
+      enableLocalLLM();
+
+      let config = getLocalLLMConfig();
+      expect(config.downloadStatus).toBe('completed');
+      expect(config.lastCompletedModelId).toBe('test-model');
+      expect(config.downloadCompletionHandled).toBe(false);
+      expect(isLocalLLMReady()).toBe(true);
+
+      markDownloadCompletionHandled();
+      config = getLocalLLMConfig();
+      expect(config.downloadStatus).toBe('idle');
+      expect(config.downloadCompletionHandled).toBe(true);
     });
   });
 });
