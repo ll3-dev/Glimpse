@@ -18,6 +18,9 @@ import {
   finishLocalLLMDownload,
   failLocalLLMDownload,
   clearLocalLLMDownloadError,
+  markLocalLLMDownloadCompletionHandled,
+  clearLocalLLMDownloadSession,
+  setLocalLLMBannerDismissed,
   startLocalLLMLoading,
   updateLocalLLMLoadProgress,
   finishLocalLLMLoading,
@@ -137,8 +140,8 @@ export function setAvailableModels(models: LocalModel[]): void {
 /**
  * Start downloading a model
  */
-export function startDownload(modelId: string): void {
-  startLocalLLMDownload(modelId);
+export function startDownload(modelId: string, sourceRoute?: string | null): void {
+  startLocalLLMDownload(modelId, sourceRoute);
 }
 
 /**
@@ -167,6 +170,21 @@ export function failDownload(error: string): void {
  */
 export function clearDownloadError(): void {
   clearLocalLLMDownloadError();
+}
+
+export function markDownloadCompletionHandled(): void {
+  markLocalLLMDownloadCompletionHandled();
+}
+
+export function clearDownloadSession(): void {
+  clearLocalLLMDownloadSession();
+}
+
+/**
+ * Manually dismiss the download banner
+ */
+export function setBannerDismissed(isDismissed: boolean): void {
+  setLocalLLMBannerDismissed(isDismissed);
 }
 
 // ============================================

@@ -42,6 +42,9 @@ export type ProgressCallback = (progress: DownloadProgress) => void;
  */
 export class ModelDownloader {
   private static MODELS_DIR = `${RNBlobUtil.fs.dirs.DocumentDir}/models/`;
+  private activeTask: { cancel?: () => Promise<unknown> | unknown } | null = null;
+  private activeFilename: string | null = null;
+  private cancelledFilenames = new Set<string>();
 
   /**
    * Ensure the models directory exists
@@ -130,14 +133,18 @@ export class ModelDownloader {
     const expectedSize = await HuggingFaceAPI.getFileSize(model.repo, model.filename);
 
     return new Promise((resolve, reject) => {
-      RNBlobUtil.config({
+      const task = RNBlobUtil.config({
         path: localPath,
         indicator: true,
         overwrite: true,
-      })
-        .fetch('GET', downloadUrl, {
-          Accept: 'application/octet-stream',
-        })
+      }).fetch('GET', downloadUrl, {
+        Accept: 'application/octet-stream',
+      });
+
+      this.activeTask = task as { cancel?: () => Promise<unknown> | unknown };
+      this.activeFilename = model.filename;
+
+      task
         .progress({ count: 100 }, (received: number, total: number) => {
           const effectiveTotal = expectedSize ?? total;
           const progress: DownloadProgress = {
@@ -155,7 +162,19 @@ export class ModelDownloader {
         .catch((error) => {
           // Clean up partial download
           RNBlobUtil.fs.unlink(localPath).catch(() => {});
+          if (this.cancelledFilenames.has(model.filename)) {
+            reject(new Error('다운로드가 취소되었습니다.'));
+            return;
+          }
+
           reject(new Error(`다운로드 실패: ${error.message || '알 수 없는 오류'}`));
+        })
+        .finally(() => {
+          if (this.activeFilename === model.filename) {
+            this.activeTask = null;
+            this.activeFilename = null;
+          }
+          this.cancelledFilenames.delete(model.filename);
         });
     });
   }
@@ -166,10 +185,12 @@ export class ModelDownloader {
    * Note: react-native-blob-util doesn't have a direct cancel method,
    * so we track active downloads and mark them for cancellation.
    */
-  activeDownloads: Map<string, boolean> = new Map();
+  async cancelDownload(filename: string): Promise<void> {
+    this.cancelledFilenames.add(filename);
 
-  cancelDownload(filename: string): void {
-    this.activeDownloads.set(filename, false);
+    if (this.activeFilename === filename && this.activeTask?.cancel) {
+      await Promise.resolve(this.activeTask.cancel());
+    }
   }
 
   /**

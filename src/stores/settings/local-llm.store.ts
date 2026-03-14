@@ -65,6 +65,16 @@ export interface LocalLLMConfig {
   downloadProgress: DownloadProgress | null;
   /** Download error message */
   downloadError: string | null;
+  /** Current lifecycle state of the active download session */
+  downloadStatus: 'idle' | 'downloading' | 'completed' | 'error';
+  /** Route to return to when a download completes */
+  downloadSourceRoute: string | null;
+  /** Most recent model that finished downloading */
+  lastCompletedModelId: string | null;
+  /** Whether the latest completion banner has been handled */
+  downloadCompletionHandled: boolean;
+  /** Whether the user has manually dismissed the download banner */
+  isBannerDismissed: boolean;
 
   // Loading state
   /** Whether model is being loaded into memory */
@@ -102,6 +112,11 @@ const initialLocalLLMConfig: LocalLLMConfig = {
   downloadingModelId: null,
   downloadProgress: null,
   downloadError: null,
+  downloadStatus: 'idle',
+  downloadSourceRoute: null,
+  lastCompletedModelId: null,
+  downloadCompletionHandled: true,
+  isBannerDismissed: false,
 
   isLoading: false,
   loadProgress: 0,
@@ -186,7 +201,7 @@ export function updateLocalLLMModel(modelId: string, updates: Partial<LocalModel
 // Download state helpers
 // ============================================
 
-export function startLocalLLMDownload(modelId: string): void {
+export function startLocalLLMDownload(modelId: string, sourceRoute?: string | null): void {
   updateLocalLLMStoreConfig((config) => ({
     ...config,
     downloadingModelId: modelId,
@@ -196,6 +211,11 @@ export function startLocalLLMDownload(modelId: string): void {
       percentage: 0,
     },
     downloadError: null,
+    downloadStatus: 'downloading',
+    downloadSourceRoute: sourceRoute ?? config.downloadSourceRoute ?? null,
+    lastCompletedModelId: null,
+    downloadCompletionHandled: true,
+    isBannerDismissed: false,
   }));
 }
 
@@ -213,6 +233,10 @@ export function finishLocalLLMDownload(modelId: string, path: string): void {
       percentage: 100,
     },
     downloadError: null,
+    downloadStatus: 'completed',
+    lastCompletedModelId: modelId,
+    downloadCompletionHandled: false,
+    isBannerDismissed: false,
     availableModels: config.availableModels.map((m) =>
       m.id === modelId ? { ...m, isReady: true, path } : m
     ),
@@ -225,11 +249,44 @@ export function failLocalLLMDownload(error: string): void {
     downloadingModelId: null,
     downloadProgress: null,
     downloadError: error,
+    downloadStatus: 'error',
+    downloadCompletionHandled: true,
+    isBannerDismissed: false,
   }));
 }
 
+export function setLocalLLMBannerDismissed(isDismissed: boolean): void {
+  updateLocalLLMStoreConfig((config) => ({ ...config, isBannerDismissed: isDismissed }));
+}
+
 export function clearLocalLLMDownloadError(): void {
-  updateLocalLLMStoreConfig((config) => ({ ...config, downloadError: null }));
+  updateLocalLLMStoreConfig((config) => ({
+    ...config,
+    downloadError: null,
+    downloadStatus: config.downloadStatus === 'error' ? 'idle' : config.downloadStatus,
+  }));
+}
+
+export function markLocalLLMDownloadCompletionHandled(): void {
+  updateLocalLLMStoreConfig((config) => ({
+    ...config,
+    downloadCompletionHandled: true,
+    downloadStatus:
+      config.downloadStatus === 'completed' ? 'idle' : config.downloadStatus,
+  }));
+}
+
+export function clearLocalLLMDownloadSession(): void {
+  updateLocalLLMStoreConfig((config) => ({
+    ...config,
+    downloadingModelId: null,
+    downloadProgress: null,
+    downloadError: null,
+    downloadStatus: 'idle',
+    downloadSourceRoute: null,
+    lastCompletedModelId: null,
+    downloadCompletionHandled: true,
+  }));
 }
 
 // ============================================

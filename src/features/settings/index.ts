@@ -86,6 +86,9 @@ export {
   finishDownload,
   failDownload,
   clearDownloadError,
+  markDownloadCompletionHandled,
+  clearDownloadSession,
+  setBannerDismissed as setLocalLLMBannerDismissed,
   // Loading commands
   startLoading,
   updateLoadProgress,
@@ -95,3 +98,4 @@ export {
 } from './local-llm.commands';
 
 export { syncRecommendedLocalModels } from './local-llm.sync';
+export { downloadLocalModel, cancelLocalModelDownload } from './local-llm.download';

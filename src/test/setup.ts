@@ -98,11 +98,15 @@ mock.module("expo-background-task", () => ({
   },
   getStatusAsync: async () => 2,
   registerTaskAsync: async (taskName: string) => {
-    const taskManager = await import("expo-task-manager");
+    const taskManager = (await import("expo-task-manager")) as unknown as {
+      __registeredTasks: Set<string>;
+    };
     taskManager.__registeredTasks.add(taskName);
   },
   unregisterTaskAsync: async (taskName: string) => {
-    const taskManager = await import("expo-task-manager");
+    const taskManager = (await import("expo-task-manager")) as unknown as {
+      __registeredTasks: Set<string>;
+    };
     taskManager.__registeredTasks.delete(taskName);
   },
   triggerTaskWorkerForTestingAsync: async () => true,
@@ -125,6 +129,29 @@ mock.module("llama.rn", () => ({
     })),
     release: mock(async () => {}),
   })),
+}));
+
+// Mock react-native-blob-util to avoid Flow type parsing issues
+mock.module("react-native-blob-util", () => ({
+  default: {
+    config: () => ({
+      fetch: () => ({
+        progress: () => {},
+        then: (cb: (res: unknown) => void) => cb({ path: () => '/mock/path' }),
+      }),
+    }),
+    fs: {
+      dirs: {
+        DocumentDir: '/mock/documents',
+        CacheDir: '/mock/cache',
+      },
+      exists: async () => true,
+      mkdir: async () => true,
+      writeFile: async () => true,
+      readFile: async () => '',
+      unlink: async () => true,
+    },
+  },
 }));
 
 if (typeof globalWithDev.localStorage === 'undefined') {
