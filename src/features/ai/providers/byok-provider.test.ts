@@ -6,6 +6,7 @@ import {
   parseTagsResponse,
   API_CONFIGS,
 } from './byok-provider';
+import { isFailure } from '@/src/lib/effect-result';
 
 /**
  * Create a mock fetch function
@@ -18,7 +19,7 @@ function createMockFetch(
       throw response;
     }
     return response as Response;
-  }) as typeof fetch;
+  }) as unknown as typeof fetch;
 }
 
 /**
@@ -173,7 +174,7 @@ describe('createBYOKProvider', () => {
       const result = await provider.generate({ content: 'test' });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.code).toBe('AI_PROVIDER_UNAVAILABLE');
       }
     });
@@ -188,7 +189,7 @@ describe('createBYOKProvider', () => {
       const result = await provider.generate({ content: 'test' });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.message).toContain('API key');
       }
     });
@@ -203,7 +204,7 @@ describe('createBYOKProvider', () => {
       const result = await provider.generate({ content: 'test' });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.message).toContain('provider');
       }
     });
@@ -254,7 +255,7 @@ describe('createBYOKProvider', () => {
 
       await provider.generate({ content: 'test' });
 
-      const firstCallArgs = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [string];
+      const firstCallArgs = (mockFetch as unknown as unknown as ReturnType<typeof mock>).mock.calls[0] as [string];
       expect(firstCallArgs[0]).toBe('http://localhost:11434/v1/chat/completions');
     });
 
@@ -275,7 +276,7 @@ describe('createBYOKProvider', () => {
 
       await provider.generate({ content: 'test' });
 
-      const call = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [string, RequestInit];
+      const call = (mockFetch as unknown as ReturnType<typeof mock>).mock.calls[0] as [string, RequestInit];
       const body = JSON.parse(String(call[1]?.body ?? '{}')) as { model?: string };
       expect(body.model).toBe('gpt-4.1-mini');
     });
@@ -298,7 +299,7 @@ describe('createBYOKProvider', () => {
 
       await provider.generate({ content: 'test' });
 
-      const firstCallArgs = (mockFetch as ReturnType<typeof mock>).mock.calls[0] as [string];
+      const firstCallArgs = (mockFetch as unknown as ReturnType<typeof mock>).mock.calls[0] as [string];
       expect(firstCallArgs[0]).toContain('/models/gemini-3-flash-preview:generateContent');
       expect(firstCallArgs[0]).toContain('?key=AIzaSy-test-key');
     });
@@ -320,7 +321,7 @@ describe('createBYOKProvider', () => {
       const result = await provider.generate({ content: 'test' });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.code).toBe('AI_PROVIDER_RATE_LIMITED');
       }
     });
@@ -340,7 +341,7 @@ describe('createBYOKProvider', () => {
       const result = await provider.generate({ content: 'test' });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.code).toBe('AI_PROVIDER_NETWORK_ERROR');
       }
     });
@@ -360,7 +361,7 @@ describe('createBYOKProvider', () => {
       const result = await provider.generate({ content: 'test' });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.code).toBe('AI_PROVIDER_INVALID_RESPONSE');
       }
     });

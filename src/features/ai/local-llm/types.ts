@@ -1,4 +1,4 @@
-import type { GenerateOptions, StreamOptions } from '../llama-service';
+import type { GenerateOptions, LoadModelOptions, StreamOptions } from '../llama-service';
 import type { KnowledgeItem } from '@/src/db';
 
 export type LocalLLMModelFamily = 'generic-instruct' | 'qwen-chatml';
@@ -12,6 +12,7 @@ export interface LocalLLMPreset {
   family: LocalLLMModelFamily;
   stopTokens: string[];
   defaults: GenerateOptions;
+  loadOptions?: LoadModelOptions;
   buildChatPrompt: (
     messages: LocalLLMMessage[],
     contextItem?: KnowledgeItem | null

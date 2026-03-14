@@ -101,6 +101,13 @@ const genericPreset: LocalLLMPreset = {
     temperature: 0.3,
     topP: 0.9,
   },
+  loadOptions: {
+    contextSize: 2048,
+    gpuLayers: 0,
+    useMlock: false,
+    useMmap: true,
+    flashAttention: false,
+  },
   buildChatPrompt(messages, contextItem) {
     return buildGenericPrompt(buildContextSystemPrompt(contextItem), buildConversationText(messages));
   },
@@ -113,15 +120,25 @@ const genericPreset: LocalLLMPreset = {
 };
 
 const qwenPreset: LocalLLMPreset = {
-  family: 'qwen-chatml',
+  family: "qwen-chatml",
   stopTokens: QWEN_STOP_TOKENS,
   defaults: {
-    maxTokens: 256,
+    maxTokens: 32_768,
     temperature: 0.3,
     topP: 0.9,
   },
+  loadOptions: {
+    contextSize: 4096,
+    gpuLayers: -1,
+    useMlock: false,
+    useMmap: true,
+    flashAttention: true,
+  },
   buildChatPrompt(messages, contextItem) {
-    return buildChatMLPrompt(buildContextSystemPrompt(contextItem), buildConversationText(messages));
+    return buildChatMLPrompt(
+      buildContextSystemPrompt(contextItem),
+      buildConversationText(messages),
+    );
   },
   buildInstructionPrompt(task, instruction) {
     return buildChatMLPrompt(buildMetadataSystemPrompt(task), instruction);
@@ -129,10 +146,10 @@ const qwenPreset: LocalLLMPreset = {
   sanitizeOutput(text) {
     return sanitizeWithMarkers(text, [
       ...QWEN_STOP_TOKENS,
-      '<|im_start|>',
-      '<|im_start|>user',
-      '<|im_start|>assistant',
-      '<|im_start|>system',
+      "<|im_start|>",
+      "<|im_start|>user",
+      "<|im_start|>assistant",
+      "<|im_start|>system",
     ]);
   },
 };
@@ -171,5 +188,8 @@ export function resolveLocalLLMPreset(
       ...override.defaults,
     },
     stopTokens: override.stopTokens ?? basePreset.stopTokens,
+    loadOptions: override.loadOptions
+      ? { ...basePreset.loadOptions, ...override.loadOptions }
+      : basePreset.loadOptions,
   };
 }

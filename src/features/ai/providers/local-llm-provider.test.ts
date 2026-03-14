@@ -2,6 +2,7 @@ import { describe, expect, test, mock, beforeEach } from 'bun:test';
 import { createLocalLLMProvider, buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './local-llm-provider';
 import type { LlamaService, GenerateResult } from '../llama-service';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
+import { isFailure, isSuccess } from '@/src/lib/effect-result';
 import {
   clearLocalLLMSettings,
   addLocalLLMModel,
@@ -148,7 +149,7 @@ describe('local-llm-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.code).toBe('AI_PROVIDER_UNAVAILABLE');
         }
       });
@@ -162,7 +163,7 @@ describe('local-llm-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.message).toContain('No model selected');
         }
       });
@@ -176,7 +177,7 @@ describe('local-llm-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.message).toContain('no path');
         }
       });
@@ -203,7 +204,7 @@ describe('local-llm-provider', () => {
         });
 
         expect(result.success).toBe(true);
-        if (result.success) {
+        if (isSuccess(result)) {
           expect(result.data.summary).toBe('Generated summary');
           expect(result.data.tags).toEqual(['tag1', 'tag2', 'tag3']);
         }
@@ -228,7 +229,7 @@ describe('local-llm-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.code).toBe('AI_PROVIDER_INTERNAL_ERROR');
           expect(result.error.message).toContain('Generation failed');
         }

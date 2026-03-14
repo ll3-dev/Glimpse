@@ -17,9 +17,12 @@ export function validateModelPath(modelPath: string): void {
 export function buildLoadOptions(modelPath: string, options?: LoadModelOptions) {
   return {
     model: modelPath,
-    use_mlock: options?.useMlock ?? true,
+    use_mlock: options?.useMlock ?? false,
+    use_mmap: options?.useMmap ?? true,
     n_ctx: options?.contextSize ?? 2048,
     n_gpu_layers: options?.gpuLayers ?? 0,
+    flash_attn_type: options?.flashAttention ? ('on' as const) : undefined,
+    n_threads: options?.threads,
   };
 }
 

@@ -64,7 +64,10 @@ describe('createLocalLLMRuntime', () => {
 
     expect(service.loadModel).toHaveBeenCalledWith(model.path, {
       contextSize: 4096,
-      gpuLayers: 0,
+      gpuLayers: -1,
+      useMlock: false,
+      useMmap: true,
+      flashAttention: true,
     });
     const generateCall = (service.generate as ReturnType<typeof mock>).mock.calls[0];
     expect(generateCall?.[1]).toMatchObject({

@@ -53,12 +53,10 @@ export function createLocalLLMRuntime(service: LlamaService = createLlamaService
       await service.unloadModel();
     }
 
+    const preset = resolveLocalLLMPreset(model);
     loadingModelId = model.id;
     loadingPromise = service
-      .loadModel(model.path, {
-        contextSize: 4096,
-        gpuLayers: 0,
-      })
+      .loadModel(model.path, preset.loadOptions)
       .then(() => {
         loadedModelId = model.id;
       })

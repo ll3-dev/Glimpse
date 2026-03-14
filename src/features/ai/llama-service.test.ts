@@ -19,8 +19,7 @@ describe('createLlamaService', () => {
     test('throws error for non-string path', async () => {
       const service = createLlamaService();
 
-      // @ts-expect-error - Testing invalid input
-      await expect(service.loadModel(null)).rejects.toThrow('Model path is required');
+      await expect(service.loadModel(null as unknown as string)).rejects.toThrow('Model path is required');
     });
 
     test('throws error for relative path', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { createMetadataRouter } from "./router";
 import type { MetadataProvider, MetadataInput } from "./types";
+import { isFailure } from "@/src/lib/effect-result";
 
 /**
  * Helper to create a mock provider
@@ -469,7 +470,7 @@ describe("metadata router", () => {
 
       // Should return failure since no provider succeeded
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.code).toBe("GENERATION_ERROR");
         expect(result.error.message).toContain("All metadata providers failed");
       }
@@ -487,7 +488,7 @@ describe("metadata router", () => {
       const result = await router.generate({ content: "test" });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         expect(result.error.message).toContain("All metadata providers failed");
       }
     });
@@ -504,7 +505,7 @@ describe("metadata router", () => {
       const result = await router.generate({ content: "test" });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (isFailure(result)) {
         // Should have error details from all providers
         const details = result.error.details as { failedProviders: unknown[]; totalErrors: number };
         expect(details.failedProviders.length).toBe(3);

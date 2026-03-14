@@ -135,7 +135,7 @@ describe('createMockBridge', () => {
 
   test('allows overriding isAvailable', async () => {
     const bridge = createMockBridge({
-      isAvailable: mock(async () => ({
+      isAvailable: mock(async (): Promise<AppleIntelligenceAvailability> => ({
         available: false,
         reason: 'unsupported_os',
       })),

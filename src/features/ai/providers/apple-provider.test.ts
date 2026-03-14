@@ -1,6 +1,7 @@
 import { describe, expect, test, mock } from 'bun:test';
 import { createAppleProvider, buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './apple-provider';
 import type { AppleIntelligenceBridge, AppleIntelligenceAvailability, AppleGenerateResult } from '../apple-intelligence-bridge';
+import { isFailure } from '@/src/lib/effect-result';
 
 /**
  * Create a mock Apple Intelligence bridge for testing
@@ -70,7 +71,7 @@ describe('apple-provider', () => {
       test('returns false when bridge reports unavailable', async () => {
         const provider = createAppleProvider({
           bridge: createMockBridge({
-            isAvailable: mock(async () => ({
+            isAvailable: mock(async (): Promise<AppleIntelligenceAvailability> => ({
               available: false,
               reason: 'unsupported_os',
             })),
@@ -105,7 +106,7 @@ describe('apple-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.code).toBe('AI_PROVIDER_UNAVAILABLE');
           expect(result.error.message).toContain('disabled');
         }
@@ -114,7 +115,7 @@ describe('apple-provider', () => {
       test('returns error when bridge reports unavailable', async () => {
         const provider = createAppleProvider({
           bridge: createMockBridge({
-            isAvailable: mock(async () => ({
+            isAvailable: mock(async (): Promise<AppleIntelligenceAvailability> => ({
               available: false,
               reason: 'unsupported_os',
             })),
@@ -125,7 +126,7 @@ describe('apple-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.message).toContain('unsupported_os');
         }
       });
@@ -174,7 +175,7 @@ describe('apple-provider', () => {
         const result = await provider.generate({ content: 'test' });
 
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (isFailure(result)) {
           expect(result.error.code).toBe('AI_PROVIDER_INTERNAL_ERROR');
           expect(result.error.message).toContain('Apple Intelligence error');
         }

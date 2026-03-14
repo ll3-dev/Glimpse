@@ -12,11 +12,7 @@ const createMockKnowledgeItem = (overrides?: Partial<KnowledgeItem>): KnowledgeI
   createdAt: 1000,
   updatedAt: 1000,
   tags: null,
-  lastReviewedAt: null,
   nextReviewAt: null,
-  reviewCount: 0,
-  embedding: null,
-  summary: null,
   ...overrides,
 });
 

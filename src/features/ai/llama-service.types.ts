@@ -19,6 +19,9 @@ export interface LoadModelOptions {
   contextSize?: number;
   gpuLayers?: number;
   useMlock?: boolean;
+  useMmap?: boolean;
+  flashAttention?: boolean;
+  threads?: number;
   onProgress?: (progress: number) => void;
 }
 
