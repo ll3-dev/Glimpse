@@ -1,0 +1,34 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "types": ["bun-types"],
+    "composite": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@glimpse/shared": ["../../packages/shared/src/index.ts"],
+      "@glimpse/shared/*": ["../../packages/shared/src/*"],
+      "@glimpse/ui": ["../../packages/ui/src/index.ts"],
+      "@glimpse/ui/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts",
+    "../../packages/shared/src/**/*.ts",
+    "../../packages/ui/src/**/*.ts",
+    "../../packages/ui/src/**/*.tsx",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios",
+    "dist",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ]
+}
