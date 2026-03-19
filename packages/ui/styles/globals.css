@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@import "uniwind";
+
+@theme {
+  --color-app-bg: #f4f6f8;
+  --color-app-surface: #ffffff;
+  --color-app-border: #e5e8eb;
+  --color-app-text: #191f28;
+  --color-app-muted: #4e5968;
+  --color-app-subtle: #8b95a1;
+  --color-app-primary: #3182f6;
+  --color-app-accent: #f04452;
+
+  --color-background: var(--color-app-surface);
+  --color-foreground: var(--color-app-text);
+  --color-muted: var(--color-app-border);
+  --color-muted-foreground: var(--color-app-muted);
+  --color-border: var(--color-app-border);
+  --color-input: var(--color-app-border);
+  --color-ring: #d6e4ff;
+  --color-primary: var(--color-app-primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-app-bg);
+  --color-secondary-foreground: var(--color-app-text);
+  --color-accent: var(--color-app-bg);
+  --color-accent-foreground: var(--color-app-text);
+  --color-destructive: var(--color-app-accent);
+  --color-destructive-foreground: #ffffff;
+  --color-popover-foreground: var(--color-app-text);
+}

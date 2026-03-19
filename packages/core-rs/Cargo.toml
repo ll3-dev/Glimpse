@@ -1,0 +1,10 @@
+[package]
+name = "glimpse-core-rs"
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[lib]
+name = "glimpse_core_rs"
+crate-type = ["rlib"]
