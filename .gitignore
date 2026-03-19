@@ -36,6 +36,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Rust
+packages/core-rs/target/
+
 .env
 *.logs/
 drizzle/

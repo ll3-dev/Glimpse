@@ -1,26 +1,6 @@
 {
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    "types": ["bun-types"],
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "include": [
-    "app/**/*.ts",
-    "app/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.d.ts",
-    "*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "android",
-    "ios",
-    "dist",
-    "babel.config.js",
-    "metro.config.js",
-    "jest.config.js"
+  "files": [],
+  "references": [
+    { "path": "./apps/mobile" }
   ]
 }
