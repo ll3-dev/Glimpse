@@ -1,0 +1,8 @@
+[project]
+name = "glimpsecore"
+source_dir = "src"
+
+[android]
+package_name = "kr.ll3.glimpse.core"
+
+[ios]

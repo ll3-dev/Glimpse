@@ -5,38 +5,26 @@
  * Ordered by creation time, oldest first.
  */
 
-import { and, asc, eq, isNull } from 'drizzle-orm';
 import { Effect } from 'effect';
-import { db, messages, type Message } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import type { Message } from '@glimpse/shared';
 
 export type GetMessagesSuccessResult = { success: true; data: Message[] };
 export type GetMessagesFailureResult = FailureResult;
 export type GetMessagesResult = Result<Message[]>;
 
 export interface GetConversationMessagesDeps {
-  db: typeof db;
-  messages: typeof messages;
-  eq: typeof eq;
-  asc: typeof asc;
-  and: typeof and;
-  isNull: typeof isNull;
+  coreClient: Pick<MobileCoreClient, 'listConversationMessages'>;
 }
 
 const defaultDeps: GetConversationMessagesDeps = {
-  db,
-  messages,
-  eq,
-  asc,
-  and,
-  isNull,
+  coreClient: mobileCoreClient,
 };
 
 /**
@@ -44,21 +32,10 @@ const defaultDeps: GetConversationMessagesDeps = {
  */
 export function createGetConversationMessages(deps: GetConversationMessagesDeps = defaultDeps) {
   return async function getConversationMessages(conversationId: string): Promise<GetMessagesResult> {
-    const queryEffect = tryPromise(
-      () =>
-        deps.db
-          .select()
-          .from(deps.messages)
-          .where(
-            deps.and(
-              deps.eq(deps.messages.conversationId, conversationId),
-              deps.isNull(deps.messages.deletedAt)
-            )
-          )
-          .orderBy(deps.asc(deps.messages.createdAt)),
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to retrieve messages', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.listConversationMessages(conversationId),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to retrieve messages', error),
+    });
 
     return runEffectResult(queryEffect.pipe(Effect.map((items) => items as Message[])));
   };

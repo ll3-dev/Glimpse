@@ -6,7 +6,7 @@
 
 import { View, Text, TouchableOpacity } from 'react-native';
 import { X, FileText, Link as LinkIcon, Image } from 'lucide-react-native';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 interface ContextBadgeProps {
   item: KnowledgeItem;

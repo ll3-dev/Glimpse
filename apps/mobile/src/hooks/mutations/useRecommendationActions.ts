@@ -6,7 +6,7 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { respondToRecommendation } from '@/src/features/recommendation';
-import { type RecommendationStatus } from '@/src/db';
+import type { RecommendationStatus } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 
 type RecommendationAction = 'accept' | 'ignore' | 'dismiss';

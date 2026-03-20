@@ -1,10 +1,9 @@
-import { db, knowledgeItems } from '@/src/db';
-import { eq } from 'drizzle-orm';
 import { logger } from '@/src/utils/logger';
 import { calculateNextReviewFromFeedback } from './adjustIntervalFromFeedback';
 import { createMarkAsReviewed } from './reviewActions.markAsReviewed';
 import { createPostponeReview } from './reviewActions.postpone';
 import type { ReviewActionsDeps } from './reviewActions.types';
+import { mobileCoreClient } from '@/src/features/core';
 
 export {
   DEFAULT_POSTPONE_INTERVAL_MS,
@@ -15,9 +14,7 @@ export {
 } from './reviewActions.types';
 
 const defaultDeps: ReviewActionsDeps = {
-  db,
-  knowledgeItems,
-  eq,
+  coreClient: mobileCoreClient,
   logger,
   calculateNextReviewFromFeedback,
 };

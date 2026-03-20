@@ -1,23 +1,20 @@
-import { asc, eq } from 'drizzle-orm';
-import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import { appError, isFailure, runEffectSuccess, type AppError, tryPromise } from '@/src/lib/effect-result';
 import { Effect } from 'effect';
 import { deriveRuleBasedLabels } from './rule-based-labeler';
 import type { LabelingJobRunResult } from './types';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 export interface RunForegroundLabelingDeps {
-  db: typeof db;
-  knowledgeItems: typeof knowledgeItems;
-  eq: typeof eq;
-  asc: typeof asc;
+  coreClient: Pick<
+    MobileCoreClient,
+    'listPendingKnowledgeItemsForLabeling' | 'updateKnowledgeItem'
+  >;
   now?: () => number;
 }
 
 const defaultDeps: RunForegroundLabelingDeps = {
-  db,
-  knowledgeItems,
-  eq,
-  asc,
+  coreClient: mobileCoreClient,
 };
 
 export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps = defaultDeps) {
@@ -25,19 +22,11 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps = de
     const now = deps.now ?? Date.now;
 
     const program = Effect.gen(function* () {
-      const allItems = (yield* tryPromise(
-        () =>
-          deps.db
-            .select()
-            .from(deps.knowledgeItems)
-            .orderBy(deps.asc(deps.knowledgeItems.labelRequestedAt)),
+      const pendingItems = (yield* tryPromise(
+        () => deps.coreClient.listPendingKnowledgeItemsForLabeling(limit),
         (error): AppError =>
           appError('DATABASE_ERROR', 'Failed to load knowledge items for labeling', error)
       )) as KnowledgeItem[];
-
-      const pendingItems = allItems
-        .filter((item) => item.labelStatus === 'pending')
-        .slice(0, Math.max(0, limit));
 
       if (pendingItems.length === 0) {
         return {
@@ -55,32 +44,26 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps = de
         const result = deriveRuleBasedLabels(item);
         const completedAt = now();
 
-        const updatedRows = (yield* tryPromise(
+        const updatedItem = (yield* tryPromise(
           () =>
-            deps.db
-              .update(deps.knowledgeItems)
-              .set({
-                provisionalLabels: result.labels,
-                labelStatus: 'provisional',
-                labelSource: result.source,
-                labelVersion: result.version,
-                labelScore: result.score,
-                labelCompletedAt: completedAt,
-                labelError: null,
-                updatedAt: completedAt,
-              })
-              .where(deps.eq(deps.knowledgeItems.id, item.id))
-              .returning(),
+            deps.coreClient.updateKnowledgeItem(item.id, {
+              provisionalLabels: result.labels,
+              labelStatus: 'provisional',
+              labelSource: result.source,
+              labelVersion: result.version,
+              labelScore: result.score,
+              labelCompletedAt: completedAt,
+              labelError: null,
+              updatedAt: completedAt,
+            }),
           (error): AppError =>
             appError('DATABASE_ERROR', 'Failed to persist provisional labels', {
               itemId: item.id,
               error,
             })
-        )) as KnowledgeItem[];
+        )) as KnowledgeItem;
 
-        if (updatedRows[0]) {
-          completedItems.push(updatedRows[0]);
-        }
+        completedItems.push(updatedItem);
       }
 
       return {

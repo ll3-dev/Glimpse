@@ -9,7 +9,7 @@ import { Clipboard, TouchableOpacity, View } from 'react-native';
 import { Check, ChevronDown, ChevronUp, Copy } from 'lucide-react-native';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@glimpse/ui/primitives/alert-dialog';
 import { Button, Text } from '@glimpse/ui/primitives';
-import type { Message } from '@/src/db';
+import type { Message } from '@glimpse/shared';
 import { ChatMarkdown } from './ChatMarkdown';
 import { parseChatMessageContent } from './chatMessageContent';
 

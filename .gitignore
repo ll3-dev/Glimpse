@@ -11,7 +11,7 @@ expo-env.d.ts
 
 # Native
 .kotlin/
-*.orig.*
+*.orig
 *.jks
 *.p8
 *.p12
@@ -38,10 +38,18 @@ yarn-error.*
 
 # Rust
 packages/core-rs/target/
+packages/mobile-core-module/target/
+apps/mobile/rust-output/
+.craby/
+**/*.rs.bk
 
 .env
-*.logs/
+.logs/
 drizzle/
 *.db
+
+# Build outputs
+packages/*/dist/
+.tsdown/
 
 # @end expo-cli

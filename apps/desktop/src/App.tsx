@@ -15,7 +15,7 @@ export function App() {
     <View className="min-h-screen bg-app-bg px-6 py-8">
       <ScreenHeader
         title="Glimpse Desktop"
-        subtitle={`${workspaceArchitecture.mobileApp} -> ${workspaceArchitecture.rustCore}`}
+        subtitle={`${workspaceArchitecture.mobileBridgePackage} -> ${workspaceArchitecture.rustCore} <- ${workspaceArchitecture.desktopApp}`}
       />
       <Card className="mt-6 max-w-xl">
         <CardHeader>

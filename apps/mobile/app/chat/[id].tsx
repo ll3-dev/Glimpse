@@ -47,7 +47,7 @@ import {
   AlertDialogTitle,
 } from "@glimpse/ui/primitives/alert-dialog";
 import { ScreenHeader } from '@glimpse/ui/primitives/screen-header';
-import type { Message } from '@/src/db';
+import type { Message } from '@glimpse/shared';
 import { useLocalLLMStoreConfig } from '@/src/stores/settings/local-llm.store';
 
 export default function ChatDetailScreen() {

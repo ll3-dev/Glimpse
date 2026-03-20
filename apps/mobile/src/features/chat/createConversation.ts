@@ -4,16 +4,16 @@
  * Creates a new chat conversation.
  */
 
-import { db, conversations, type Conversation, type NewConversation } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
 import { generateId } from '@/src/lib/id';
+import { Effect } from 'effect';
+import type { Conversation, NewConversation } from '@glimpse/shared';
 
 export type CreateConversationSuccessResult = { success: true; data: Conversation };
 export type CreateConversationFailureResult = FailureResult;
@@ -26,14 +26,12 @@ export interface CreateConversationInput {
 }
 
 export interface CreateConversationDeps {
-  db: typeof db;
-  conversations: typeof conversations;
+  coreClient: Pick<MobileCoreClient, 'createConversation'>;
   generateId: () => string;
 }
 
 const defaultDeps: CreateConversationDeps = {
-  db,
-  conversations,
+  coreClient: mobileCoreClient,
   generateId,
 };
 
@@ -55,14 +53,10 @@ export function createCreateConversation(deps: CreateConversationDeps = defaultD
       deletedAt: null,
     };
 
-    const queryEffect = tryPromise(
-      async () => {
-        await deps.db.insert(deps.conversations).values(newConversation);
-        return newConversation as Conversation;
-      },
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to create conversation', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.createConversation(newConversation),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to create conversation', error),
+    });
 
     return runEffectResult(queryEffect);
   };

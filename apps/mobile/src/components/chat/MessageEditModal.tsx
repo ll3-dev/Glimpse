@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Button, Text, Textarea } from '@glimpse/ui/primitives';
-import type { Message } from '@/src/db';
+import type { Message } from '@glimpse/shared';
 import { X } from 'lucide-react-native';
 
 interface MessageEditModalProps {

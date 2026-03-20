@@ -1,4 +1,4 @@
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import type { KnowledgeLabel, LabelingResult } from './types';
 
 export const RULE_BASED_LABELER_VERSION = 'rules-v1';

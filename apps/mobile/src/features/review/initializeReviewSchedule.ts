@@ -7,12 +7,11 @@
  * Default: First review is scheduled 1 day after item creation.
  */
 
-import { db, knowledgeItems } from '@/src/db';
-import { eq, isNull } from 'drizzle-orm';
 import { Effect } from 'effect';
 import { logger } from '@/src/utils/logger';
 import { appError, tryPromise } from '@/src/lib/effect-result';
-import { mobileCoreClient } from '@/src/features/core';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
+import type { InitializeReviewScheduleOutput, KnowledgeItem } from '@glimpse/shared';
 
 /**
  * Default initial review interval in milliseconds
@@ -42,28 +41,22 @@ export function calculateInitialReviewAt(
  * @param createdAt - The creation timestamp
  * @returns Object with review schedule fields
  */
-export function initializeReviewSchedule(createdAt: number): {
-  nextReviewAt: number;
-  stability: null;
-  difficulty: null;
-  lastReviewedAt: null;
-} {
+export function initializeReviewSchedule(
+  createdAt: number
+): InitializeReviewScheduleOutput {
   return mobileCoreClient.initializeReviewSchedule({ createdAt });
 }
 
 export interface BatchInitializeReviewSchedulesDeps {
-  db: typeof db;
-  knowledgeItems: typeof knowledgeItems;
-  eq: typeof eq;
-  isNull: typeof isNull;
+  coreClient: Pick<
+    MobileCoreClient,
+    'listKnowledgeItems' | 'updateKnowledgeItem'
+  >;
   logger: Pick<typeof logger, 'info' | 'error'>;
 }
 
 const defaultDeps: BatchInitializeReviewSchedulesDeps = {
-  db,
-  knowledgeItems,
-  eq,
-  isNull,
+  coreClient: mobileCoreClient,
   logger,
 };
 
@@ -81,31 +74,25 @@ export function createBatchInitializeReviewSchedules(
     intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS
   ): Promise<number> {
     const program = Effect.gen(function* () {
-      const itemsWithoutSchedule = yield* tryPromise(
-        () =>
-          deps.db
-            .select()
-            .from(deps.knowledgeItems)
-            .where(deps.isNull(deps.knowledgeItems.nextReviewAt)),
+      const itemsWithoutSchedule = (yield* tryPromise(
+        () => deps.coreClient.listKnowledgeItems(),
         (error) =>
           appError('DATABASE_ERROR', 'Failed to batch initialize review schedules', error)
-      );
+      )) as KnowledgeItem[];
 
-      if (itemsWithoutSchedule.length === 0) {
+      const pendingItems = itemsWithoutSchedule.filter((item) => item.nextReviewAt == null);
+
+      if (pendingItems.length === 0) {
         deps.logger.info('No items need review schedule initialization');
         return 0;
       }
 
       let updatedCount = 0;
 
-      for (const item of itemsWithoutSchedule) {
+      for (const item of pendingItems) {
         const nextReviewAt = calculateInitialReviewAt(item.createdAt, intervalMs);
         yield* tryPromise(
-          () =>
-            deps.db
-              .update(deps.knowledgeItems)
-              .set({ nextReviewAt })
-              .where(deps.eq(deps.knowledgeItems.id, item.id)),
+          () => deps.coreClient.updateKnowledgeItem(item.id, { nextReviewAt }),
           (error) =>
             appError('DATABASE_ERROR', 'Failed to batch initialize review schedules', error)
         );

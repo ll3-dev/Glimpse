@@ -4,16 +4,15 @@
  * Updates the title of a conversation.
  */
 
-import { eq } from 'drizzle-orm';
-import { db, conversations, type Conversation } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import { Effect } from 'effect';
+import type { Conversation } from '@glimpse/shared';
 
 export type UpdateTitleSuccessResult = { success: true; data: Conversation };
 export type UpdateTitleFailureResult = FailureResult;
@@ -25,15 +24,11 @@ export interface UpdateConversationTitleInput {
 }
 
 export interface UpdateConversationTitleDeps {
-  db: typeof db;
-  conversations: typeof conversations;
-  eq: typeof eq;
+  coreClient: Pick<MobileCoreClient, 'updateConversation'>;
 }
 
 const defaultDeps: UpdateConversationTitleDeps = {
-  db,
-  conversations,
-  eq,
+  coreClient: mobileCoreClient,
 };
 
 /**
@@ -45,22 +40,15 @@ export function createUpdateConversationTitle(deps: UpdateConversationTitleDeps 
   ): Promise<UpdateTitleResult> {
     const now = Date.now();
 
-    const queryEffect = tryPromise(
-      async () => {
-        await deps.db
-          .update(deps.conversations)
-          .set({ title: input.title, updatedAt: now })
-          .where(deps.eq(deps.conversations.id, input.conversationId));
-
-        return {
-          id: input.conversationId,
+    const queryEffect = Effect.tryPromise({
+      try: () =>
+        deps.coreClient.updateConversation(input.conversationId, {
           title: input.title,
           updatedAt: now,
-        } as Conversation;
-      },
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to update conversation title', error)
-    );
+        }),
+      catch: (error) =>
+        appError('DATABASE_ERROR', 'Failed to update conversation title', error),
+    });
 
     return runEffectResult(queryEffect);
   };

@@ -4,16 +4,13 @@
  * Soft deletes a conversation and its messages.
  */
 
-import { eq } from 'drizzle-orm';
 import { Effect } from 'effect';
-import { db, conversations, messages } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
 
 export type DeleteConversationSuccessResult = { success: true; data: void };
@@ -25,17 +22,11 @@ export interface DeleteConversationInput {
 }
 
 export interface DeleteConversationDeps {
-  db: typeof db;
-  conversations: typeof conversations;
-  messages: typeof messages;
-  eq: typeof eq;
+  coreClient: Pick<MobileCoreClient, 'deleteConversation'>;
 }
 
 const defaultDeps: DeleteConversationDeps = {
-  db,
-  conversations,
-  messages,
-  eq,
+  coreClient: mobileCoreClient,
 };
 
 export function createDeleteConversation(deps: DeleteConversationDeps = defaultDeps) {
@@ -44,21 +35,10 @@ export function createDeleteConversation(deps: DeleteConversationDeps = defaultD
   ): Promise<DeleteConversationResult> {
     const now = Date.now();
 
-    const queryEffect = tryPromise(
-      async () => {
-        await deps.db
-          .update(deps.messages)
-          .set({ deletedAt: now })
-          .where(deps.eq(deps.messages.conversationId, input.conversationId));
-
-        await deps.db
-          .update(deps.conversations)
-          .set({ deletedAt: now, updatedAt: now })
-          .where(deps.eq(deps.conversations.id, input.conversationId));
-      },
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to delete conversation', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.deleteConversation(input.conversationId, now),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to delete conversation', error),
+    });
 
     return runEffectResult(queryEffect.pipe(Effect.map(() => undefined)));
   };

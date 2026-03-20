@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createPostponeReview } from './reviewActions.postpone';
 import { DEFAULT_POSTPONE_INTERVAL_MS } from './reviewActions.types';
 import type { ReviewActionsDeps } from './reviewActions.types';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockKnowledgeItem = (overrides?: Partial<KnowledgeItem>): KnowledgeItem => ({
   id: 'test-id',

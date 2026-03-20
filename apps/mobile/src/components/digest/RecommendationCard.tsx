@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from 'react-native';
 import { Check, X, Minus } from '@glimpse/ui/icons';
-import type { KnowledgeItem, Recommendation, RecommendationStatus } from '@/src/db';
+import type { KnowledgeItem, Recommendation, RecommendationStatus } from '@glimpse/shared';
 import { Card } from '@glimpse/ui/primitives';
 import { cn } from '@/src/lib/utils';
 

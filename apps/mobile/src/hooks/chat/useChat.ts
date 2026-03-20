@@ -10,7 +10,7 @@ import {
   isLocalLLMReady,
   getSelectedLocalModel,
 } from '@/src/features/settings/local-llm.selectors';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { logger } from '@/src/utils/logger';
 import { generateAssistantReply, savePartialAssistantReply } from './chatGeneration';
 import { getLocalLLMRuntime } from './chatRuntime';

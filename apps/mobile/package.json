@@ -14,6 +14,7 @@
     "test:coverage": "bun test --coverage"
   },
   "dependencies": {
+    "@glimpse/mobile-core-module": "workspace:*",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "@expo/plist": "^0.4.8",
@@ -39,7 +40,6 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^4.1.0",
-    "drizzle-orm": "^0.45.1",
     "effect": "^3.19.17",
     "expo": "^55.0.0",
     "expo-background-task": "~55.0.9",
@@ -95,12 +95,10 @@
     "@types/react": "~19.2.10",
     "babel-plugin-inline-import": "^3.0.0",
     "bun-types": "^1.3.9",
-    "drizzle-kit": "^0.31.8",
     "eslint": "^9.31.0",
     "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^10.1.8",
     "expo-build-properties": "~55.0.9",
-    "nitrogen": "^0.33.2",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "typescript": "~5.9.2"

@@ -4,7 +4,7 @@
  * Handles spaced repetition review scheduling for knowledge items.
  */
 
-export type { KnowledgeItem } from '@/src/db';
+export type { KnowledgeItem } from '@glimpse/shared';
 
 export {
   calculateInitialReviewAt,

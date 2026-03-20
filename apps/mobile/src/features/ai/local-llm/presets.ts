@@ -1,4 +1,4 @@
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import type {
   LocalLLMMessage,
   LocalLLMModelFamily,

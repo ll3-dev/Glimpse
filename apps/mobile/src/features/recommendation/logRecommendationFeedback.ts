@@ -4,17 +4,16 @@
  * Logs user feedback events to recommendations for analytics and learning.
  */
 
-import { db, feedbackEvents, type FeedbackEvent, type NewFeedbackEvent, type FeedbackActionType } from '@/src/db';
-import { desc } from 'drizzle-orm';
 import { Effect } from 'effect';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  isFailure,
   type AppError,
+  isFailure,
   runEffectSuccess,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import type { FeedbackActionType, FeedbackEvent, NewFeedbackEvent } from '@glimpse/shared';
 
 export type { FeedbackActionType };
 
@@ -43,16 +42,12 @@ export interface RecentFeedbackFailureResult {
 export type GetRecentFeedbackResult = RecentFeedbackResult | RecentFeedbackFailureResult;
 
 export interface RecommendationFeedbackDeps {
-  db: typeof db;
-  feedbackEvents: typeof feedbackEvents;
-  desc: typeof desc;
+  coreClient: Pick<MobileCoreClient, 'logRecommendationFeedback' | 'listRecentFeedbackEvents'>;
   nanoid: () => string;
 }
 
 const defaultDeps: RecommendationFeedbackDeps = {
-  db,
-  feedbackEvents,
-  desc,
+  coreClient: mobileCoreClient,
   nanoid: generateId,
 };
 
@@ -74,14 +69,14 @@ export function createLogRecommendationFeedback(deps: RecommendationFeedbackDeps
       };
 
       const insertResult = await runEffectSuccess(
-        tryPromise(
-          () => deps.db.insert(deps.feedbackEvents).values(newEvent),
-          (error): AppError =>
-            appError('DATABASE_ERROR', 'Failed to log feedback event', error)
-        ).pipe(
-          Effect.map(() => ({
+        Effect.tryPromise({
+          try: () => deps.coreClient.logRecommendationFeedback(newEvent),
+          catch: (error) =>
+            appError('DATABASE_ERROR', 'Failed to log feedback event', error),
+        }).pipe(
+          Effect.map((event) => ({
             success: true as const,
-            event: newEvent as FeedbackEvent,
+            event,
           }))
         )
       );
@@ -111,16 +106,11 @@ export function createGetRecentFeedbackEvents(deps: RecommendationFeedbackDeps =
     limit: number = 50
   ): Promise<GetRecentFeedbackResult> {
     const program = Effect.gen(function* () {
-      const events = (yield* tryPromise(
-        () =>
-          deps.db
-            .select()
-            .from(deps.feedbackEvents)
-            .orderBy(deps.desc(deps.feedbackEvents.createdAt))
-            .limit(limit),
-        (error): AppError =>
-          appError('DATABASE_ERROR', 'Failed to retrieve feedback events', error)
-      )) as FeedbackEvent[];
+      const events = (yield* Effect.tryPromise({
+        try: () => deps.coreClient.listRecentFeedbackEvents(limit),
+        catch: (error) =>
+          appError('DATABASE_ERROR', 'Failed to retrieve feedback events', error),
+      })) as FeedbackEvent[];
 
       return {
         success: true as const,

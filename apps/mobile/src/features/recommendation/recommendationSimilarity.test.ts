@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { calculateTagOverlap } from './recommendationSimilarity';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 describe('calculateTagOverlap', () => {
   test('returns 0 when both items have no tags', () => {

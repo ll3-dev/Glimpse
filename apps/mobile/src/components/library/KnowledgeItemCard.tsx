@@ -2,7 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { FileText, Link, Highlighter, Image, Share2 } from 'lucide-react-native';
 import { Text, TouchableOpacity, View } from 'react-native';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { formatKnowledgeLabel, getDisplayLabels } from '@/src/features/labeling';
 import { Card } from '@glimpse/ui/primitives';
 

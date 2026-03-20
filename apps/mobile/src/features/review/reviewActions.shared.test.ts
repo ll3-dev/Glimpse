@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { Effect, Cause, Option } from 'effect';
 import { loadKnowledgeItemOrFail } from './reviewActions.shared';
 import type { ReviewActionsDeps } from './reviewActions.types';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockDeps = () => {
   const select = mock();

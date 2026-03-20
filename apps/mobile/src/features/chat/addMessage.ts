@@ -4,17 +4,16 @@
  * Adds a new message to a conversation.
  */
 
-import { eq } from 'drizzle-orm';
-import { db, messages, conversations, type Message, type NewMessage } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
 import { generateId } from '@/src/lib/id';
+import { Effect } from 'effect';
+import type { Message, NewMessage } from '@glimpse/shared';
 
 export type AddMessageSuccessResult = { success: true; data: Message };
 export type AddMessageFailureResult = FailureResult;
@@ -27,18 +26,12 @@ export interface AddMessageInput {
 }
 
 export interface AddMessageDeps {
-  db: typeof db;
-  messages: typeof messages;
-  conversations: typeof conversations;
-  eq: typeof eq;
+  coreClient: Pick<MobileCoreClient, 'addMessage'>;
   generateId: () => string;
 }
 
 const defaultDeps: AddMessageDeps = {
-  db,
-  messages,
-  conversations,
-  eq,
+  coreClient: mobileCoreClient,
   generateId,
 };
 
@@ -54,28 +47,20 @@ export function createAddMessage(deps: AddMessageDeps = defaultDeps) {
       role: input.role,
       content: input.content,
       createdAt: now,
+      updatedAt: null,
+      deletedAt: null,
     };
 
-    const queryEffect = tryPromise(
-      async () => {
-        // Insert message
-        await deps.db.insert(deps.messages).values(newMessage);
-        // Update conversation's updatedAt
-        await deps.db
-          .update(deps.conversations)
-          .set({ updatedAt: now })
-          .where(deps.eq(deps.conversations.id, input.conversationId));
-
-        return newMessage as Message;
-      },
-      (error): AppError => {
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.addMessage(newMessage),
+      catch: (error) => {
         console.error('[addMessage] Failed', {
           input,
           error,
         });
         return appError('DATABASE_ERROR', 'Failed to add message', error);
-      }
-    );
+      },
+    });
 
     return runEffectResult(queryEffect);
   };

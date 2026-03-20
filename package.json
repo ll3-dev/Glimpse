@@ -10,6 +10,8 @@
     "android": "bun run --cwd apps/mobile android",
     "ios": "bun run --cwd apps/mobile ios",
     "web": "bun run --cwd apps/mobile web",
+    "mobile:bridge:codegen": "bun run --cwd packages/mobile-core-module codegen",
+    "mobile:bridge:build": "bun run --cwd packages/mobile-core-module build",
     "lint": "bun run --cwd apps/mobile lint",
     "typecheck": "bun run --cwd apps/mobile typecheck",
     "desktop:typecheck": "bun run --cwd apps/desktop typecheck",

@@ -1,5 +1,5 @@
 import { type KnowledgeItemInput } from '@/src/features/capture';
-import { type KnowledgeItemType } from '@/src/db/schema';
+import { type KnowledgeItemType } from '@glimpse/shared';
 
 export type SharedContent = {
   text?: string;

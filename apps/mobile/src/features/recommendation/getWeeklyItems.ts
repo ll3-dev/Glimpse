@@ -4,17 +4,15 @@
  * Retrieves knowledge items from the last 7 days for digest recommendations.
  */
 
-import { desc, gte } from 'drizzle-orm';
 import { Effect } from 'effect';
-import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -23,17 +21,11 @@ export type WeeklyItemsFailureResult = FailureResult;
 export type WeeklyItemsResult = Result<KnowledgeItem[]>;
 
 export interface GetWeeklyItemsDeps {
-  db: typeof db;
-  knowledgeItems: typeof knowledgeItems;
-  gte: typeof gte;
-  desc: typeof desc;
+  coreClient: Pick<MobileCoreClient, 'listWeeklyKnowledgeItems'>;
 }
 
 const defaultDeps: GetWeeklyItemsDeps = {
-  db,
-  knowledgeItems,
-  gte,
-  desc,
+  coreClient: mobileCoreClient,
 };
 
 /**
@@ -43,16 +35,10 @@ const defaultDeps: GetWeeklyItemsDeps = {
 export function createGetWeeklyItems(deps: GetWeeklyItemsDeps = defaultDeps) {
   return async function getWeeklyItems(): Promise<WeeklyItemsResult> {
     const sevenDaysAgo = Date.now() - SEVEN_DAYS_MS;
-    const queryEffect = tryPromise(
-      () =>
-        deps.db
-          .select()
-          .from(deps.knowledgeItems)
-          .where(deps.gte(deps.knowledgeItems.createdAt, sevenDaysAgo))
-          .orderBy(deps.desc(deps.knowledgeItems.createdAt)),
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to retrieve weekly items', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.listWeeklyKnowledgeItems(sevenDaysAgo),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to retrieve weekly items', error),
+    });
 
     return runEffectResult(queryEffect.pipe(Effect.map((items) => items as KnowledgeItem[])));
   };

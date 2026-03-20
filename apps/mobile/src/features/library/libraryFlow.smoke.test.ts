@@ -9,7 +9,7 @@ import {
 } from './getAllKnowledgeItems';
 import { filterKnowledgeItems } from '@/src/features/search/filterKnowledgeItems';
 import { parseQueryToKeyword } from '@/src/features/search/parseQueryToKeyword';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import type { MetadataInput, MetadataOutput } from '@/src/features/ai/metadata';
 
 type InsertableItem = Omit<KnowledgeItem, 'id'> & { id: string };

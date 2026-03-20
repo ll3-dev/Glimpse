@@ -1,5 +1,5 @@
 import type { GenerateOptions, LoadModelOptions, StreamOptions } from '../llama-service';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 export type LocalLLMModelFamily = 'generic-instruct' | 'qwen-chatml';
 

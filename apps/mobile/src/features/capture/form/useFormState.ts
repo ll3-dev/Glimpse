@@ -4,7 +4,7 @@ import { buildSaveInputByChannel } from "./buildSaveInput";
 import { captureFormReducer, createInitialState } from "./reducer";
 import { parseShareIntent } from "./shareIntent";
 import type { CaptureFormActions, CaptureFormState } from "./types";
-import { type KnowledgeItemType } from "@/src/db/schema";
+import { type KnowledgeItemType } from '@glimpse/shared';
 
 export type {
   BuildSaveInputResult,

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { runForegroundLabeling } from '@/src/features/labeling';
 import { queryKeys } from '@/src/lib/query-keys';
 

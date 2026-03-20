@@ -1,5 +1,5 @@
 import { View, Pressable, Text } from 'react-native';
-import { KnowledgeItemType } from '@/src/db/schema';
+import type { KnowledgeItemType } from '@glimpse/shared';
 
 export const CHANNELS: { type: KnowledgeItemType; label: string }[] = [
   { type: 'note', label: '메모' },

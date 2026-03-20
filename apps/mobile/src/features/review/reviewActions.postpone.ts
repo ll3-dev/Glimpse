@@ -1,11 +1,10 @@
 import { Effect } from 'effect';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import {
   appError,
   isFailure,
   runEffectSuccess,
   type AppError,
-  tryPromise,
 } from '@/src/lib/effect-result';
 import { loadKnowledgeItemOrFail } from './reviewActions.shared';
 import type {
@@ -26,24 +25,20 @@ export function createPostponeReview(deps: ReviewActionsDeps) {
       const nextReviewAt = currentNextReview + intervalMs;
       const now = Date.now();
 
-      const result = (yield* tryPromise(
-        () =>
-          deps.db
-            .update(deps.knowledgeItems)
-            .set({
-              nextReviewAt,
-              updatedAt: now,
-            })
-            .where(deps.eq(deps.knowledgeItems.id, itemId))
-            .returning(),
-        (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error)
-      )) as KnowledgeItem[];
+      const result = (yield* Effect.tryPromise({
+        try: () =>
+          deps.coreClient.updateKnowledgeItem(itemId, {
+            nextReviewAt,
+            updatedAt: now,
+          }),
+        catch: (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error),
+      })) as KnowledgeItem;
 
       deps.logger.info('Review postponed', { itemId, nextReviewAt });
 
       return {
         success: true as const,
-        data: result[0] as KnowledgeItem,
+        data: result,
       };
     }).pipe(
       Effect.tapError((error) =>

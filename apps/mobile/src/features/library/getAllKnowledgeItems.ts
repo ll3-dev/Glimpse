@@ -5,16 +5,14 @@
  * Items are ordered by creation date, newest first.
  */
 
-import { desc } from 'drizzle-orm';
 import { Effect } from 'effect';
-import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
+import type { KnowledgeItem } from '@glimpse/shared';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
 
 /**
@@ -25,15 +23,11 @@ export type GetItemsFailureResult = FailureResult;
 export type GetItemsResult = Result<KnowledgeItem[]>;
 
 export interface GetAllKnowledgeItemsDeps {
-  db: typeof db;
-  knowledgeItems: typeof knowledgeItems;
-  desc: typeof desc;
+  coreClient: Pick<MobileCoreClient, 'listKnowledgeItems'>;
 }
 
 const defaultDeps: GetAllKnowledgeItemsDeps = {
-  db,
-  knowledgeItems,
-  desc,
+  coreClient: mobileCoreClient,
 };
 
 /**
@@ -58,15 +52,10 @@ const defaultDeps: GetAllKnowledgeItemsDeps = {
  */
 export function createGetAllKnowledgeItems(deps: GetAllKnowledgeItemsDeps = defaultDeps) {
   return async function getAllKnowledgeItems(): Promise<GetItemsResult> {
-    const queryEffect = tryPromise(
-      () =>
-        deps.db
-          .select()
-          .from(deps.knowledgeItems)
-          .orderBy(deps.desc(deps.knowledgeItems.createdAt)),
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to retrieve knowledge items', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.listKnowledgeItems(),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to retrieve knowledge items', error),
+    });
 
     return runEffectResult(queryEffect.pipe(Effect.map((items) => items as KnowledgeItem[])));
   };

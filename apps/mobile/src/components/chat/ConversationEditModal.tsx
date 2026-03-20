@@ -13,7 +13,7 @@ import {
   Input,
   Text,
 } from '@glimpse/ui/primitives';
-import type { Conversation } from '@/src/db';
+import type { Conversation } from '@glimpse/shared';
 import { CHAT_CONVERSATION_ICONS } from './chatConversationIcons';
 import { cn } from '@/src/lib/utils';
 import { Trash2, X } from 'lucide-react-native';

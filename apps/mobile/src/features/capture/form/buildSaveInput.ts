@@ -1,4 +1,4 @@
-import { type KnowledgeItemType } from '@/src/db/schema';
+import { type KnowledgeItemType } from '@glimpse/shared';
 import type { BuildSaveInputResult, CaptureFormState } from './types';
 
 export function buildSaveInputByChannel(

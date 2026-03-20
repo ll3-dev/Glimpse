@@ -6,7 +6,7 @@
 
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MessageCircle } from 'lucide-react-native';
-import type { Conversation } from '@/src/db';
+import type { Conversation } from '@glimpse/shared';
 
 interface ConversationListProps {
   conversation: Conversation;

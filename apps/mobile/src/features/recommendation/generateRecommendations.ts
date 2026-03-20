@@ -1,4 +1,4 @@
-import { db, recommendations } from "@/src/db";
+import { mobileCoreClient } from '@/src/features/core';
 import { generateId } from "@/src/lib/id";
 import { getWeeklyItems } from "./getWeeklyItems";
 import { createGenerateRecommendations as createGenerateRecommendationsUsecase } from "./generateRecommendations.usecase";
@@ -18,14 +18,12 @@ export type {
 } from "./generateRecommendations.types";
 
 const defaultGenerateDeps: GenerateRecommendationsDeps = {
-  db,
-  recommendations,
+  coreClient: mobileCoreClient,
   getWeeklyItems,
 };
 
 const defaultSaveDeps: SaveRecommendationsDeps = {
-  db,
-  recommendations,
+  coreClient: mobileCoreClient,
   nanoid: generateId,
 };
 

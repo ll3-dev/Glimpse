@@ -4,7 +4,7 @@ import type {
   GenerateRecommendationsDeps,
   GeneratedRecommendation,
 } from './generateRecommendations.types';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockKnowledgeItem = (id: string, tags: string[] | null): KnowledgeItem => ({
   id,

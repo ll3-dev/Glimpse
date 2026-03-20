@@ -6,7 +6,7 @@
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { getConversationMessages } from '@/src/features/chat';
-import { type Message } from '@/src/db';
+import type { Message } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 import { effectQueryFn } from '@/src/lib/effect-query';
 

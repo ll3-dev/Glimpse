@@ -10,7 +10,7 @@
  */
 
 import { chosungIncludes, hangulIncludes } from '@toss/hangul';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 /**
  * Filters knowledge items by search query.

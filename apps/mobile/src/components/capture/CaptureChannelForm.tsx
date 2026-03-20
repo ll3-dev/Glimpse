@@ -1,5 +1,5 @@
 import { Activity } from 'react';
-import { type KnowledgeItemType } from '@/src/db/schema';
+import { type KnowledgeItemType } from '@glimpse/shared';
 import { type CaptureFormActions, type CaptureFormState } from '@/src/features/capture';
 import { CaptureForm } from './CaptureForm';
 import { HighlightForm } from './HighlightForm';

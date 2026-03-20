@@ -4,16 +4,15 @@
  * Updates editable conversation metadata.
  */
 
-import { eq } from 'drizzle-orm';
-import { db, conversations, type Conversation } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import { Effect } from 'effect';
+import type { Conversation } from '@glimpse/shared';
 
 export type UpdateConversationDetailsSuccessResult = { success: true; data: Conversation };
 export type UpdateConversationDetailsFailureResult = FailureResult;
@@ -26,15 +25,11 @@ export interface UpdateConversationDetailsInput {
 }
 
 export interface UpdateConversationDetailsDeps {
-  db: typeof db;
-  conversations: typeof conversations;
-  eq: typeof eq;
+  coreClient: Pick<MobileCoreClient, 'updateConversation'>;
 }
 
 const defaultDeps: UpdateConversationDetailsDeps = {
-  db,
-  conversations,
-  eq,
+  coreClient: mobileCoreClient,
 };
 
 export function createUpdateConversationDetails(
@@ -46,23 +41,16 @@ export function createUpdateConversationDetails(
     const now = Date.now();
     const nextTitle = input.title.trim() || null;
 
-    const queryEffect = tryPromise(
-      async () => {
-        await deps.db
-          .update(deps.conversations)
-          .set({ title: nextTitle, icon: input.icon, updatedAt: now })
-          .where(deps.eq(deps.conversations.id, input.conversationId));
-
-        return {
-          id: input.conversationId,
+    const queryEffect = Effect.tryPromise({
+      try: () =>
+        deps.coreClient.updateConversation(input.conversationId, {
           title: nextTitle,
           icon: input.icon,
           updatedAt: now,
-        } as Conversation;
-      },
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to update conversation details', error)
-    );
+        }),
+      catch: (error) =>
+        appError('DATABASE_ERROR', 'Failed to update conversation details', error),
+    });
 
     return runEffectResult(queryEffect);
   };

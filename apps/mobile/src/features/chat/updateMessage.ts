@@ -4,16 +4,15 @@
  * Updates the content of an existing message.
  */
 
-import { eq } from 'drizzle-orm';
-import { db, messages, type Message } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import { Effect } from 'effect';
+import type { Message } from '@glimpse/shared';
 
 export type UpdateMessageSuccessResult = { success: true; data: Message };
 export type UpdateMessageFailureResult = FailureResult;
@@ -26,15 +25,11 @@ export interface UpdateMessageInput {
 }
 
 export interface UpdateMessageDeps {
-  db: typeof db;
-  messages: typeof messages;
-  eq: typeof eq;
+  coreClient: Pick<MobileCoreClient, 'updateMessage'>;
 }
 
 const defaultDeps: UpdateMessageDeps = {
-  db,
-  messages,
-  eq,
+  coreClient: mobileCoreClient,
 };
 
 /**
@@ -44,27 +39,14 @@ export function createUpdateMessage(deps: UpdateMessageDeps = defaultDeps) {
   return async function updateMessage(input: UpdateMessageInput): Promise<UpdateMessageResult> {
     const now = Date.now();
 
-    const queryEffect = tryPromise(
-      async () => {
-        await deps.db
-          .update(deps.messages)
-          .set({
-            content: input.content,
-            updatedAt: now,
-          })
-          .where(deps.eq(deps.messages.id, input.messageId));
-
-        // Return the updated message
-        const updated = await deps.db
-          .select()
-          .from(deps.messages)
-          .where(deps.eq(deps.messages.id, input.messageId));
-
-        return updated[0] as Message;
-      },
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to update message', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () =>
+        deps.coreClient.updateMessage(input.messageId, {
+          content: input.content,
+          updatedAt: now,
+        }),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to update message', error),
+    });
 
     return runEffectResult(queryEffect);
   };

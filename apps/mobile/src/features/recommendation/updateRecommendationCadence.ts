@@ -5,7 +5,7 @@
  * Higher engagement = more frequent recommendations.
  */
 
-import type { FeedbackActionType } from '@/src/db';
+import type { FeedbackActionType } from '@glimpse/shared';
 import { Effect } from 'effect';
 import { getRecentFeedbackEvents } from './logRecommendationFeedback';
 import { logger } from '@/src/utils/logger';

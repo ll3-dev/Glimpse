@@ -1,11 +1,10 @@
 import { Effect } from 'effect';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import {
   appError,
   isFailure,
   runEffectSuccess,
   type AppError,
-  tryPromise,
 } from '@/src/lib/effect-result';
 import { loadKnowledgeItemOrFail } from './reviewActions.shared';
 import type {
@@ -29,27 +28,23 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps) {
         feedbackType
       );
 
-      const result = (yield* tryPromise(
-        () =>
-          deps.db
-            .update(deps.knowledgeItems)
-            .set({
-              lastReviewedAt: now,
-              nextReviewAt,
-              provisionalLabels: null,
-              labelStatus: 'pending',
-              labelSource: 'none',
-              labelVersion: null,
-              labelScore: null,
-              labelRequestedAt: now,
-              labelCompletedAt: null,
-              labelError: null,
-              updatedAt: now,
-            })
-            .where(deps.eq(deps.knowledgeItems.id, itemId))
-            .returning(),
-        (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error)
-      )) as KnowledgeItem[];
+      const result = (yield* Effect.tryPromise({
+        try: () =>
+          deps.coreClient.updateKnowledgeItem(itemId, {
+            lastReviewedAt: now,
+            nextReviewAt,
+            provisionalLabels: null,
+            labelStatus: 'pending',
+            labelSource: 'none',
+            labelVersion: null,
+            labelScore: null,
+            labelRequestedAt: now,
+            labelCompletedAt: null,
+            labelError: null,
+            updatedAt: now,
+          }),
+        catch: (error): AppError => appError('DATABASE_ERROR', 'Failed to update item', error),
+      })) as KnowledgeItem;
 
       deps.logger.info('Item marked as reviewed', {
         itemId,
@@ -59,7 +54,7 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps) {
 
       return {
         success: true as const,
-        data: result[0] as KnowledgeItem,
+        data: result,
       };
     }).pipe(
       Effect.tapError((error) =>

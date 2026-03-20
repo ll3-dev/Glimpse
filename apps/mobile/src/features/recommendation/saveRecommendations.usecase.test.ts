@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createSaveRecommendations } from './saveRecommendations.usecase';
 import type { SaveRecommendationsDeps, GeneratedRecommendation } from './generateRecommendations.types';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockKnowledgeItem = (id: string): KnowledgeItem => ({
   id,

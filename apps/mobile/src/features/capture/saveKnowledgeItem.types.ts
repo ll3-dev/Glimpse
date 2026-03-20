@@ -1,4 +1,5 @@
-import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
+import type { MobileCoreClient } from '@/src/features/core';
 import { initializeReviewSchedule } from '../review';
 import { logger } from '@/src/utils/logger';
 import type { FailureResult, Result } from '@/src/lib/effect-result';
@@ -58,8 +59,7 @@ export type GenerateMetadata = (
 ) => Promise<Result<MetadataOutput>>;
 
 export interface SaveKnowledgeItemDeps {
-  db: typeof db;
-  knowledgeItems: typeof knowledgeItems;
+  coreClient: Pick<MobileCoreClient, 'saveKnowledgeItem'>;
   generateMetadata: GenerateMetadata;
   initializeReviewSchedule: typeof initializeReviewSchedule;
   logger: Pick<typeof logger, 'error'>;

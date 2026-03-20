@@ -5,16 +5,15 @@
  * Items with nextReviewAt <= now are considered due.
  */
 
-import { db, knowledgeItems, type KnowledgeItem } from '@/src/db';
-import { lte, asc, and, isNotNull } from 'drizzle-orm';
 import { Effect } from 'effect';
 import { logger } from '@/src/utils/logger';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
+import type { KnowledgeItem } from '@glimpse/shared';
 import {
   appError,
   isFailure,
   type AppError,
   runEffectSuccess,
-  tryPromise,
 } from '@/src/lib/effect-result';
 
 /**
@@ -44,22 +43,12 @@ export interface GetDueItemsFailureResult {
 export type GetDueItemsResult = GetDueItemsSuccessResult | GetDueItemsFailureResult;
 
 export interface GetDueItemsDeps {
-  db: typeof db;
-  knowledgeItems: typeof knowledgeItems;
-  lte: typeof lte;
-  asc: typeof asc;
-  and: typeof and;
-  isNotNull: typeof isNotNull;
+  coreClient: Pick<MobileCoreClient, 'getDueKnowledgeItems'>;
   logger: Pick<typeof logger, 'error'>;
 }
 
 const defaultDeps: GetDueItemsDeps = {
-  db,
-  knowledgeItems,
-  lte,
-  asc,
-  and,
-  isNotNull,
+  coreClient: mobileCoreClient,
   logger,
 };
 
@@ -85,25 +74,10 @@ export function createGetDueItems(deps: GetDueItemsDeps = defaultDeps) {
     const { limit, now = Date.now() } = options;
 
     const program = Effect.gen(function* () {
-      let query = deps.db
-        .select()
-        .from(deps.knowledgeItems)
-        .where(
-          deps.and(
-            deps.isNotNull(deps.knowledgeItems.nextReviewAt),
-            deps.lte(deps.knowledgeItems.nextReviewAt, now)
-          )
-        )
-        .orderBy(deps.asc(deps.knowledgeItems.nextReviewAt));
-
-      if (limit !== undefined && limit > 0) {
-        query = query.limit(limit) as typeof query;
-      }
-
-      const items = (yield* tryPromise(
-        () => query,
-        (error): AppError => appError('DATABASE_ERROR', 'Failed to get due items', error)
-      )) as KnowledgeItem[];
+      const items = (yield* Effect.tryPromise({
+        try: () => deps.coreClient.getDueKnowledgeItems({ now, limit }),
+        catch: (error): AppError => appError('DATABASE_ERROR', 'Failed to get due items', error),
+      })) as KnowledgeItem[];
 
       return {
         success: true as const,

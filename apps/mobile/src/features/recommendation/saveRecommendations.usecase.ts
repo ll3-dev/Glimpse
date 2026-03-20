@@ -1,5 +1,5 @@
 import { appError, isFailure, runEffectResult, type AppError, tryPromise } from '@/src/lib/effect-result';
-import type { NewRecommendation } from '@/src/db';
+import type { NewRecommendation } from '@glimpse/shared';
 import type { GeneratedRecommendation, SaveRecommendationsDeps } from './generateRecommendations.types';
 import { isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 
@@ -25,7 +25,7 @@ export function createSaveRecommendations(deps: SaveRecommendationsDeps) {
 
       const insertResult = await runEffectResult(
         tryPromise(
-          () => deps.db.insert(deps.recommendations).values(newRecommendations),
+          () => deps.coreClient.saveRecommendations(newRecommendations),
           (error): AppError => appError('DATABASE_ERROR', 'Failed to save recommendations', error)
         )
       );

@@ -6,7 +6,7 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { saveKnowledgeItem, type KnowledgeItemInput } from '@/src/features/capture';
-import { type KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 
 /**

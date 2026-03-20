@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { resolveLibrarySearch } from './resolveLibrarySearch';
 
 const baseItem: Omit<KnowledgeItem, 'id' | 'type'> = {

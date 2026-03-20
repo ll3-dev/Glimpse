@@ -1,7 +1,7 @@
 import { createLlamaService, type GenerateOptions, type GenerateResult, type LlamaService, type StreamOptions } from '../llama-service';
 import { buildSummaryPrompt, buildTagsPrompt } from '../providers/metadata-text';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { resolveLocalLLMPreset } from './presets';
 import type { LocalLLMMessage } from './types';
 

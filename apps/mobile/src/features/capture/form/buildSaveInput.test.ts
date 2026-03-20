@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { buildSaveInputByChannel } from './buildSaveInput';
 import type { CaptureFormState } from './types';
-import type { KnowledgeItemType } from '@/src/db/schema';
+import type { KnowledgeItemType } from '@glimpse/shared';
 
 const createEmptyFormState = (): CaptureFormState => ({
   title: '',

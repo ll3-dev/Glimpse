@@ -1,7 +1,7 @@
 import type { MutableRefObject } from 'react';
 import type { LocalLLMRuntime } from '@/src/features/ai/local-llm';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 
 export interface ChatMessageWriter {
   (input: { conversationId: string; role: 'user' | 'assistant'; content: string }): Promise<unknown>;

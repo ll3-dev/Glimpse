@@ -1,4 +1,4 @@
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { filterKnowledgeItems, parseQueryToKeyword } from '@/src/features/search';
 import { getLibraryEmptyState, type LibraryEmptyState } from './getLibraryEmptyState';
 
@@ -23,4 +23,3 @@ export function resolveLibrarySearch(
     emptyState,
   };
 }
-

@@ -2,7 +2,7 @@ import type {
   KnowledgeItem,
   KnowledgeItemLabelSource,
   KnowledgeItemLabelStatus,
-} from '@/src/db';
+} from '@glimpse/shared';
 import type { AppError } from '@/src/lib/effect-result';
 
 export const LABEL_TAXONOMY = [

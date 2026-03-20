@@ -28,7 +28,7 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps)
       }
 
       const existingRecommendations = (yield* tryPromise(
-        () => deps.db.select().from(deps.recommendations),
+        () => deps.coreClient.listRecommendations(),
         (error): AppError =>
           appError('DATABASE_ERROR', 'Failed to generate recommendations', error)
       )) as { itemA_id: string; itemB_id: string }[];

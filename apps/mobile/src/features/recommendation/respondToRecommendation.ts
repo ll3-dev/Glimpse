@@ -6,22 +6,18 @@
  */
 
 import {
-  db,
-  feedbackEvents,
-  recommendations,
-  type NewFeedbackEvent,
-  type RecommendationStatus,
-} from '@/src/db';
+  mobileCoreClient,
+  type MobileCoreClient,
+} from '@/src/features/core';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
-import { eq } from 'drizzle-orm';
 import { Effect } from 'effect';
 import {
   appError,
-  isFailure,
   type AppError,
+  isFailure,
   runEffectSuccess,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import type { NewFeedbackEvent, RecommendationStatus } from '@glimpse/shared';
 
 export interface RespondResult {
   success: true;
@@ -36,18 +32,12 @@ export interface RespondFailureResult {
 export type RespondToRecommendationResult = RespondResult | RespondFailureResult;
 
 export interface RespondToRecommendationDeps {
-  db: typeof db;
-  recommendations: typeof recommendations;
-  feedbackEvents: typeof feedbackEvents;
-  eq: typeof eq;
+  coreClient: Pick<MobileCoreClient, 'respondToRecommendation'>;
   nanoid: () => string;
 }
 
 const defaultDeps: RespondToRecommendationDeps = {
-  db,
-  recommendations,
-  feedbackEvents,
-  eq,
+  coreClient: mobileCoreClient,
   nanoid: generateId,
 };
 
@@ -80,20 +70,16 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps 
       };
 
       const batchResult = await runEffectSuccess(
-        tryPromise(
-          () => deps.db.batch([
-            deps.db
-              .update(deps.recommendations)
-              .set({
-                status: newStatus,
-                respondedAt: now,
-              })
-              .where(deps.eq(deps.recommendations.id, recommendationId)),
-            deps.db.insert(deps.feedbackEvents).values(newFeedbackEvent),
-          ]),
-          (error): AppError =>
-            appError('DATABASE_ERROR', 'Failed to persist recommendation response', error)
-        ).pipe(
+        Effect.tryPromise({
+          try: () =>
+            deps.coreClient.respondToRecommendation(
+              recommendationId,
+              newStatus,
+              newFeedbackEvent
+            ),
+          catch: (error) =>
+            appError('DATABASE_ERROR', 'Failed to persist recommendation response', error),
+        }).pipe(
           Effect.map(() => ({
             success: true as const,
             status: newStatus,

@@ -1,55 +1,70 @@
-import type {
-  CalculateNextReviewInput,
-  CalculateNextReviewOutput,
-  CalculateTagOverlapInput,
-  InitializeReviewScheduleInput,
-  InitializeReviewScheduleOutput,
-} from '@glimpse/shared';
+import { crabyCoreClient } from "./craby-client";
+import {
+  mobileCoreClient as sqliteFallbackCoreClient,
+  type MobileCoreClient,
+} from "./sqlite-client";
 
-const DEFAULT_INITIAL_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const MIN_INTERVAL_MS = DEFAULT_INITIAL_INTERVAL_MS;
-const MAX_INTERVAL_MS = 30 * DEFAULT_INITIAL_INTERVAL_MS;
+export type { MobileCoreClient } from "./sqlite-client";
 
-export interface MobileCoreClient {
-  calculateTagOverlap(input: CalculateTagOverlapInput): number;
-  calculateNextReview(input: CalculateNextReviewInput): CalculateNextReviewOutput;
-  initializeReviewSchedule(
-    input: InitializeReviewScheduleInput
-  ): InitializeReviewScheduleOutput;
-}
-
-// This client mirrors the future Craby bridge API so mobile orchestration can switch
-// from JS fallback to Rust without changing feature call sites.
 export const mobileCoreClient: MobileCoreClient = {
-  calculateTagOverlap({ left, right }) {
-    const leftTags = new Set(left.tags ?? []);
-    return (right.tags ?? []).filter((tag) => leftTags.has(tag)).length;
+  calculateTagOverlap(input) {
+    if (crabyCoreClient.isAvailable()) {
+      try {
+        return crabyCoreClient.calculateTagOverlap(input);
+      } catch {
+        return sqliteFallbackCoreClient.calculateTagOverlap(input);
+      }
+    }
+
+    return sqliteFallbackCoreClient.calculateTagOverlap(input);
   },
 
-  calculateNextReview({ lastReviewedAt, nextReviewAt, feedbackType, now }) {
-    const currentInterval =
-      lastReviewedAt !== null && nextReviewAt !== null
-        ? nextReviewAt - lastReviewedAt
-        : DEFAULT_INITIAL_INTERVAL_MS;
-    const nextInterval =
-      feedbackType === 'remembered' ? currentInterval * 2 : currentInterval;
-    const intervalMs = Math.max(
-      MIN_INTERVAL_MS,
-      Math.min(MAX_INTERVAL_MS, nextInterval)
-    );
+  calculateNextReview(input) {
+    if (crabyCoreClient.isAvailable()) {
+      try {
+        return crabyCoreClient.calculateNextReview(input);
+      } catch {
+        return sqliteFallbackCoreClient.calculateNextReview(input);
+      }
+    }
 
-    return {
-      intervalMs,
-      nextReviewAt: now + intervalMs,
-    };
+    return sqliteFallbackCoreClient.calculateNextReview(input);
   },
 
-  initializeReviewSchedule({ createdAt, intervalMs }) {
-    return {
-      nextReviewAt: createdAt + (intervalMs ?? DEFAULT_INITIAL_INTERVAL_MS),
-      stability: null,
-      difficulty: null,
-      lastReviewedAt: null,
-    };
+  initializeReviewSchedule(input) {
+    if (crabyCoreClient.isAvailable()) {
+      try {
+        return crabyCoreClient.initializeReviewSchedule(input);
+      } catch {
+        return sqliteFallbackCoreClient.initializeReviewSchedule(input);
+      }
+    }
+
+    return sqliteFallbackCoreClient.initializeReviewSchedule(input);
   },
+
+  saveKnowledgeItem: sqliteFallbackCoreClient.saveKnowledgeItem,
+  listKnowledgeItems: sqliteFallbackCoreClient.listKnowledgeItems,
+  listKnowledgeItemsByIds: sqliteFallbackCoreClient.listKnowledgeItemsByIds,
+  listWeeklyKnowledgeItems: sqliteFallbackCoreClient.listWeeklyKnowledgeItems,
+  listPendingKnowledgeItemsForLabeling:
+    sqliteFallbackCoreClient.listPendingKnowledgeItemsForLabeling,
+  getKnowledgeItemById: sqliteFallbackCoreClient.getKnowledgeItemById,
+  getDueKnowledgeItems: sqliteFallbackCoreClient.getDueKnowledgeItems,
+  updateKnowledgeItem: sqliteFallbackCoreClient.updateKnowledgeItem,
+  createConversation: sqliteFallbackCoreClient.createConversation,
+  listConversations: sqliteFallbackCoreClient.listConversations,
+  updateConversation: sqliteFallbackCoreClient.updateConversation,
+  deleteConversation: sqliteFallbackCoreClient.deleteConversation,
+  listConversationMessages: sqliteFallbackCoreClient.listConversationMessages,
+  addMessage: sqliteFallbackCoreClient.addMessage,
+  updateMessage: sqliteFallbackCoreClient.updateMessage,
+  deleteMessage: sqliteFallbackCoreClient.deleteMessage,
+  saveRecommendations: sqliteFallbackCoreClient.saveRecommendations,
+  listRecommendations: sqliteFallbackCoreClient.listRecommendations,
+  listPendingRecommendations:
+    sqliteFallbackCoreClient.listPendingRecommendations,
+  listRecentFeedbackEvents: sqliteFallbackCoreClient.listRecentFeedbackEvents,
+  logRecommendationFeedback: sqliteFallbackCoreClient.logRecommendationFeedback,
+  respondToRecommendation: sqliteFallbackCoreClient.respondToRecommendation,
 };

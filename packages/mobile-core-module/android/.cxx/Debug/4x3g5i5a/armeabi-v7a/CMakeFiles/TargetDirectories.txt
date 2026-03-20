@@ -1,0 +1,3 @@
+/Users/loopy/dev/ll3/Glimpse/packages/mobile-core-module/android/.cxx/Debug/4x3g5i5a/armeabi-v7a/CMakeFiles/cxx-glimpsecore.dir
+/Users/loopy/dev/ll3/Glimpse/packages/mobile-core-module/android/.cxx/Debug/4x3g5i5a/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/loopy/dev/ll3/Glimpse/packages/mobile-core-module/android/.cxx/Debug/4x3g5i5a/armeabi-v7a/CMakeFiles/rebuild_cache.dir

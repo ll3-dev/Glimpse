@@ -2,9 +2,10 @@ import {
   appError,
   isFailure,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
-import { db, knowledgeItems, type KnowledgeItem, type NewKnowledgeItem } from '@/src/db';
+import { Effect } from 'effect';
+import { mobileCoreClient } from '@/src/features/core';
+import type { KnowledgeItem, NewKnowledgeItem } from '@glimpse/shared';
 import { initializeReviewSchedule } from '../review';
 import { logger } from '@/src/utils/logger';
 import { isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
@@ -36,8 +37,7 @@ export type {
 } from './saveKnowledgeItem.types';
 
 const defaultDeps: SaveKnowledgeItemDeps = {
-  db,
-  knowledgeItems,
+  coreClient: mobileCoreClient,
   generateMetadata: (input) => metadataRouter.generate(input),
   initializeReviewSchedule,
   logger,
@@ -86,14 +86,14 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps = defaultDep
       };
 
       const insertResult = await runEffectResult(
-        tryPromise(
-          () => deps.db.insert(deps.knowledgeItems).values(newKnowledgeItem),
-          (error) => appError('DATABASE_ERROR', 'Failed to save knowledge item', error)
-        )
+        Effect.tryPromise({
+          try: () => deps.coreClient.saveKnowledgeItem(newKnowledgeItem as KnowledgeItem),
+          catch: (error) => appError('DATABASE_ERROR', 'Failed to save knowledge item', error),
+        })
       );
 
       if (insertResult.success) {
-        return { success: true, data: newKnowledgeItem as KnowledgeItem };
+        return { success: true, data: insertResult.data };
       }
       if (!isFailure(insertResult)) {
         continue;

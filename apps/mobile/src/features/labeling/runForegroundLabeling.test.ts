@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import type { KnowledgeItem } from '@/src/db';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { createRunForegroundLabeling } from './runForegroundLabeling';
 
 function createItem(overrides?: Partial<KnowledgeItem>): KnowledgeItem {

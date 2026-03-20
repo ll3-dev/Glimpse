@@ -5,34 +5,26 @@
  * Ordered by last updated time, most recent first.
  */
 
-import { desc, isNull } from 'drizzle-orm';
 import { Effect } from 'effect';
-import { db, conversations, type Conversation } from '@/src/db';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
   appError,
-  type AppError,
   type FailureResult,
   type Result,
   runEffectResult,
-  tryPromise,
 } from '@/src/lib/effect-result';
+import type { Conversation } from '@glimpse/shared';
 
 export type GetConversationsSuccessResult = { success: true; data: Conversation[] };
 export type GetConversationsFailureResult = FailureResult;
 export type GetConversationsResult = Result<Conversation[]>;
 
 export interface GetAllConversationsDeps {
-  db: typeof db;
-  conversations: typeof conversations;
-  desc: typeof desc;
-  isNull: typeof isNull;
+  coreClient: Pick<MobileCoreClient, 'listConversations'>;
 }
 
 const defaultDeps: GetAllConversationsDeps = {
-  db,
-  conversations,
-  desc,
-  isNull,
+  coreClient: mobileCoreClient,
 };
 
 /**
@@ -40,16 +32,10 @@ const defaultDeps: GetAllConversationsDeps = {
  */
 export function createGetAllConversations(deps: GetAllConversationsDeps = defaultDeps) {
   return async function getAllConversations(): Promise<GetConversationsResult> {
-    const queryEffect = tryPromise(
-      () =>
-        deps.db
-          .select()
-          .from(deps.conversations)
-          .where(deps.isNull(deps.conversations.deletedAt))
-          .orderBy(deps.desc(deps.conversations.updatedAt)),
-      (error): AppError =>
-        appError('DATABASE_ERROR', 'Failed to retrieve conversations', error)
-    );
+    const queryEffect = Effect.tryPromise({
+      try: () => deps.coreClient.listConversations(),
+      catch: (error) => appError('DATABASE_ERROR', 'Failed to retrieve conversations', error),
+    });
 
     return runEffectResult(queryEffect.pipe(Effect.map((items) => items as Conversation[])));
   };
