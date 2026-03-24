@@ -1,125 +1,89 @@
 import type {
-  Conversation,
   ConversationPatch,
-  FeedbackEvent,
   GetDueKnowledgeItemsInput,
-  KnowledgeItem,
   KnowledgeItemPatch,
-  Message,
   MessagePatch,
-  NewConversation,
-  NewFeedbackEvent,
-  NewKnowledgeItem,
-  NewMessage,
-  NewRecommendation,
-  Recommendation,
   RecommendationStatus,
 } from '@glimpse/shared';
 import { nativeCoreClient } from './native-core-client';
 import type { MobileCoreClient } from './types';
 
-function parseJson<T>(value: string): T {
-  return JSON.parse(value) as T;
-}
-
-function stringifyJson(value: unknown): string {
-  return JSON.stringify(value);
-}
-
 export const mobileCoreClient: MobileCoreClient = {
   calculateTagOverlap: (input) => nativeCoreClient.calculateTagOverlap(input),
   calculateNextReview: (input) => nativeCoreClient.calculateNextReview(input),
   initializeReviewSchedule: (input) => nativeCoreClient.initializeReviewSchedule(input),
-  async saveKnowledgeItem(item: NewKnowledgeItem): Promise<KnowledgeItem> {
-    return parseJson(nativeCoreClient.saveKnowledgeItemJson(stringifyJson(item)));
+  async saveKnowledgeItem(item) {
+    return nativeCoreClient.saveKnowledgeItem(item);
   },
-  async listKnowledgeItems(): Promise<KnowledgeItem[]> {
-    return parseJson(nativeCoreClient.listKnowledgeItemsJson());
+  async listKnowledgeItems() {
+    return nativeCoreClient.listKnowledgeItems();
   },
-  async listKnowledgeItemsByIds(itemIds: string[]): Promise<KnowledgeItem[]> {
-    return parseJson(nativeCoreClient.listKnowledgeItemsByIdsJson(stringifyJson(itemIds)));
+  async listKnowledgeItemsByIds(itemIds) {
+    return nativeCoreClient.listKnowledgeItemsByIds(itemIds);
   },
-  async listWeeklyKnowledgeItems(since: number): Promise<KnowledgeItem[]> {
-    return parseJson(nativeCoreClient.listWeeklyKnowledgeItemsJson(since));
+  async listWeeklyKnowledgeItems(since) {
+    return nativeCoreClient.listWeeklyKnowledgeItems(since);
   },
-  async listPendingKnowledgeItemsForLabeling(limit: number): Promise<KnowledgeItem[]> {
-    return parseJson(nativeCoreClient.listPendingKnowledgeItemsForLabelingJson(limit));
+  async listPendingKnowledgeItemsForLabeling(limit) {
+    return nativeCoreClient.listPendingKnowledgeItemsForLabeling(limit);
   },
-  async getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null> {
-    return parseJson(nativeCoreClient.getKnowledgeItemByIdJson(itemId));
+  async getKnowledgeItemById(itemId) {
+    return nativeCoreClient.getKnowledgeItemById(itemId);
   },
-  async getDueKnowledgeItems(input: GetDueKnowledgeItemsInput): Promise<KnowledgeItem[]> {
-    return parseJson(
-      nativeCoreClient.getDueKnowledgeItemsJson(input.now, input.limit ?? null)
-    );
+  async getDueKnowledgeItems(input: GetDueKnowledgeItemsInput) {
+    return nativeCoreClient.getDueKnowledgeItems(input.now, input.limit ?? null);
   },
-  async updateKnowledgeItem(
-    itemId: string,
-    patch: KnowledgeItemPatch
-  ): Promise<KnowledgeItem> {
-    return parseJson(
-      nativeCoreClient.updateKnowledgeItemJson(itemId, stringifyJson(patch))
-    );
+  async updateKnowledgeItem(itemId: string, patch: KnowledgeItemPatch) {
+    return nativeCoreClient.updateKnowledgeItem(itemId, patch);
   },
-  async createConversation(conversation: NewConversation): Promise<Conversation> {
-    return parseJson(
-      nativeCoreClient.createConversationJson(stringifyJson(conversation))
-    );
+  async createConversation(conversation) {
+    return nativeCoreClient.createConversation(conversation);
   },
-  async listConversations(): Promise<Conversation[]> {
-    return parseJson(nativeCoreClient.listConversationsJson());
+  async listConversations() {
+    return nativeCoreClient.listConversations();
   },
-  async updateConversation(
-    conversationId: string,
-    patch: ConversationPatch
-  ): Promise<Conversation> {
-    return parseJson(
-      nativeCoreClient.updateConversationJson(conversationId, stringifyJson(patch))
-    );
+  async updateConversation(conversationId: string, patch: ConversationPatch) {
+    return nativeCoreClient.updateConversation(conversationId, patch);
   },
   async deleteConversation(conversationId: string, deletedAt: number): Promise<void> {
     nativeCoreClient.deleteConversation(conversationId, deletedAt);
   },
-  async listConversationMessages(conversationId: string): Promise<Message[]> {
-    return parseJson(nativeCoreClient.listConversationMessagesJson(conversationId));
+  async listConversationMessages(conversationId) {
+    return nativeCoreClient.listConversationMessages(conversationId);
   },
-  async addMessage(message: NewMessage): Promise<Message> {
-    return parseJson(nativeCoreClient.addMessageJson(stringifyJson(message)));
+  async addMessage(message) {
+    return nativeCoreClient.addMessage(message);
   },
-  async updateMessage(messageId: string, patch: MessagePatch): Promise<Message> {
-    return parseJson(
-      nativeCoreClient.updateMessageJson(messageId, stringifyJson(patch))
-    );
+  async updateMessage(messageId: string, patch: MessagePatch) {
+    return nativeCoreClient.updateMessage(messageId, patch);
   },
   async deleteMessage(messageId: string, deletedAt: number): Promise<void> {
     nativeCoreClient.deleteMessage(messageId, deletedAt);
   },
-  async saveRecommendations(recommendations: NewRecommendation[]): Promise<void> {
-    nativeCoreClient.saveRecommendationsJson(stringifyJson(recommendations));
+  async saveRecommendations(recommendations) {
+    nativeCoreClient.saveRecommendations(recommendations);
   },
-  async listRecommendations(): Promise<Recommendation[]> {
-    return parseJson(nativeCoreClient.listRecommendationsJson());
+  async listRecommendations() {
+    return nativeCoreClient.listRecommendations();
   },
-  async listPendingRecommendations(): Promise<Recommendation[]> {
-    return parseJson(nativeCoreClient.listPendingRecommendationsJson());
+  async listPendingRecommendations() {
+    return nativeCoreClient.listPendingRecommendations();
   },
-  async listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]> {
-    return parseJson(nativeCoreClient.listRecentFeedbackEventsJson(limit));
+  async listRecentFeedbackEvents(limit) {
+    return nativeCoreClient.listRecentFeedbackEvents(limit);
   },
-  async logRecommendationFeedback(event: NewFeedbackEvent): Promise<FeedbackEvent> {
-    return parseJson(
-      nativeCoreClient.logRecommendationFeedbackJson(stringifyJson(event))
-    );
+  async logRecommendationFeedback(event) {
+    return nativeCoreClient.logRecommendationFeedback(event);
   },
   async respondToRecommendation(
     recommendationId: string,
     status: RecommendationStatus,
-    event: NewFeedbackEvent
+    event
   ): Promise<void> {
-    nativeCoreClient.respondToRecommendationJson(
+    nativeCoreClient.respondToRecommendation(
       recommendationId,
       status,
-      stringifyJson(event)
+      event
     );
   },
 };

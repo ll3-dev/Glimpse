@@ -50,6 +50,12 @@ export {
   getInferenceProvider,
 } from './appleIntelligenceToggle';
 
+export {
+  enableExclusiveAppleIntelligence,
+  enableExclusiveLocalLLM,
+  enableExclusiveBYOK,
+} from './inferenceMode.commands';
+
 // Local LLM - Types (re-exported from store)
 export { type LocalLLMConfig, type LocalModel } from './local-llm.selectors';
 

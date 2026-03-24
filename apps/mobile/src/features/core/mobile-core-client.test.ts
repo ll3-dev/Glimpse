@@ -10,29 +10,29 @@ const bridge = {
     difficulty: null,
     lastReviewedAt: null,
   })),
-  saveKnowledgeItemJson: mock((_payloadJson: string) => ''),
-  listKnowledgeItemsJson: mock(() => '[]'),
-  listKnowledgeItemsByIdsJson: mock((_itemIdsJson: string) => '[]'),
-  listWeeklyKnowledgeItemsJson: mock((_since: number) => '[]'),
-  listPendingKnowledgeItemsForLabelingJson: mock((_limit: number) => '[]'),
-  getKnowledgeItemByIdJson: mock((_itemId: string) => 'null'),
-  getDueKnowledgeItemsJson: mock((_now: number, _limit: number | null) => '[]'),
-  updateKnowledgeItemJson: mock((_itemId: string, _patchJson: string) => ''),
-  createConversationJson: mock((_payloadJson: string) => ''),
-  listConversationsJson: mock(() => '[]'),
-  updateConversationJson: mock((_conversationId: string, _patchJson: string) => ''),
+  saveKnowledgeItem: mock((_item: unknown) => ({})),
+  listKnowledgeItems: mock(() => []),
+  listKnowledgeItemsByIds: mock((_itemIds: string[]) => []),
+  listWeeklyKnowledgeItems: mock((_since: number) => []),
+  listPendingKnowledgeItemsForLabeling: mock((_limit: number) => []),
+  getKnowledgeItemById: mock((_itemId: string) => null),
+  getDueKnowledgeItems: mock((_now: number, _limit: number | null) => []),
+  updateKnowledgeItem: mock((_itemId: string, _patch: unknown) => ({})),
+  createConversation: mock((_conversation: unknown) => ({})),
+  listConversations: mock(() => []),
+  updateConversation: mock((_conversationId: string, _patch: unknown) => ({})),
   deleteConversation: mock((_conversationId: string, _deletedAt: number) => undefined),
-  listConversationMessagesJson: mock((_conversationId: string) => '[]'),
-  addMessageJson: mock((_payloadJson: string) => ''),
-  updateMessageJson: mock((_messageId: string, _patchJson: string) => ''),
+  listConversationMessages: mock((_conversationId: string) => []),
+  addMessage: mock((_message: unknown) => ({})),
+  updateMessage: mock((_messageId: string, _patch: unknown) => ({})),
   deleteMessage: mock((_messageId: string, _deletedAt: number) => undefined),
-  saveRecommendationsJson: mock((_payloadJson: string) => undefined),
-  listRecommendationsJson: mock(() => '[]'),
-  listPendingRecommendationsJson: mock(() => '[]'),
-  listRecentFeedbackEventsJson: mock((_limit: number) => '[]'),
-  logRecommendationFeedbackJson: mock((_payloadJson: string) => ''),
-  respondToRecommendationJson: mock(
-    (_recommendationId: string, _status: string, _eventJson: string) => undefined
+  saveRecommendations: mock((_recommendations: unknown[]) => undefined),
+  listRecommendations: mock(() => []),
+  listPendingRecommendations: mock(() => []),
+  listRecentFeedbackEvents: mock((_limit: number) => []),
+  logRecommendationFeedback: mock((_event: unknown) => ({})),
+  respondToRecommendation: mock(
+    (_recommendationId: string, _status: string, _event: unknown) => undefined
   ),
 };
 
@@ -42,7 +42,7 @@ mock.module('./native-core-client', () => ({
 
 const { mobileCoreClient } = await import('./mobile-core-client');
 
-describe('mobileCoreClient JSON bridge contract', () => {
+describe('mobileCoreClient typed bridge contract', () => {
   beforeEach(() => {
     Object.values(bridge).forEach((fn) => {
       if ('mockReset' in fn && typeof fn.mockReset === 'function') {
@@ -51,7 +51,7 @@ describe('mobileCoreClient JSON bridge contract', () => {
     });
   });
 
-  test('serializes input and parses output for saveKnowledgeItem', async () => {
+  test('passes typed values through for saveKnowledgeItem', async () => {
     const item = {
       id: 'item-1',
       type: 'note',
@@ -77,15 +77,15 @@ describe('mobileCoreClient JSON bridge contract', () => {
       nextReviewAt: null,
     } satisfies NewKnowledgeItem;
 
-    bridge.saveKnowledgeItemJson.mockReturnValueOnce(JSON.stringify(item));
+    bridge.saveKnowledgeItem.mockReturnValueOnce(item);
 
     const result = await mobileCoreClient.saveKnowledgeItem(item);
 
-    expect(bridge.saveKnowledgeItemJson).toHaveBeenCalledWith(JSON.stringify(item));
+    expect(bridge.saveKnowledgeItem).toHaveBeenCalledWith(item);
     expect(result).toEqual(item satisfies KnowledgeItem);
   });
 
-  test('serializes input and parses output for createConversation', async () => {
+  test('passes typed values through for createConversation', async () => {
     const conversation = {
       id: 'conv-1',
       title: 'Test',
@@ -96,15 +96,15 @@ describe('mobileCoreClient JSON bridge contract', () => {
       deletedAt: null,
     } satisfies NewConversation;
 
-    bridge.createConversationJson.mockReturnValueOnce(JSON.stringify(conversation));
+    bridge.createConversation.mockReturnValueOnce(conversation);
 
     const result = await mobileCoreClient.createConversation(conversation);
 
-    expect(bridge.createConversationJson).toHaveBeenCalledWith(JSON.stringify(conversation));
+    expect(bridge.createConversation).toHaveBeenCalledWith(conversation);
     expect(result).toEqual(conversation satisfies Conversation);
   });
 
-  test('passes scalar inputs separately and parses JSON output for getDueKnowledgeItems', async () => {
+  test('passes scalar inputs separately for getDueKnowledgeItems', async () => {
     const items = [
       {
         id: 'item-1',
@@ -132,11 +132,11 @@ describe('mobileCoreClient JSON bridge contract', () => {
       },
     ] satisfies KnowledgeItem[];
 
-    bridge.getDueKnowledgeItemsJson.mockReturnValueOnce(JSON.stringify(items));
+    bridge.getDueKnowledgeItems.mockReturnValueOnce(items);
 
     const result = await mobileCoreClient.getDueKnowledgeItems({ now: 10, limit: 3 });
 
-    expect(bridge.getDueKnowledgeItemsJson).toHaveBeenCalledWith(10, 3);
+    expect(bridge.getDueKnowledgeItems).toHaveBeenCalledWith(10, 3);
     expect(result).toEqual(items);
   });
 });

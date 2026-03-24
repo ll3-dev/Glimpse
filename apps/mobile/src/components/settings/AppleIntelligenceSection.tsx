@@ -1,4 +1,4 @@
-import { Alert, View, Text, TouchableOpacity } from 'react-native';
+import { Alert, View, Text } from 'react-native';
 import { Cpu } from 'lucide-react-native';
 import { Switch } from '@glimpse/ui/primitives';
 import { SettingsSection } from './SettingsSection';
@@ -47,13 +47,11 @@ export function AppleIntelligenceSection({ config, onToggle }: AppleIntelligence
             </Text>
           )}
         </View>
-        <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
-          <Switch
-            checked={config.enabled}
-            onCheckedChange={onToggle}
-            disabled={disabled}
-          />
-        </TouchableOpacity>
+        <Switch
+          checked={config.enabled}
+          onCheckedChange={handlePress}
+          disabled={disabled}
+        />
       </View>
     </SettingsSection>
   );

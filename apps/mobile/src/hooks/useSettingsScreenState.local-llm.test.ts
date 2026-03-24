@@ -74,41 +74,19 @@ describe('Local LLM 상태 관리', () => {
   });
 
   describe('toggleLocalLLM 동작 (enableLocalLLM/disableLocalLLM)', () => {
-    test('모델이 있고 선택된 상태에서 enable이 성공하고 enabled가 true가 된다', () => {
-      // Setup
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
-      selectLocalLLMModel('test-model');
-
-      // Enable
+    test('선택된 모델이 없어도 enable이 성공하고 enabled가 true가 된다', () => {
       const result = enableLocalLLM();
       expect(result.success).toBe(true);
       expect(isLocalLLMEnabled()).toBe(true);
     });
 
-    test('모델 없이 enable 시 에러를 반환한다', () => {
-      const result = enableLocalLLM();
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
-      expect(result.error).toBe('모델을 먼저 선택해주세요');
-    });
-
-    test('선택된 모델이 없으면 enable 시 에러를 반환한다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
-      // 선택하지 않음
-
-      const result = enableLocalLLM();
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('모델을 먼저 선택해주세요');
-    });
-
-    test('선택된 모델이 ready 상태가 아니면 에러를 반환한다', () => {
+    test('선택된 모델이 ready 상태가 아니어도 enable은 성공하지만 ready는 false다', () => {
       addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
       selectLocalLLMModel('test-model');
 
       const result = enableLocalLLM();
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('모델이 아직 다운로드되지 않았습니다');
+      expect(result.success).toBe(true);
+      expect(isLocalLLMReady()).toBe(false);
     });
 
     test('disable이 항상 성공한다', () => {

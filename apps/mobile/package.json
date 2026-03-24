@@ -26,7 +26,6 @@
     }
   },
   "dependencies": {
-    "@glimpse/mobile-core-module": "file:./modules/glimpse-core",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "@expo/plist": "^0.4.8",
@@ -82,7 +81,6 @@
     "react-native-gesture-handler": "~2.30.0",
     "react-native-mmkv": "^4.1.2",
     "react-native-nitro-crypto": "^0.2.4",
-    "react-native-nitro-modules": "^0.33.2",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.23.0",

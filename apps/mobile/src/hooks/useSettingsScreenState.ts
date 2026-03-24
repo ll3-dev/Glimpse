@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import {
   disableLocalLLM,
-  enableLocalLLM,
+  enableExclusiveAppleIntelligence,
+  enableExclusiveLocalLLM,
   selectLocalLLMModel,
-  setAppleIntelligenceEnabled,
   useAppleIntelligenceConfig,
   useAvailableLocalModels,
   useLocalLLMEnabled,
@@ -45,7 +45,7 @@ export function useSettingsScreenState() {
         };
       }
 
-      if (!setAppleIntelligenceEnabled(enabled) && enabled) {
+      if (!enableExclusiveAppleIntelligence() && enabled) {
         return {
           title: '설정 실패',
           message:
@@ -62,7 +62,7 @@ export function useSettingsScreenState() {
   // Local LLM actions
   const toggleLocalLLM = useCallback((value: boolean): ActionFeedback | null => {
     if (value) {
-      const result = enableLocalLLM();
+      const result = enableExclusiveLocalLLM();
       if (!result.success) {
         return {
           title: '활성화 실패',
@@ -76,7 +76,7 @@ export function useSettingsScreenState() {
   }, []);
 
   const selectLocalModel = useCallback((modelId: string) => {
-    selectLocalLLMModel(modelId);
+    selectLocalLLMModel(modelId || null);
   }, []);
 
   return {

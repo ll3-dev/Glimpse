@@ -85,13 +85,11 @@ export function BYOKSection({
             저장된 API 키로 외부 AI 모델 사용
           </Text>
         </View>
-        <TouchableOpacity onPress={handleTogglePress} activeOpacity={0.8}>
-          <Switch
-            checked={byokEnabled}
-            onCheckedChange={onToggleBYOK}
-            disabled={disabled}
-          />
-        </TouchableOpacity>
+        <Switch
+          checked={byokEnabled}
+          onCheckedChange={handleTogglePress}
+          disabled={disabled}
+        />
       </View>
 
       {/* Show details only when enabled */}

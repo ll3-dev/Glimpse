@@ -36,15 +36,7 @@ mock.module("react-native", () => ({
   },
 }));
 
-// Mock react-native-nitro-modules for tests
 const nitroStorage = new Map<string, unknown>();
-
-mock.module("react-native-nitro-modules", () => ({
-  NitroModules: {
-    createHybridObject: () => null,
-  },
-  HybridObject: class {},
-}));
 
 // Mock react-native-mmkv for tests
 mock.module("react-native-mmkv", () => ({

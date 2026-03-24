@@ -47,11 +47,6 @@ export default function SettingsScreen() {
         className="flex-1 px-6 pt-4"
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
       >
-        <AppleIntelligenceSection
-          config={state.appleConfig}
-          onToggle={handleToggleAppleIntelligence}
-        />
-
         <LocalLLMSection
           enabled={state.localLLMEnabled}
           ready={state.localLLMReady}
@@ -60,6 +55,11 @@ export default function SettingsScreen() {
           sourceRoute={typeof returnTo === 'string' ? returnTo : null}
           onToggle={handleToggleLocalLLM}
           onSelectModel={actions.selectLocalModel}
+        />
+
+        <AppleIntelligenceSection
+          config={state.appleConfig}
+          onToggle={handleToggleAppleIntelligence}
         />
 
         <BYOKSectionContainer />

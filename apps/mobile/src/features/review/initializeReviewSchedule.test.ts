@@ -4,8 +4,8 @@ import {
   DEFAULT_INITIAL_REVIEW_INTERVAL_MS,
 } from './initializeReviewSchedule';
 
-// Note: initializeReviewSchedule is a thin wrapper around mobileCoreClient.initializeReviewSchedule
-// The actual logic is tested in Rust (packages/core-rs)
+// Note: initializeReviewSchedule is a thin wrapper around mobileCoreClient.initializeReviewSchedule.
+// The scheduling logic itself is covered by the local core client tests.
 
 describe('calculateInitialReviewAt', () => {
   test('uses default interval', () => {

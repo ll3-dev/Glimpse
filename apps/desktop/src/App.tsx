@@ -15,7 +15,7 @@ export function App() {
     <View className="min-h-screen bg-app-bg px-6 py-8">
       <ScreenHeader
         title="Glimpse Desktop"
-        subtitle={`${workspaceArchitecture.mobileBridgePackage} -> ${workspaceArchitecture.rustCore} <- ${workspaceArchitecture.desktopApp}`}
+        subtitle={`${workspaceArchitecture.mobileApp} -> ${workspaceArchitecture.sharedPackage} <- ${workspaceArchitecture.desktopApp}`}
       />
       <Card className="mt-6 max-w-xl">
         <CardHeader>
@@ -25,7 +25,7 @@ export function App() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Text>Next step is wiring Tauri directly to packages/core-rs.</Text>
+          <Text>Next step is wiring Electron to the shared TypeScript core.</Text>
         </CardContent>
       </Card>
     </View>

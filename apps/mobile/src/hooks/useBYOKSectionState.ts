@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   BYOKProvider,
   disableBYOK,
-  enableBYOK,
+  enableExclusiveBYOK,
   maskApiKey,
   setApiKey,
   setBaseUrl,
@@ -58,7 +58,7 @@ export function useBYOKSectionState() {
       return null;
     }
 
-    const result = enableBYOK();
+    const result = enableExclusiveBYOK();
     if (result.valid) {
       return null;
     }

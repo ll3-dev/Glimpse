@@ -2,17 +2,13 @@ export type PlatformTarget = 'mobile' | 'desktop' | 'extension';
 
 export interface WorkspaceArchitecture {
   mobileApp: string;
-  mobileBridgePackage: string;
   desktopApp: string;
-  rustCore: string;
   sharedPackage: string;
 }
 
 export const workspaceArchitecture: WorkspaceArchitecture = {
   mobileApp: 'apps/mobile',
-  mobileBridgePackage: 'packages/mobile-core-module',
   desktopApp: 'apps/desktop',
-  rustCore: 'packages/core-rs',
   sharedPackage: 'packages/shared',
 };
 

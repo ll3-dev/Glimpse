@@ -13,14 +13,14 @@ describe('canToggleLocalLLM', () => {
     expect(canToggleLocalLLM(true, null, [])).toBe(true);
   });
 
-  test('returns false when no model is selected', () => {
-    expect(canToggleLocalLLM(false, null, [readyModel])).toBe(false);
+  test('returns true when no model is selected', () => {
+    expect(canToggleLocalLLM(false, null, [readyModel])).toBe(true);
   });
 
-  test('returns false when selected model is not ready', () => {
+  test('returns true when selected model is not ready', () => {
     expect(
       canToggleLocalLLM(false, 'ready-model', [{ ...readyModel, isReady: false }])
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test('returns true when selected model is ready even before enabling', () => {
@@ -29,14 +29,14 @@ describe('canToggleLocalLLM', () => {
 });
 
 describe('getLocalLLMToggleDisabledReason', () => {
-  test('returns a reason when no model is selected', () => {
-    expect(getLocalLLMToggleDisabledReason(false, null, [readyModel])).toContain('모델');
+  test('returns null when no model is selected', () => {
+    expect(getLocalLLMToggleDisabledReason(false, null, [readyModel])).toBeNull();
   });
 
-  test('returns a reason when selected model is not ready', () => {
+  test('returns null when selected model is not ready', () => {
     expect(
       getLocalLLMToggleDisabledReason(false, 'ready-model', [{ ...readyModel, isReady: false }])
-    ).toContain('다운로드');
+    ).toBeNull();
   });
 
   test('returns null when toggle is allowed', () => {

@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { Alert, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Alert, View, Text, ActivityIndicator } from 'react-native';
 import { Bot, Loader } from 'lucide-react-native';
 import { Switch } from '@glimpse/ui/primitives';
 import { SettingsSection } from './SettingsSection';
@@ -136,14 +136,6 @@ export function LocalLLMSection({
     [availableModels, onSelectModel, enabled, onToggle],
   );
 
-  // Handle toggle - just call parent callback
-  const handleToggle = useCallback(
-    (value: boolean) => {
-      onToggle(value);
-    },
-    [onToggle],
-  );
-
   // Show details when enabled or any activity (downloading/loading)
   const canToggle = canToggleLocalLLM(
     enabled,
@@ -194,13 +186,11 @@ export function LocalLLMSection({
             기기에서 직접 실행되는 AI 모델
           </Text>
         </View>
-        <TouchableOpacity onPress={handleTogglePress} activeOpacity={0.8}>
-          <Switch
-            checked={enabled}
-            onCheckedChange={handleToggle}
-            disabled={!canToggle || isLoading}
-          />
-        </TouchableOpacity>
+        <Switch
+          checked={enabled}
+          onCheckedChange={handleTogglePress}
+          disabled={!canToggle || isLoading}
+        />
       </View>
 
       {/* Show details only when enabled */}

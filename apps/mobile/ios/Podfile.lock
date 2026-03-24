@@ -108,29 +108,6 @@ PODS:
   - ExpoWebBrowser (55.0.9):
     - ExpoModulesCore
   - FBLazyVector (0.83.2)
-  - GlimpseCore (0.1.0):
-    - hermes-engine
-    - NitroModules
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-Core-prebuilt
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - ReactNativeDependencies
-    - Yoga
   - hermes-engine (0.14.1):
     - hermes-engine/Pre-built (= 0.14.1)
   - hermes-engine/Pre-built (0.14.1)
@@ -2421,7 +2398,6 @@ DEPENDENCIES:
   - "ExpoTaskManager (from `../../../node_modules/.bun/expo-task-manager@55.0.9+01ff52a34ac61115/node_modules/expo-task-manager/ios`)"
   - "ExpoWebBrowser (from `../../../node_modules/.bun/expo-web-browser@55.0.9+01ff52a34ac61115/node_modules/expo-web-browser/ios`)"
   - "FBLazyVector (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/Libraries/FBLazyVector`)"
-  - GlimpseCore (from `../modules/glimpse-core`)
   - "hermes-engine (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)"
   - "llama-rn (from `../../../node_modules/.bun/llama.rn@0.11.1+069b4c9d3e085d94/node_modules/llama.rn`)"
   - "NitroMmkv (from `../../../node_modules/.bun/react-native-mmkv@4.1.2+46a3cf67044bb70b/node_modules/react-native-mmkv`)"
@@ -2576,8 +2552,6 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.bun/expo-web-browser@55.0.9+01ff52a34ac61115/node_modules/expo-web-browser/ios"
   FBLazyVector:
     :path: "../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/Libraries/FBLazyVector"
-  GlimpseCore:
-    :path: "../modules/glimpse-core"
   hermes-engine:
     :podspec: "../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-v0.14.1
@@ -2780,7 +2754,6 @@ SPEC CHECKSUMS:
   ExpoTaskManager: 6038b80fbe63915383dcf57fa0156b23e2615fab
   ExpoWebBrowser: f13a6e46e44049bbb8ce49ff8aaa4d819c87d1fe
   FBLazyVector: 32e9ed0301d0fcbc1b2b341dd7fcbf291f51eb83
-  GlimpseCore: 907ada6b2db770ed15b42bb5f956c8cde8d046e4
   hermes-engine: de47be60591ef18b4b9aa872fee4bc9f88617f71
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f

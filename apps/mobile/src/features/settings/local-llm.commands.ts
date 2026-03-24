@@ -32,24 +32,10 @@ import {
 
 /**
  * Enable Local LLM
- * Requires a selected model that is ready.
+ * This selects Local LLM as the active inference mode.
+ * Actual readiness is derived separately from enabled + selected + ready model.
  */
 export function enableLocalLLM(): { success: boolean; error?: string } {
-  const config = getLocalLLMStoreConfig();
-
-  if (!config.selectedModelId) {
-    return { success: false, error: '모델을 먼저 선택해주세요' };
-  }
-
-  const selectedModel = config.availableModels.find((m) => m.id === config.selectedModelId);
-  if (!selectedModel) {
-    return { success: false, error: '선택된 모델을 찾을 수 없습니다' };
-  }
-
-  if (!selectedModel.isReady) {
-    return { success: false, error: '모델이 아직 다운로드되지 않았습니다' };
-  }
-
   setLocalLLMEnabled(true);
   return { success: true };
 }

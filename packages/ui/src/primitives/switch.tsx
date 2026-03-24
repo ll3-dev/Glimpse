@@ -9,12 +9,18 @@ type SwitchProps = {
   className?: string;
 };
 
+const TRACK_WIDTH = 48;
+const TRACK_HEIGHT = 28;
+const THUMB_SIZE = 22;
+const TRACK_PADDING = 2;
+const THUMB_TRANSLATE_X = TRACK_WIDTH - THUMB_SIZE - TRACK_PADDING * 2;
+
 function Switch({ checked = false, disabled = false, onCheckedChange, className }: SwitchProps) {
-  const translateX = useRef(new Animated.Value(checked ? 14 : 0)).current;
+  const translateX = useRef(new Animated.Value(checked ? THUMB_TRANSLATE_X : 0)).current;
 
   useEffect(() => {
     Animated.timing(translateX, {
-      toValue: checked ? 14 : 0,
+      toValue: checked ? THUMB_TRANSLATE_X : 0,
       duration: 150,
       useNativeDriver: true,
     }).start();
@@ -31,17 +37,29 @@ function Switch({ checked = false, disabled = false, onCheckedChange, className 
       onPress={handlePress}
       disabled={disabled}
       activeOpacity={0.8}
-      className={cn(
-        'w-11 h-6 rounded-full p-1 justify-center',
-        checked ? 'bg-primary' : 'bg-app-border',
-        disabled && 'opacity-50',
-        className
-      )}
+      className={cn(disabled && 'opacity-50', className)}
+      style={{
+        width: TRACK_WIDTH,
+        height: TRACK_HEIGHT,
+        borderRadius: TRACK_HEIGHT / 2,
+        borderWidth: 1,
+        borderColor: checked ? '#37352f' : '#edece9',
+        backgroundColor: checked ? '#37352f' : '#f7f6f3',
+        padding: TRACK_PADDING,
+        justifyContent: 'center',
+      }}
     >
-      <Animated.View
-        style={{ transform: [{ translateX }] }}
-      >
-        <View className="w-4 h-4 rounded-full bg-white" />
+      <Animated.View style={{ transform: [{ translateX }] }}>
+        <View
+          style={{
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
+            borderRadius: THUMB_SIZE / 2,
+            backgroundColor: '#ffffff',
+            borderWidth: 1,
+            borderColor: 'rgba(0,0,0,0.06)',
+          }}
+        />
       </Animated.View>
     </TouchableOpacity>
   );
