@@ -1,8 +1,8 @@
 /**
  * Stub Metadata Provider
  *
- * Fallback provider using heuristic-based stub functions.
- * Used when no AI provider is available.
+ * Default provider using heuristic-based stub functions.
+ * Used when the app stays in the default inference mode.
  */
 
 import type { Result } from '@/src/lib/effect-result';
@@ -12,7 +12,7 @@ import type { MetadataProvider, MetadataInput, MetadataOutput } from './types';
 
 /**
  * Stub provider that wraps existing stub functions.
- * Always available as the final fallback.
+ * Always available in default mode.
  */
 export const stubProvider: MetadataProvider = {
   name: 'stub',

@@ -84,8 +84,8 @@ export interface MetadataProvider {
  */
 export interface AiMetadataService {
   /**
-   * 라우팅 정책에 따라 적절한 provider 선택 후 메타데이터 생성
-   * 실패 시 자동 폴백 (Apple -> Local -> BYOK -> Stub)
+   * 현재 선택된 provider 하나를 사용해 메타데이터를 생성한다.
+   * provider 실패는 상위 호출자에서 별도로 처리한다.
    */
   generate(input: MetadataInput): Promise<Result<MetadataOutput>>;
 }
