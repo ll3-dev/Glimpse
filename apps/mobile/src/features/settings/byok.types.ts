@@ -1,6 +1,10 @@
-import { BYOKProvider, type BYOKConfig, type BYOKProviderType } from '@/src/stores/settings/byok.store';
+import {
+  BYOK_PROVIDERS,
+  type BYOKConfig,
+  type BYOKProviderType,
+} from '@glimpse/core/application/state';
 
-export { BYOKProvider };
+export const BYOKProvider = BYOK_PROVIDERS;
 export type { BYOKConfig, BYOKProviderType };
 
 export interface ValidationResult {

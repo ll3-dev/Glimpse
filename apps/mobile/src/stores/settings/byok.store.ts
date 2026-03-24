@@ -1,39 +1,17 @@
+import {
+  BYOK_PROVIDERS,
+  createBYOKSnapshot,
+  isBYOKProvider,
+  resetBYOKSnapshot,
+  updateBYOKConfigSnapshot,
+  type BYOKConfig,
+  type BYOKProviderType,
+  type BYOKStoreActions,
+  type BYOKStoreState,
+} from '@glimpse/core/application/state';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { storage, StorageKeys } from '@/src/lib/storage';
-
-export const BYOKProvider = ['openai', 'anthropic', 'google'] as const;
-export type BYOKProviderType = (typeof BYOKProvider)[number];
-
-export interface BYOKConfig {
-  enabled: boolean;
-  provider: BYOKProviderType | null;
-  apiKey: string | null;
-  baseUrl: string | null;
-  model: string | null;
-}
-
-type BYOKStoreActions = {
-  updateConfig: (updater: (config: BYOKConfig) => BYOKConfig) => void;
-  resetConfig: () => void;
-};
-
-type BYOKStoreState = {
-  config: BYOKConfig;
-  actions: BYOKStoreActions;
-};
-
-const emptyByokConfig: BYOKConfig = {
-  enabled: false,
-  provider: null,
-  apiKey: null,
-  baseUrl: null,
-  model: null,
-};
-
-function isBYOKProvider(value: string | null): value is BYOKProviderType {
-  return value !== null && BYOKProvider.includes(value as BYOKProviderType);
-}
 
 function loadPersistedSettings(): BYOKConfig {
   const enabled = storage.getBoolean(StorageKeys.BYOK_ENABLED) ?? false;
@@ -53,15 +31,13 @@ function loadPersistedSettings(): BYOKConfig {
 }
 
 const byokStore = createStore<BYOKStoreState>((set) => ({
-  config: loadPersistedSettings(),
+  ...createBYOKSnapshot(loadPersistedSettings()),
   actions: {
     updateConfig: (updater) => {
-      set((state) => ({
-        config: updater(state.config),
-      }));
+      set((state) => updateBYOKConfigSnapshot(state, updater));
     },
     resetConfig: () => {
-      set({ config: emptyByokConfig });
+      set(resetBYOKSnapshot());
     },
   },
 }));
@@ -131,3 +107,6 @@ export function clearBYOKStoredSettings(): void {
   storage.remove(StorageKeys.BYOK_MODEL);
   resetBYOKStoreConfig();
 }
+
+export const BYOKProvider = BYOK_PROVIDERS;
+export type { BYOKConfig, BYOKProviderType, BYOKStoreActions, BYOKStoreState };

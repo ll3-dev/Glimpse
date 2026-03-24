@@ -1,7 +1,7 @@
 import type { GenerateOptions, LoadModelOptions, StreamOptions } from '../llama-service';
+import type { LocalLLMModelFamily } from '@glimpse/core/application/state';
 import type { KnowledgeItem } from '@glimpse/shared';
-
-export type LocalLLMModelFamily = 'generic-instruct' | 'qwen-chatml';
+export type { LocalLLMModelFamily };
 
 export interface LocalLLMMessage {
   role: 'user' | 'assistant';
