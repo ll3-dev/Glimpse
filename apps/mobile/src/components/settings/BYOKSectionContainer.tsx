@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
 import { BYOKSection } from './BYOKSection';
-import { useBYOKSectionState } from './useBYOKSectionState';
+import { useBYOKSectionState } from '@/src/hooks';
 
 export function BYOKSectionContainer() {
   const { state, actions } = useBYOKSectionState();

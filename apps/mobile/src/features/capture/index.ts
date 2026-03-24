@@ -21,9 +21,8 @@ export {
 // Stub functions (for testing or direct use)
 export { generateSummaryStub, generateTagsStub } from './stubs';
 
-// Form state management
+// Form state management (types and functions)
 export {
-  useCaptureFormState,
   buildSaveInputByChannel,
   captureFormReducer,
   createInitialState,
@@ -37,3 +36,6 @@ export {
   type ReducerAction,
   type ShareIntentPayload,
 } from './form';
+
+// Re-export hook from hooks folder
+export { useCaptureFormState } from '@/src/hooks/useCaptureFormState';

@@ -9,7 +9,13 @@ import { Alert, View, Text, ActivityIndicator, TouchableOpacity } from 'react-na
 import { Bot, Loader } from 'lucide-react-native';
 import { Switch } from '@glimpse/ui/primitives';
 import { SettingsSection } from './SettingsSection';
-import { canToggleLocalLLM, getLocalLLMToggleDisabledReason } from './localLLMToggle';
+import {
+  canToggleLocalLLM,
+  getLocalLLMToggleDisabledReason,
+  cancelLocalModelDownload,
+  downloadLocalModel,
+  syncRecommendedLocalModels,
+} from '@/src/features/settings';
 import { ModelDownloadCard } from './ModelDownloadCard';
 import {
   RECOMMENDED_MODELS,
@@ -21,11 +27,6 @@ import {
   removeLocalLLMModel,
   type LocalModel,
 } from "@/src/stores/settings/local-llm.store";
-import {
-  cancelLocalModelDownload,
-  downloadLocalModel,
-  syncRecommendedLocalModels,
-} from "@/src/features/settings";
 
 type LocalLLMSectionProps = {
   enabled: boolean;

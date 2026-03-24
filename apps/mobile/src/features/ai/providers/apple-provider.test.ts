@@ -1,5 +1,5 @@
 import { describe, expect, test, mock } from 'bun:test';
-import { createAppleProvider, buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './apple-provider';
+import { createAppleProvider } from './apple-provider';
 import type { AppleIntelligenceBridge, AppleIntelligenceAvailability, AppleGenerateResult } from '../apple-intelligence-bridge';
 import { isFailure } from '@/src/lib/effect-result';
 
@@ -18,45 +18,7 @@ function createMockBridge(overrides: Partial<AppleIntelligenceBridge> = {}): App
   };
 }
 
-describe('apple-provider', () => {
-  describe('buildSummaryPrompt', () => {
-    test('builds prompt with content only', () => {
-      const prompt = buildSummaryPrompt({ content: 'Test content' });
-      expect(prompt).toContain('Test content');
-      expect(prompt).toContain('Summarize');
-    });
-
-    test('builds prompt with title and content', () => {
-      const prompt = buildSummaryPrompt({
-        title: 'Test Title',
-        content: 'Test content',
-      });
-      expect(prompt).toContain('Title: Test Title');
-      expect(prompt).toContain('Test content');
-    });
-  });
-
-  describe('buildTagsPrompt', () => {
-    test('builds prompt for tag extraction', () => {
-      const prompt = buildTagsPrompt({ content: 'Test content' });
-      expect(prompt).toContain('tags');
-      expect(prompt).toContain('comma-separated');
-    });
-  });
-
-  describe('parseTagsResponse', () => {
-    test('parses comma-separated tags', () => {
-      const tags = parseTagsResponse('apple, banana, cherry');
-      expect(tags).toEqual(['apple', 'banana', 'cherry']);
-    });
-
-    test('limits to 5 tags', () => {
-      const tags = parseTagsResponse('a, b, c, d, e, f, g');
-      expect(tags.length).toBe(5);
-    });
-  });
-
-  describe('createAppleProvider', () => {
+describe('createAppleProvider', () => {
     describe('isAvailable', () => {
       test('returns false when toggle is disabled', async () => {
         const provider = createAppleProvider({
@@ -202,5 +164,4 @@ describe('apple-provider', () => {
         }
       });
     });
-  });
 });

@@ -1,11 +1,15 @@
-export {
-  useCaptureFormState,
-  type BuildSaveInputResult,
-  type CaptureFormActions,
-  type CaptureFormState,
-  type SharedContent,
-} from './useFormState';
+// Types
+export type {
+  BuildSaveInputResult,
+  CaptureFormActions,
+  CaptureFormState,
+  SharedContent,
+  ReducerState,
+  ReducerAction,
+  ShareIntentPayload,
+} from './types';
 
+// Functions
 export {
   buildSaveInputByChannel,
 } from './buildSaveInput';
@@ -19,9 +23,3 @@ export {
 export {
   parseShareIntent,
 } from './shareIntent';
-
-export type {
-  ReducerState,
-  ReducerAction,
-  ShareIntentPayload,
-} from './types';

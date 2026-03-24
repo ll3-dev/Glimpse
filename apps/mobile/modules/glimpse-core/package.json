@@ -1,0 +1,52 @@
+{
+  "name": "@glimpse/mobile-core-module",
+  "version": "0.1.0",
+  "description": "Nitro-based React Native bridge for the shared Glimpse Rust core",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "react-native": "./src/index.ts",
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "dist",
+    "android",
+    "ios",
+    "cpp",
+    "*.podspec",
+    "react-native.config.js",
+    "craby.toml",
+    "Cargo.toml",
+    "crates",
+    "!ios/build",
+    "!android/build"
+  ],
+  "scripts": {
+    "codegen": "tsc --noEmit",
+    "build": "tsdown",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@react-native-community/cli-types": "^20.0.2",
+    "tsdown": "^0.15.10",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-nitro-modules": "*"
+  }
+}

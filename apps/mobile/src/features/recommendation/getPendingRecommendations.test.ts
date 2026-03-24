@@ -4,49 +4,31 @@ import {
   type GetPendingRecommendationsDeps,
 } from './getPendingRecommendations';
 
-const db = {
-  select: mock(),
+const coreClient = {
+  listPendingRecommendations: mock(),
+  listKnowledgeItemsByIds: mock(),
 };
-
-const recommendations = {
-  status: 'status_column',
-};
-
-const knowledgeItems = {
-  id: 'id_column',
-};
-
-const eqMock = mock((left: unknown, right: unknown) => ({ left, right }));
-const inArrayMock = mock((left: unknown, right: unknown[]) => ({ left, right }));
 
 const deps = {
-  db,
-  recommendations,
-  knowledgeItems,
-  eq: eqMock,
-  inArray: inArrayMock,
-} as unknown as GetPendingRecommendationsDeps;
+  coreClient,
+} satisfies GetPendingRecommendationsDeps;
 
 const getPendingRecommendations = createGetPendingRecommendations(deps);
 
 describe('getPendingRecommendations', () => {
   beforeEach(() => {
-    db.select.mockReset();
-    eqMock.mockClear();
-    inArrayMock.mockClear();
+    coreClient.listPendingRecommendations.mockReset();
+    coreClient.listKnowledgeItemsByIds.mockReset();
   });
 
   test('returns empty list when there are no pending recommendations', async () => {
-    db.select.mockReturnValueOnce({
-      from: mock(() => ({
-        where: mock(async () => []),
-      })),
-    });
+    coreClient.listPendingRecommendations.mockResolvedValue([]);
 
     const result = await getPendingRecommendations();
 
     expect(result).toEqual({ success: true, data: [] });
-    expect(db.select).toHaveBeenCalledTimes(1);
+    expect(coreClient.listPendingRecommendations).toHaveBeenCalledTimes(1);
+    expect(coreClient.listKnowledgeItemsByIds).not.toHaveBeenCalled();
   });
 
   test('joins pending recommendations with fetched items', async () => {
@@ -60,17 +42,8 @@ describe('getPendingRecommendations', () => {
       { id: 'b', title: 'B' },
     ];
 
-    db.select
-      .mockReturnValueOnce({
-        from: mock(() => ({
-          where: mock(async () => pending),
-        })),
-      })
-      .mockReturnValueOnce({
-        from: mock(() => ({
-          where: mock(async () => items),
-        })),
-      });
+    coreClient.listPendingRecommendations.mockResolvedValue(pending);
+    coreClient.listKnowledgeItemsByIds.mockResolvedValue(items);
 
     const result = await getPendingRecommendations();
 
@@ -81,13 +54,15 @@ describe('getPendingRecommendations', () => {
       expect(result.data[0]?.itemA.id).toBe('a');
       expect(result.data[0]?.itemB.id).toBe('b');
     }
-    expect(inArrayMock).toHaveBeenCalledWith('id_column', ['a', 'b', 'missing']);
+    expect(coreClient.listKnowledgeItemsByIds).toHaveBeenCalledWith([
+      'a',
+      'b',
+      'missing',
+    ]);
   });
 
   test('returns DATABASE_ERROR when query fails', async () => {
-    db.select.mockImplementation(() => {
-      throw new Error('db fail');
-    });
+    coreClient.listPendingRecommendations.mockRejectedValue(new Error('db fail'));
 
     const result = await getPendingRecommendations();
 

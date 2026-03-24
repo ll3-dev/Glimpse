@@ -4,42 +4,24 @@ import {
   type GetAllKnowledgeItemsDeps,
 } from './getAllKnowledgeItems';
 
-const db = {
-  select: mock(),
+const coreClient = {
+  listKnowledgeItems: mock(),
 };
-
-const knowledgeItems = {
-  createdAt: 'created_at_column',
-};
-
-const descMock = mock((column: unknown) => ({ type: 'desc', column }));
 
 const deps = {
-  db,
-  knowledgeItems,
-  desc: descMock,
-} as unknown as GetAllKnowledgeItemsDeps;
+  coreClient,
+} satisfies GetAllKnowledgeItemsDeps;
 
 const getAllKnowledgeItems = createGetAllKnowledgeItems(deps);
 
 describe('getAllKnowledgeItems', () => {
   beforeEach(() => {
-    db.select.mockReset();
-    descMock.mockClear();
+    coreClient.listKnowledgeItems.mockReset();
   });
 
   test('returns items in success result', async () => {
     const items = [{ id: '1' }, { id: '2' }] as any;
-    const orderExpression = { type: 'desc', column: knowledgeItems.createdAt };
-    const query = {
-      from: mock(),
-      orderBy: mock(),
-    };
-
-    query.from.mockReturnValue(query);
-    query.orderBy.mockResolvedValue(items);
-    descMock.mockReturnValue(orderExpression);
-    db.select.mockReturnValue(query);
+    coreClient.listKnowledgeItems.mockResolvedValue(items);
 
     const result = await getAllKnowledgeItems();
 
@@ -47,21 +29,11 @@ describe('getAllKnowledgeItems', () => {
     if (result.success) {
       expect(result.data).toEqual(items);
     }
-    expect(descMock).toHaveBeenCalledTimes(1);
-    expect(descMock).toHaveBeenCalledWith(knowledgeItems.createdAt);
-    expect(query.orderBy).toHaveBeenCalledTimes(1);
-    expect(query.orderBy).toHaveBeenCalledWith(orderExpression);
+    expect(coreClient.listKnowledgeItems).toHaveBeenCalledTimes(1);
   });
 
   test('returns DATABASE_ERROR when query throws', async () => {
-    const query = {
-      from: mock(),
-      orderBy: mock(),
-    };
-
-    query.from.mockReturnValue(query);
-    query.orderBy.mockRejectedValue(new Error('db down'));
-    db.select.mockReturnValue(query);
+    coreClient.listKnowledgeItems.mockRejectedValue(new Error('db down'));
 
     const result = await getAllKnowledgeItems();
 

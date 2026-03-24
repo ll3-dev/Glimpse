@@ -6,7 +6,7 @@ import { ScreenHeader, Card } from '@glimpse/ui/primitives';
 import { AppleIntelligenceSection } from '@/src/components/settings/AppleIntelligenceSection';
 import { BYOKSectionContainer } from '@/src/components/settings/BYOKSectionContainer';
 import { LocalLLMSection } from '@/src/components/settings/LocalLLMSection';
-import { useSettingsScreenState } from '@/src/components/settings/useSettingsScreenState';
+import { useSettingsScreenState } from '@/src/hooks';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();

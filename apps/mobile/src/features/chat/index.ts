@@ -13,3 +13,4 @@ export * from './deleteMessage';
 export * from './deleteConversation';
 export * from './updateConversationTitle';
 export * from './updateConversationDetails';
+export * from './chatMessageContent';

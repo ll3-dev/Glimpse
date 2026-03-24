@@ -30,19 +30,14 @@
 
 ## Database schema synchronization
 
-The database schema has two related files that must stay in sync:
-- `src/db/schema.ts` - Drizzle ORM schema (single source of truth)
-- `src/db/constants.ts` - SQL and column definitions for native SQLite
+The database schema is owned by the Rust core in `packages/core-rs/src/db.rs`.
+Mobile TypeScript should access the database only through the Craby bridge in `packages/mobile-core-module`.
 
 **When modifying the schema, you MUST:**
-1. Update `src/db/schema.ts` with new columns
-2. Update `src/db/constants.ts`:
-   - `CREATE_*_TABLE_SQL` for new installations
-   - `REQUIRED_COLUMNS` for migrations
-   - `*_SELECT_COLUMNS` for queries
-3. Run sync verification: `bun test src/db/schema-sync.test.ts`
-
-The sync test will fail if schema and constants diverge, preventing runtime database errors.
+1. Update `packages/core-rs/src/db.rs` schema and query logic together.
+2. Update Rust domain structs or JSON bridge payloads if the DB contract changes.
+3. Update `packages/mobile-core-module` bridge methods when Rust APIs change.
+4. Run the relevant Rust and mobile validation before finishing work.
 
 ## Code style
 

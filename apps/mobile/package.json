@@ -13,8 +13,20 @@
     "test": "bun test",
     "test:coverage": "bun test --coverage"
   },
+  "expo": {
+    "experiments": {
+      "autolinkingModuleResolution": true
+    },
+    "autolinking": {
+      "searchPaths": [
+        "../../node_modules",
+        "./node_modules"
+      ],
+      "nativeModulesDir": "./modules"
+    }
+  },
   "dependencies": {
-    "@glimpse/mobile-core-module": "workspace:*",
+    "@glimpse/mobile-core-module": "file:./modules/glimpse-core",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "@expo/plist": "^0.4.8",
@@ -34,7 +46,6 @@
     "@shopify/flash-list": "2.0.2",
     "@tanstack/react-query": "^5.83.0",
     "@toss/hangul": "^1.7.1",
-    "@types/sql.js": "^1.4.9",
     "baseline-browser-mapping": "^2.9.19",
     "caniuse-lite": "^1.0.30001766",
     "class-variance-authority": "^0.7.0",
@@ -72,7 +83,6 @@
     "react-native-mmkv": "^4.1.2",
     "react-native-nitro-crypto": "^0.2.4",
     "react-native-nitro-modules": "^0.33.2",
-    "react-native-nitro-sqlite": "^9.2.2",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.23.0",
@@ -80,7 +90,6 @@
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.16.0",
     "react-native-worklets": "0.7.2",
-    "sql.js": "^1.14.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
     "tailwindcss-animate": "^1.0.7",

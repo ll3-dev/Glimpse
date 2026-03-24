@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button, Text } from '@glimpse/ui/primitives';
 import type { Message } from '@glimpse/shared';
 import { ChatMarkdown } from './ChatMarkdown';
-import { parseChatMessageContent } from './chatMessageContent';
+import { parseChatMessageContent } from '@/src/features/chat';
 
 interface ChatMessageProps {
   message: Message;

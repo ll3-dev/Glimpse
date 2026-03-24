@@ -1,5 +1,5 @@
 import { describe, expect, test, mock, beforeEach } from 'bun:test';
-import { createLocalLLMProvider, buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './local-llm-provider';
+import { createLocalLLMProvider } from './local-llm-provider';
 import type { LlamaService, GenerateResult } from '../llama-service';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
 import { isFailure, isSuccess } from '@/src/lib/effect-result';
@@ -52,73 +52,7 @@ function createMockModel(overrides: Partial<LocalModel> = {}): LocalModel {
   };
 }
 
-describe('local-llm-provider', () => {
-  describe('buildSummaryPrompt', () => {
-    test('builds prompt with content only', () => {
-      const prompt = buildSummaryPrompt({ content: 'Test content' });
-      expect(prompt).toContain('Test content');
-      expect(prompt).toContain('Summarize');
-    });
-
-    test('builds prompt with title and content', () => {
-      const prompt = buildSummaryPrompt({
-        title: 'Test Title',
-        content: 'Test content',
-      });
-      expect(prompt).toContain('Title: Test Title');
-      expect(prompt).toContain('Test content');
-    });
-  });
-
-  describe('buildTagsPrompt', () => {
-    test('builds prompt with content only', () => {
-      const prompt = buildTagsPrompt({ content: 'Test content' });
-      expect(prompt).toContain('Test content');
-      expect(prompt).toContain('tags');
-    });
-
-    test('builds prompt with title and content', () => {
-      const prompt = buildTagsPrompt({
-        title: 'Test Title',
-        content: 'Test content',
-      });
-      expect(prompt).toContain('Title: Test Title');
-    });
-  });
-
-  describe('parseTagsResponse', () => {
-    test('parses comma-separated tags', () => {
-      const tags = parseTagsResponse('apple, banana, cherry');
-      expect(tags).toEqual(['apple', 'banana', 'cherry']);
-    });
-
-    test('parses newline-separated tags', () => {
-      const tags = parseTagsResponse('apple\nbanana\ncherry');
-      expect(tags).toEqual(['apple', 'banana', 'cherry']);
-    });
-
-    test('removes quotes and hash symbols', () => {
-      const tags = parseTagsResponse('"apple", #banana, \'cherry\'');
-      expect(tags).toEqual(['apple', 'banana', 'cherry']);
-    });
-
-    test('limits to 5 tags', () => {
-      const tags = parseTagsResponse('a, b, c, d, e, f, g');
-      expect(tags.length).toBe(5);
-    });
-
-    test('returns unique tags', () => {
-      const tags = parseTagsResponse('apple, banana, apple, cherry');
-      expect(tags).toEqual(['apple', 'banana', 'cherry']);
-    });
-
-    test('filters empty tags', () => {
-      const tags = parseTagsResponse('apple, , banana, , cherry');
-      expect(tags).toEqual(['apple', 'banana', 'cherry']);
-    });
-  });
-
-  describe('createLocalLLMProvider', () => {
+describe('createLocalLLMProvider', () => {
     describe('isAvailable', () => {
       test('returns false when not ready', async () => {
         const provider = createLocalLLMProvider({
@@ -263,7 +197,6 @@ describe('local-llm-provider', () => {
         expect(secondLoadCalls).toBe(firstLoadCalls);
       });
     });
-  });
 });
 
 /**

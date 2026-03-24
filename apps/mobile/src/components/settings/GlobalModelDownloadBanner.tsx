@@ -3,16 +3,13 @@ import { usePathname, useRouter } from 'expo-router';
 import { ActivityIndicator, Text, TouchableOpacity, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, CircleAlert, ChevronRight } from 'lucide-react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
   withTiming,
   runOnJS,
-  withRepeat,
-  Easing,
-  cancelAnimation,
-  interpolate
+  interpolate,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Progress } from '@glimpse/ui/primitives/progress';
@@ -23,58 +20,7 @@ import {
   setLocalLLMBannerDismissed,
 } from '@/src/features/settings';
 import { cn } from '@/src/lib/utils';
-
-/**
- * A simple Marquee component that scrolls text if it exceeds container width
- */
-function MarqueeText({ text, className }: { text: string; className?: string }) {
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [textWidth, setTextWidth] = useState(0);
-  const translateX = useSharedValue(0);
-
-  useEffect(() => {
-    if (containerWidth > 0 && textWidth > containerWidth) {
-      const distance = textWidth - containerWidth + 20;
-      translateX.value = 0;
-      translateX.value = withRepeat(
-        withTiming(-distance, {
-          duration: distance * 50,
-          easing: Easing.linear
-        }),
-        -1,
-        true
-      );
-    } else {
-      cancelAnimation(translateX);
-      translateX.value = 0;
-    }
-  }, [containerWidth, text, textWidth, translateX]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  return (
-    <View
-      className="overflow-hidden flex-1 mr-2"
-      onLayout={(e) => {
-        setContainerWidth(e.nativeEvent.layout.width);
-      }}
-    >
-      <Animated.View style={animatedStyle} className="flex-row">
-        <Text
-          className={cn("whitespace-nowrap", className)}
-          onLayout={(e) => {
-            setTextWidth(e.nativeEvent.layout.width);
-          }}
-          numberOfLines={1}
-        >
-          {text}
-        </Text>
-      </Animated.View>
-    </View>
-  );
-}
+import { MarqueeText } from '@/src/components/common/MarqueeText';
 
 export function GlobalModelDownloadBanner() {
   const router = useRouter();

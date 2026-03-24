@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { Text } from '@glimpse/ui/primitives';
 import { ChatMarkdown } from './ChatMarkdown';
-import { parseChatMessageContent } from './chatMessageContent';
+import { parseChatMessageContent } from '@/src/features/chat';
 
 type ChatStreamingMessageProps = {
   content: string;

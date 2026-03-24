@@ -1,4 +1,4 @@
-use glimpse_core_rs::db::{initialize_schema, open_in_memory};
+use glimpse_core_rs::db::{get_due_knowledge_items, initialize_schema, open_in_memory};
 
 #[test]
 fn creates_expected_tables() {
@@ -54,4 +54,46 @@ fn sanitizes_invalid_json_columns() {
     assert_eq!(row.0, None);
     assert_eq!(row.1, Some("[\"alpha\"]".to_string()));
     assert_eq!(row.2, None);
+}
+
+#[test]
+fn migrates_legacy_knowledge_items_schema_for_due_queries() {
+    let conn = open_in_memory().expect("in-memory db");
+
+    conn.execute_batch(
+        r#"
+        CREATE TABLE knowledge_items (
+          id TEXT PRIMARY KEY NOT NULL,
+          type TEXT NOT NULL,
+          title TEXT,
+          body TEXT,
+          url TEXT,
+          summary TEXT,
+          tags TEXT,
+          created_at REAL NOT NULL,
+          updated_at REAL NOT NULL,
+          stability REAL,
+          difficulty REAL,
+          last_reviewed_at REAL,
+          next_review_at REAL
+        );
+        "#,
+    )
+    .expect("legacy schema");
+
+    conn.execute(
+        "INSERT INTO knowledge_items (
+          id, type, tags, created_at, updated_at, next_review_at
+        ) VALUES (?1, 'note', ?2, 1, 1, 5);",
+        ("item-1", "[\"alpha\"]"),
+    )
+    .expect("insert legacy item");
+
+    initialize_schema(&conn).expect("schema init");
+
+    let items = get_due_knowledge_items(&conn, 10, None).expect("due items");
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].id, "item-1");
+    assert_eq!(items[0].labels, None);
+    assert_eq!(items[0].provisional_labels, None);
 }

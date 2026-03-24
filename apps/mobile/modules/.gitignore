@@ -1,0 +1,39 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# Node.js
+node_modules/
+
+# Build outputs
+dist/
+
+# iOS
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/contents.xcworkspacedata
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+
+# Android
+.gradle/
+.cxx/
+local.properties
+*.iml
+.idea/
+captures/
+*.apk
+*.aab
+.externalNativeBuild/
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~

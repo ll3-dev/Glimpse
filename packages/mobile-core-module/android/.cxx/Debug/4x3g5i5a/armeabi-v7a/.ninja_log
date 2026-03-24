@@ -1,5 +1,0 @@
-# ninja log v5
-3	3739	1773978407583060018	CMakeFiles/cxx-glimpsecore.dir/src/main/jni/src/ffi.rs.cc.o	92ee6615ff19d461
-0	5909	1773978409763388247	CMakeFiles/cxx-glimpsecore.dir/src/main/jni/OnLoad.cpp.o	6bd64cbed280d183
-3	12149	1773978415976871571	CMakeFiles/cxx-glimpsecore.dir/Users/loopy/dev/ll3/Glimpse/packages/mobile-core-module/cpp/CxxGlimpseCoreModule.cpp.o	5b4555d65480257
-12153	12638	1773978416470033569	../../../../build/intermediates/cxx/Debug/4x3g5i5a/obj/armeabi-v7a/libcxx-glimpsecore.so	ed47f676ed11b98b

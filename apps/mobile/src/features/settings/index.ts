@@ -99,3 +99,4 @@ export {
 
 export { syncRecommendedLocalModels } from './local-llm.sync';
 export { downloadLocalModel, cancelLocalModelDownload } from './local-llm.download';
+export { canToggleLocalLLM, getLocalLLMToggleDisabledReason } from './localLLMToggle';
