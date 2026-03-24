@@ -3,12 +3,14 @@ export type PlatformTarget = 'mobile' | 'desktop' | 'extension';
 export interface WorkspaceArchitecture {
   mobileApp: string;
   desktopApp: string;
+  desktopShell: 'tauri' | 'electron' | 'pending';
   sharedPackage: string;
 }
 
 export const workspaceArchitecture: WorkspaceArchitecture = {
   mobileApp: 'apps/mobile',
   desktopApp: 'apps/desktop',
+  desktopShell: 'tauri',
   sharedPackage: 'packages/shared',
 };
 
@@ -25,6 +27,7 @@ export type KnowledgeItemLabelSource =
   | 'apple'
   | 'local_small'
   | 'local_full'
+  | 'stub'
   | 'byok';
 export type RecommendationStatus = 'pending' | 'accepted' | 'ignored' | 'dismissed';
 export type FeedbackActionType = 'accept' | 'ignore' | 'dismiss';

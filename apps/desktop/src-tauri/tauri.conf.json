@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Glimpse",
+  "version": "0.1.0",
+  "identifier": "so.glimpse.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Glimpse",
+        "width": 1280,
+        "height": 880,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  }
+}

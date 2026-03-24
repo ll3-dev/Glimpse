@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
     "@glimpse/core": "workspace:*",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
@@ -11,7 +12,19 @@
     "react-native": "0.83.2",
     "react-native-web": "^0.21.0"
   },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "vite": "^7.1.12"
+  },
   "scripts": {
-    "typecheck": "../mobile/node_modules/.bin/tsc --noEmit -p tsconfig.json"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "../mobile/node_modules/.bin/tsc --noEmit -p tsconfig.json",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   }
 }
