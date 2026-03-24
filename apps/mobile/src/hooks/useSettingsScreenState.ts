@@ -1,15 +1,25 @@
 import { useCallback } from 'react';
 import {
-  disableLocalLLM,
-  enableExclusiveAppleIntelligence,
-  enableExclusiveLocalLLM,
-  selectLocalLLMModel,
   useAppleIntelligenceConfig,
   useAvailableLocalModels,
   useLocalLLMEnabled,
   useLocalLLMReady,
   useSelectedLocalModelId,
+  useBYOKConfig,
+  selectLocalLLMModel,
+  disableLocalLLM,
+  enableLocalLLM,
+  enableAppleIntelligence,
+  disableAppleIntelligence,
 } from '@/src/features/settings';
+import { listSelectableTargets, type AIFeature } from '@/src/features/ai/targets';
+import {
+  setChatAITargetId,
+  setDefaultAITargetId,
+  setLabelingAITargetId,
+  setMetadataAITargetId,
+  useAITargetSettings,
+} from '@/src/stores/settings/ai-targets.store';
 
 export type ActionFeedback = {
   title: string;
@@ -17,16 +27,21 @@ export type ActionFeedback = {
 };
 
 export function useSettingsScreenState() {
-  // Apple Intelligence state
   const appleConfig = useAppleIntelligenceConfig();
-
-  // Local LLM state
   const localLLMEnabled = useLocalLLMEnabled();
   const localLLMReady = useLocalLLMReady();
   const localLLMModels = useAvailableLocalModels();
   const localLLMSelectedModelId = useSelectedLocalModelId();
+  useBYOKConfig((config) => `${config.enabled}:${config.provider ?? ''}:${config.model ?? ''}:${config.apiKey ? '1' : '0'}`);
 
-  // Apple Intelligence actions
+  const aiTargetSettings = useAITargetSettings((settings) => settings);
+  const defaultOptions = listSelectableTargets('metadata').filter(
+    (target) => target.kind !== 'rules'
+  );
+  const metadataOptions = listSelectableTargets('metadata');
+  const labelingOptions = listSelectableTargets('labeling');
+  const chatOptions = listSelectableTargets('chat');
+
   const toggleAppleIntelligence = useCallback(
     (enabled: boolean): ActionFeedback | null => {
       if (enabled && appleConfig.isCheckingAvailability) {
@@ -45,13 +60,17 @@ export function useSettingsScreenState() {
         };
       }
 
-      if (!enableExclusiveAppleIntelligence() && enabled) {
-        return {
-          title: '설정 실패',
-          message:
-            appleConfig.unavailableReason ||
-            '현재 기기에서 Apple Intelligence를 사용할 수 없습니다',
-        };
+      if (enabled) {
+        if (!enableAppleIntelligence()) {
+          return {
+            title: '설정 실패',
+            message:
+              appleConfig.unavailableReason ||
+              '현재 기기에서 Apple Intelligence를 사용할 수 없습니다',
+          };
+        }
+      } else {
+        disableAppleIntelligence();
       }
 
       return null;
@@ -59,10 +78,9 @@ export function useSettingsScreenState() {
     [appleConfig.isAvailable, appleConfig.isCheckingAvailability, appleConfig.unavailableReason]
   );
 
-  // Local LLM actions
   const toggleLocalLLM = useCallback((value: boolean): ActionFeedback | null => {
     if (value) {
-      const result = enableExclusiveLocalLLM();
+      const result = enableLocalLLM();
       if (!result.success) {
         return {
           title: '활성화 실패',
@@ -72,11 +90,32 @@ export function useSettingsScreenState() {
     } else {
       disableLocalLLM();
     }
+
     return null;
   }, []);
 
   const selectLocalModel = useCallback((modelId: string) => {
     selectLocalLLMModel(modelId || null);
+  }, []);
+
+  const selectDefaultTarget = useCallback((targetId: string) => {
+    setDefaultAITargetId(targetId);
+  }, []);
+
+  const selectFeatureTarget = useCallback(
+    (feature: Exclude<AIFeature, 'labeling'>, targetId: string | null) => {
+      if (feature === 'metadata') {
+        setMetadataAITargetId(targetId);
+        return;
+      }
+
+      setChatAITargetId(targetId);
+    },
+    []
+  );
+
+  const selectLabelingTarget = useCallback((targetId: string) => {
+    setLabelingAITargetId(targetId);
   }, []);
 
   return {
@@ -86,11 +125,21 @@ export function useSettingsScreenState() {
       localLLMReady,
       localLLMModels,
       localLLMSelectedModelId,
+      aiTargetSettings,
+      aiTargetOptions: {
+        defaultOptions,
+        metadataOptions,
+        labelingOptions,
+        chatOptions,
+      },
     },
     actions: {
       toggleAppleIntelligence,
       toggleLocalLLM,
       selectLocalModel,
+      selectDefaultTarget,
+      selectFeatureTarget,
+      selectLabelingTarget,
     },
   };
 }

@@ -15,6 +15,11 @@ export const storage: MMKV = createMMKV({
  * Storage keys for type-safe access
  */
 export const StorageKeys = {
+  // AI target settings
+  AI_DEFAULT_TARGET: 'ai_default_target',
+  AI_METADATA_TARGET: 'ai_metadata_target',
+  AI_LABELING_TARGET: 'ai_labeling_target',
+  AI_CHAT_TARGET: 'ai_chat_target',
   // Local LLM settings
   LOCAL_LLM_ENABLED: 'local_llm_enabled',
   LOCAL_LLM_SELECTED_MODEL: 'local_llm_selected_model',

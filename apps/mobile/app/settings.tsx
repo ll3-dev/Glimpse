@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { ScreenHeader, Card } from '@glimpse/ui/primitives';
+import { AITargetSettingsSection } from '@/src/components/settings/AITargetSettingsSection';
 import { AppleIntelligenceSection } from '@/src/components/settings/AppleIntelligenceSection';
 import { BYOKSectionContainer } from '@/src/components/settings/BYOKSectionContainer';
 import { LocalLLMSection } from '@/src/components/settings/LocalLLMSection';
@@ -47,6 +48,20 @@ export default function SettingsScreen() {
         className="flex-1 px-6 pt-4"
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
       >
+        <AITargetSettingsSection
+          defaultTargetId={state.aiTargetSettings.defaultTargetId}
+          metadataTargetId={state.aiTargetSettings.metadataTargetId}
+          labelingTargetId={state.aiTargetSettings.labelingTargetId}
+          chatTargetId={state.aiTargetSettings.chatTargetId}
+          defaultOptions={state.aiTargetOptions.defaultOptions}
+          metadataOptions={state.aiTargetOptions.metadataOptions}
+          labelingOptions={state.aiTargetOptions.labelingOptions}
+          chatOptions={state.aiTargetOptions.chatOptions}
+          onSelectDefaultTarget={actions.selectDefaultTarget}
+          onSelectFeatureTarget={actions.selectFeatureTarget}
+          onSelectLabelingTarget={actions.selectLabelingTarget}
+        />
+
         <LocalLLMSection
           enabled={state.localLLMEnabled}
           ready={state.localLLMReady}
