@@ -2,14 +2,14 @@
 @import "uniwind";
 
 @theme {
-  --color-app-bg: #f4f6f8;
+  --color-app-bg: #f7f6f3;
   --color-app-surface: #ffffff;
-  --color-app-border: #e5e8eb;
-  --color-app-text: #191f28;
-  --color-app-muted: #4e5968;
-  --color-app-subtle: #8b95a1;
-  --color-app-primary: #3182f6;
-  --color-app-accent: #f04452;
+  --color-app-border: #edece9;
+  --color-app-text: #37352f;
+  --color-app-muted: #787774;
+  --color-app-subtle: #9b9a97;
+  --color-app-primary: #2383e2;
+  --color-app-accent: #eb5757;
 
   --color-background: var(--color-app-surface);
   --color-foreground: var(--color-app-text);
@@ -17,7 +17,7 @@
   --color-muted-foreground: var(--color-app-muted);
   --color-border: var(--color-app-border);
   --color-input: var(--color-app-border);
-  --color-ring: #d6e4ff;
+  --color-ring: color-mix(in srgb, var(--color-app-primary) 16%, white);
   --color-primary: var(--color-app-primary);
   --color-primary-foreground: #ffffff;
   --color-secondary: var(--color-app-bg);

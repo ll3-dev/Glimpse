@@ -33,7 +33,7 @@ function Switch({ checked = false, disabled = false, onCheckedChange, className 
       activeOpacity={0.8}
       className={cn(
         'w-11 h-6 rounded-full p-1 justify-center',
-        checked ? 'bg-primary' : 'bg-[#d9dde3]',
+        checked ? 'bg-primary' : 'bg-app-border',
         disabled && 'opacity-50',
         className
       )}

@@ -6,24 +6,24 @@ import { TextClassContext } from "./text";
 import { cn } from "../lib/cn";
 
 const buttonVariants = cva(
-  "group flex items-center justify-center rounded-2xl web:transition-colors web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2 shadow-sm shadow-black/5",
+  "group flex items-center justify-center rounded-md web:transition-colors web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "bg-primary web:hover:brightness-95 active:brightness-95",
+        default: "bg-app-text web:hover:opacity-90 active:opacity-90",
         destructive: "bg-destructive web:hover:opacity-90 active:opacity-90",
         outline:
           "border border-app-border bg-white web:hover:bg-app-bg web:hover:text-app-text active:bg-app-bg",
-        secondary: "bg-[#eef3ff] web:hover:opacity-90 active:opacity-90",
+        secondary: "bg-app-bg web:hover:opacity-90 active:opacity-90",
         ghost:
           "web:hover:bg-accent web:hover:text-accent-foreground active:bg-accent",
         link: "web:underline-offset-4 web:hover:underline web:focus:underline",
       },
       size: {
-        default: "h-11 px-4 py-2 native:h-12 native:px-5 native:py-3",
-        sm: "h-9 rounded-xl px-3",
-        lg: "h-12 rounded-2xl px-8 native:h-14",
-        icon: "h-11 w-11",
+        default: "h-10 px-4 py-2 native:h-12 native:px-5 native:py-3",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8 native:h-14",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {

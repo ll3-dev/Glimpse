@@ -2,7 +2,6 @@
  * ChatInput Component
  *
  * Text input area for sending messages.
- * Perfectly harmonized colors using app-wide design tokens.
  */
 
 import { View, TextInput, TouchableOpacity, ActivityIndicator, Platform, Keyboard } from 'react-native';
@@ -25,14 +24,13 @@ export function ChatInput({
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const insets = useSafeAreaInsets();
 
-  // Unified theme colors from global.css
   const theme = {
     bg: '#ffffff',
-    inputBg: '#f7f6f3',    // --color-app-bg (Notion-style off-white)
-    text: '#37352f',       // --color-app-text
-    muted: '#787774',      // --color-app-muted
-    border: '#edece9',     // --color-app-border
-    primary: '#2e2e2e',    // --color-app-primary (Main brand color)
+    inputBg: '#f7f6f3',
+    text: '#37352f',
+    muted: '#787774',
+    border: '#edece9',
+    primary: '#37352f',
   };
 
   useEffect(() => {
@@ -105,10 +103,8 @@ export function ChatInput({
         <TouchableOpacity
           className="w-11 h-11 rounded-full items-center justify-center mb-0"
           style={{ 
-            // 비활성 시 입력창 배경색과 동일하게 맞추어 조화롭게 만듦
             backgroundColor: canSend ? theme.primary : theme.inputBg,
             opacity: isLoading ? 0.7 : 1,
-            // 비활성 시에도 테두리를 주어 버튼임을 인지하게 함
             borderWidth: canSend ? 0 : 1,
             borderColor: theme.border,
           }}

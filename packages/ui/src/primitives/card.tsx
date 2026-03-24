@@ -1,19 +1,34 @@
 import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { Text, TextProps, View, ViewProps } from "react-native";
 import { TextClassContext } from "./text";
 import { cn } from "../lib/cn";
 
+const cardVariants = cva("border bg-app-surface", {
+  variants: {
+    variant: {
+      default: "rounded-md border-app-border",
+      muted: "rounded-md border-transparent bg-app-bg",
+      elevated: "rounded-2xl border-app-border shadow-sm shadow-black/5",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
 function Card({
+  variant,
   className,
   ...props
 }: ViewProps & {
   ref?: React.RefObject<View>;
-}) {
+} & VariantProps<typeof cardVariants>) {
   return (
     <View
       className={cn(
-        "rounded-3xl border border-app-border/80 bg-white shadow-sm shadow-black/5",
-        className
+        cardVariants({ variant }),
+        className,
       )}
       {...props}
     />
@@ -28,7 +43,7 @@ function CardHeader({
 }) {
   return (
     <View
-      className={cn("flex flex-col space-y-1 p-5", className)}
+      className={cn("flex flex-col space-y-1 p-4", className)}
       {...props}
     />
   );
@@ -45,7 +60,7 @@ function CardTitle({
       role="heading"
       aria-level={3}
       className={cn(
-        "text-[17px] text-app-text font-semibold leading-tight tracking-tight",
+        "text-base text-app-text font-semibold leading-tight tracking-tight",
         className
       )}
       {...props}
@@ -75,7 +90,7 @@ function CardContent({
 }) {
   return (
     <TextClassContext.Provider value="text-app-text">
-      <View className={cn("p-5 pt-0", className)} {...props} />
+      <View className={cn("p-4 pt-0", className)} {...props} />
     </TextClassContext.Provider>
   );
 }
@@ -88,7 +103,7 @@ function CardFooter({
 }) {
   return (
     <View
-      className={cn("flex flex-row items-center p-5 pt-0", className)}
+      className={cn("flex flex-row items-center p-4 pt-0", className)}
       {...props}
     />
   );
@@ -102,3 +117,4 @@ export {
   CardHeader,
   CardTitle,
 };
+export { cardVariants };

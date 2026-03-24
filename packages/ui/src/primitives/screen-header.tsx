@@ -1,5 +1,18 @@
+import { cva, type VariantProps } from 'class-variance-authority';
 import { View, Text } from 'react-native';
 import { cn } from '../lib/cn';
+
+const screenHeaderVariants = cva('flex-row items-center justify-between', {
+  variants: {
+    variant: {
+      default: 'px-6 pt-4 pb-4',
+      compact: 'px-5 pt-4 pb-3',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
 
 type ScreenHeaderProps = {
   title: string;
@@ -7,24 +20,28 @@ type ScreenHeaderProps = {
   leftElement?: React.ReactNode;
   rightElement?: React.ReactNode;
   className?: string;
-};
+} & VariantProps<typeof screenHeaderVariants>;
 
-export function ScreenHeader({ title, subtitle, leftElement, rightElement, className }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  subtitle,
+  leftElement,
+  rightElement,
+  className,
+  variant,
+}: ScreenHeaderProps) {
   return (
-    <View className={cn("px-5 pt-4 pb-3 flex-row items-center justify-between", className)}>
+    <View className={cn(screenHeaderVariants({ variant }), className)}>
       <View className="flex-row items-center flex-1">
         {leftElement && (
-          <View className="mr-3">
+          <View className="mr-4">
             {leftElement}
           </View>
         )}
         <View className="flex-1">
-          <Text className="text-[22px] font-bold text-app-text tracking-[-0.02em]">{title}</Text>
+          <Text className="text-xl font-bold text-app-text tracking-tight">{title}</Text>
           {subtitle && (
-            <View className="mt-1 flex-row items-center">
-              <View className="w-1.5 h-1.5 rounded-full bg-app-primary/70 mr-2" />
-              <Text className="text-xs text-app-muted font-medium tracking-tight">{subtitle}</Text>
-            </View>
+            <Text className="mt-1 text-sm font-medium text-app-muted">{subtitle}</Text>
           )}
         </View>
       </View>
