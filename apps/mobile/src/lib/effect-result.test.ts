@@ -29,6 +29,14 @@ describe('appError', () => {
     expect(error.details).toEqual(details);
   });
 
+  test('serializes Error details for logging', () => {
+    const error = appError('DATABASE_ERROR', 'Query failed', new Error('no such column: labels'));
+    expect(error.details).toMatchObject({
+      name: 'Error',
+      message: 'no such column: labels',
+    });
+  });
+
   test('supports all error codes', () => {
     const codes: AppErrorCode[] = [
       'VALIDATION_ERROR',

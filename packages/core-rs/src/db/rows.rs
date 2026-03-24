@@ -29,10 +29,10 @@ pub fn map_knowledge_item_row(row: &Row<'_>) -> rusqlite::Result<KnowledgeItem> 
         label_error: row.get(15)?,
         created_at: parse_i64(row.get(16)?),
         updated_at: parse_i64(row.get(17)?),
-        stability: row.get(18)?,
-        difficulty: row.get(19)?,
-        last_reviewed_at: parse_optional_i64(row.get(20)?),
-        next_review_at: parse_optional_i64(row.get(21)?),
+        stability: row.get::<_, Option<f64>>(18)?,
+        difficulty: row.get::<_, Option<f64>>(19)?,
+        last_reviewed_at: parse_optional_i64(row.get::<_, Option<f64>>(20)?),
+        next_review_at: parse_optional_i64(row.get::<_, Option<f64>>(21)?),
     })
 }
 

@@ -9,5 +9,6 @@ Architecture:
 
 Current status:
 - The React Native binding layer uses `react-native-nitro-modules`.
-- The Rust core is still exposed through the existing CXX bridge headers and static libraries.
-- Run `bun run --cwd apps/mobile/modules/glimpse-core typecheck` to validate the JS surface.
+- The Rust core is exposed through a handwritten `cxx::bridge` layer plus platform static libraries.
+- Run `bun run --cwd apps/mobile/modules/glimpse-core codegen` to regenerate checked-in `ffi.rs.h/.cc` bridge artifacts and validate the JS surface.
+- Run `bun run mobile:bridge:prebuilt:ios` or `bun run mobile:bridge:prebuilt:android` to refresh the packaged release archives consumed by Xcode and CMake.

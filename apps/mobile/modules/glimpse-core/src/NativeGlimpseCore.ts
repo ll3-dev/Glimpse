@@ -18,16 +18,19 @@ const ANDROID_INIT_MODULE_NAME = '__glimpseCoreJNI_prepare__';
 
 export interface GlimpseCoreSpec
   extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
-  calculateTagOverlap(leftTags: string[] | null, rightTags: string[] | null): number;
+  calculateTagOverlap(
+    leftTags: string[] | undefined,
+    rightTags: string[] | undefined
+  ): number;
   calculateNextReview(
-    lastReviewedAt: number | null,
-    nextReviewAt: number | null,
+    lastReviewedAt: number | undefined,
+    nextReviewAt: number | undefined,
     feedbackType: string,
     now: number
   ): GlimpseCalculateNextReviewOutput;
   initializeReviewSchedule(
     createdAt: number,
-    intervalMs: number | null
+    intervalMs: number | undefined
   ): GlimpseInitializeReviewScheduleOutput;
   saveKnowledgeItemJson(payloadJson: string): string;
   listKnowledgeItemsJson(): string;
@@ -35,7 +38,7 @@ export interface GlimpseCoreSpec
   listWeeklyKnowledgeItemsJson(since: number): string;
   listPendingKnowledgeItemsForLabelingJson(limit: number): string;
   getKnowledgeItemByIdJson(itemId: string): string;
-  getDueKnowledgeItemsJson(now: number, limit: number | null): string;
+  getDueKnowledgeItemsJson(now: number, limit: number | undefined): string;
   updateKnowledgeItemJson(itemId: string, patchJson: string): string;
   createConversationJson(payloadJson: string): string;
   listConversationsJson(): string;

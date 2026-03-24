@@ -10,7 +10,7 @@ const unavailable = () => {
   throw new Error('GlimpseCore Nitro bridge is not available on this platform');
 };
 
-export const crabyCoreClient = {
+export const nativeCoreClient = {
   isAvailable(): boolean {
     return false;
   },

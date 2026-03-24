@@ -161,6 +161,10 @@ fn migrate_knowledge_items_schema(conn: &Connection) -> Result<()> {
         ("label_requested_at", "REAL"),
         ("label_completed_at", "REAL"),
         ("label_error", "TEXT"),
+        ("stability", "REAL"),
+        ("difficulty", "REAL"),
+        ("last_reviewed_at", "REAL"),
+        ("next_review_at", "REAL"),
     ] {
         if !existing_columns.iter().any(|existing| existing == column_name) {
             let sql =

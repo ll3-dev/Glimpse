@@ -965,8 +965,8 @@ std::size_t align_of() {
 #define CXX_DEFAULT_VALUE(value)
 #endif
 
-namespace craby {
-  namespace glimpsecore {
+namespace ll3 {
+  namespace glimpse {
     namespace bridging {
       struct NullableNumber;
       struct NullableStringArray;
@@ -977,53 +977,53 @@ namespace craby {
   }
 }
 
-namespace craby {
-namespace glimpsecore {
+namespace ll3 {
+namespace glimpse {
 namespace bridging {
-#ifndef CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$NullableNumber
-#define CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$NullableNumber
+#ifndef CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$NullableNumber
+#define CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$NullableNumber
 struct NullableNumber final {
   bool null CXX_DEFAULT_VALUE(false);
   double val CXX_DEFAULT_VALUE(0);
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$NullableNumber
+#endif // CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$NullableNumber
 
-#ifndef CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$NullableStringArray
-#define CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$NullableStringArray
+#ifndef CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$NullableStringArray
+#define CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$NullableStringArray
 struct NullableStringArray final {
   bool null CXX_DEFAULT_VALUE(false);
   ::rust::Vec<::rust::String> val;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$NullableStringArray
+#endif // CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$NullableStringArray
 
-#ifndef CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseInitializeReviewScheduleOutput
-#define CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseInitializeReviewScheduleOutput
+#ifndef CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseInitializeReviewScheduleOutput
+#define CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseInitializeReviewScheduleOutput
 struct GlimpseInitializeReviewScheduleOutput final {
   double next_review_at CXX_DEFAULT_VALUE(0);
-  ::craby::glimpsecore::bridging::NullableNumber stability;
-  ::craby::glimpsecore::bridging::NullableNumber difficulty;
-  ::craby::glimpsecore::bridging::NullableNumber last_reviewed_at;
+  ::ll3::glimpse::bridging::NullableNumber stability;
+  ::ll3::glimpse::bridging::NullableNumber difficulty;
+  ::ll3::glimpse::bridging::NullableNumber last_reviewed_at;
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseInitializeReviewScheduleOutput
+#endif // CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseInitializeReviewScheduleOutput
 
-#ifndef CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseCalculateNextReviewOutput
-#define CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseCalculateNextReviewOutput
+#ifndef CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseCalculateNextReviewOutput
+#define CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseCalculateNextReviewOutput
 struct GlimpseCalculateNextReviewOutput final {
   double interval_ms CXX_DEFAULT_VALUE(0);
   double next_review_at CXX_DEFAULT_VALUE(0);
 
   using IsRelocatable = ::std::true_type;
 };
-#endif // CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseCalculateNextReviewOutput
+#endif // CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseCalculateNextReviewOutput
 
-#ifndef CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseCore
-#define CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseCore
+#ifndef CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseCore
+#define CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseCore
 struct GlimpseCore final : public ::rust::Opaque {
   ~GlimpseCore() = delete;
 
@@ -1034,62 +1034,62 @@ private:
     static ::std::size_t align() noexcept;
   };
 };
-#endif // CXXBRIDGE1_STRUCT_craby$glimpsecore$bridging$GlimpseCore
+#endif // CXXBRIDGE1_STRUCT_ll3$glimpse$bridging$GlimpseCore
 
-::rust::Box<::craby::glimpsecore::bridging::GlimpseCore> createGlimpseCore(::std::size_t id, ::rust::Str data_path) noexcept;
+::rust::Box<::ll3::glimpse::bridging::GlimpseCore> createGlimpseCore(::std::size_t id, ::rust::Str data_path) noexcept;
 
-::rust::String addMessageJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str payload_json);
+::rust::String addMessageJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str payload_json);
 
-::craby::glimpsecore::bridging::GlimpseCalculateNextReviewOutput calculateNextReview(::craby::glimpsecore::bridging::GlimpseCore &it_, ::craby::glimpsecore::bridging::NullableNumber last_reviewed_at, ::craby::glimpsecore::bridging::NullableNumber next_review_at, ::rust::Str feedback_type, double now);
+::ll3::glimpse::bridging::GlimpseCalculateNextReviewOutput calculateNextReview(::ll3::glimpse::bridging::GlimpseCore &it_, ::ll3::glimpse::bridging::NullableNumber last_reviewed_at, ::ll3::glimpse::bridging::NullableNumber next_review_at, ::rust::Str feedback_type, double now);
 
-double calculateTagOverlap(::craby::glimpsecore::bridging::GlimpseCore &it_, ::craby::glimpsecore::bridging::NullableStringArray left_tags, ::craby::glimpsecore::bridging::NullableStringArray right_tags);
+double calculateTagOverlap(::ll3::glimpse::bridging::GlimpseCore &it_, ::ll3::glimpse::bridging::NullableStringArray left_tags, ::ll3::glimpse::bridging::NullableStringArray right_tags);
 
-::rust::String createConversationJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str payload_json);
+::rust::String createConversationJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str payload_json);
 
-void deleteConversation(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str conversation_id, double deleted_at);
+void deleteConversation(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str conversation_id, double deleted_at);
 
-void deleteMessage(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str message_id, double deleted_at);
+void deleteMessage(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str message_id, double deleted_at);
 
-::rust::String getDueKnowledgeItemsJson(::craby::glimpsecore::bridging::GlimpseCore &it_, double now, ::craby::glimpsecore::bridging::NullableNumber limit);
+::rust::String getDueKnowledgeItemsJson(::ll3::glimpse::bridging::GlimpseCore &it_, double now, ::ll3::glimpse::bridging::NullableNumber limit);
 
-::rust::String getKnowledgeItemByIdJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str item_id);
+::rust::String getKnowledgeItemByIdJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str item_id);
 
-::craby::glimpsecore::bridging::GlimpseInitializeReviewScheduleOutput initializeReviewSchedule(::craby::glimpsecore::bridging::GlimpseCore &it_, double created_at, ::craby::glimpsecore::bridging::NullableNumber interval_ms);
+::ll3::glimpse::bridging::GlimpseInitializeReviewScheduleOutput initializeReviewSchedule(::ll3::glimpse::bridging::GlimpseCore &it_, double created_at, ::ll3::glimpse::bridging::NullableNumber interval_ms);
 
-::rust::String listConversationMessagesJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str conversation_id);
+::rust::String listConversationMessagesJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str conversation_id);
 
-::rust::String listConversationsJson(::craby::glimpsecore::bridging::GlimpseCore &it_);
+::rust::String listConversationsJson(::ll3::glimpse::bridging::GlimpseCore &it_);
 
-::rust::String listKnowledgeItemsByIdsJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str item_ids_json);
+::rust::String listKnowledgeItemsByIdsJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str item_ids_json);
 
-::rust::String listKnowledgeItemsJson(::craby::glimpsecore::bridging::GlimpseCore &it_);
+::rust::String listKnowledgeItemsJson(::ll3::glimpse::bridging::GlimpseCore &it_);
 
-::rust::String listPendingKnowledgeItemsForLabelingJson(::craby::glimpsecore::bridging::GlimpseCore &it_, double limit);
+::rust::String listPendingKnowledgeItemsForLabelingJson(::ll3::glimpse::bridging::GlimpseCore &it_, double limit);
 
-::rust::String listPendingRecommendationsJson(::craby::glimpsecore::bridging::GlimpseCore &it_);
+::rust::String listPendingRecommendationsJson(::ll3::glimpse::bridging::GlimpseCore &it_);
 
-::rust::String listRecentFeedbackEventsJson(::craby::glimpsecore::bridging::GlimpseCore &it_, double limit);
+::rust::String listRecentFeedbackEventsJson(::ll3::glimpse::bridging::GlimpseCore &it_, double limit);
 
-::rust::String listRecommendationsJson(::craby::glimpsecore::bridging::GlimpseCore &it_);
+::rust::String listRecommendationsJson(::ll3::glimpse::bridging::GlimpseCore &it_);
 
-::rust::String listWeeklyKnowledgeItemsJson(::craby::glimpsecore::bridging::GlimpseCore &it_, double since);
+::rust::String listWeeklyKnowledgeItemsJson(::ll3::glimpse::bridging::GlimpseCore &it_, double since);
 
-::rust::String logRecommendationFeedbackJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str payload_json);
+::rust::String logRecommendationFeedbackJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str payload_json);
 
-void respondToRecommendationJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str recommendation_id, ::rust::Str status, ::rust::Str event_json);
+void respondToRecommendationJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str recommendation_id, ::rust::Str status, ::rust::Str event_json);
 
-::rust::String saveKnowledgeItemJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str payload_json);
+::rust::String saveKnowledgeItemJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str payload_json);
 
-void saveRecommendationsJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str payload_json);
+void saveRecommendationsJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str payload_json);
 
-::rust::String updateConversationJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str conversation_id, ::rust::Str patch_json);
+::rust::String updateConversationJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str conversation_id, ::rust::Str patch_json);
 
-::rust::String updateKnowledgeItemJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str item_id, ::rust::Str patch_json);
+::rust::String updateKnowledgeItemJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str item_id, ::rust::Str patch_json);
 
-::rust::String updateMessageJson(::craby::glimpsecore::bridging::GlimpseCore &it_, ::rust::Str message_id, ::rust::Str patch_json);
+::rust::String updateMessageJson(::ll3::glimpse::bridging::GlimpseCore &it_, ::rust::Str message_id, ::rust::Str patch_json);
 } // namespace bridging
-} // namespace glimpsecore
-} // namespace craby
+} // namespace glimpse
+} // namespace ll3
 
 #ifdef __clang__
 #pragma clang diagnostic pop

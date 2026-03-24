@@ -2,15 +2,15 @@
 
 namespace ll3::glimpse {
 
-using craby::glimpsecore::bridging::GlimpseCalculateNextReviewOutput;
-using craby::glimpsecore::bridging::GlimpseInitializeReviewScheduleOutput;
-using craby::glimpsecore::bridging::NullableNumber;
-using craby::glimpsecore::bridging::NullableStringArray;
+using ll3::glimpse::bridging::GlimpseCalculateNextReviewOutput;
+using ll3::glimpse::bridging::GlimpseInitializeReviewScheduleOutput;
+using ll3::glimpse::bridging::NullableNumber;
+using ll3::glimpse::bridging::NullableStringArray;
 using margelo::nitro::HybridObject;
 
 HybridGlimpseCore::HybridGlimpseCore()
   : HybridObject(TAG),
-    core_(craby::glimpsecore::bridging::createGlimpseCore(
+    core_(ll3::glimpse::bridging::createGlimpseCore(
       nextInstanceId_.fetch_add(1),
       rust::Str(dataPath_.data(), dataPath_.size())
     )) {}
@@ -23,7 +23,7 @@ double HybridGlimpseCore::calculateTagOverlap(
   const std::optional<std::vector<std::string>>& leftTags,
   const std::optional<std::vector<std::string>>& rightTags
 ) {
-  return craby::glimpsecore::bridging::calculateTagOverlap(
+  return ll3::glimpse::bridging::calculateTagOverlap(
     *core_,
     toNullableStringArray(leftTags),
     toNullableStringArray(rightTags)
@@ -37,7 +37,7 @@ CalculateNextReviewResult HybridGlimpseCore::calculateNextReview(
   double now
 ) {
   GlimpseCalculateNextReviewOutput result =
-    craby::glimpsecore::bridging::calculateNextReview(
+    ll3::glimpse::bridging::calculateNextReview(
       *core_,
       toNullableNumber(lastReviewedAt),
       toNullableNumber(nextReviewAt),
@@ -56,7 +56,7 @@ InitializeReviewScheduleResult HybridGlimpseCore::initializeReviewSchedule(
   std::optional<double> intervalMs
 ) {
   GlimpseInitializeReviewScheduleOutput result =
-    craby::glimpsecore::bridging::initializeReviewSchedule(
+    ll3::glimpse::bridging::initializeReviewSchedule(
       *core_,
       createdAt,
       toNullableNumber(intervalMs)
@@ -72,33 +72,33 @@ InitializeReviewScheduleResult HybridGlimpseCore::initializeReviewSchedule(
 
 std::string HybridGlimpseCore::saveKnowledgeItemJson(const std::string& payloadJson) {
   return intoString(
-    craby::glimpsecore::bridging::saveKnowledgeItemJson(*core_, toRustStr(payloadJson))
+    ll3::glimpse::bridging::saveKnowledgeItemJson(*core_, toRustStr(payloadJson))
   );
 }
 
 std::string HybridGlimpseCore::listKnowledgeItemsJson() {
-  return intoString(craby::glimpsecore::bridging::listKnowledgeItemsJson(*core_));
+  return intoString(ll3::glimpse::bridging::listKnowledgeItemsJson(*core_));
 }
 
 std::string HybridGlimpseCore::listKnowledgeItemsByIdsJson(const std::string& itemIdsJson) {
   return intoString(
-    craby::glimpsecore::bridging::listKnowledgeItemsByIdsJson(*core_, toRustStr(itemIdsJson))
+    ll3::glimpse::bridging::listKnowledgeItemsByIdsJson(*core_, toRustStr(itemIdsJson))
   );
 }
 
 std::string HybridGlimpseCore::listWeeklyKnowledgeItemsJson(double since) {
-  return intoString(craby::glimpsecore::bridging::listWeeklyKnowledgeItemsJson(*core_, since));
+  return intoString(ll3::glimpse::bridging::listWeeklyKnowledgeItemsJson(*core_, since));
 }
 
 std::string HybridGlimpseCore::listPendingKnowledgeItemsForLabelingJson(double limit) {
   return intoString(
-    craby::glimpsecore::bridging::listPendingKnowledgeItemsForLabelingJson(*core_, limit)
+    ll3::glimpse::bridging::listPendingKnowledgeItemsForLabelingJson(*core_, limit)
   );
 }
 
 std::string HybridGlimpseCore::getKnowledgeItemByIdJson(const std::string& itemId) {
   return intoString(
-    craby::glimpsecore::bridging::getKnowledgeItemByIdJson(*core_, toRustStr(itemId))
+    ll3::glimpse::bridging::getKnowledgeItemByIdJson(*core_, toRustStr(itemId))
   );
 }
 
@@ -107,7 +107,7 @@ std::string HybridGlimpseCore::getDueKnowledgeItemsJson(
   std::optional<double> limit
 ) {
   return intoString(
-    craby::glimpsecore::bridging::getDueKnowledgeItemsJson(
+    ll3::glimpse::bridging::getDueKnowledgeItemsJson(
       *core_,
       now,
       toNullableNumber(limit)
@@ -120,7 +120,7 @@ std::string HybridGlimpseCore::updateKnowledgeItemJson(
   const std::string& patchJson
 ) {
   return intoString(
-    craby::glimpsecore::bridging::updateKnowledgeItemJson(
+    ll3::glimpse::bridging::updateKnowledgeItemJson(
       *core_,
       toRustStr(itemId),
       toRustStr(patchJson)
@@ -130,12 +130,12 @@ std::string HybridGlimpseCore::updateKnowledgeItemJson(
 
 std::string HybridGlimpseCore::createConversationJson(const std::string& payloadJson) {
   return intoString(
-    craby::glimpsecore::bridging::createConversationJson(*core_, toRustStr(payloadJson))
+    ll3::glimpse::bridging::createConversationJson(*core_, toRustStr(payloadJson))
   );
 }
 
 std::string HybridGlimpseCore::listConversationsJson() {
-  return intoString(craby::glimpsecore::bridging::listConversationsJson(*core_));
+  return intoString(ll3::glimpse::bridging::listConversationsJson(*core_));
 }
 
 std::string HybridGlimpseCore::updateConversationJson(
@@ -143,7 +143,7 @@ std::string HybridGlimpseCore::updateConversationJson(
   const std::string& patchJson
 ) {
   return intoString(
-    craby::glimpsecore::bridging::updateConversationJson(
+    ll3::glimpse::bridging::updateConversationJson(
       *core_,
       toRustStr(conversationId),
       toRustStr(patchJson)
@@ -155,7 +155,7 @@ void HybridGlimpseCore::deleteConversation(
   const std::string& conversationId,
   double deletedAt
 ) {
-  craby::glimpsecore::bridging::deleteConversation(
+  ll3::glimpse::bridging::deleteConversation(
     *core_,
     toRustStr(conversationId),
     deletedAt
@@ -166,7 +166,7 @@ std::string HybridGlimpseCore::listConversationMessagesJson(
   const std::string& conversationId
 ) {
   return intoString(
-    craby::glimpsecore::bridging::listConversationMessagesJson(
+    ll3::glimpse::bridging::listConversationMessagesJson(
       *core_,
       toRustStr(conversationId)
     )
@@ -175,7 +175,7 @@ std::string HybridGlimpseCore::listConversationMessagesJson(
 
 std::string HybridGlimpseCore::addMessageJson(const std::string& payloadJson) {
   return intoString(
-    craby::glimpsecore::bridging::addMessageJson(*core_, toRustStr(payloadJson))
+    ll3::glimpse::bridging::addMessageJson(*core_, toRustStr(payloadJson))
   );
 }
 
@@ -184,7 +184,7 @@ std::string HybridGlimpseCore::updateMessageJson(
   const std::string& patchJson
 ) {
   return intoString(
-    craby::glimpsecore::bridging::updateMessageJson(
+    ll3::glimpse::bridging::updateMessageJson(
       *core_,
       toRustStr(messageId),
       toRustStr(patchJson)
@@ -193,32 +193,32 @@ std::string HybridGlimpseCore::updateMessageJson(
 }
 
 void HybridGlimpseCore::deleteMessage(const std::string& messageId, double deletedAt) {
-  craby::glimpsecore::bridging::deleteMessage(*core_, toRustStr(messageId), deletedAt);
+  ll3::glimpse::bridging::deleteMessage(*core_, toRustStr(messageId), deletedAt);
 }
 
 void HybridGlimpseCore::saveRecommendationsJson(const std::string& payloadJson) {
-  craby::glimpsecore::bridging::saveRecommendationsJson(*core_, toRustStr(payloadJson));
+  ll3::glimpse::bridging::saveRecommendationsJson(*core_, toRustStr(payloadJson));
 }
 
 std::string HybridGlimpseCore::listRecommendationsJson() {
-  return intoString(craby::glimpsecore::bridging::listRecommendationsJson(*core_));
+  return intoString(ll3::glimpse::bridging::listRecommendationsJson(*core_));
 }
 
 std::string HybridGlimpseCore::listPendingRecommendationsJson() {
   return intoString(
-    craby::glimpsecore::bridging::listPendingRecommendationsJson(*core_)
+    ll3::glimpse::bridging::listPendingRecommendationsJson(*core_)
   );
 }
 
 std::string HybridGlimpseCore::listRecentFeedbackEventsJson(double limit) {
   return intoString(
-    craby::glimpsecore::bridging::listRecentFeedbackEventsJson(*core_, limit)
+    ll3::glimpse::bridging::listRecentFeedbackEventsJson(*core_, limit)
   );
 }
 
 std::string HybridGlimpseCore::logRecommendationFeedbackJson(const std::string& payloadJson) {
   return intoString(
-    craby::glimpsecore::bridging::logRecommendationFeedbackJson(*core_, toRustStr(payloadJson))
+    ll3::glimpse::bridging::logRecommendationFeedbackJson(*core_, toRustStr(payloadJson))
   );
 }
 
@@ -227,7 +227,7 @@ void HybridGlimpseCore::respondToRecommendationJson(
   const std::string& status,
   const std::string& eventJson
 ) {
-  craby::glimpsecore::bridging::respondToRecommendationJson(
+  ll3::glimpse::bridging::respondToRecommendationJson(
     *core_,
     toRustStr(recommendationId),
     toRustStr(status),

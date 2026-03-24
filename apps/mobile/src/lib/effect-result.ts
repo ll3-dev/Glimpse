@@ -15,6 +15,27 @@ export interface AppError {
   readonly details?: unknown;
 }
 
+function normalizeErrorDetails(details: unknown): unknown {
+  if (details instanceof Error) {
+    const normalized: Record<string, unknown> = {
+      name: details.name,
+      message: details.message,
+    };
+
+    if (details.stack) {
+      normalized.stack = details.stack;
+    }
+
+    if ('cause' in details && details.cause !== undefined) {
+      normalized.cause = normalizeErrorDetails(details.cause);
+    }
+
+    return normalized;
+  }
+
+  return details;
+}
+
 export interface FailureResult {
   success: false;
   error: AppError;
@@ -36,7 +57,7 @@ export function appError(
     _tag: code,
     code,
     message,
-    details,
+    details: normalizeErrorDetails(details),
   };
 }
 

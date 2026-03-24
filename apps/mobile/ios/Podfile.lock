@@ -2780,7 +2780,7 @@ SPEC CHECKSUMS:
   ExpoTaskManager: 6038b80fbe63915383dcf57fa0156b23e2615fab
   ExpoWebBrowser: f13a6e46e44049bbb8ce49ff8aaa4d819c87d1fe
   FBLazyVector: 32e9ed0301d0fcbc1b2b341dd7fcbf291f51eb83
-  GlimpseCore: f6a621bf975a2171f35ae0b4e15c5dd0bdf531fb
+  GlimpseCore: 907ada6b2db770ed15b42bb5f956c8cde8d046e4
   hermes-engine: de47be60591ef18b4b9aa872fee4bc9f88617f71
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f

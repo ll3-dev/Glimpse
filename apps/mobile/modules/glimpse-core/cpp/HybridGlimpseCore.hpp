@@ -70,12 +70,12 @@ public:
 
 private:
   static rust::Str toRustStr(const std::string& value);
-  static craby::glimpsecore::bridging::NullableNumber
+  static ll3::glimpse::bridging::NullableNumber
   toNullableNumber(std::optional<double> value);
-  static craby::glimpsecore::bridging::NullableStringArray
+  static ll3::glimpse::bridging::NullableStringArray
   toNullableStringArray(const std::optional<std::vector<std::string>>& value);
   static std::optional<double> toOptionalNumber(
-    const craby::glimpsecore::bridging::NullableNumber& value
+    const ll3::glimpse::bridging::NullableNumber& value
   );
   static std::string intoString(rust::String value);
 
@@ -83,7 +83,7 @@ private:
   static inline std::atomic_size_t nextInstanceId_{1};
   static inline std::string dataPath_;
 
-  rust::Box<craby::glimpsecore::bridging::GlimpseCore> core_;
+  rust::Box<ll3::glimpse::bridging::GlimpseCore> core_;
 
   static constexpr auto TAG = "GlimpseCore";
 };

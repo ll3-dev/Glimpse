@@ -7,6 +7,16 @@ import type {
 } from '@glimpse/shared';
 import { GlimpseCore } from '@glimpse/mobile-core-module';
 
+function toNitroOptionalNumber(value: number | null | undefined): number | undefined {
+  return value ?? undefined;
+}
+
+function toNitroOptionalStringArray(
+  value: string[] | null | undefined
+): string[] | undefined {
+  return value ?? undefined;
+}
+
 function getNativeCore() {
   return GlimpseCore;
 }
@@ -19,22 +29,22 @@ function getRequiredNativeCore() {
   return core;
 }
 
-export const crabyCoreClient = {
+export const nativeCoreClient = {
   isAvailable(): boolean {
     return getNativeCore() !== null;
   },
 
   calculateTagOverlap(input: CalculateTagOverlapInput): number {
     return getRequiredNativeCore().calculateTagOverlap(
-      input.left.tags ?? null,
-      input.right.tags ?? null
+      toNitroOptionalStringArray(input.left.tags),
+      toNitroOptionalStringArray(input.right.tags)
     );
   },
 
   calculateNextReview(input: CalculateNextReviewInput): CalculateNextReviewOutput {
     const result = getRequiredNativeCore().calculateNextReview(
-      input.lastReviewedAt,
-      input.nextReviewAt,
+      toNitroOptionalNumber(input.lastReviewedAt),
+      toNitroOptionalNumber(input.nextReviewAt),
       input.feedbackType,
       input.now
     );
@@ -50,7 +60,7 @@ export const crabyCoreClient = {
   ): InitializeReviewScheduleOutput {
     const result = getRequiredNativeCore().initializeReviewSchedule(
       input.createdAt,
-      input.intervalMs ?? null
+      toNitroOptionalNumber(input.intervalMs)
     );
 
     return {
@@ -86,7 +96,10 @@ export const crabyCoreClient = {
   },
 
   getDueKnowledgeItemsJson(now: number, limit: number | null): string {
-    return getRequiredNativeCore().getDueKnowledgeItemsJson(now, limit);
+    return getRequiredNativeCore().getDueKnowledgeItemsJson(
+      now,
+      toNitroOptionalNumber(limit)
+    );
   },
 
   updateKnowledgeItemJson(itemId: string, patchJson: string): string {

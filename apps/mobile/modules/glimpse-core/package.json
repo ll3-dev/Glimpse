@@ -27,17 +27,16 @@
     "cpp",
     "*.podspec",
     "react-native.config.js",
-    "craby.toml",
     "Cargo.toml",
     "crates",
     "!ios/build",
     "!android/build"
   ],
   "scripts": {
-    "codegen": "tsc --noEmit",
-    "build": "tsdown",
+    "codegen": "bash ../../../../scripts/generate-glimpse-core-bridge.sh && node ../../../../scripts/run-package-bin.mjs typescript --noEmit",
+    "build": "node ../../../../scripts/run-package-bin.mjs tsdown",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node ../../../../scripts/run-package-bin.mjs typescript --noEmit"
   },
   "devDependencies": {
     "@react-native-community/cli-types": "^20.0.2",
