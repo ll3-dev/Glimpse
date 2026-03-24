@@ -28,7 +28,8 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
     const now = Date.now();
     const contentForProcessing = createContentForProcessing(input);
 
-    // Generate metadata via router (falls back to stub on failure)
+    // Generate metadata via the currently selected provider.
+    // Saving still proceeds if metadata generation fails.
     const metadataResult = await deps.generateMetadata({
       content: contentForProcessing,
       title: input.title,
@@ -44,8 +45,8 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
       const newKnowledgeItem: NewKnowledgeItem = {
         id,
         type: input.type,
-        title: normalizeText(input.title),
-        body: normalizeText(input.body),
+        title: normalizeText(input.title) ?? null,
+        body: normalizeText(input.body) ?? null,
         url:
           (input.type === 'link' || input.type === 'share') && input.url
             ? input.url.trim()

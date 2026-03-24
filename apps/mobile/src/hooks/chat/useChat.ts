@@ -6,14 +6,13 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useAddMessageMutation } from '@/src/hooks';
-import {
-  isLocalLLMReady,
-  getSelectedLocalModel,
-} from '@/src/features/settings/local-llm.selectors';
+import { executeChatTarget, resolveEffectiveTarget } from '@/src/features/ai/targets';
 import type { KnowledgeItem } from '@glimpse/shared';
+import { isFailure } from '@/src/lib/effect-result';
 import { logger } from '@/src/utils/logger';
 import { generateAssistantReply, savePartialAssistantReply } from './chatGeneration';
 import { getLocalLLMRuntime } from './chatRuntime';
+import { getSelectedLocalModel } from '@/src/features/settings/local-llm.selectors';
 
 interface UseChatOptions {
   conversationId: string;
@@ -48,28 +47,52 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
     streamingTextRef.current = '';
 
     try {
-      if (!isLocalLLMReady()) {
-        throw new Error('AI가 준비되지 않았습니다. 설정에서 로컬 LLM을 활성화해 주세요.');
-      }
+      const target = resolveEffectiveTarget('chat');
 
-      const model = getSelectedLocalModel();
-      if (!model?.path) {
-        throw new Error('선택된 모델이 없습니다.');
-      }
+      if (target.kind === 'local') {
+        const model = getSelectedLocalModel();
+        if (!model?.path) {
+          throw new Error('선택된 로컬 채팅 모델이 없습니다.');
+        }
 
-      const runtime = getLocalLLMRuntime();
-      await generateAssistantReply({
-        runtime,
-        model,
-        conversationId,
-        userText: text.trim(),
-        contextItem,
-        addMessage,
-        streamingTextRef,
-        onToken: (token) => {
-          setStreamingText((prev) => prev + token);
-        },
-      });
+        const runtime = getLocalLLMRuntime();
+        await generateAssistantReply({
+          runtime,
+          model,
+          conversationId,
+          userText: text.trim(),
+          contextItem,
+          addMessage,
+          streamingTextRef,
+          onToken: (token) => {
+            setStreamingText((prev) => prev + token);
+          },
+        });
+      } else {
+        await addMessage({
+          conversationId,
+          role: 'user',
+          content: text.trim(),
+        });
+
+        const result = await executeChatTarget(target, {
+          userText: text.trim(),
+          contextItem,
+        });
+
+        if (isFailure(result)) {
+          throw new Error(result.error.message);
+        }
+
+        streamingTextRef.current = result.data;
+        setStreamingText(result.data);
+
+        await addMessage({
+          conversationId,
+          role: 'assistant',
+          content: result.data,
+        });
+      }
 
       streamingTextRef.current = '';
       setStreamingText('');

@@ -1,7 +1,7 @@
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import { appError, isFailure, runEffectSuccess, type AppError, tryPromise } from '@/src/lib/effect-result';
 import { Effect } from 'effect';
-import { deriveRuleBasedLabels } from './rule-based-labeler';
+import { executeLabelingTarget, resolveEffectiveTarget } from '@/src/features/ai/targets';
 import type { LabelingJobRunResult } from './types';
 import type { KnowledgeItem } from '@glimpse/shared';
 
@@ -41,17 +41,36 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps = de
       const completedItems: KnowledgeItem[] = [];
 
       for (const item of pendingItems) {
-        const result = deriveRuleBasedLabels(item);
+        const target = resolveEffectiveTarget('labeling');
+        const labelingResult = yield* tryPromise(
+          () => executeLabelingTarget(target, item),
+          (error): AppError =>
+            appError('GENERATION_ERROR', 'Failed to execute labeling target', {
+              itemId: item.id,
+              target: target.id,
+              cause: error,
+            })
+        );
+
+        if (isFailure(labelingResult)) {
+          return yield* Effect.fail(
+            appError('GENERATION_ERROR', 'Failed to generate labels', {
+              itemId: item.id,
+              target: target.id,
+              cause: labelingResult.error,
+            })
+          );
+        }
         const completedAt = now();
 
         const updatedItem = (yield* tryPromise(
           () =>
             deps.coreClient.updateKnowledgeItem(item.id, {
-              provisionalLabels: result.labels,
+              provisionalLabels: labelingResult.data.labels,
               labelStatus: 'provisional',
-              labelSource: result.source,
-              labelVersion: result.version,
-              labelScore: result.score,
+              labelSource: labelingResult.data.source,
+              labelVersion: labelingResult.data.version,
+              labelScore: labelingResult.data.score,
               labelCompletedAt: completedAt,
               labelError: null,
               updatedAt: completedAt,

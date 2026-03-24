@@ -9,6 +9,7 @@
     "./foundation": "./src/foundation/effect-result.ts",
     "./ports": "./src/ports/index.ts",
     "./ai": "./src/ai/index.ts",
+    "./ai/runtime-registry": "./src/ai/runtime-registry.ts",
     "./domain/review": "./src/domain/review/index.ts",
     "./adapters/local": "./src/adapters/local/index.ts",
     "./application/chat": "./src/application/chat/index.ts",
