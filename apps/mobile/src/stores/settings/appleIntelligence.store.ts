@@ -1,29 +1,26 @@
+import {
+  createAppleIntelligenceSnapshot,
+  disableAppleIntelligenceSnapshot,
+  enableAppleIntelligenceSnapshot,
+  setAppleIntelligenceEnabledSnapshot,
+  type AppleIntelligenceStoreActions,
+  type AppleIntelligenceStoreState,
+} from '@glimpse/core/application/state';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
-export type AppleIntelligenceStoreActions = {
-  setEnabled: (enabled: boolean) => void;
-  enable: () => void;
-  disable: () => void;
-};
-
-export type AppleIntelligenceStoreState = {
-  enabled: boolean;
-  actions: AppleIntelligenceStoreActions;
-};
-
 export function createAppleIntelligenceStore(): StoreApi<AppleIntelligenceStoreState> {
   return createStore<AppleIntelligenceStoreState>((set) => ({
-    enabled: false,
+    ...createAppleIntelligenceSnapshot(),
     actions: {
       setEnabled: (enabled: boolean) => {
-        set({ enabled });
+        set((state) => setAppleIntelligenceEnabledSnapshot(state, enabled));
       },
       enable: () => {
-        set({ enabled: true });
+        set((state) => enableAppleIntelligenceSnapshot(state));
       },
       disable: () => {
-        set({ enabled: false });
+        set((state) => disableAppleIntelligenceSnapshot(state));
       },
     },
   }));
@@ -48,3 +45,5 @@ export function useAppleIntelligenceStoreValue<T>(
 ): T {
   return useStore(store, selector);
 }
+
+export type { AppleIntelligenceStoreActions, AppleIntelligenceStoreState };

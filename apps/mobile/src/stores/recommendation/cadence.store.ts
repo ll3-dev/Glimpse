@@ -1,27 +1,23 @@
+import {
+  createRecommendationCadenceSnapshot,
+  DEFAULT_RECOMMENDATION_CADENCE,
+  resetRecommendationCadenceSnapshot,
+  setRecommendationCadenceSnapshot,
+  type RecommendationCadenceStoreActions,
+  type RecommendationCadenceStoreState,
+} from '@glimpse/core/application/state';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
-type RecommendationCadenceStoreActions = {
-  setCadence: (cadence: number) => void;
-  reset: () => void;
-};
-
-type RecommendationCadenceStoreState = {
-  currentCadence: number;
-  actions: RecommendationCadenceStoreActions;
-};
-
-const DEFAULT_CADENCE = 7 * 24 * 60 * 60 * 1000;
-
 const recommendationCadenceStore =
   createStore<RecommendationCadenceStoreState>((set) => ({
-    currentCadence: DEFAULT_CADENCE,
+    ...createRecommendationCadenceSnapshot(),
     actions: {
       setCadence: (cadence: number) => {
-        set({ currentCadence: cadence });
+        set((state) => setRecommendationCadenceSnapshot(state, cadence));
       },
       reset: () => {
-        set({ currentCadence: DEFAULT_CADENCE });
+        set(() => resetRecommendationCadenceSnapshot());
       },
     },
   }));
@@ -41,3 +37,9 @@ export function useRecommendationCadenceStoreValue(): number {
 export function resetRecommendationCadenceForTest(): void {
   recommendationCadenceStore.getState().actions.reset();
 }
+
+export {
+  DEFAULT_RECOMMENDATION_CADENCE,
+  type RecommendationCadenceStoreActions,
+  type RecommendationCadenceStoreState,
+};

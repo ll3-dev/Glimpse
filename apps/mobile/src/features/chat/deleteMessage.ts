@@ -1,49 +1,22 @@
-/**
- * Delete Message Use Case
- *
- * Soft deletes a message by setting the deletedAt timestamp.
- */
-
-import { Effect } from 'effect';
-import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
-  appError,
-  type FailureResult,
-  type Result,
-  runEffectResult,
-} from '@/src/lib/effect-result';
-
-export type DeleteMessageSuccessResult = { success: true; data: void };
-export type DeleteMessageFailureResult = FailureResult;
-export type DeleteMessageResult = Result<void>;
-
-export interface DeleteMessageInput {
-  messageId: string;
-  conversationId: string;
-}
-
-export interface DeleteMessageDeps {
-  coreClient: Pick<MobileCoreClient, 'deleteMessage'>;
-}
+  createDeleteMessage,
+  type DeleteMessageDeps,
+  type DeleteMessageFailureResult,
+  type DeleteMessageInput,
+  type DeleteMessageResult,
+  type DeleteMessageSuccessResult,
+} from '@glimpse/core/application/chat';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 const defaultDeps: DeleteMessageDeps = {
-  coreClient: mobileCoreClient,
+  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'deleteMessage'>,
 };
-
-/**
- * Soft deletes a message by setting the deletedAt timestamp.
- */
-export function createDeleteMessage(deps: DeleteMessageDeps = defaultDeps) {
-  return async function deleteMessage(input: DeleteMessageInput): Promise<DeleteMessageResult> {
-    const now = Date.now();
-
-    const queryEffect = Effect.tryPromise({
-      try: () => deps.coreClient.deleteMessage(input.messageId, now),
-      catch: (error) => appError('DATABASE_ERROR', 'Failed to delete message', error),
-    });
-
-    return runEffectResult(queryEffect.pipe(Effect.map(() => undefined)));
-  };
-}
-
-export const deleteMessage = createDeleteMessage();
+export type {
+  DeleteMessageDeps,
+  DeleteMessageFailureResult,
+  DeleteMessageInput,
+  DeleteMessageResult,
+  DeleteMessageSuccessResult,
+};
+export { createDeleteMessage };
+export const deleteMessage = createDeleteMessage(defaultDeps);

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@glimpse/core": "workspace:*",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "react": "19.2.0",

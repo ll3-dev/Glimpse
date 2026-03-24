@@ -1,8 +1,10 @@
 import { logger } from '@/src/utils/logger';
 import { calculateNextReviewFromFeedback } from './adjustIntervalFromFeedback';
-import { createMarkAsReviewed } from './reviewActions.markAsReviewed';
-import { createPostponeReview } from './reviewActions.postpone';
-import type { ReviewActionsDeps } from './reviewActions.types';
+import {
+  createMarkAsReviewed,
+  createPostponeReview,
+  type ReviewActionsDeps,
+} from '@glimpse/core/application/review';
 import { mobileCoreClient } from '@/src/features/core';
 
 export {

@@ -1,57 +1,22 @@
-/**
- * Update Conversation Title Use Case
- *
- * Updates the title of a conversation.
- */
-
-import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import {
-  appError,
-  type FailureResult,
-  type Result,
-  runEffectResult,
-} from '@/src/lib/effect-result';
-import { Effect } from 'effect';
-import type { Conversation } from '@glimpse/shared';
-
-export type UpdateTitleSuccessResult = { success: true; data: Conversation };
-export type UpdateTitleFailureResult = FailureResult;
-export type UpdateTitleResult = Result<Conversation>;
-
-export interface UpdateConversationTitleInput {
-  conversationId: string;
-  title: string;
-}
-
-export interface UpdateConversationTitleDeps {
-  coreClient: Pick<MobileCoreClient, 'updateConversation'>;
-}
+  createUpdateConversationTitle,
+  type UpdateConversationTitleDeps,
+  type UpdateConversationTitleInput,
+  type UpdateTitleFailureResult,
+  type UpdateTitleResult,
+  type UpdateTitleSuccessResult,
+} from '@glimpse/core/application/chat';
+import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 const defaultDeps: UpdateConversationTitleDeps = {
-  coreClient: mobileCoreClient,
+  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'updateConversation'>,
 };
-
-/**
- * Updates the title of a conversation.
- */
-export function createUpdateConversationTitle(deps: UpdateConversationTitleDeps = defaultDeps) {
-  return async function updateConversationTitle(
-    input: UpdateConversationTitleInput
-  ): Promise<UpdateTitleResult> {
-    const now = Date.now();
-
-    const queryEffect = Effect.tryPromise({
-      try: () =>
-        deps.coreClient.updateConversation(input.conversationId, {
-          title: input.title,
-          updatedAt: now,
-        }),
-      catch: (error) =>
-        appError('DATABASE_ERROR', 'Failed to update conversation title', error),
-    });
-
-    return runEffectResult(queryEffect);
-  };
-}
-
-export const updateConversationTitle = createUpdateConversationTitle();
+export type {
+  UpdateConversationTitleDeps,
+  UpdateConversationTitleInput,
+  UpdateTitleFailureResult,
+  UpdateTitleResult,
+  UpdateTitleSuccessResult,
+};
+export { createUpdateConversationTitle };
+export const updateConversationTitle = createUpdateConversationTitle(defaultDeps);

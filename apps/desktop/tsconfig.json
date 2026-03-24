@@ -8,6 +8,10 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "effect": ["../mobile/node_modules/effect"],
+      "effect/*": ["../mobile/node_modules/effect/*"],
+      "@glimpse/core": ["../../packages/core/src/index.ts"],
+      "@glimpse/core/*": ["../../packages/core/src/*"],
       "@glimpse/shared": ["../../packages/shared/src/index.ts"],
       "@glimpse/shared/*": ["../../packages/shared/src/*"],
       "@glimpse/ui": ["../../packages/ui/src/index.ts"],
@@ -17,6 +21,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "../../packages/core/src/**/*.ts",
     "../../packages/shared/src/**/*.ts",
     "../../packages/ui/src/**/*.ts",
     "../../packages/ui/src/**/*.tsx"

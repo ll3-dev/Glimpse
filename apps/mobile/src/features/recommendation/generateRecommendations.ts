@@ -1,12 +1,12 @@
+import {
+  createGenerateRecommendations as createGenerateRecommendationsUsecase,
+  createSaveRecommendations as createSaveRecommendationsUsecase,
+  type GenerateRecommendationsDeps,
+  type SaveRecommendationsDeps,
+} from '@glimpse/core/application/recommendation';
 import { mobileCoreClient } from '@/src/features/core';
-import { generateId } from "@/src/lib/id";
+import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from "@/src/lib/id";
 import { getWeeklyItems } from "./getWeeklyItems";
-import { createGenerateRecommendations as createGenerateRecommendationsUsecase } from "./generateRecommendations.usecase";
-import { createSaveRecommendations as createSaveRecommendationsUsecase } from "./saveRecommendations.usecase";
-import type {
-  GenerateRecommendationsDeps,
-  SaveRecommendationsDeps,
-} from "./generateRecommendations.types";
 
 export type {
   GenerateFailureResult,
@@ -25,6 +25,8 @@ const defaultGenerateDeps: GenerateRecommendationsDeps = {
 const defaultSaveDeps: SaveRecommendationsDeps = {
   coreClient: mobileCoreClient,
   nanoid: generateId,
+  isIdCollisionError,
+  maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
 };
 
 export function createGenerateRecommendations(

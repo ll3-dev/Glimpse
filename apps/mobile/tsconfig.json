@@ -5,6 +5,10 @@
     "composite": true,
     "paths": {
       "@/*": ["./*"],
+      "effect": ["./node_modules/effect"],
+      "effect/*": ["./node_modules/effect/*"],
+      "@glimpse/core": ["../../packages/core/src/index.ts"],
+      "@glimpse/core/*": ["../../packages/core/src/*"],
       "@glimpse/shared": ["../../packages/shared/src/index.ts"],
       "@glimpse/shared/*": ["../../packages/shared/src/*"],
       "@glimpse/ui": ["../../packages/ui/src/index.ts"],
@@ -18,6 +22,7 @@
     "src/**/*.tsx",
     "src/**/*.d.ts",
     "../../packages/shared/src/**/*.ts",
+    "../../packages/core/src/**/*.ts",
     "../../packages/ui/src/**/*.ts",
     "../../packages/ui/src/**/*.tsx",
     "*.ts"
