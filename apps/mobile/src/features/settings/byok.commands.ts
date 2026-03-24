@@ -8,6 +8,7 @@ import {
   setBYOKProvider,
   type BYOKProviderType,
 } from '@/src/stores/settings/byok.store';
+import { activateInferenceMode, getInferenceMode, resetInferenceMode } from '@/src/stores/settings/inference-mode.store';
 import {
   DEFAULT_OPENAI_BASE_URL,
   getDefaultByokModel,
@@ -30,11 +31,15 @@ export function enableBYOK(): ValidationResult {
   }
 
   setBYOKEnabled(true);
+  activateInferenceMode('byok');
   return { valid: true };
 }
 
 export function disableBYOK(): void {
   setBYOKEnabled(false);
+  if (getInferenceMode() === 'byok') {
+    resetInferenceMode();
+  }
 }
 
 export function setProvider(provider: BYOKProviderType | null): void {

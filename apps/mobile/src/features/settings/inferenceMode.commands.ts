@@ -1,3 +1,7 @@
+import {
+  activateInferenceMode,
+} from '@/src/stores/settings/inference-mode.store';
+import type { InferenceModeTransitionReason } from '@glimpse/core/application/state';
 import { setAppleIntelligenceEnabled } from './appleIntelligenceToggle';
 import { disableBYOK, enableBYOK } from './byokSettings';
 import { disableLocalLLM, enableLocalLLM } from './local-llm.commands';
@@ -11,6 +15,7 @@ export function enableExclusiveAppleIntelligence(): boolean {
 
   disableLocalLLM();
   disableBYOK();
+  activateInferenceMode('apple-intelligence');
   return true;
 }
 
@@ -22,6 +27,7 @@ export function enableExclusiveLocalLLM(): { success: boolean; error?: string } 
 
   setAppleIntelligenceEnabled(false);
   disableBYOK();
+  activateInferenceMode('local-llm');
   return result;
 }
 
@@ -33,5 +39,8 @@ export function enableExclusiveBYOK(): ValidationResult {
 
   setAppleIntelligenceEnabled(false);
   disableLocalLLM();
+  activateInferenceMode('byok');
   return result;
 }
+
+export type { InferenceModeTransitionReason };
