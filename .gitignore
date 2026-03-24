@@ -52,6 +52,7 @@ drizzle/
 
 # Build outputs
 packages/*/dist/
+apps/desktop/dist/
 .tsdown/
 
 # Android build artifacts
@@ -73,3 +74,8 @@ prefab/
 .gradle/
 
 # @end expo-cli
+
+# Tauri desktop generated files
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/icons/*.png
+!apps/desktop/src-tauri/icons/icon.png

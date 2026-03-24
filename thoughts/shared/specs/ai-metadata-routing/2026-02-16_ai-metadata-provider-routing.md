@@ -14,12 +14,12 @@ priority: high
 ## 해결 목표
 캡처 저장 시점(`saveKnowledgeItem`)의 `summary/tags` 스텁을 실제 AI 추론으로 교체한다.
 
-**현재:** 저장 시 스텁 기반 메타데이터만 생성되고 provider 라우팅이 없음
-**목표:** 저장 시 실추론 메타데이터를 생성하고, 기기/설정 상태에 따라 `Apple -> Local -> BYOK` 순으로 자동 선택한다
+**현재:** 저장 시 스텁 기반 메타데이터만 생성되고 선택 provider 정책이 일관되게 연결되어 있지 않음
+**목표:** 저장 시 실추론 메타데이터를 생성하고, 사용자가 선택한 provider를 기준으로 호출 경로를 고정한다
 
 ## 성공 기준
 - [ ] `saveKnowledgeItem` 경로에서 summary/tags가 스텁이 아닌 provider 기반으로 생성된다.
-- [ ] provider 라우팅이 `Apple -> Local -> BYOK` 순으로 동작하며, 실패 시 다음 provider로 폴백된다.
+- [ ] provider 라우팅이 사용자가 선택한 provider 하나만 호출하도록 동작한다.
 - [ ] iOS/Android에서 공통 라우팅 로직 테스트와 저장 통합 테스트가 통과한다.
 
 ## 범위 제한
@@ -50,12 +50,10 @@ priority: high
 
 2. Provider 라우터
 - 입력: 캡처 content + 설정 상태
-- 우선순위 고정: `Apple -> Local -> BYOK`
 - 규칙:
-  - Apple 사용 가능 + 토글 ON이면 Apple 시도
-  - 실패/미지원이면 Local 시도
-  - Local 실패/미설정이면 BYOK 시도
-  - 최종 실패 시 기존 스텁으로 마지막 폴백(저장 실패 방지)
+  - 사용자가 선택한 provider만 호출
+  - 선택된 provider가 미지원/실패면 그 결과를 그대로 반환
+  - `default` 모드에서는 기존 스텁 provider 사용
 
 3. Apple provider
 - 기존 Apple 토글 가용성 로직 재사용
@@ -70,7 +68,7 @@ priority: high
 5. BYOK provider
 - 기존 BYOK 상태(`enabled/provider/apiKey`) 재사용
 - provider(OpenAI/Anthropic/Google)별 호출 어댑터를 동일 계약으로 래핑
-- 네트워크/응답 실패는 라우터가 상위 폴백 처리
+- 네트워크/응답 실패는 선택된 provider 실패로 그대로 반환
 
 6. 저장 유스케이스 연결
 - `saveKnowledgeItem`에서 스텁 직접 호출 제거
@@ -79,19 +77,19 @@ priority: high
 
 ## 테스트 케이스
 1. 단위 테스트
-- 라우터 우선순위/폴백 순서 검증
+- 선택된 provider만 호출되는지 검증
 - 각 provider `isAvailable` 분기 검증
-- 최종 전부 실패 시 스텁 폴백 검증
+- `default` 모드에서만 스텁 provider가 호출되는지 검증
 
 2. 기존 유스케이스 회귀
 - `saveKnowledgeItem.test.ts`를 provider mock 기반으로 갱신
 - 요약/태그가 저장 payload에 반영되는지 검증
 
 3. 플랫폼 시나리오
-- iOS: Apple 가능 시 Apple 선택
-- iOS/Android: Apple 불가 시 Local 선택
-- iOS/Android: Local 불가 시 BYOK 선택
-- BYOK 불가 시 스텁 폴백
+- iOS: Apple 선택 시 Apple만 호출
+- iOS/Android: Local 선택 시 Local만 호출
+- iOS/Android: BYOK 선택 시 BYOK만 호출
+- default 모드에서만 스텁 호출
 
 4. 최소 검증 명령
 - `bun test src/features/capture/saveKnowledgeItem.test.ts`
@@ -100,7 +98,7 @@ priority: high
 - `bun run ios` 또는 `bun run android` 스모크
 
 ## 가정 및 기본값
-- 기본 provider 우선순위는 `Apple -> Local -> BYOK`로 고정한다.
+- 기본 동작은 사용자가 선택한 provider를 우선하며, `default` 모드만 스텁을 사용한다.
 - Local 모델은 단일 고정이 아닌 다중 모델 선택 UI/상태를 제공한다.
 - 저장 성공률을 우선하므로 AI 실패가 저장 실패로 전파되지 않도록 한다.
 

@@ -18,7 +18,7 @@ Local 모델 설정이 있어도 공통 provider 인터페이스를 따르는 �
 ## 성공 기준
 - [ ] Local provider가 모델 선택 상태를 읽어 사용 가능 여부를 판단한다.
 - [ ] Local provider가 요약/태그 결과를 공통 메타데이터 타입으로 반환한다.
-- [ ] Local 실패 시 라우터가 BYOK로 폴백할 수 있는 실패 결과를 반환한다.
+- [ ] Local 실패 시 선택된 provider 오류로 일관된 실패 결과를 반환한다.
 
 ## 범위 제한
 - 모델 성능 비교/벤치마크는 제외합니다.
@@ -29,4 +29,3 @@ Local 모델 설정이 있어도 공통 provider 인터페이스를 따르는 �
 - `src/features/settings/*`
 - `src/features/capture/saveKnowledgeItem.ts`
 - 원본 SPEC: `../2026-02-16_ai-metadata-provider-routing.md`
-

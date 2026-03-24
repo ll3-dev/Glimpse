@@ -9,7 +9,7 @@ priority: high
 # AI SDK 11 Local/Apple Provider 테스트 SPEC
 
 ## 문제
-실SDK 통합 이후 테스트가 없으면 fallback 회귀와 에러 포맷 깨짐을 빠르게 감지할 수 없습니다.
+실SDK 통합 이후 테스트가 없으면 선택 provider 회귀와 에러 포맷 깨짐을 빠르게 감지할 수 없습니다.
 
 ## 해결 목표
 **현재:** provider 단위 성공/실패 테스트가 충분하지 않습니다.  
@@ -29,4 +29,3 @@ priority: high
 - `src/features/ai/providers/local-llm-provider.test.ts`
 - `src/features/ai/providers/apple-provider.test.ts`
 - `src/features/ai/metadata/router.test.ts`
-

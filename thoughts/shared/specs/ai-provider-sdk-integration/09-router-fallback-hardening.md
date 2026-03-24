@@ -6,19 +6,19 @@ type: feature
 priority: high
 ---
 
-# AI SDK 09 라우터 폴백 체인 보강 SPEC
+# AI SDK 09 선택 Provider 라우팅 보강 SPEC
 
 ## 문제
-Provider 개별 구현이 완료되어도 라우터가 우선순위/폴백을 정확히 지키지 않으면 실사용에서 일관성이 깨집니다.
+Provider 개별 구현이 완료되어도 라우터가 선택된 provider만 정확히 호출하지 않으면 실사용에서 일관성이 깨집니다.
 
 ## 해결 목표
-**현재:** `Apple -> Local -> BYOK -> Stub` 정책은 있으나 실SDK 실패 케이스 회귀 위험이 있습니다.  
-**목표:** 라우터 readiness 조건과 폴백 체인을 명시적으로 고정합니다.
+**현재:** 선택 기반 정책이 있어도 라우터 회귀 시 다른 provider가 암묵적으로 호출될 위험이 있습니다.  
+**목표:** 라우터 readiness 조건과 선택 provider 경계를 명시적으로 고정합니다.
 
 ## 성공 기준
-- [ ] Apple 성공 시 Local/Stub을 호출하지 않는다.
-- [ ] Apple 실패 시 Local로, Local 실패 시 Stub으로 정확히 폴백한다.
-- [ ] provider 오류가 체인 중간에서 누락되지 않고 기록/전달된다.
+- [ ] 선택된 provider만 호출된다.
+- [ ] 선택된 provider 실패가 다른 provider 호출 없이 그대로 기록/전달된다.
+- [ ] provider 오류가 중간 누락 없이 기록/전달된다.
 
 ## 범위 제한
 - 새로운 provider 추가는 제외합니다.
@@ -28,4 +28,3 @@ Provider 개별 구현이 완료되어도 라우터가 우선순위/폴백을 �
 ## 참고 자료
 - `src/features/ai/metadata/router.ts`
 - `src/features/ai/providers/*`
-

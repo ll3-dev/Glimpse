@@ -161,8 +161,8 @@ for (provider of [apple, local, byok, stub])
 
 | 상황 | 처리 |
 |------|------|
-| `isAvailable()` 예외 | Router가 catch → 다음 provider로 fallback |
-| `generate()` 실패 | Router가 에러 기록 → 다음 provider로 fallback |
+| `isAvailable()` 예외 | Router가 catch 후 실패 반환 |
+| `generate()` 실패 | Router가 에러 기록 후 실패 반환 |
 | Store 읽기 실패 | `isAvailable()`이 false 반환 (안전하게 처리) |
 
 ## 테스트 계획

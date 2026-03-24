@@ -34,7 +34,7 @@ priority: high
 6. `06-apple-native-entry-skeleton.md` - Apple 네이티브 엔트리 스켈레톤
 7. `07-apple-native-availability-generate.md` - Apple `isAvailable/generate` 구현
 8. `08-apple-bridge-provider-integration.md` - JS bridge + Apple provider 연결
-9. `09-router-fallback-hardening.md` - 라우터 우선순위/폴백 체인 보강
+9. `09-router-fallback-hardening.md` - 선택 provider 라우팅/에러 경계 보강
 10. `10-settings-store-wiring.md` - settings store와 provider readiness 연결
 11. `11-local-apple-provider-tests.md` - Local/Apple provider 테스트 추가
 12. `12-router-regression-lint-smoke.md` - 라우터 회귀 + lint/smoke 검증

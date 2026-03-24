@@ -33,10 +33,9 @@ priority: high
 5. `05-local-model-config-state.md` - Local LLM 다중 모델 설정 상태 추가
 6. `06-local-llm-provider-adapter.md` - Local provider 어댑터 초안
 7. `07-byok-provider-adapter.md` - BYOK provider 어댑터 분리
-8. `08-fallback-observability-tests.md` - 최종 폴백/테스트 기준 고정
+8. `08-fallback-observability-tests.md` - 선택 provider 관측/테스트 기준 고정
 
 ## 참고 자료
 - 원본 SPEC: `../2026-02-16_ai-metadata-provider-routing.md`
 - 저장 유스케이스: `../../../../src/features/capture/saveKnowledgeItem.ts`
 - 설정 토글/스토어: `../../../../src/features/settings`, `../../../../src/stores/settings`
-

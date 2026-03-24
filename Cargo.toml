@@ -1,7 +1,6 @@
 [workspace]
 members = [
-  "packages/core-rs",
-  "apps/mobile/modules/glimpse-core/crates/lib",
+  "apps/desktop/src-tauri",
 ]
 resolver = "2"
 

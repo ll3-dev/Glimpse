@@ -9,7 +9,7 @@ priority: high
 # AI Meta 01 공통 계약 타입 SPEC
 
 ## 문제
-현재 메타데이터 생성 로직은 `generateSummaryStub`, `generateTagsStub` 함수 시그니처에 고정되어 있어 provider 교체와 폴백 조합을 안전하게 확장하기 어렵습니다.
+현재 메타데이터 생성 로직은 `generateSummaryStub`, `generateTagsStub` 함수 시그니처에 고정되어 있어 provider 교체와 선택 기반 라우팅을 안전하게 확장하기 어렵습니다.
 
 ## 해결 목표
 **현재:** 저장 유스케이스가 스텁 함수 2개를 직접 의존합니다.  
@@ -29,4 +29,3 @@ priority: high
 - `src/features/capture/saveKnowledgeItem.types.ts`
 - `src/features/capture/stubs.ts`
 - 원본 SPEC: `../2026-02-16_ai-metadata-provider-routing.md`
-

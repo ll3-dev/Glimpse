@@ -18,7 +18,7 @@ priority: high
 ## 성공 기준
 - [ ] `requireNativeModule` 기반 bridge가 `isAvailable/generate`를 호출한다.
 - [ ] Apple provider summary/tags 경로가 bridge 호출 결과를 사용한다.
-- [ ] 실패 시 provider 표준 에러로 반환해 라우터 폴백이 가능하다.
+- [ ] 실패 시 provider 표준 에러로 반환해 선택 provider 실패를 일관되게 전달한다.
 
 ## 범위 제한
 - provider 라우터 우선순위 조정은 제외합니다.
@@ -28,4 +28,3 @@ priority: high
 ## 참고 자료
 - `src/features/ai/apple-intelligence-bridge.ts`
 - `src/features/ai/providers/apple-provider.ts`
-
