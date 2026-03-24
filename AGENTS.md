@@ -31,12 +31,12 @@
 ## Database schema synchronization
 
 The database schema is owned by the Rust core in `packages/core-rs/src/db.rs`.
-Mobile TypeScript should access the database only through the Craby bridge in `packages/mobile-core-module`.
+Mobile TypeScript should access the database only through the Nitro-backed mobile core bridge in `apps/mobile/modules/glimpse-core`.
 
 **When modifying the schema, you MUST:**
 1. Update `packages/core-rs/src/db.rs` schema and query logic together.
 2. Update Rust domain structs or JSON bridge payloads if the DB contract changes.
-3. Update `packages/mobile-core-module` bridge methods when Rust APIs change.
+3. Update `apps/mobile/modules/glimpse-core` bridge methods when Rust APIs change.
 4. Run the relevant Rust and mobile validation before finishing work.
 
 ## Code style

@@ -1,0 +1,17 @@
+[workspace]
+members = [
+  "packages/core-rs",
+  "apps/mobile/modules/glimpse-core/crates/lib",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+strip = true
+panic = "unwind"
