@@ -10,8 +10,7 @@ import {
   updateLocalLLMDownloadProgress,
   updateLocalLLMModel,
 } from '@/src/stores/settings/local-llm.store';
-import { selectModel } from './local-llm.commands';
-import { enableExclusiveLocalLLM } from './inferenceMode.commands';
+import { enableLocalLLM, selectModel } from './local-llm.commands';
 
 type DownloadLocalModelResult =
   | { success: true; path: string }
@@ -58,7 +57,7 @@ export async function downloadLocalModel(
     });
 
     selectModel(model.id);
-    enableExclusiveLocalLLM();
+    enableLocalLLM();
 
     return { success: true, path };
   } catch (error) {

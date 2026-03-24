@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createAppleIntelligenceBridge } from '@/src/features/ai/apple-intelligence-bridge';
 import {
-  activateInferenceMode,
-  getInferenceMode,
-  getInferenceProvider as getSelectedInferenceProvider,
-  resetInferenceMode,
-} from '@/src/stores/settings/inference-mode.store';
-import {
   createAppleIntelligenceStore,
   getAppleIntelligenceEnabled,
   useAppleIntelligenceStoreValue,
@@ -176,15 +170,11 @@ export function createAppleIntelligenceToggleService(deps: AppleIntelligenceTogg
     }
 
     appleIntelligenceStore.getState().actions.enable();
-    activateInferenceMode('apple-intelligence');
     return true;
   }
 
   function disableAppleIntelligence(): void {
     appleIntelligenceStore.getState().actions.disable();
-    if (getInferenceMode() === 'apple-intelligence') {
-      resetInferenceMode();
-    }
   }
 
   function setAppleIntelligenceEnabled(enabled: boolean): boolean {
@@ -196,10 +186,6 @@ export function createAppleIntelligenceToggleService(deps: AppleIntelligenceTogg
     return true;
   }
 
-  function getInferenceProvider(): 'default' | 'apple-intelligence' | 'local-llm' | 'byok' {
-    return getSelectedInferenceProvider();
-  }
-
   return {
     checkAppleIntelligenceAvailability,
     resolveAppleIntelligenceAvailability,
@@ -209,6 +195,5 @@ export function createAppleIntelligenceToggleService(deps: AppleIntelligenceTogg
     enableAppleIntelligence,
     disableAppleIntelligence,
     setAppleIntelligenceEnabled,
-    getInferenceProvider,
   };
 }

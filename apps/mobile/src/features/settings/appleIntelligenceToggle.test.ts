@@ -47,7 +47,6 @@ describe('appleIntelligenceToggle', () => {
     platform.Version = '18.3';
     expect(toggle.enableAppleIntelligence()).toBe(true);
     expect(toggle.isAppleIntelligenceEnabled()).toBe(true);
-    expect(toggle.getInferenceProvider()).toBe('apple-intelligence');
   });
 
   test('setAppleIntelligenceEnabled(false) disables regardless of platform', () => {
@@ -57,7 +56,6 @@ describe('appleIntelligenceToggle', () => {
     expect(toggle.isAppleIntelligenceEnabled()).toBe(true);
     expect(toggle.setAppleIntelligenceEnabled(false)).toBe(true);
     expect(toggle.isAppleIntelligenceEnabled()).toBe(false);
-    expect(toggle.getInferenceProvider()).toBe('default');
   });
 
   test('config reflects availability and enabled state', () => {

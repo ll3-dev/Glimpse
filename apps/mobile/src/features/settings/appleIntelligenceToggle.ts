@@ -28,4 +28,3 @@ export const isAppleIntelligenceEnabled = appleIntelligenceToggle.isAppleIntelli
 export const enableAppleIntelligence = appleIntelligenceToggle.enableAppleIntelligence;
 export const disableAppleIntelligence = appleIntelligenceToggle.disableAppleIntelligence;
 export const setAppleIntelligenceEnabled = appleIntelligenceToggle.setAppleIntelligenceEnabled;
-export const getInferenceProvider = appleIntelligenceToggle.getInferenceProvider;

@@ -29,16 +29,13 @@ import {
   type LocalModel,
   type DownloadProgress,
 } from '@/src/stores/settings/local-llm.store';
-import { activateInferenceMode, getInferenceMode, resetInferenceMode } from '@/src/stores/settings/inference-mode.store';
 
 /**
  * Enable Local LLM
- * This selects Local LLM as the active inference mode.
  * Actual readiness is derived separately from enabled + selected + ready model.
  */
 export function enableLocalLLM(): { success: boolean; error?: string } {
   setLocalLLMEnabled(true);
-  activateInferenceMode('local-llm');
   return { success: true };
 }
 
@@ -47,9 +44,6 @@ export function enableLocalLLM(): { success: boolean; error?: string } {
  */
 export function disableLocalLLM(): void {
   setLocalLLMEnabled(false);
-  if (getInferenceMode() === 'local-llm') {
-    resetInferenceMode();
-  }
 }
 
 /**

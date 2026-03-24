@@ -47,21 +47,7 @@ export {
   enableAppleIntelligence,
   disableAppleIntelligence,
   setAppleIntelligenceEnabled,
-  getInferenceProvider,
 } from './appleIntelligenceToggle';
-
-export {
-  enableExclusiveAppleIntelligence,
-  enableExclusiveLocalLLM,
-  enableExclusiveBYOK,
-} from './inferenceMode.commands';
-
-export {
-  getInferenceMode,
-  useInferenceMode,
-  useInferenceProvider,
-  type InferenceMode,
-} from '@/src/stores/settings/inference-mode.store';
 
 // Local LLM - Types (re-exported from store)
 export { type LocalLLMConfig, type LocalModel } from './local-llm.selectors';
