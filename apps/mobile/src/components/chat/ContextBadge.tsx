@@ -22,6 +22,7 @@ const typeIcons = {
 } as const;
 
 export function ContextBadge({ item, onRemove }: ContextBadgeProps) {
+  if (!item) return null;
   const Icon = typeIcons[item.type] || FileText;
   const displayTitle = item.title || item.body?.slice(0, 30) || '항목';
 

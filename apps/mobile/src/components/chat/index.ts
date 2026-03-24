@@ -11,3 +11,8 @@ export { ChatStreamingMessage } from './ChatStreamingMessage';
 export { ChatInput } from './ChatInput';
 export { ContextBadge } from './ContextBadge';
 export { MessageEditModal } from './MessageEditModal';
+export {
+  BackConfirmationDialog,
+  DeleteMessageDialog,
+  DeleteConversationDialog,
+} from './ChatDialogs';
