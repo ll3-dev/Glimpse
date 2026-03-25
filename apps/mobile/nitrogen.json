@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mrousavy/nitro/main/schema/nitrogen.schema.json",
+  "platforms": ["ios", "android"],
+  "cxxNamespace": ["glimpse"],
+  "swiftNamespace": "Glimpse",
+  "ktNamespace": ["com", "glimpse", "mobile"],
+  "autolink": {
+    "searchPaths": ["./modules"],
+    "excludePaths": []
+  },
+  "specs": [
+    "./src/features/core/specs/core/CoreClient.nitro.ts"
+  ]
+}
