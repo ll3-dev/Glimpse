@@ -160,3 +160,6 @@ export interface GetDueKnowledgeItemsInput {
   now: number;
   limit?: number;
 }
+
+// Core stub exports for backward compatibility
+export * from './core-stub';
