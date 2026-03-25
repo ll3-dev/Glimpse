@@ -9,19 +9,28 @@
 #else
 // Fallback for C++14
 namespace std {
+    struct nullopt_t {
+        explicit nullopt_t() = default;
+    };
+    static constexpr nullopt_t nullopt{};
+
     template<typename T>
     class optional {
         bool has_value_ = false;
         T value_;
     public:
         optional() = default;
+        optional(nullopt_t) : has_value_(false) {}
         optional(const T& v) : has_value_(true), value_(v) {}
         optional(T&& v) : has_value_(true), value_(std::move(v)) {}
+        optional& operator=(nullopt_t) { has_value_ = false; return *this; }
         bool has_value() const { return has_value_; }
         T& value() { return value_; }
         const T& value() const { return value_; }
         T& operator*() { return value_; }
         const T& operator*() const { return value_; }
+        bool operator==(nullopt_t) const { return !has_value_; }
+        bool operator!=(nullopt_t) const { return has_value_; }
     };
 }
 #endif
