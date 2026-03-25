@@ -9,81 +9,37 @@ import { nativeCoreClient } from './native-core-client';
 import type { MobileCoreClient } from './types';
 
 export const mobileCoreClient: MobileCoreClient = {
+  initialize: (dbPath) => nativeCoreClient.initialize(dbPath),
+
   calculateTagOverlap: (input) => nativeCoreClient.calculateTagOverlap(input),
   calculateNextReview: (input) => nativeCoreClient.calculateNextReview(input),
   initializeReviewSchedule: (input) => nativeCoreClient.initializeReviewSchedule(input),
-  async saveKnowledgeItem(item) {
-    return nativeCoreClient.saveKnowledgeItem(item);
-  },
-  async listKnowledgeItems() {
-    return nativeCoreClient.listKnowledgeItems();
-  },
-  async listKnowledgeItemsByIds(itemIds) {
-    return nativeCoreClient.listKnowledgeItemsByIds(itemIds);
-  },
-  async listWeeklyKnowledgeItems(since) {
-    return nativeCoreClient.listWeeklyKnowledgeItems(since);
-  },
-  async listPendingKnowledgeItemsForLabeling(limit) {
-    return nativeCoreClient.listPendingKnowledgeItemsForLabeling(limit);
-  },
-  async getKnowledgeItemById(itemId) {
-    return nativeCoreClient.getKnowledgeItemById(itemId);
-  },
-  async getDueKnowledgeItems(input: GetDueKnowledgeItemsInput) {
-    return nativeCoreClient.getDueKnowledgeItems(input.now, input.limit ?? null);
-  },
-  async updateKnowledgeItem(itemId: string, patch: KnowledgeItemPatch) {
-    return nativeCoreClient.updateKnowledgeItem(itemId, patch);
-  },
-  async createConversation(conversation) {
-    return nativeCoreClient.createConversation(conversation);
-  },
-  async listConversations() {
-    return nativeCoreClient.listConversations();
-  },
-  async updateConversation(conversationId: string, patch: ConversationPatch) {
-    return nativeCoreClient.updateConversation(conversationId, patch);
-  },
-  async deleteConversation(conversationId: string, deletedAt: number): Promise<void> {
-    nativeCoreClient.deleteConversation(conversationId, deletedAt);
-  },
-  async listConversationMessages(conversationId) {
-    return nativeCoreClient.listConversationMessages(conversationId);
-  },
-  async addMessage(message) {
-    return nativeCoreClient.addMessage(message);
-  },
-  async updateMessage(messageId: string, patch: MessagePatch) {
-    return nativeCoreClient.updateMessage(messageId, patch);
-  },
-  async deleteMessage(messageId: string, deletedAt: number): Promise<void> {
-    nativeCoreClient.deleteMessage(messageId, deletedAt);
-  },
-  async saveRecommendations(recommendations) {
-    nativeCoreClient.saveRecommendations(recommendations);
-  },
-  async listRecommendations() {
-    return nativeCoreClient.listRecommendations();
-  },
-  async listPendingRecommendations() {
-    return nativeCoreClient.listPendingRecommendations();
-  },
-  async listRecentFeedbackEvents(limit) {
-    return nativeCoreClient.listRecentFeedbackEvents(limit);
-  },
-  async logRecommendationFeedback(event) {
-    return nativeCoreClient.logRecommendationFeedback(event);
-  },
-  async respondToRecommendation(
-    recommendationId: string,
-    status: RecommendationStatus,
-    event
-  ): Promise<void> {
-    nativeCoreClient.respondToRecommendation(
-      recommendationId,
-      status,
-      event
-    );
-  },
+
+  saveKnowledgeItem: (item) => nativeCoreClient.saveKnowledgeItem(item),
+  listKnowledgeItems: () => nativeCoreClient.listKnowledgeItems(),
+  listKnowledgeItemsByIds: (itemIds) => nativeCoreClient.listKnowledgeItemsByIds(itemIds),
+  listWeeklyKnowledgeItems: (since) => nativeCoreClient.listWeeklyKnowledgeItems(since),
+  listPendingKnowledgeItemsForLabeling: (limit) => nativeCoreClient.listPendingKnowledgeItemsForLabeling(limit),
+  getKnowledgeItemById: (itemId) => nativeCoreClient.getKnowledgeItemById(itemId),
+  getDueKnowledgeItems: (input: GetDueKnowledgeItemsInput) => nativeCoreClient.getDueKnowledgeItems(input),
+  updateKnowledgeItem: (itemId: string, patch: KnowledgeItemPatch) => nativeCoreClient.updateKnowledgeItem(itemId, patch),
+
+  createConversation: (conversation) => nativeCoreClient.createConversation(conversation),
+  listConversations: () => nativeCoreClient.listConversations(),
+  updateConversation: (conversationId: string, patch: ConversationPatch) => nativeCoreClient.updateConversation(conversationId, patch),
+  deleteConversation: (conversationId: string, deletedAt: number) => nativeCoreClient.deleteConversation(conversationId, deletedAt),
+
+  listConversationMessages: (conversationId) => nativeCoreClient.listConversationMessages(conversationId),
+  addMessage: (message) => nativeCoreClient.addMessage(message),
+  updateMessage: (messageId: string, patch: MessagePatch) => nativeCoreClient.updateMessage(messageId, patch),
+  deleteMessage: (messageId: string, deletedAt: number) => nativeCoreClient.deleteMessage(messageId, deletedAt),
+
+  saveRecommendations: (recommendations) => nativeCoreClient.saveRecommendations(recommendations),
+  listRecommendations: () => nativeCoreClient.listRecommendations(),
+  listPendingRecommendations: () => nativeCoreClient.listPendingRecommendations(),
+  respondToRecommendation: (recommendationId: string, status: RecommendationStatus, event) =>
+    nativeCoreClient.respondToRecommendation(recommendationId, status, event),
+
+  listRecentFeedbackEvents: (limit) => nativeCoreClient.listRecentFeedbackEvents(limit),
+  logRecommendationFeedback: (event) => nativeCoreClient.logRecommendationFeedback(event),
 };

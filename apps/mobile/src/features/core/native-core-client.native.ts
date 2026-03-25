@@ -17,9 +17,9 @@ function createNativeCoreClient(): MobileCoreClient {
     },
 
     // Sync calculations
-    calculateTagOverlap(left, right) {
-      const leftTags = left.tags?.join('|') ?? '';
-      const rightTags = right.tags?.join('|') ?? '';
+    calculateTagOverlap(input) {
+      const leftTags = input.left.tags?.join('|') ?? '';
+      const rightTags = input.right.tags?.join('|') ?? '';
       return coreClient.calculateTagOverlap(leftTags, rightTags);
     },
 
@@ -30,8 +30,11 @@ function createNativeCoreClient(): MobileCoreClient {
         input.feedbackType === 'remembered' ? 0 : 1,
         input.now
       );
-      const result = JSON.parse(resultJson) as { interval_ms: number; next_review_at: number };
-      return result;
+      const parsed = JSON.parse(resultJson) as { interval_ms: number; next_review_at: number };
+      return {
+        intervalMs: parsed.interval_ms,
+        nextReviewAt: parsed.next_review_at,
+      };
     },
 
     initializeReviewSchedule(input) {
@@ -39,11 +42,17 @@ function createNativeCoreClient(): MobileCoreClient {
         input.createdAt,
         input.intervalMs ?? null
       );
-      return JSON.parse(resultJson) as {
+      const parsed = JSON.parse(resultJson) as {
         next_review_at: number;
         stability: number | null;
         difficulty: number | null;
         last_reviewed_at: number | null;
+      };
+      return {
+        nextReviewAt: parsed.next_review_at,
+        stability: parsed.stability,
+        difficulty: parsed.difficulty,
+        lastReviewedAt: parsed.last_reviewed_at,
       };
     },
 
