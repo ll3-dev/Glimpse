@@ -21,8 +21,7 @@
       "searchPaths": [
         "../../node_modules",
         "./node_modules"
-      ],
-      "nativeModulesDir": "./modules"
+      ]
     }
   },
   "dependencies": {
