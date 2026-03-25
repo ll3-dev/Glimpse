@@ -1,0 +1,19 @@
+[package]
+name = "glimpse-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core business logic for Glimpse - shared by mobile and desktop apps"
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
+
+[dev-dependencies]
+tempfile = "3.0"
