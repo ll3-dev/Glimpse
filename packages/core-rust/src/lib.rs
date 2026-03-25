@@ -5,10 +5,12 @@
 
 pub mod core_client;
 mod error;
+pub mod ffi;
 mod models;
 mod storage;
 
 pub use core_client::CoreClientImpl;
 pub use error::Error;
+pub use ffi::{CoreClientHandle, FfiErrorCode};
 pub use models::*;
 pub use storage::sqlite::SqliteStorage;
