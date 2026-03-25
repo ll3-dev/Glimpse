@@ -4,10 +4,10 @@ researcher: Claude
 git_commit: 646bd987e3736ff7d1c481d26e0eeed463258033
 branch: main
 repository: Glimpse
-topic: "packages/core Rust 연결 방안: JSI/Craby, tRPC-like Wrapper"
-tags: [research, packages-core, rust, jsi, tauri, react-native, integration]
+topic: "packages/core Rust 연결 방안: Nitro Modules + Rust FFI"
+tags: [research, packages-core, rust, nitro-modules, jsi, tauri, react-native, integration]
 status: complete
-last_updated: 2026-03-25
+last_updated: 2026-03-26
 last_updated_by: Claude
 ---
 
@@ -22,16 +22,127 @@ last_updated_by: Claude
 ## 연구 질문
 
 현대 `@packages/core/`에 있는 TypeScript 코드를 Rust로 연결하는 방법. 다음 옵션들 검토:
-1. Craby 또는 JSI에 직접 등록 방식
-2. tRPC 느낌의 wrapper 구성
+1. Nitro Modules + Rust FFI (Mobile 권장)
+2. Tauri Command Pattern (Desktop)
 
 ## 요약
 
-`packages/core`의 `CoreClient` 인터페이스는 21개의 메서드로 구성된 명확한 포트/어댑터 패턴을 따르고 있어 Rust 연결에 최적화되어 있음. 3가지 접근 방식을 분석했고, 프로젝트 상황에 따라 다음 순서로 추천:
+`packages/core`의 `CoreClient` 인터페이스는 21개의 메서드로 구성된 명확한 포트/어댑터 패턴을 따르고 있어 Rust 연결에 최적화되어 있음.
 
-1. **Mobile (React Native)**: JSI + C++ Bridge → Rust FFI (llama.rn 패턴 참고)
+**최종 추천:**
+1. **Mobile (React Native)**: Nitro Modules + Rust FFI (sync FFI on background thread)
 2. **Desktop**: 기존 Tauri Command 패턴 확장
-3. **통합**: tRPC-like Wrapper로 플랫폼 추상화
+
+## 옵션 분석 결과
+
+### Craby (❌ 사용 불가)
+
+| 항목 | 상태 |
+|------|------|
+| 웹사이트 (craby.rs) | ✅ 존재 (마케팅 페이지만) |
+| GitHub 저장소 | ❌ 404 Not Found |
+| npm 패키지 | ❌ 9년 된 관련없는 패키지만 존재 |
+| 문서 | ❌ 접근 불가 |
+| **결론** | **Vaporware - 사용 불가** |
+
+### Nitro Modules (✅ 권장)
+
+| 항목 | 상태 |
+|------|------|
+| GitHub | ✅ github.com/mrousavy/nitro (1.8k stars) |
+| npm | ✅ react-native-nitro-modules |
+| 문서 | ✅ nitro.margelo.com |
+| 언어 지원 | C++, Swift, Kotlin |
+| **Rust 지원** | ⚠️ 네이티브 미지원 (Issue #258), FFI로 연결 가능 |
+
+### Zig + React Native (❌ 생태계 없음)
+
+| 항목 | 상태 |
+|------|------|
+| GitHub Topics | ❌ `zig-react-native` 존재하지 않음 |
+| 관련 프로젝트 | ❌ 없음 |
+| **결론** | **아직 생태계가 형성되지 않음** |
+
+---
+
+## 핵심 이해: Sync FFI + Async Pattern
+
+### FFI는 항상 Synchronous
+
+```
+┌─────────────┐         ┌─────────────┐
+│   C++/JS    │ ──────► │    Rust     │
+│             │  call   │   FFI fn    │
+│   BLOCKED   │ ◄────── │  executes   │
+│   waiting   │ return  │  returns    │
+└─────────────┘         └─────────────┘
+```
+
+**FFI 경계는 항상 동기 블로킹 호출이다.** Rust의 `async fn`은 FFI를 넘을 수 없다.
+
+### 하지만 다른 스레드에서 실행하면 된다!
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ✅ GOOD: Background Thread               │
+├─────────────────────────────────────────────────────────────┤
+│  JS Thread                    │  Background Thread          │
+│  ├── call save() ────────┐   │                              │
+│  │  (returns Promise)    │   │  ├── rust_save() runs here  │
+│  ├── do other work       │   │  │   (blocks, but who cares)│
+│  ├── render UI           │   │  │                          │
+│  ├── handle clicks       │   │  └── returns result ─────┐  │
+│  │                       │   │                           │  │
+│  └── await result ◄──────┼───┼───────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**핵심 통찰:**
+- "Sync" = 함수가 완료될 때까지 블로킹
+- "Async" = 함수가 즉시 반환, 결과는 나중에
+- **이것은 어떤 스레드에서 실행되는지와는 별개!**
+
+### Nitro의 Promise.async() 패턴
+
+```cpp
+// Nitro C++ module
+std::shared_ptr<Promise<KnowledgeItem>> saveKnowledgeItem(NewKnowledgeItem item) override {
+  return Promise<KnowledgeItem>::async([=]() {
+    // 이 람다는 백그라운드 스레드에서 실행됨
+    // Rust FFI는 동기지만, JS 스레드는 블로킹되지 않음
+    return rust_save_knowledge_item(item);
+  });
+}
+```
+
+### Rust 측면 - 변경 불필요!
+
+```rust
+// 이 코드는 이미 FFI에 완벽함
+#[no_mangle]
+pub extern "C" fn rust_save_knowledge_item(item: Item) -> Item {
+    // 100ms 걸려도 문제없음 - 백그라운드 스레드에서 실행
+    let storage = SqliteStorage::new(path)?;
+    storage.insert_item(item)
+}
+```
+
+### Rust 내부에서 async 사용하기
+
+Rust는 내부적으로 async를 사용할 수 있음 (FFI는 여전히 sync):
+
+```rust
+#[no_mangle]
+pub extern "C" fn rust_save_item(item: Item) -> Item {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        // 내부적으로는 async/await 사용 가능
+        db.query().await
+    })
+}
+```
+
+---
 
 ## 상세 분석
 
@@ -41,12 +152,12 @@ last_updated_by: Claude
 
 ```typescript
 export interface CoreClient {
-  // 동기 메서드 (3개)
+  // 동기 메서드 (3개) - JS 스레드에서 직접 실행 가능
   calculateTagOverlap(input: CalculateTagOverlapInput): number;
   calculateNextReview(input: CalculateNextReviewInput): CalculateNextReviewOutput;
   initializeReviewSchedule(input: InitializeReviewScheduleInput): InitializeReviewScheduleOutput;
 
-  // 비동기 메서드 (18개)
+  // 비동기 메서드 (18개) - Promise.async()로 래핑
   saveKnowledgeItem(item: NewKnowledgeItem): Promise<KnowledgeItem>;
   listKnowledgeItems(): Promise<KnowledgeItem[]>;
   // ... 총 21개 메서드
@@ -62,311 +173,220 @@ Application Layer (use cases with Pick<CoreClient>)
     ↓
 Port Interface (CoreClient)
     ↓
-Adapter Implementation (LocalCoreClient)
+Adapter Implementation (LocalCoreClient → RustCoreClient)
     ↓
-Storage Layer (KeyValueStorage → AsyncStorage/localStorage)
+Storage Layer (SQLite via rusqlite)
 ```
 
-#### 기존 LocalCoreClient 구현 (`packages/core/src/adapters/local/local-core-client.ts`)
+### 2. Nitro Modules 아키텍처
 
-- 365 lines, 순수 TypeScript
-- JSON serialization으로 in-memory store 관리
-- Store Key: `'glimpse-core-store-v1'`
-- 5개 컬렉션: knowledgeItems, conversations, messages, recommendations, feedbackEvents
+#### 공식 문서: https://nitro.margelo.com
 
-### 2. 데스크톱 Tauri 패턴 분석 (`apps/desktop/src-tauri/`)
+**특징:**
+- JSI 기반 고성능 네이티브 모듈
+- TypeScript → C++/Swift/Kotlin 자동 생성
+- `Promise<T>::async()`로 백그라운드 스레드 실행
+- 타입 안전한 바인딩
 
-#### Rust Commands (`apps/desktop/src-tauri/src/commands.rs`)
+#### 파일 구조
+
+```
+apps/mobile/src/features/core/
+├── CoreClient.nitro.ts      # Nitro 스키마 정의
+├── nitro/                   # 생성된 코드 (자동)
+│   ├── cxx/
+│   ├── swift/
+│   └── kotlin/
+└── HybridCoreClient.cpp     # Rust FFI 호출
+```
+
+#### Nitro 스키마 예시
+
+```typescript
+// CoreClient.nitro.ts
+import type { KnowledgeItem, NewKnowledgeItem } from '@glimpse/shared';
+
+export interface CoreClient extends HybridObject<{ ios: 'c++', android: 'c++' }> {
+  // 동기 메서드
+  calculateTagOverlap(left: KnowledgeItemLike, right: KnowledgeItemLike): number;
+
+  // 비동기 메서드 (Promise 반환)
+  saveKnowledgeItem(item: NewKnowledgeItem): Promise<KnowledgeItem>;
+  listKnowledgeItems(): Promise<KnowledgeItem[]>;
+}
+```
+
+#### C++ 구현 (Rust FFI 호출)
+
+```cpp
+// HybridCoreClient.cpp
+#include "CoreClient.nitro.h"
+#include "rust_core.h"  // cbindgen으로 생성된 Rust 헤더
+
+class HybridCoreClient: public HybridCoreClientSpec {
+public:
+  // 동기 메서드 - JS 스레드에서 직접 실행
+  double calculateTagOverlap(KnowledgeItemLike left, KnowledgeItemLike right) override {
+    return rust_calculate_tag_overlap(left, right);
+  }
+
+  // 비동기 메서드 - 백그라운드 스레드에서 실행
+  std::shared_ptr<Promise<KnowledgeItem>> saveKnowledgeItem(NewKnowledgeItem item) override {
+    return Promise<KnowledgeItem>::async([=]() {
+      return rust_save_knowledge_item(item);
+    });
+  }
+};
+```
+
+### 3. 데스크톱 Tauri 패턴 분석 (`apps/desktop/src-tauri/`)
+
+Tauri는 이미 Rust로 작성되어 있어 직접 `packages/core-rust` 사용 가능.
+
+#### Cargo.toml 의존성 추가
+
+```toml
+[dependencies]
+glimpse-core = { path = "../../../packages/core-rust" }
+```
+
+#### Tauri Commands
 
 ```rust
+use glimpse_core::{CoreClientImpl, SqliteStorage};
+
+pub struct DesktopCoreState {
+    client: Mutex<CoreClientImpl>,
+}
+
 #[tauri::command]
-pub fn run_completion(
-    request: CompletionRequest,
-    state: tauri::State<'_, DesktopRuntimeState>,
-) -> Result<CompletionResponse, String>
-
-#[tauri::command]
-pub fn run_embedding(
-    request: EmbeddingRequest,
-    _state: tauri::State<'_, DesktopRuntimeState>,
-) -> Result<EmbeddingResponse, String>
-```
-
-#### TypeScript Bridge (`apps/desktop/src/features/local-llm/desktop-llm-service.ts`)
-
-```typescript
-function createTauriBridge(): DesktopLLMBridge {
-  return {
-    runCompletion: (request) =>
-      invoke<CompletionResponse>('run_completion', { request }),
-  };
+pub async fn core_save_knowledge_item(
+    item: NewKnowledgeItem,
+    state: State<'_, DesktopCoreState>,
+) -> Result<KnowledgeItem, String> {
+    let client = state.client.lock().await;
+    client.save_knowledge_item(item).await
+        .map_err(|e| e.to_string())
 }
 ```
 
-**장점**: 이미 프로젝트에 통합됨, 타입 안전, serde로 camelCase 자동 변환
-
-### 3. React Native JSI 패턴 (llama.rn 분석)
-
-#### 아키텍처
-
-```
-JavaScript → JSI → C++ Bridge → Rust (FFI) → Core Logic
-```
-
-#### 핵심 파일들 (node_modules/llama.rn 참고)
-
-1. **JSI 바인딩** (`cpp/jsi/RNLlamaJSI.cpp`):
-   ```cpp
-   void installJSIBindings(
-       jsi::Runtime& runtime,
-       std::shared_ptr<react::CallInvoker> callInvoker
-   );
-   ```
-
-2. **iOS 브릿지** (`ios/RNLlama.mm`):
-   ```objc
-   - (void)install:(RCTPromiseResolveBlock)resolve
-            withRejecter:(RCTPromiseRejectBlock)reject
-   {
-       RCTCxxBridge *cxxBridge = (RCTCxxBridge *)bridge.batchedBridge;
-       // JSI 바인딩 설치
-   }
-   ```
-
-3. **Android 브릿지** (`android/src/main/java/com/rnllama/RNLlamaModule.java`):
-   ```java
-   @Override
-   public void install(Promise promise) {
-       long jsContextPointer = context.getJavaScriptContextHolder().get();
-       CallInvokerHolderImpl holder = (CallInvokerHolderImpl)
-           context.getCatalystInstance().getJSCallInvokerHolder();
-       installJSIBindings(jsContextPointer, holder);
-   }
-   ```
-
-4. **TypeScript 인터페이스** (`src/jsi.ts`):
-   ```typescript
-   declare global {
-     var llamaInitContext: (contextId: number, params: NativeContextParams) => Promise<any>
-     var llamaCompletion: (contextId: number, params: NativeCompletionParams) => Promise<NativeCompletionResult>
-   }
-   ```
-
-### 4. tRPC-like Wrapper 패턴
-
-#### 기존 Router 패턴 (`apps/mobile/src/features/ai/metadata/router.ts`)
-
-```typescript
-export function createMetadataRouter(config: RouterConfig = defaultConfig): AiMetadataService {
-  return {
-    async generate(input: MetadataInput): Promise<Result<MetadataOutput>> {
-      const target = getTarget();
-      const result = await executeTarget(target, input);
-      return result;
-    },
-  };
-}
-```
-
-#### 추천 통합 패턴
-
-```typescript
-// packages/core/src/ai/unified-bridge.ts
-export function createUnifiedBridge(): AiMetadataService {
-  if (isTauriAvailable()) {
-    return createTauriBridge();
-  }
-  if (isReactNativeAvailable()) {
-    return createNativeModuleBridge();
-  }
-  return createStaticFallback();
-}
-```
+---
 
 ## 연결 방안 비교
 
-### Option A: JSI + C++ Bridge → Rust FFI (Mobile 권장)
+### Option A: Nitro Modules + Rust FFI (Mobile 권장) ✅
 
-**구조**: `JavaScript → JSI → C++ Bridge → Rust (FFI)`
+**구조**: `TypeScript → Nitro → C++ → Promise.async → Rust FFI`
 
 **장점**:
-- JSI의 높은 성능 유지
-- llama.rn 패턴 재사용
-- 브릿지 오버헤드 최소화
+- Nitro가 async/threading 처리
+- Rust FFI는 단순 sync 함수만 작성
+- 타입 안전한 코드 생성
+- 활성적인 커뮤니티 (1.8k stars)
 
 **단점**:
-- 빌드 설정 복잡
 - C++ 브릿지 레이어 필요
+- Rust가 네이티브 지원 언어가 아님 (Issue #258)
 
-**구현 단계**:
-1. Rust 라이브러리 작성 (`cargo-c` 또는 `cbindgen`으로 C ABI 생성)
-2. C++ JSI 래퍼 작성 (llama.rn 패턴 참고)
-3. iOS/Android 플랫폼 통합
-4. TypeScript 글로벌 함수 선언
+### Option B: Ditto rn-jsi-rust-bridging (대안)
 
-### Option B: Expo Module with Rust Backend
+**구조**: `TypeScript → JSI → Rust FFI`
 
-**구조**: `JavaScript → Expo Module API → Kotlin/Swift → Rust (JNI/ObjC-FFI)`
+- GitHub: https://github.com/getditto/rn-jsi-rust-bridging
+- 17 stars, MIT license
+- Nitro보다 간단하지만 기능도 적음
 
-**장점**:
-- 표준 Expo 모듈 패턴
-- 유지보수 용이
-- TypeScript 통합 우수
-
-**단점**:
-- 브릿지 오버헤드 (JSI보다 느림)
-- 플랫폼별 코드 증가
-
-### Option C: Tauri Command Pattern (Desktop)
+### Option C: Tauri Command Pattern (Desktop) ✅
 
 **구조**: `TypeScript → Tauri invoke → Rust Command`
 
-**장점**:
 - 이미 데스크톱에 구현됨
-- 타입 안전
-- serde로 자동 직렬화
+- `packages/core-rust` 직접 사용 가능
 
-**확장 방안**:
-- CoreClient 메서드를 Tauri commands로 추가
-- `apps/desktop/src-tauri/src/commands.rs` 확장
-
-## 코드 참조
-
-### CoreClient 인터페이스
-- `packages/core/src/ports/core-client.ts:24-57` - CoreClient 인터페이스 정의
-- `packages/core/src/adapters/local/local-core-client.ts:101-365` - LocalCoreClient 구현
-- `packages/core/src/adapters/local/local-core-store.ts:1-186` - 스토어 관리
-
-### 타입 정의
-- `packages/shared/src/index.ts:1-163` - 공유 타입 (KnowledgeItem, Message, etc.)
-
-### 데스크톱 Rust
-- `apps/desktop/src-tauri/src/main.rs:1-22` - Tauri 진입점
-- `apps/desktop/src-tauri/src/commands.rs:1-136` - Rust commands
-- `apps/desktop/src-tauri/src/models.rs` - Rust 모델 (serde)
-
-### 모바일
-- `apps/mobile/src/features/core/mobile-core-client.ts:1-89` - 모바일 래퍼
-- `apps/mobile/src/features/core/native-core-client.native.ts:1-2` - 네이티브 진입점
-
-## 아키텍처 인사이트
-
-### 1. 인터페이스 경계가 명확함
-CoreClient는 Rust 교체를 위한 완벽한 경계. 21개 메서드가 모두 명확히 정의됨.
-
-### 2. 데이터 직렬화 용이
-모든 데이터 구조가 `@glimpse/shared`에 정의되어 JSON으로 직렬화 가능.
-
-### 3. 에러 처리 매핑
-Effect 기반 에러 처리가 Rust Result 타입과 잘 매핑됨.
-
-### 4. 스토리지 추상화
-KeyValueStorage 포트를 Rust에서 구현 가능 (SQLite, LMDB, RocksDB 등)
-
-### 5. 순수 계산 함수
-`calculateTagOverlap`, `calculateNextReview`는 순수 계산이라 Rust 이식에 최적.
+---
 
 ## 추천 구현 전략
 
-### Phase 1: Rust CoreClient 어댑터 프로토타입
+### Phase 1: Rust Core 라이브러리 (완료 ✅)
 
-1. **Rust 라이브러리 구조**:
-   ```
-   packages/core-rust/
-   ├── Cargo.toml
-   ├── src/
-   │   ├── lib.rs
-   │   ├── core_client.rs  # CoreClient trait 구현
-   │   ├── storage.rs      # SQLite/LMDB 스토리지
-   │   └── ffi.rs          # C ABI exports
-   ```
+```
+packages/core-rust/
+├── Cargo.toml
+├── src/
+│   ├── lib.rs
+│   ├── core_client/    # CoreClient 구현
+│   ├── models.rs       # 데이터 모델
+│   └── storage/        # SQLite 스토리지
+```
 
-2. **CoreClient Rust Trait**:
-   ```rust
-   pub trait CoreClient: Send + Sync {
-       fn calculate_tag_overlap(&self, input: TagOverlapInput) -> i32;
-       fn calculate_next_review(&self, input: NextReviewInput) -> NextReviewOutput;
-       // ... 21개 메서드
-   }
+### Phase 2: Nitro Modules 통합
+
+1. **Nitro 스키마 정의**
+   ```
+   apps/mobile/src/features/core/CoreClient.nitro.ts
    ```
 
-### Phase 2: 플랫폼별 바인딩
+2. **C++ 구현체** (Rust FFI 호출)
+   ```
+   apps/mobile/src/features/core/HybridCoreClient.cpp
+   ```
 
-**Mobile (React Native)**:
-- llama.rn 패턴으로 JSI 바인딩
-- `cargo-ndk`로 Android NDK 빌드
-- `cargo-xcode`로 iOS 프레임워크
+3. **Rust C ABI 헤더 생성**
+   ```bash
+   cbindgen --crate glimpse-core --output apps/mobile/cpp/rust_core.h
+   ```
 
-**Desktop (Tauri)**:
-- 기존 commands.rs 패턴 확장
-- 새 commands 추가: `core_save_knowledge_item`, etc.
+### Phase 3: Tauri 통합
 
-### Phase 3: TypeScript 통합
+```rust
+// apps/desktop/src-tauri/src/core_commands.rs
+use glimpse_core::CoreClientImpl;
 
-```typescript
-// packages/core/src/adapters/rust/rust-core-client.ts
-import { invokeRustCore } from './ffi';
-
-export function createRustCoreClient(): CoreClient {
-  return {
-    calculateTagOverlap: (input) => invokeRustCore('calculate_tag_overlap', input),
-    saveKnowledgeItem: async (item) => invokeRustCore('save_knowledge_item', item),
-    // ...
-  };
+#[tauri::command]
+pub async fn core_list_knowledge_items(
+    state: State<'_, CoreState>,
+) -> Result<Vec<KnowledgeItem>, String> {
+    state.client.list_knowledge_items().await
+        .map_err(|e| e.to_string())
 }
 ```
 
-### Phase 4: 점진적 마이그레이션
-
-1. 읽기 전용 메서드부터 Rust로 이동
-2. 기능 플래그로 JS/Rust 전환
-3. 웹 디버깅용 JS 폴백 유지
+---
 
 ## Rust 스토리지 옵션
 
 | 옵션 | 장점 | 단점 |
 |------|------|------|
 | SQLite (rusqlite) | 안정적, 친숙함 | 설정 필요 |
-| LMDB | 빠름, 임베디드 | 단일 writer |
-| RocksDB | 고성능, Facebook | 빌드 복잡 |
 | sled | Rust 네이티브 | 상대적 신규 |
 
-**추천**: SQLite (안정성) 또는 sled (순수 Rust)
+**선택**: SQLite (rusqlite with bundled feature)
 
-## 빌드 시스템 통합
+---
 
-### iOS
-```json
-// app.json plugins
-{
-  "plugins": [
-    ["glimpse-core-rust", { "enableEntitlements": true }]
-  ]
-}
-```
+## 해결된 질문
 
-### Android
-```groovy
-// android/app/build.gradle
-android {
-    externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt"
-        }
-    }
-}
-```
+### 1. 동기 vs 비동기 FFI?
 
-## 미해결 질문
+**답변**: FFI는 항상 sync. Nitro의 `Promise.async()`가 백그라운드 스레드에서 실행하므로 JS 스레드는 블로킹되지 않음.
 
-1. **동기 vs 비동기 FFI**: JSI에서 동기 호출이 가능하지만, Rust의 async/await와 어떻게 통합할지?
-2. **데이터 마이그레이션**: 기존 localStorage 데이터를 Rust 스토리지로 어떻게 이전할지?
-3. **웹 플랫폼**: Rust를 WebAssembly로 컴파일할지, JS 폴백 유지할지?
-4. **테스트 전략**: Rust 로직의 단위 테스트를 어떻게 작성할지?
+### 2. Rust async/await와 통합?
+
+**답변**: Rust 내부에서는 `tokio::runtime::block_on()`으로 async 사용 가능. FFI 경계는 여전히 sync.
+
+---
+
+## 참고 자료
+
+- **Nitro Modules**: https://nitro.margelo.com
+- **Nitro GitHub**: https://github.com/mrousavy/nitro
+- **Ditto Rust-JSI**: https://github.com/getditto/rn-jsi-rust-bridging
+- **llama.rn 패턴**: 프로젝트 내 `node_modules/llama.rn` 참고
+- **rusqlite 문서**: https://docs.rs/rusqlite
 
 ## 다음 단계
 
-1. `/create_spec`으로 구현 스펙 작성
-2. Rust 프로토타입 (순수 계산 함수 3개)
-3. JSI 바인딩 PoC (llama.rn 참고)
-4. 성능 벤치마크 (JS vs Rust)
+1. Phase 2 구현: Nitro Modules 통합
+2. C++ HybridObject 구현체 작성
+3. cbindgen으로 Rust 헤더 생성
+4. iOS/Android 빌드 테스트

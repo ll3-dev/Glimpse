@@ -26,7 +26,6 @@
     }
   },
   "dependencies": {
-    "@glimpse/core": "workspace:*",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "@expo/plist": "^0.4.8",

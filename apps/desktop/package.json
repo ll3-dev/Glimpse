@@ -4,7 +4,6 @@
   "private": true,
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
-    "@glimpse/core": "workspace:*",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "react": "19.2.0",

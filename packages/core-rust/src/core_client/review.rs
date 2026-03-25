@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use crate::models::{
     CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput,
-    CoreKnowledgeItemLike, InitializeReviewScheduleInput, InitializeReviewScheduleOutput,
+    InitializeReviewScheduleInput, InitializeReviewScheduleOutput,
     ReviewFeedbackType,
 };
 
