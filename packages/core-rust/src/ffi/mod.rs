@@ -53,12 +53,14 @@ pub unsafe extern "C" fn core_client_destroy(handle: CoreClientHandle) {
     }
 }
 
-/// Returns the last error message for the current thread.
-/// Used for debugging when FFI calls return error codes.
-///
-/// # Safety
-/// - buffer must be valid for buffer_len bytes
-/// - Returns the number of bytes written (excluding null terminator)
+/**
+Returns the last error message for the current thread.
+Used for debugging when FFI calls return error codes.
+
+# Safety
+- buffer must be valid for buffer_len bytes
+- Returns the number of bytes written (excluding null terminator)
+*/
 #[no_mangle]
 pub unsafe extern "C" fn core_client_get_last_error(buffer: *mut c_char, buffer_len: c_int) -> c_int {
     // TODO: Implement thread-local error storage for better error messages

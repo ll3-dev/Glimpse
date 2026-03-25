@@ -106,8 +106,10 @@
     "eslint-config-expo": "~55.0.0",
     "eslint-config-prettier": "^10.1.8",
     "expo-build-properties": "~55.0.9",
+    "nitrogen": "^0.35.2",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "react-native-nitro-modules": "^0.35.2",
     "typescript": "~5.9.2"
   },
   "private": true
