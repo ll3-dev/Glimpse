@@ -70,7 +70,7 @@ pub struct FfiNullableItem {
 
 /// FFI error codes matching CoreBridgeError codes.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FfiErrorCode {
     Ok = 0,
     InvalidInput = 1,

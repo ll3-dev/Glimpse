@@ -1,6 +1,7 @@
 // apps/mobile/src/features/core/types.ts
 import type {
   Conversation,
+  CoreKnowledgeItemLike,
   FeedbackEvent,
   GetDueKnowledgeItemsInput,
   InitializeReviewScheduleInput,
@@ -9,8 +10,8 @@ import type {
   Message,
   Recommendation,
   RecommendationStatus,
+  ReviewFeedbackType,
 } from '@glimpse/shared';
-import type { CoreKnowledgeItemLike, ReviewFeedbackType } from '@glimpse/shared';
 
 /**
  * MobileCoreClient interface - the API contract for the mobile app.
