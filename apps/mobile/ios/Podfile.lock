@@ -178,7 +178,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - NitroModules (0.33.9):
+  - NitroModules (0.35.2):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2371,37 +2371,37 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
-  - "EXConstants (from `../../../node_modules/.bun/expo-constants@55.0.7+01ff52a34ac61115/node_modules/expo-constants/ios`)"
-  - "Expo (from `../../../node_modules/.bun/expo@55.0.5+01ff52a34ac61115/node_modules/expo`)"
+  - "EXConstants (from `../../../node_modules/.bun/expo-constants@55.0.7+c5f952fe1435504a/node_modules/expo-constants/ios`)"
+  - "Expo (from `../../../node_modules/.bun/expo@55.0.5+c5f952fe1435504a/node_modules/expo`)"
   - "ExpoAsset (from `../../../node_modules/.bun/expo-asset@55.0.8+c7b25634df3c4b63/node_modules/expo-asset/ios`)"
-  - "ExpoBackgroundTask (from `../../../node_modules/.bun/expo-background-task@55.0.9+01ff52a34ac61115/node_modules/expo-background-task/ios`)"
-  - "ExpoBlur (from `../../../node_modules/.bun/expo-blur@55.0.8+01ff52a34ac61115/node_modules/expo-blur/ios`)"
+  - "ExpoBackgroundTask (from `../../../node_modules/.bun/expo-background-task@55.0.9+c5f952fe1435504a/node_modules/expo-background-task/ios`)"
+  - "ExpoBlur (from `../../../node_modules/.bun/expo-blur@55.0.8+c5f952fe1435504a/node_modules/expo-blur/ios`)"
   - "ExpoDomWebView (from `../../../node_modules/.bun/@expo+dom-webview@55.0.3+3158bfeec191c3fe/node_modules/@expo/dom-webview/ios`)"
   - "ExpoFileSystem (from `../../../node_modules/.bun/expo-file-system@55.0.10+31f6bece8cb32311/node_modules/expo-file-system/ios`)"
-  - "ExpoFont (from `../../../node_modules/.bun/expo-font@55.0.4+01ff52a34ac61115/node_modules/expo-font/ios`)"
+  - "ExpoFont (from `../../../node_modules/.bun/expo-font@55.0.4+c5f952fe1435504a/node_modules/expo-font/ios`)"
   - "ExpoGlassEffect (from `../../../node_modules/.bun/expo-glass-effect@55.0.7+3158bfeec191c3fe/node_modules/expo-glass-effect/ios`)"
-  - "ExpoHaptics (from `../../../node_modules/.bun/expo-haptics@55.0.8+01ff52a34ac61115/node_modules/expo-haptics/ios`)"
-  - "ExpoImage (from `../../../node_modules/.bun/expo-image@55.0.6+01ff52a34ac61115/node_modules/expo-image/ios`)"
-  - "ExpoImagePicker (from `../../../node_modules/.bun/expo-image-picker@55.0.11+01ff52a34ac61115/node_modules/expo-image-picker/ios`)"
+  - "ExpoHaptics (from `../../../node_modules/.bun/expo-haptics@55.0.8+c5f952fe1435504a/node_modules/expo-haptics/ios`)"
+  - "ExpoImage (from `../../../node_modules/.bun/expo-image@55.0.6+c5f952fe1435504a/node_modules/expo-image/ios`)"
+  - "ExpoImagePicker (from `../../../node_modules/.bun/expo-image-picker@55.0.11+c5f952fe1435504a/node_modules/expo-image-picker/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.bun/expo-keep-awake@55.0.4+437ad5cc74ce7f0c/node_modules/expo-keep-awake/ios`)"
-  - "ExpoLinking (from `../../../node_modules/.bun/expo-linking@55.0.7+01ff52a34ac61115/node_modules/expo-linking/ios`)"
+  - "ExpoLinking (from `../../../node_modules/.bun/expo-linking@55.0.7+c5f952fe1435504a/node_modules/expo-linking/ios`)"
   - "ExpoLogBox (from `../../../node_modules/.bun/@expo+log-box@55.0.7+f943cca2a7e062b2/node_modules/@expo/log-box`)"
   - "ExpoModulesCore (from `../../../node_modules/.bun/expo-modules-core@55.0.14+069b4c9d3e085d94/node_modules/expo-modules-core`)"
   - "ExpoModulesJSI (from `../../../node_modules/.bun/expo-modules-core@55.0.14+069b4c9d3e085d94/node_modules/expo-modules-core`)"
-  - "ExpoNetwork (from `../../../node_modules/.bun/expo-network@55.0.8+01ff52a34ac61115/node_modules/expo-network/ios`)"
-  - "ExpoRouter (from `../../../node_modules/.bun/expo-router@55.0.4+cfef2650d9693799/node_modules/expo-router/ios`)"
-  - "ExpoShareExtension (from `../../../node_modules/.bun/expo-share-extension@5.0.6+01ff52a34ac61115/node_modules/expo-share-extension/ios`)"
-  - "ExpoShareIntentModule (from `../../../node_modules/.bun/expo-share-intent@6.0.0+37f4d3dc3306c2d4/node_modules/expo-share-intent/ios`)"
-  - "ExpoSplashScreen (from `../../../node_modules/.bun/expo-splash-screen@55.0.10+01ff52a34ac61115/node_modules/expo-splash-screen/ios`)"
-  - "ExpoSymbols (from `../../../node_modules/.bun/expo-symbols@55.0.5+27a0feae4900ae28/node_modules/expo-symbols/ios`)"
-  - "ExpoSystemUI (from `../../../node_modules/.bun/expo-system-ui@55.0.9+01ff52a34ac61115/node_modules/expo-system-ui/ios`)"
-  - "ExpoTaskManager (from `../../../node_modules/.bun/expo-task-manager@55.0.9+01ff52a34ac61115/node_modules/expo-task-manager/ios`)"
-  - "ExpoWebBrowser (from `../../../node_modules/.bun/expo-web-browser@55.0.9+01ff52a34ac61115/node_modules/expo-web-browser/ios`)"
+  - "ExpoNetwork (from `../../../node_modules/.bun/expo-network@55.0.8+c5f952fe1435504a/node_modules/expo-network/ios`)"
+  - "ExpoRouter (from `../../../node_modules/.bun/expo-router@55.0.4+07b3da6887533c28/node_modules/expo-router/ios`)"
+  - "ExpoShareExtension (from `../../../node_modules/.bun/expo-share-extension@5.0.6+c5f952fe1435504a/node_modules/expo-share-extension/ios`)"
+  - "ExpoShareIntentModule (from `../../../node_modules/.bun/expo-share-intent@6.0.0+45f613811e29dc86/node_modules/expo-share-intent/ios`)"
+  - "ExpoSplashScreen (from `../../../node_modules/.bun/expo-splash-screen@55.0.10+c5f952fe1435504a/node_modules/expo-splash-screen/ios`)"
+  - "ExpoSymbols (from `../../../node_modules/.bun/expo-symbols@55.0.5+83f43947d7399c22/node_modules/expo-symbols/ios`)"
+  - "ExpoSystemUI (from `../../../node_modules/.bun/expo-system-ui@55.0.9+c5f952fe1435504a/node_modules/expo-system-ui/ios`)"
+  - "ExpoTaskManager (from `../../../node_modules/.bun/expo-task-manager@55.0.9+c5f952fe1435504a/node_modules/expo-task-manager/ios`)"
+  - "ExpoWebBrowser (from `../../../node_modules/.bun/expo-web-browser@55.0.9+c5f952fe1435504a/node_modules/expo-web-browser/ios`)"
   - "FBLazyVector (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/Libraries/FBLazyVector`)"
   - "hermes-engine (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)"
   - "llama-rn (from `../../../node_modules/.bun/llama.rn@0.11.1+069b4c9d3e085d94/node_modules/llama.rn`)"
-  - "NitroMmkv (from `../../../node_modules/.bun/react-native-mmkv@4.1.2+46a3cf67044bb70b/node_modules/react-native-mmkv`)"
-  - "NitroModules (from `../../../node_modules/.bun/react-native-nitro-modules@0.33.9+069b4c9d3e085d94/node_modules/react-native-nitro-modules`)"
+  - "NitroMmkv (from `../../../node_modules/.bun/react-native-mmkv@4.1.2+226b7041f21003be/node_modules/react-native-mmkv`)"
+  - "NitroModules (from `../../../node_modules/.bun/react-native-nitro-modules@0.35.2+069b4c9d3e085d94/node_modules/react-native-nitro-modules`)"
   - "RCTDeprecation (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)"
   - "RCTRequired (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/Libraries/Required`)"
   - "RCTSwiftUI (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactApple/RCTSwiftUI`)"
@@ -2440,8 +2440,8 @@ DEPENDENCIES:
   - "React-Mapbuffer (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactCommon`)"
   - "React-microtasksnativemodule (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)"
   - "react-native-blob-util (from `../../../node_modules/.bun/react-native-blob-util@0.24.7+069b4c9d3e085d94/node_modules/react-native-blob-util`)"
-  - "react-native-nitro-buffer (from `../../../node_modules/.bun/react-native-nitro-buffer@0.0.15+46a3cf67044bb70b/node_modules/react-native-nitro-buffer`)"
-  - "react-native-nitro-crypto (from `../../../node_modules/.bun/react-native-nitro-crypto@0.2.4+46a3cf67044bb70b/node_modules/react-native-nitro-crypto`)"
+  - "react-native-nitro-buffer (from `../../../node_modules/.bun/react-native-nitro-buffer@0.0.15+226b7041f21003be/node_modules/react-native-nitro-buffer`)"
+  - "react-native-nitro-crypto (from `../../../node_modules/.bun/react-native-nitro-crypto@0.2.4+226b7041f21003be/node_modules/react-native-nitro-crypto`)"
   - "react-native-safe-area-context (from `../../../node_modules/.bun/react-native-safe-area-context@5.6.2+069b4c9d3e085d94/node_modules/react-native-safe-area-context`)"
   - "react-native-webview (from `../../../node_modules/.bun/react-native-webview@13.16.0+069b4c9d3e085d94/node_modules/react-native-webview`)"
   - "React-NativeModulesApple (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)"
@@ -2499,33 +2499,33 @@ SPEC REPOS:
 
 EXTERNAL SOURCES:
   EXConstants:
-    :path: "../../../node_modules/.bun/expo-constants@55.0.7+01ff52a34ac61115/node_modules/expo-constants/ios"
+    :path: "../../../node_modules/.bun/expo-constants@55.0.7+c5f952fe1435504a/node_modules/expo-constants/ios"
   Expo:
-    :path: "../../../node_modules/.bun/expo@55.0.5+01ff52a34ac61115/node_modules/expo"
+    :path: "../../../node_modules/.bun/expo@55.0.5+c5f952fe1435504a/node_modules/expo"
   ExpoAsset:
     :path: "../../../node_modules/.bun/expo-asset@55.0.8+c7b25634df3c4b63/node_modules/expo-asset/ios"
   ExpoBackgroundTask:
-    :path: "../../../node_modules/.bun/expo-background-task@55.0.9+01ff52a34ac61115/node_modules/expo-background-task/ios"
+    :path: "../../../node_modules/.bun/expo-background-task@55.0.9+c5f952fe1435504a/node_modules/expo-background-task/ios"
   ExpoBlur:
-    :path: "../../../node_modules/.bun/expo-blur@55.0.8+01ff52a34ac61115/node_modules/expo-blur/ios"
+    :path: "../../../node_modules/.bun/expo-blur@55.0.8+c5f952fe1435504a/node_modules/expo-blur/ios"
   ExpoDomWebView:
     :path: "../../../node_modules/.bun/@expo+dom-webview@55.0.3+3158bfeec191c3fe/node_modules/@expo/dom-webview/ios"
   ExpoFileSystem:
     :path: "../../../node_modules/.bun/expo-file-system@55.0.10+31f6bece8cb32311/node_modules/expo-file-system/ios"
   ExpoFont:
-    :path: "../../../node_modules/.bun/expo-font@55.0.4+01ff52a34ac61115/node_modules/expo-font/ios"
+    :path: "../../../node_modules/.bun/expo-font@55.0.4+c5f952fe1435504a/node_modules/expo-font/ios"
   ExpoGlassEffect:
     :path: "../../../node_modules/.bun/expo-glass-effect@55.0.7+3158bfeec191c3fe/node_modules/expo-glass-effect/ios"
   ExpoHaptics:
-    :path: "../../../node_modules/.bun/expo-haptics@55.0.8+01ff52a34ac61115/node_modules/expo-haptics/ios"
+    :path: "../../../node_modules/.bun/expo-haptics@55.0.8+c5f952fe1435504a/node_modules/expo-haptics/ios"
   ExpoImage:
-    :path: "../../../node_modules/.bun/expo-image@55.0.6+01ff52a34ac61115/node_modules/expo-image/ios"
+    :path: "../../../node_modules/.bun/expo-image@55.0.6+c5f952fe1435504a/node_modules/expo-image/ios"
   ExpoImagePicker:
-    :path: "../../../node_modules/.bun/expo-image-picker@55.0.11+01ff52a34ac61115/node_modules/expo-image-picker/ios"
+    :path: "../../../node_modules/.bun/expo-image-picker@55.0.11+c5f952fe1435504a/node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.bun/expo-keep-awake@55.0.4+437ad5cc74ce7f0c/node_modules/expo-keep-awake/ios"
   ExpoLinking:
-    :path: "../../../node_modules/.bun/expo-linking@55.0.7+01ff52a34ac61115/node_modules/expo-linking/ios"
+    :path: "../../../node_modules/.bun/expo-linking@55.0.7+c5f952fe1435504a/node_modules/expo-linking/ios"
   ExpoLogBox:
     :path: "../../../node_modules/.bun/@expo+log-box@55.0.7+f943cca2a7e062b2/node_modules/@expo/log-box"
   ExpoModulesCore:
@@ -2533,23 +2533,23 @@ EXTERNAL SOURCES:
   ExpoModulesJSI:
     :path: "../../../node_modules/.bun/expo-modules-core@55.0.14+069b4c9d3e085d94/node_modules/expo-modules-core"
   ExpoNetwork:
-    :path: "../../../node_modules/.bun/expo-network@55.0.8+01ff52a34ac61115/node_modules/expo-network/ios"
+    :path: "../../../node_modules/.bun/expo-network@55.0.8+c5f952fe1435504a/node_modules/expo-network/ios"
   ExpoRouter:
-    :path: "../../../node_modules/.bun/expo-router@55.0.4+cfef2650d9693799/node_modules/expo-router/ios"
+    :path: "../../../node_modules/.bun/expo-router@55.0.4+07b3da6887533c28/node_modules/expo-router/ios"
   ExpoShareExtension:
-    :path: "../../../node_modules/.bun/expo-share-extension@5.0.6+01ff52a34ac61115/node_modules/expo-share-extension/ios"
+    :path: "../../../node_modules/.bun/expo-share-extension@5.0.6+c5f952fe1435504a/node_modules/expo-share-extension/ios"
   ExpoShareIntentModule:
-    :path: "../../../node_modules/.bun/expo-share-intent@6.0.0+37f4d3dc3306c2d4/node_modules/expo-share-intent/ios"
+    :path: "../../../node_modules/.bun/expo-share-intent@6.0.0+45f613811e29dc86/node_modules/expo-share-intent/ios"
   ExpoSplashScreen:
-    :path: "../../../node_modules/.bun/expo-splash-screen@55.0.10+01ff52a34ac61115/node_modules/expo-splash-screen/ios"
+    :path: "../../../node_modules/.bun/expo-splash-screen@55.0.10+c5f952fe1435504a/node_modules/expo-splash-screen/ios"
   ExpoSymbols:
-    :path: "../../../node_modules/.bun/expo-symbols@55.0.5+27a0feae4900ae28/node_modules/expo-symbols/ios"
+    :path: "../../../node_modules/.bun/expo-symbols@55.0.5+83f43947d7399c22/node_modules/expo-symbols/ios"
   ExpoSystemUI:
-    :path: "../../../node_modules/.bun/expo-system-ui@55.0.9+01ff52a34ac61115/node_modules/expo-system-ui/ios"
+    :path: "../../../node_modules/.bun/expo-system-ui@55.0.9+c5f952fe1435504a/node_modules/expo-system-ui/ios"
   ExpoTaskManager:
-    :path: "../../../node_modules/.bun/expo-task-manager@55.0.9+01ff52a34ac61115/node_modules/expo-task-manager/ios"
+    :path: "../../../node_modules/.bun/expo-task-manager@55.0.9+c5f952fe1435504a/node_modules/expo-task-manager/ios"
   ExpoWebBrowser:
-    :path: "../../../node_modules/.bun/expo-web-browser@55.0.9+01ff52a34ac61115/node_modules/expo-web-browser/ios"
+    :path: "../../../node_modules/.bun/expo-web-browser@55.0.9+c5f952fe1435504a/node_modules/expo-web-browser/ios"
   FBLazyVector:
     :path: "../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/Libraries/FBLazyVector"
   hermes-engine:
@@ -2558,9 +2558,9 @@ EXTERNAL SOURCES:
   llama-rn:
     :path: "../../../node_modules/.bun/llama.rn@0.11.1+069b4c9d3e085d94/node_modules/llama.rn"
   NitroMmkv:
-    :path: "../../../node_modules/.bun/react-native-mmkv@4.1.2+46a3cf67044bb70b/node_modules/react-native-mmkv"
+    :path: "../../../node_modules/.bun/react-native-mmkv@4.1.2+226b7041f21003be/node_modules/react-native-mmkv"
   NitroModules:
-    :path: "../../../node_modules/.bun/react-native-nitro-modules@0.33.9+069b4c9d3e085d94/node_modules/react-native-nitro-modules"
+    :path: "../../../node_modules/.bun/react-native-nitro-modules@0.35.2+069b4c9d3e085d94/node_modules/react-native-nitro-modules"
   RCTDeprecation:
     :path: "../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation"
   RCTRequired:
@@ -2636,9 +2636,9 @@ EXTERNAL SOURCES:
   react-native-blob-util:
     :path: "../../../node_modules/.bun/react-native-blob-util@0.24.7+069b4c9d3e085d94/node_modules/react-native-blob-util"
   react-native-nitro-buffer:
-    :path: "../../../node_modules/.bun/react-native-nitro-buffer@0.0.15+46a3cf67044bb70b/node_modules/react-native-nitro-buffer"
+    :path: "../../../node_modules/.bun/react-native-nitro-buffer@0.0.15+226b7041f21003be/node_modules/react-native-nitro-buffer"
   react-native-nitro-crypto:
-    :path: "../../../node_modules/.bun/react-native-nitro-crypto@0.2.4+46a3cf67044bb70b/node_modules/react-native-nitro-crypto"
+    :path: "../../../node_modules/.bun/react-native-nitro-crypto@0.2.4+226b7041f21003be/node_modules/react-native-nitro-crypto"
   react-native-safe-area-context:
     :path: "../../../node_modules/.bun/react-native-safe-area-context@5.6.2+069b4c9d3e085d94/node_modules/react-native-safe-area-context"
   react-native-webview:
@@ -2761,7 +2761,7 @@ SPEC CHECKSUMS:
   llama-rn: 41276e68eb7cf538592dd8972ea5f58798b9dcae
   MMKVCore: f2dd4c9befea04277a55e84e7812f930537993df
   NitroMmkv: c9fd61d98afd00a6e4e1656a415c28f7be0fd74e
-  NitroModules: 97978583f36f88f7a348d5bf986d94bc4b340d0a
+  NitroModules: 76063cb7bc1a21cf46d11b25abfcf1759bf0be47
   RCTDeprecation: a522c536d2c7be8f518dd834883cf6dce1d4f545
   RCTRequired: 44337def23abb244c025e9e7ab58f9cd3d63ec7d
   RCTSwiftUI: b2f0c2f2761631b8cd605767536cbb1cbf8d020f
