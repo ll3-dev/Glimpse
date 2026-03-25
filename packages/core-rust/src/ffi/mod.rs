@@ -4,9 +4,11 @@
 //! All types here are `#[repr(C)]` and use C-compatible layouts.
 
 mod error;
+mod sync;
 mod types;
 
 pub use error::*;
+pub use sync::*;
 pub use types::*;
 
 use crate::CoreClientImpl;
