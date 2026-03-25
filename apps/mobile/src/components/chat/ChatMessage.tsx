@@ -71,12 +71,14 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
 
   return (
     <>
-      <View className={`mb-3 flex-row ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <View
+        className={`mb-3 flex-row ${isUser ? "justify-end" : "justify-start"}`}
+      >
         <TouchableOpacity
           onLongPress={handleLongPress}
           activeOpacity={0.8}
           className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-            isUser ? 'rounded-br-md bg-black' : 'rounded-bl-md bg-gray-100'
+            isUser ? "rounded-br-md bg-black" : "rounded-bl-md bg-gray-100"
           }`}
         >
           {!isUser && parsedContent.reasoning && (
@@ -86,11 +88,17 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
                 className="flex-row items-center justify-between"
               >
                 <View className="flex-1 pr-3">
-                  <Text className="text-xs font-semibold uppercase tracking-tight text-gray-500">
-                    {parsedContent.isReasoningInProgress ? '사고 중' : '사고 요약'}
+                  <Text className="text-xs font-semibold tracking-tight text-gray-500 uppercase">
+                    {parsedContent.isReasoningInProgress
+                      ? "사고 중"
+                      : "사고 요약"}
                   </Text>
-                  <Text className="mt-1 text-sm text-gray-700" numberOfLines={showReasoning ? undefined : 2}>
-                    {parsedContent.reasoningSummary ?? '생각을 정리하고 있습니다.'}
+                  <Text
+                    className="mt-1 text-sm text-gray-700"
+                    numberOfLines={showReasoning ? undefined : 2}
+                  >
+                    {parsedContent.reasoningSummary ??
+                      "생각을 정리하고 있습니다."}
                   </Text>
                 </View>
                 {showReasoning ? (
@@ -111,17 +119,11 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
             </View>
           )}
 
-          {isPending ? (
-            <Text className={bubbleTextClassName} numberOfLines={1}>
-              {message.content}
-            </Text>
-          ) : (
-            <ChatMarkdown
-              content={parsedContent.answer || message.content}
-              textClassName={bubbleTextClassName}
-              mutedTextClassName={mutedTextClassName}
-            />
-          )}
+          <ChatMarkdown
+            content={parsedContent.answer || message.content}
+            textClassName={bubbleTextClassName}
+            mutedTextClassName={mutedTextClassName}
+          />
 
           {!isUser && (
             <View className="mt-3 flex-row items-center justify-end">
@@ -135,7 +137,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
                   <Copy size={14} color="#4b5563" />
                 )}
                 <Text className="ml-1.5 text-xs font-medium text-gray-600">
-                  {copied ? '복사됨' : '복사'}
+                  {copied ? "복사됨" : "복사"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -144,7 +146,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
           {isEdited && (
             <Text
               className={`mt-1 text-xs ${
-                isUser ? 'text-gray-400' : 'text-gray-500'
+                isUser ? "text-gray-400" : "text-gray-500"
               }`}
             >
               (수정됨)
@@ -176,7 +178,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
             <Button
               variant="outline"
               onPress={handleDelete}
-              className="w-full rounded-2xl border-destructive/20 active:bg-destructive/10"
+              className="border-destructive/20 active:bg-destructive/10 w-full rounded-2xl"
             >
               <Text className="text-destructive">삭제</Text>
             </Button>
@@ -190,7 +192,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
       </AlertDialog>
 
       <AlertDialog
-        open={actionType === 'delete'}
+        open={actionType === "delete"}
         onOpenChange={(open) => !open && handleCancelAction()}
       >
         <AlertDialogContent>
