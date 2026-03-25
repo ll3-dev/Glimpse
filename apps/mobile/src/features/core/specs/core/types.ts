@@ -1,6 +1,4 @@
-// packages/specs/src/core/types.ts
-import type { KnowledgeItem } from '@glimpse/shared';
-
+// apps/mobile/src/features/core/specs/core/types.ts
 /**
  * Bridge transport types - FFI-safe versions of domain types.
  * Only what crosses the bridge boundary.

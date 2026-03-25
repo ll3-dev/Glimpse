@@ -1,4 +1,4 @@
-// packages/specs/src/core/errors.ts
+// apps/mobile/src/features/core/specs/core/errors.ts
 /**
  * Normalized error shape for JS-visible bridge errors.
  * Matches the architecture document's error boundary design.
