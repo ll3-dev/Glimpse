@@ -1,6 +1,6 @@
 //! Async FFI functions - database operations that return JSON strings.
 
-use super::{CoreClientHandle, FfiErrorCode, FfiOptionalI64};
+use super::{CoreClientHandle, FfiErrorCode};
 use crate::models::{
     Conversation, ConversationPatch, FeedbackEvent, KnowledgeItem, KnowledgeItemPatch,
     Message, MessagePatch, Recommendation, RecommendationStatus,
@@ -21,14 +21,6 @@ fn string_to_c_string(s: String) -> *mut c_char {
     match CString::new(s) {
         Ok(cstr) => cstr.into_raw(),
         Err(_) => ptr::null_mut(),
-    }
-}
-
-/// Helper to convert Option<String> to C string.
-fn opt_string_to_c_string(opt: Option<String>) -> *mut c_char {
-    match opt {
-        Some(s) => string_to_c_string(s),
-        None => ptr::null_mut(),
     }
 }
 

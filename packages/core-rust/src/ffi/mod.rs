@@ -8,11 +8,13 @@ mod error;
 mod sync;
 #[cfg(test)]
 mod tests;
+mod typed_ops;
 mod types;
 
 pub use async_ops::*;
 pub use error::*;
 pub use sync::*;
+pub use typed_ops::*;
 pub use types::*;
 
 use crate::CoreClientImpl;
@@ -66,7 +68,7 @@ Used for debugging when FFI calls return error codes.
 - Returns the number of bytes written (excluding null terminator)
 */
 #[no_mangle]
-pub unsafe extern "C" fn core_client_get_last_error(buffer: *mut c_char, buffer_len: c_int) -> c_int {
+pub unsafe extern "C" fn core_client_get_last_error(_buffer: *mut c_char, _buffer_len: c_int) -> c_int {
     // TODO: Implement thread-local error storage for better error messages
     0
 }
