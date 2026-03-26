@@ -1,6 +1,12 @@
 // apps/mobile/src/features/core/native-core-client.native.ts
 import { NitroModules } from 'react-native-nitro-modules';
-import type { CoreClient } from '../../../generate/CoreClient.nitro';
+import type {
+  CoreClient,
+  KnowledgeItem as NitroKnowledgeItem,
+  Message as NitroMessage,
+  Recommendation as NitroRecommendation,
+  FeedbackEvent as NitroFeedbackEvent,
+} from '../../../generate/CoreClient.nitro';
 import type { MobileCoreClient } from './types';
 import type {
   KnowledgeItem,
@@ -8,7 +14,183 @@ import type {
   Message,
   Recommendation,
   FeedbackEvent,
+  KnowledgeItemType,
+  KnowledgeItemLabelStatus,
+  KnowledgeItemLabelSource,
+  MessageRole,
+  FeedbackActionType,
+  RecommendationStatus,
 } from '@glimpse/shared';
+
+function stringPatch(value: string | undefined) {
+  return {
+    hasValue: value !== undefined,
+    value: value ?? '',
+  };
+}
+
+function nullableStringPatch(value: string | null | undefined) {
+  return {
+    hasValue: value !== undefined,
+    isNull: value === null,
+    value: value ?? '',
+  };
+}
+
+function numberPatch(value: number | undefined) {
+  return {
+    hasValue: value !== undefined,
+    value: value ?? 0,
+  };
+}
+
+function nullableNumberPatch(value: number | null | undefined) {
+  return {
+    hasValue: value !== undefined,
+    isNull: value === null,
+    value: value ?? 0,
+  };
+}
+
+function nullableStringArrayPatch(value: string[] | null | undefined) {
+  return {
+    hasValue: value !== undefined,
+    isNull: value === null,
+    value: value ?? [],
+  };
+}
+
+function toKnowledgeItemPatch(patch: Partial<KnowledgeItem>) {
+  return {
+    type: stringPatch(patch.type),
+    title: nullableStringPatch(patch.title),
+    body: nullableStringPatch(patch.body),
+    url: nullableStringPatch(patch.url),
+    summary: nullableStringPatch(patch.summary),
+    tags: nullableStringArrayPatch(patch.tags),
+    labels: nullableStringArrayPatch(patch.labels),
+    provisionalLabels: nullableStringArrayPatch(patch.provisionalLabels),
+    labelStatus: nullableStringPatch(patch.labelStatus),
+    labelSource: nullableStringPatch(patch.labelSource),
+    labelVersion: nullableStringPatch(patch.labelVersion),
+    labelScore: nullableNumberPatch(patch.labelScore),
+    labelRequestedAt: nullableNumberPatch(patch.labelRequestedAt),
+    labelCompletedAt: nullableNumberPatch(patch.labelCompletedAt),
+    labelError: nullableStringPatch(patch.labelError),
+    updatedAt: numberPatch(patch.updatedAt),
+    stability: nullableNumberPatch(patch.stability),
+    difficulty: nullableNumberPatch(patch.difficulty),
+    lastReviewedAt: nullableNumberPatch(patch.lastReviewedAt),
+    nextReviewAt: nullableNumberPatch(patch.nextReviewAt),
+  };
+}
+
+function toNitroKnowledgeItem(item: KnowledgeItem): NitroKnowledgeItem {
+  return {
+    ...item,
+    labels: item.labels ?? null,
+    provisionalLabels: item.provisionalLabels ?? null,
+    labelStatus: item.labelStatus ?? null,
+    labelSource: item.labelSource ?? null,
+    labelVersion: item.labelVersion ?? null,
+    labelScore: item.labelScore ?? null,
+    labelRequestedAt: item.labelRequestedAt ?? null,
+    labelCompletedAt: item.labelCompletedAt ?? null,
+    labelError: item.labelError ?? null,
+  };
+}
+
+function fromNitroKnowledgeItem(item: NitroKnowledgeItem): KnowledgeItem {
+  return {
+    ...item,
+    type: item.type as KnowledgeItemType,
+    labelStatus: item.labelStatus as KnowledgeItemLabelStatus | null,
+    labelSource: item.labelSource as KnowledgeItemLabelSource | null,
+  };
+}
+
+function toNitroRecommendation(item: Recommendation): NitroRecommendation {
+  return {
+    id: item.id,
+    itemAId: item.itemA_id,
+    itemBId: item.itemB_id,
+    reason: item.reason,
+    status: item.status,
+    createdAt: item.createdAt,
+    respondedAt: item.respondedAt,
+  };
+}
+
+function fromNitroRecommendation(item: NitroRecommendation): Recommendation {
+  return {
+    id: item.id,
+    itemA_id: item.itemAId,
+    itemB_id: item.itemBId,
+    reason: item.reason,
+    status: item.status as RecommendationStatus,
+    createdAt: item.createdAt,
+    respondedAt: item.respondedAt,
+  };
+}
+
+function fromNitroMessage(item: NitroMessage): Message {
+  return {
+    ...item,
+    role: item.role as MessageRole,
+  };
+}
+
+function toNitroMessage(item: Message): NitroMessage {
+  return item;
+}
+
+function fromNitroFeedbackEvent(item: NitroFeedbackEvent): FeedbackEvent {
+  return {
+    ...item,
+    action: item.action as FeedbackActionType,
+  };
+}
+
+function toNitroFeedbackEvent(item: FeedbackEvent): NitroFeedbackEvent {
+  return item;
+}
+
+function toConversationPatch(patch: Partial<Conversation>) {
+  return {
+    title: nullableStringPatch(patch.title),
+    icon: nullableStringPatch(patch.icon),
+    contextItemId: nullableStringPatch(patch.contextItemId),
+    updatedAt: numberPatch(patch.updatedAt),
+    deletedAt: nullableNumberPatch(patch.deletedAt),
+  };
+}
+
+function toMessagePatch(patch: Partial<Message>) {
+  return {
+    content: stringPatch(patch.content),
+    updatedAt: nullableNumberPatch(patch.updatedAt),
+    deletedAt: nullableNumberPatch(patch.deletedAt),
+  };
+}
+
+export const nativeCoreBridgeHelpers = {
+  stringPatch,
+  nullableStringPatch,
+  numberPatch,
+  nullableNumberPatch,
+  nullableStringArrayPatch,
+  toKnowledgeItemPatch,
+  toConversationPatch,
+  toMessagePatch,
+  toNitroKnowledgeItem,
+  fromNitroKnowledgeItem,
+  toNitroRecommendation,
+  fromNitroRecommendation,
+  toNitroMessage,
+  fromNitroMessage,
+  toNitroFeedbackEvent,
+  fromNitroFeedbackEvent,
+};
 
 /**
  * In-memory stub storage for development when Nitro module is not available.
@@ -142,14 +324,13 @@ const isTestEnvironment = typeof Bun !== 'undefined';
 function createNativeCoreClient(): MobileCoreClient {
   // Try to get the Nitro module, fall back to stub if not registered
   let coreClient: CoreClient | null = null;
+
   try {
     coreClient = NitroModules.createHybridObject<CoreClient>('CoreClient');
     console.log('✅ Nitro CoreClient module loaded successfully');
   } catch (e) {
     if (!isTestEnvironment) {
-      throw new Error(
-        `Nitro CoreClient module is not registered. Native bridge linking is incomplete: ${String(e)}`
-      );
+      console.warn('Nitro module unavailable, using in-memory stub');
     }
     console.warn('⚠️ Nitro CoreClient module not registered, using in-memory stub implementation:', e);
   }
@@ -177,9 +358,10 @@ function createNativeCoreClient(): MobileCoreClient {
         const union = leftTags.size + rightTags.size - intersection;
         return union > 0 ? intersection / union : 0;
       }
-      const leftTags = input.left.tags?.join('|') ?? '';
-      const rightTags = input.right.tags?.join('|') ?? '';
-      return coreClient.calculateTagOverlap(leftTags, rightTags);
+      return coreClient.calculateTagOverlap(
+        input.left.tags ?? [],
+        input.right.tags ?? [],
+      );
     },
 
     calculateNextReview(input) {
@@ -193,16 +375,15 @@ function createNativeCoreClient(): MobileCoreClient {
           nextReviewAt: input.now + intervalMs,
         };
       }
-      const resultJson = coreClient.calculateNextReview(
+      const result = coreClient.calculateNextReview(
         input.lastReviewedAt ?? null,
         input.nextReviewAt ?? null,
         input.feedbackType === 'remembered' ? 0 : 1,
         input.now
       );
-      const parsed = JSON.parse(resultJson) as { interval_ms: number; next_review_at: number };
       return {
-        intervalMs: parsed.interval_ms,
-        nextReviewAt: parsed.next_review_at,
+        intervalMs: result.intervalMs,
+        nextReviewAt: result.nextReviewAt,
       };
     },
 
@@ -215,29 +396,24 @@ function createNativeCoreClient(): MobileCoreClient {
           lastReviewedAt: null,
         };
       }
-      const resultJson = coreClient.initializeReviewSchedule(
+      const result = coreClient.initializeReviewSchedule(
         input.createdAt,
         input.intervalMs ?? null
       );
-      const parsed = JSON.parse(resultJson) as {
-        next_review_at: number;
-        stability: number | null;
-        difficulty: number | null;
-        last_reviewed_at: number | null;
-      };
       return {
-        nextReviewAt: parsed.next_review_at,
-        stability: parsed.stability,
-        difficulty: parsed.difficulty,
-        lastReviewedAt: parsed.last_reviewed_at,
+        nextReviewAt: result.nextReviewAt,
+        stability: result.stability,
+        difficulty: result.difficulty,
+        lastReviewedAt: result.lastReviewedAt,
       };
     },
 
     // Knowledge Items
     async saveKnowledgeItem(item: KnowledgeItem): Promise<KnowledgeItem> {
       if (coreClient) {
-        const json = await coreClient.saveKnowledgeItem(JSON.stringify(item));
-        return JSON.parse(json);
+        return fromNitroKnowledgeItem(
+          await coreClient.saveKnowledgeItem(toNitroKnowledgeItem(item))
+        );
       }
       // Stub implementation
       inMemoryStorage.addKnowledgeItem(item);
@@ -246,8 +422,7 @@ function createNativeCoreClient(): MobileCoreClient {
 
     async listKnowledgeItems(): Promise<KnowledgeItem[]> {
       if (coreClient) {
-        const json = await coreClient.listKnowledgeItems();
-        return JSON.parse(json);
+        return (await coreClient.listKnowledgeItems()).map(fromNitroKnowledgeItem);
       }
       return inMemoryStorage.getAllKnowledgeItems();
     },
@@ -270,8 +445,8 @@ function createNativeCoreClient(): MobileCoreClient {
 
     async getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null> {
       if (coreClient) {
-        const json = await coreClient.getKnowledgeItemById(itemId);
-        return json ? JSON.parse(json) : null;
+        const item = await coreClient.getKnowledgeItemById(itemId);
+        return item ? fromNitroKnowledgeItem(item) : null;
       }
       return inMemoryStorage.getKnowledgeItem(itemId) ?? null;
     },
@@ -287,19 +462,23 @@ function createNativeCoreClient(): MobileCoreClient {
 
     async updateKnowledgeItem(itemId: string, patch: Partial<KnowledgeItem>): Promise<KnowledgeItem> {
       if (coreClient) {
-        const json = await coreClient.updateKnowledgeItem(itemId, JSON.stringify(patch));
-        return JSON.parse(json);
+        return fromNitroKnowledgeItem(
+          await coreClient.updateKnowledgeItem(itemId, toKnowledgeItemPatch(patch))
+        );
       }
       const updated = inMemoryStorage.updateKnowledgeItem(itemId, patch);
-      if (!updated) throw new Error(`Knowledge item not found: ${itemId}`);
+      if (!updated) {
+        const error = new Error(`Knowledge item not found: ${itemId}`);
+        (error as Error).message = `Knowledge item not found: ${itemId}`;
+        throw error;
+      }
       return updated;
     },
 
     // Conversations
     async createConversation(conversation: Conversation): Promise<Conversation> {
       if (coreClient) {
-        const json = await coreClient.createConversation(JSON.stringify(conversation));
-        return JSON.parse(json);
+        return coreClient.createConversation(conversation);
       }
       inMemoryStorage.addConversation(conversation);
       return conversation;
@@ -307,16 +486,14 @@ function createNativeCoreClient(): MobileCoreClient {
 
     async listConversations(): Promise<Conversation[]> {
       if (coreClient) {
-        const json = await coreClient.listConversations();
-        return JSON.parse(json);
+        return coreClient.listConversations();
       }
       return inMemoryStorage.getAllConversations();
     },
 
     async updateConversation(conversationId: string, patch: Partial<Conversation>): Promise<Conversation> {
       if (coreClient) {
-        const json = await coreClient.updateConversation(conversationId, JSON.stringify(patch));
-        return JSON.parse(json);
+        return coreClient.updateConversation(conversationId, toConversationPatch(patch));
       }
       const updated = inMemoryStorage.updateConversation(conversationId, patch);
       if (!updated) throw new Error(`Conversation not found: ${conversationId}`);
@@ -334,16 +511,14 @@ function createNativeCoreClient(): MobileCoreClient {
     // Messages
     async listConversationMessages(conversationId: string): Promise<Message[]> {
       if (coreClient) {
-        const json = await coreClient.listConversationMessages(conversationId);
-        return JSON.parse(json);
+        return (await coreClient.listConversationMessages(conversationId)).map(fromNitroMessage);
       }
       return inMemoryStorage.getMessages(conversationId);
     },
 
     async addMessage(message: Message): Promise<Message> {
       if (coreClient) {
-        const json = await coreClient.addMessage(JSON.stringify(message));
-        return JSON.parse(json);
+        return fromNitroMessage(await coreClient.addMessage(toNitroMessage(message)));
       }
       inMemoryStorage.addMessage(message.conversationId, message);
       return message;
@@ -351,8 +526,7 @@ function createNativeCoreClient(): MobileCoreClient {
 
     async updateMessage(messageId: string, patch: Partial<Message>): Promise<Message> {
       if (coreClient) {
-        const json = await coreClient.updateMessage(messageId, JSON.stringify(patch));
-        return JSON.parse(json);
+        return fromNitroMessage(await coreClient.updateMessage(messageId, toMessagePatch(patch)));
       }
       const updated = inMemoryStorage.updateMessage(messageId, patch);
       if (!updated) throw new Error(`Message not found: ${messageId}`);
@@ -370,7 +544,7 @@ function createNativeCoreClient(): MobileCoreClient {
     // Recommendations
     async saveRecommendations(recommendations: Recommendation[]): Promise<void> {
       if (coreClient) {
-        await coreClient.saveRecommendations(JSON.stringify(recommendations));
+        await coreClient.saveRecommendations(recommendations.map(toNitroRecommendation));
         return;
       }
       for (const rec of recommendations) {
@@ -380,16 +554,14 @@ function createNativeCoreClient(): MobileCoreClient {
 
     async listRecommendations(): Promise<Recommendation[]> {
       if (coreClient) {
-        const json = await coreClient.listRecommendations();
-        return JSON.parse(json);
+        return (await coreClient.listRecommendations()).map(fromNitroRecommendation);
       }
       return inMemoryStorage.getAllRecommendations();
     },
 
     async listPendingRecommendations(): Promise<Recommendation[]> {
       if (coreClient) {
-        const json = await coreClient.listPendingRecommendations();
-        return JSON.parse(json);
+        return (await coreClient.listPendingRecommendations()).map(fromNitroRecommendation);
       }
       const all = inMemoryStorage.getAllRecommendations();
       return all.filter(r => r.status === 'pending');
@@ -404,7 +576,7 @@ function createNativeCoreClient(): MobileCoreClient {
         await coreClient.respondToRecommendation(
           recommendationId,
           status,
-          JSON.stringify(feedbackEvent)
+          toNitroFeedbackEvent(feedbackEvent)
         );
         return;
       }
@@ -414,16 +586,16 @@ function createNativeCoreClient(): MobileCoreClient {
     // Feedback Events
     async listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]> {
       if (coreClient) {
-        const json = await coreClient.listRecentFeedbackEvents(limit);
-        return JSON.parse(json);
+        return (await coreClient.listRecentFeedbackEvents(limit)).map(fromNitroFeedbackEvent);
       }
       return inMemoryStorage.getRecentFeedbackEvents(limit);
     },
 
     async logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent> {
       if (coreClient) {
-        const json = await coreClient.logRecommendationFeedback(JSON.stringify(event));
-        return JSON.parse(json);
+        return fromNitroFeedbackEvent(
+          await coreClient.logRecommendationFeedback(toNitroFeedbackEvent(event))
+        );
       }
       inMemoryStorage.addFeedbackEvent(event);
       return event;

@@ -6,7 +6,9 @@ export type AppErrorCode =
   | 'NOT_FOUND'
   | 'GENERATION_ERROR'
   | 'UNKNOWN_ERROR'
-  | 'AI_PROVIDER_ERROR';
+  | 'AI_PROVIDER_ERROR'
+  | 'NITRO_MODULE_UNAVAILABLE'
+  | 'STORAGE_ERROR';
 
 export interface AppError {
   readonly _tag: AppErrorCode | string;
@@ -66,6 +68,20 @@ export function unknownError(
   details?: unknown
 ): AppError {
   return appError('UNKNOWN_ERROR', message, details);
+}
+
+export function nitroModuleError(
+  message: string,
+  details?: unknown
+): AppError {
+  return appError('NITRO_MODULE_UNAVAILABLE', message, details);
+}
+
+export function storageError(
+  message: string,
+  details?: unknown
+): AppError {
+  return appError('STORAGE_ERROR', message, details);
 }
 
 export function isAppError(error: unknown): error is AppError {

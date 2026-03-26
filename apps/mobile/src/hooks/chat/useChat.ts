@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { useAddMessageMutation } from '@/src/hooks';
+import { useAddMessageMutation } from '@/src/hooks/mutations';
 import { executeChatTarget, resolveEffectiveTarget } from '@/src/features/ai/targets';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { isFailure } from '@/src/lib/effect-result';

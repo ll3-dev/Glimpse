@@ -3,6 +3,8 @@ import { Effect, Exit } from 'effect';
 import {
   appError,
   unknownError,
+  nitroModuleError,
+  storageError,
   isAppError,
   toAppError,
   isFailure,
@@ -245,5 +247,35 @@ describe('runEffectSuccess', () => {
     const result = await runEffectSuccess(Effect.succeed({ success: true, data: 'test' }));
     // Note: This test verifies the function signature accepts the right type
     expect(result.success).toBe(true);
+  });
+});
+
+describe('nitroModuleError', () => {
+  test('creates NITRO_MODULE_UNAVAILABLE error', () => {
+    const error = nitroModuleError('Module not loaded');
+    expect(error.code).toBe('NITRO_MODULE_UNAVAILABLE');
+    expect(error.message).toBe('Module not loaded');
+  });
+
+  test('creates NITRO_MODULE_UNAVAILABLE error with details', () => {
+    const details = { cause: 'test', stack: 'test stack' };
+    const error = nitroModuleError('Module failed', details);
+    expect(error.code).toBe('NITRO_MODULE_UNAVAILABLE');
+    expect(error.details).toEqual(details);
+  });
+});
+
+describe('storageError', () => {
+  test('creates STORAGE_ERROR', () => {
+    const error = storageError('Save failed');
+    expect(error.code).toBe('STORAGE_ERROR');
+    expect(error.message).toBe('Save failed');
+  });
+
+  test('creates STORAGE_ERROR with details', () => {
+    const details = { id: '123', operation: 'update' };
+    const error = storageError('Update failed', details);
+    expect(error.code).toBe('STORAGE_ERROR');
+    expect(error.details).toEqual(details);
   });
 });
