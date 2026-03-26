@@ -13,9 +13,16 @@ import {
   deleteConversation,
   updateConversationTitle,
   updateConversationDetails,
+  type CreateConversationInput,
+  type AddMessageInput,
+  type UpdateConversationTitleInput,
+  type UpdateConversationDetailsInput,
+  type DeleteConversationInput,
+  type UpdateMessageInput,
+  type DeleteMessageInput,
 } from "@/src/features/chat";
-import { queryKeys } from '@/src/lib/query-keys';
-import { createMutationOptions } from '@/src/lib/effect-query';
+import type { Conversation, Message } from "@glimpse/shared";
+import { queryKeys } from "@/src/lib/query-keys";
 
 /**
  * Hook to create a new conversation.
@@ -24,7 +31,15 @@ export function useCreateConversationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(createConversation),
+    mutationFn: async (
+      input: CreateConversationInput,
+    ): Promise<Conversation> => {
+      const result = await createConversation(input);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+      return result.conversation;
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
       // Return data so that component-level onSuccess can access it
@@ -40,7 +55,13 @@ export function useAddMessageMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(addMessage),
+    mutationFn: async (input: AddMessageInput): Promise<Message> => {
+      const result = await addMessage(input);
+      if (result.success === false) {
+        throw new Error(result.error.code + ": " + result.error.message);
+      }
+      return result.message;
+    },
     onSuccess: (_, variables) => {
       // Invalidate messages for this conversation
       queryClient.invalidateQueries({
@@ -59,7 +80,15 @@ export function useUpdateConversationTitleMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(updateConversationTitle),
+    mutationFn: async (
+      input: UpdateConversationTitleInput,
+    ): Promise<Conversation> => {
+      const result = await updateConversationTitle(input);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+      return result.conversation;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
     },
@@ -73,7 +102,15 @@ export function useUpdateConversationDetailsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(updateConversationDetails),
+    mutationFn: async (
+      input: UpdateConversationDetailsInput,
+    ): Promise<Conversation> => {
+      const result = await updateConversationDetails(input);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+      return result.conversation;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
     },
@@ -87,12 +124,19 @@ export function useDeleteConversationMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(deleteConversation),
+    mutationFn: async (input: DeleteConversationInput): Promise<void> => {
+      const result = await deleteConversation(input);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+    },
     onSuccess: (_, variables) => {
       queryClient.setQueryData(
         queryKeys.chat.conversations,
         (current: { id: string }[] | undefined) =>
-          current?.filter((conversation) => conversation.id !== variables.conversationId) ?? []
+          current?.filter(
+            (conversation) => conversation.id !== variables.conversationId,
+          ) ?? [],
       );
       queryClient.removeQueries({
         queryKey: queryKeys.chat.conversation(variables.conversationId),
@@ -112,7 +156,16 @@ export function useUpdateMessageMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(updateMessage),
+    mutationFn: async (
+      input: UpdateMessageInput & { conversationId: string },
+    ): Promise<Message> => {
+      const { conversationId: _, ...updateInput } = input;
+      const result = await updateMessage(updateInput);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+      return result.message;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.chat.messages(variables.conversationId),
@@ -129,7 +182,15 @@ export function useDeleteMessageMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    ...createMutationOptions(deleteMessage),
+    mutationFn: async (
+      input: DeleteMessageInput & { conversationId: string },
+    ): Promise<void> => {
+      const { conversationId: _, ...deleteInput } = input;
+      const result = await deleteMessage(deleteInput);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.chat.messages(variables.conversationId),

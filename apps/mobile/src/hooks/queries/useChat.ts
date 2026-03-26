@@ -8,7 +8,6 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { getAllConversations } from '@/src/features/chat';
 import type { Conversation } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
-import { effectQueryFn } from '@/src/lib/effect-query';
 
 /**
  * Hook to fetch all conversations from the database.
@@ -16,7 +15,13 @@ import { effectQueryFn } from '@/src/lib/effect-query';
 export function useConversationsQuery(): UseQueryResult<Conversation[], Error> {
   return useQuery({
     queryKey: queryKeys.chat.conversations,
-    queryFn: effectQueryFn(getAllConversations),
+    queryFn: async (): Promise<Conversation[]> => {
+      const result = await getAllConversations();
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+      return result.conversations;
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

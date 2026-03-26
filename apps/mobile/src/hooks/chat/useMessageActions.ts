@@ -60,10 +60,6 @@ export function useMessageActions({
     [conversationId, updateMessage],
   );
 
-  const handleCancelEdit = useCallback(() => {
-    setState((prev) => ({ ...prev, editing: null }));
-  }, []);
-
   const handleConfirmDelete = useCallback(async () => {
     const messageToDelete = state.deleting;
     if (messageToDelete) {
@@ -74,6 +70,10 @@ export function useMessageActions({
       setState((prev) => ({ ...prev, deleting: null }));
     }
   }, [conversationId, deleteMessage, state.deleting]);
+
+  const handleCancelEdit = useCallback(() => {
+    setState((prev) => ({ ...prev, editing: null }));
+  }, []);
 
   const handleCancelDelete = useCallback(() => {
     setState((prev) => ({ ...prev, deleting: null }));

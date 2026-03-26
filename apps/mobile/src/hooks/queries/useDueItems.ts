@@ -35,7 +35,7 @@ export function useDueItemsQuery(options?: GetDueItemsOptions): UseQueryResult<D
 
       return {
         items: result.items,
-        count: result.count,
+        count: result.items.length,
       };
     },
     staleTime: 1000 * 30, // 30 seconds - review items change frequently

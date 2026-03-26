@@ -32,7 +32,7 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
       if (result.success === false) {
         throw new Error(result.error.message);
       }
-      return result.data;
+      return result.item;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });

@@ -6,7 +6,7 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { respondToRecommendation } from '@/src/features/recommendation';
-import type { RecommendationStatus } from '@glimpse/shared';
+import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 
 type RecommendationAction = 'accept' | 'ignore' | 'dismiss';
@@ -14,6 +14,12 @@ type RecommendationAction = 'accept' | 'ignore' | 'dismiss';
 interface RecommendationActionResult {
   status: RecommendationStatus;
 }
+
+const actionToStatus: Record<RecommendationAction, RecommendationStatus> = {
+  accept: 'accepted',
+  ignore: 'ignored',
+  dismiss: 'dismissed',
+};
 
 /**
  * Hook to respond to a recommendation (accept/ignore/dismiss).
@@ -40,11 +46,12 @@ export function useRespondToRecommendationMutation(): UseMutationResult<
       recommendationId: string;
       action: RecommendationAction;
     }): Promise<RecommendationActionResult> => {
-      const result = await respondToRecommendation(recommendationId, action);
+      const status = actionToStatus[action];
+      const result = await respondToRecommendation(recommendationId, status, action as FeedbackActionType);
       if (result.success === false) {
         throw new Error(result.error.message);
       }
-      return { status: result.status };
+      return { status };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });

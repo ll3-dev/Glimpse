@@ -27,7 +27,7 @@ export function useRecommendationsQuery(): UseQueryResult<RecommendationWithItem
       if (result.success === false) {
         throw new Error(result.error.message);
       }
-      return result.data;
+      return result.recommendations;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

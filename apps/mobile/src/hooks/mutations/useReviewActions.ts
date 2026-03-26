@@ -9,7 +9,6 @@ import {
   markAsReviewed,
   postponeReview,
   type KnowledgeItem,
-  type ReviewFeedbackType,
 } from '@/src/features/review';
 import { ensureLabelingBackgroundTaskRegistered } from '@/src/features/labeling';
 import { queryKeys } from '@/src/lib/query-keys';
@@ -22,28 +21,22 @@ import { queryKeys } from '@/src/lib/query-keys';
  *
  * @example
  * const { mutate: completeReview, isPending } = useMarkAsReviewedMutation();
- * completeReview({ itemId: '123', feedbackType: 'remembered' });
+ * completeReview({ itemId: '123' });
  */
 export function useMarkAsReviewedMutation(): UseMutationResult<
   KnowledgeItem,
   Error,
-  { itemId: string; feedbackType?: ReviewFeedbackType }
+  { itemId: string }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      itemId,
-      feedbackType = 'remembered',
-    }: {
-      itemId: string;
-      feedbackType?: ReviewFeedbackType;
-    }): Promise<KnowledgeItem> => {
-      const result = await markAsReviewed(itemId, feedbackType);
+    mutationFn: async ({ itemId }: { itemId: string }): Promise<KnowledgeItem> => {
+      const result = await markAsReviewed(itemId);
       if (result.success === false) {
         throw new Error(result.error.message);
       }
-      return result.data;
+      return result.item;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
@@ -66,23 +59,17 @@ export function useMarkAsReviewedMutation(): UseMutationResult<
 export function usePostponeReviewMutation(): UseMutationResult<
   KnowledgeItem,
   Error,
-  { itemId: string; intervalMs?: number }
+  { itemId: string }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      itemId,
-      intervalMs,
-    }: {
-      itemId: string;
-      intervalMs?: number;
-    }): Promise<KnowledgeItem> => {
-      const result = await postponeReview(itemId, intervalMs);
+    mutationFn: async ({ itemId }: { itemId: string }): Promise<KnowledgeItem> => {
+      const result = await postponeReview(itemId);
       if (result.success === false) {
         throw new Error(result.error.message);
       }
-      return result.data;
+      return result.item;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });

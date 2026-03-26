@@ -41,13 +41,13 @@ function loadPersistedSettings(): { enabled: boolean; selectedModelId: string | 
 const persistedSettings = loadPersistedSettings();
 
 const localLLMStore = createStore<LocalLLMStoreState>((set) => ({
-  ...createLocalLLMConfigSnapshot(persistedSettings),
+  config: createLocalLLMConfigSnapshot(persistedSettings),
   actions: {
     updateConfig: (updater) => {
       set((state) => updateLocalLLMConfigSnapshot(state, updater));
     },
     resetConfig: () => {
-      set(resetLocalLLMConfigSnapshot(persistedSettings));
+      set((state) => ({ ...state, config: resetLocalLLMConfigSnapshot(persistedSettings) }));
     },
   },
 }));

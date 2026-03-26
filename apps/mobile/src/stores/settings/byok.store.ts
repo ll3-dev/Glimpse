@@ -31,13 +31,13 @@ function loadPersistedSettings(): BYOKConfig {
 }
 
 const byokStore = createStore<BYOKStoreState>((set) => ({
-  ...createBYOKSnapshot(loadPersistedSettings()),
+  config: createBYOKSnapshot(loadPersistedSettings()),
   actions: {
     updateConfig: (updater) => {
       set((state) => updateBYOKConfigSnapshot(state, updater));
     },
     resetConfig: () => {
-      set(resetBYOKSnapshot());
+      set((state) => ({ ...state, config: resetBYOKSnapshot() }));
     },
   },
 }));

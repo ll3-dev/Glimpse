@@ -17,7 +17,7 @@ const inferenceModeStore = createStore<InferenceModeStoreState>((set, get) => ({
   actions: {
     activate: (mode, availability) => {
       const result = activateInferenceModeSnapshot(get(), mode, availability);
-      if (result.ok) {
+      if (result.success) {
         set(result.state);
       }
       return result;
