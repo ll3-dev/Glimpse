@@ -124,9 +124,21 @@ export interface RespondFailureResult {
 
 export type RespondResult = RespondSuccessResult | RespondFailureResult;
 
-export interface RespondToRecommendationResult extends RespondResult {
+// Proper discriminated union for RespondToRecommendation
+export interface RespondToRecommendationSuccessResult {
+  ok: true;
   recommendationId: string;
 }
+
+export interface RespondToRecommendationFailureResult {
+  ok: false;
+  error: string;
+  recommendationId: string;
+}
+
+export type RespondToRecommendationResult =
+  | RespondToRecommendationSuccessResult
+  | RespondToRecommendationFailureResult;
 
 export interface RecommendationFeedbackDeps {
   coreClient: {
@@ -150,9 +162,22 @@ export interface LogFeedbackFailureResult {
 
 export type LogFeedbackResult = LogFeedbackSuccessResult | LogFeedbackFailureResult;
 
-export interface LogRecommendationFeedbackResult extends LogFeedbackResult {
+// Proper discriminated union for LogRecommendationFeedback
+export interface LogRecommendationFeedbackSuccessResult {
+  ok: true;
+  event: FeedbackEvent;
   eventId?: string;
 }
+
+export interface LogRecommendationFeedbackFailureResult {
+  ok: false;
+  error: string;
+  eventId?: string;
+}
+
+export type LogRecommendationFeedbackResult =
+  | LogRecommendationFeedbackSuccessResult
+  | LogRecommendationFeedbackFailureResult;
 
 export interface RecentFeedbackSuccessResult {
   ok: true;
