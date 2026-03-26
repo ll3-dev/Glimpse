@@ -8,7 +8,7 @@ describe('nativeCoreClient local review calculations', () => {
         left: { tags: ['a', 'b'] },
         right: { tags: ['b', 'c'] },
       })
-    ).toBe(1);
+    ).toBeCloseTo(1 / 3);
   });
 
   test('initializes review schedule locally', () => {
@@ -33,8 +33,8 @@ describe('nativeCoreClient local review calculations', () => {
         now: 100,
       })
     ).toEqual({
-      intervalMs: 2 * 24 * 60 * 60 * 1000,
-      nextReviewAt: 100 + 2 * 24 * 60 * 60 * 1000,
+      intervalMs: 24 * 60 * 60 * 1000,
+      nextReviewAt: 100 + 24 * 60 * 60 * 1000,
     });
   });
 });

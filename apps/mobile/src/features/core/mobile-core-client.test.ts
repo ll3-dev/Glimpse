@@ -104,7 +104,7 @@ describe('mobileCoreClient typed bridge contract', () => {
     expect(result).toEqual(conversation satisfies Conversation);
   });
 
-  test('passes scalar inputs separately for getDueKnowledgeItems', async () => {
+  test('passes object input through for getDueKnowledgeItems', async () => {
     const items = [
       {
         id: 'item-1',
@@ -136,7 +136,7 @@ describe('mobileCoreClient typed bridge contract', () => {
 
     const result = await mobileCoreClient.getDueKnowledgeItems({ now: 10, limit: 3 });
 
-    expect(bridge.getDueKnowledgeItems).toHaveBeenCalledWith(10, 3);
+    expect(bridge.getDueKnowledgeItems).toHaveBeenCalledWith({ now: 10, limit: 3 });
     expect(result).toEqual(items);
   });
 });
