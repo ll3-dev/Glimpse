@@ -1,7 +1,7 @@
 import {
   activateInferenceMode,
 } from '@/src/stores/settings/inference-mode.store';
-import type { InferenceModeTransitionReason } from '@glimpse/core/application/state';
+import type { InferenceModeTransitionReason } from '@/src/features/core/application/state';
 import { setAppleIntelligenceEnabled } from './appleIntelligenceToggle';
 import { disableBYOK, enableBYOK } from './byokSettings';
 import { disableLocalLLM, enableLocalLLM } from './local-llm.commands';

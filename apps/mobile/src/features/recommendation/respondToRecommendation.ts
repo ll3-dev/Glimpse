@@ -4,7 +4,7 @@ import {
   type RespondResult,
   type RespondToRecommendationDeps,
   type RespondToRecommendationResult,
-} from '@glimpse/core/application/recommendation';
+} from '@/src/features/core/application/recommendation';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 

@@ -1,1 +1,1 @@
-export { createGenerateRecommendations } from '@glimpse/core/application/recommendation';
+export { createGenerateRecommendations } from '@/src/features/core/application/recommendation';

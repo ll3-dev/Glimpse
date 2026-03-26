@@ -1,1 +1,1 @@
-export { loadKnowledgeItemOrFail } from '@glimpse/core/application/review/reviewActions.shared';
+export { loadKnowledgeItemOrFail } from '@/src/features/core/application/review';

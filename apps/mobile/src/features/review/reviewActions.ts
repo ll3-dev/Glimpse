@@ -4,7 +4,7 @@ import {
   createMarkAsReviewed,
   createPostponeReview,
   type ReviewActionsDeps,
-} from '@glimpse/core/application/review';
+} from '@/src/features/core/application/review';
 import { mobileCoreClient } from '@/src/features/core';
 
 export {

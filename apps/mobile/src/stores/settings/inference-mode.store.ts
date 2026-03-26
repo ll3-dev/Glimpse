@@ -8,7 +8,7 @@ import {
   type InferenceModeAvailability,
   type InferenceModeStoreActions,
   type InferenceModeStoreState,
-} from '@glimpse/core/application/state';
+} from '@/src/features/core/application/state';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 

@@ -1,1 +1,1 @@
-export { createMarkAsReviewed } from '@glimpse/core/application/review';
+export { createMarkAsReviewed } from '@/src/features/core/application/review';

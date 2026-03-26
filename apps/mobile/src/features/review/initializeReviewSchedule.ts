@@ -4,7 +4,7 @@ import {
   DEFAULT_INITIAL_REVIEW_INTERVAL_MS,
   initializeReviewScheduleWithCore,
   type BatchInitializeReviewSchedulesDeps,
-} from '@glimpse/core/application/review';
+} from '@/src/features/core/application/review';
 import type { InitializeReviewScheduleOutput } from '@glimpse/shared';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import { logger } from '@/src/utils/logger';

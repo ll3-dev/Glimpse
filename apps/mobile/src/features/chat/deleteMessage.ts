@@ -5,7 +5,7 @@ import {
   type DeleteMessageInput,
   type DeleteMessageResult,
   type DeleteMessageSuccessResult,
-} from '@glimpse/core/application/chat';
+} from '@/src/features/core/application/chat';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 const defaultDeps: DeleteMessageDeps = {

@@ -10,4 +10,4 @@ export type {
   SaveSuccessResult,
   ScreenshotInput,
   ShareInput,
-} from '@glimpse/core/application/capture';
+} from '@/src/features/core/application/capture';

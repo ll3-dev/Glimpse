@@ -1,20 +1,44 @@
-import {
-  createGetAllKnowledgeItems,
-  type GetAllKnowledgeItemsDeps,
-  type GetItemsFailureResult,
-  type GetItemsResult,
-  type GetItemsSuccessResult,
-} from '@glimpse/core/application/library';
-import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
+// apps/mobile/src/features/library/getAllKnowledgeItems.ts
+import type { KnowledgeItem } from '@glimpse/shared';
+import { mobileCoreClient } from '@/src/features/core';
+
+export interface GetItemsSuccessResult {
+  success: true;
+  items: KnowledgeItem[];
+}
+
+export interface GetItemsFailureResult {
+  success: false;
+  error: Error;
+}
+
+export type GetItemsResult = GetItemsSuccessResult | GetItemsFailureResult;
+
+export interface GetAllKnowledgeItemsDeps {
+  coreClient: {
+    listKnowledgeItems: () => Promise<KnowledgeItem[]>;
+  };
+}
+
+export function createGetAllKnowledgeItems(deps: GetAllKnowledgeItemsDeps) {
+  return async (): Promise<GetItemsResult> => {
+    try {
+      const items = await deps.coreClient.listKnowledgeItems();
+      return {
+        success: true,
+        items,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
+  };
+}
 
 const defaultDeps: GetAllKnowledgeItemsDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'listKnowledgeItems'>,
+  coreClient: mobileCoreClient,
 };
-export type {
-  GetAllKnowledgeItemsDeps,
-  GetItemsFailureResult,
-  GetItemsResult,
-  GetItemsSuccessResult,
-};
-export { createGetAllKnowledgeItems };
+
 export const getAllKnowledgeItems = createGetAllKnowledgeItems(defaultDeps);

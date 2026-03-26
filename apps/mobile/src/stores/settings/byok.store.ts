@@ -8,7 +8,7 @@ import {
   type BYOKProviderType,
   type BYOKStoreActions,
   type BYOKStoreState,
-} from '@glimpse/core/application/state';
+} from '@/src/features/core/application/state';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { storage, StorageKeys } from '@/src/lib/storage';

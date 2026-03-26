@@ -1,5 +1,5 @@
 import type { GenerateOptions, LoadModelOptions, StreamOptions } from '../llama-service';
-import type { LocalLLMModelFamily } from '@glimpse/core/application/state';
+import type { LocalLLMModelFamily } from '@/src/features/core/application/state';
 import type { KnowledgeItem } from '@glimpse/shared';
 export type { LocalLLMModelFamily };
 

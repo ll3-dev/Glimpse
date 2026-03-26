@@ -5,7 +5,7 @@ import {
   setRecommendationCadenceSnapshot,
   type RecommendationCadenceStoreActions,
   type RecommendationCadenceStoreState,
-} from '@glimpse/core/application/state';
+} from '@/src/features/core/application/state';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 

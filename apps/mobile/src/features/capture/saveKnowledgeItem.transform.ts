@@ -1,4 +1,4 @@
 export {
   createContentForProcessing,
   normalizeText,
-} from '@glimpse/core/application/capture/saveKnowledgeItem.transform';
+} from '@/src/features/core/application/capture';

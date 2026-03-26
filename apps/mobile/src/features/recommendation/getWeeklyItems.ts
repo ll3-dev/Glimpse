@@ -4,7 +4,7 @@ import {
   type WeeklyItemsFailureResult,
   type WeeklyItemsResult,
   type WeeklyItemsSuccessResult,
-} from '@glimpse/core/application/recommendation';
+} from "@/src/features/core/application/recommendation";
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 const defaultDeps: GetWeeklyItemsDeps = {

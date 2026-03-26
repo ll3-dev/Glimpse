@@ -1,4 +1,4 @@
-import { createSaveKnowledgeItem } from '@glimpse/core/application/capture';
+import { createSaveKnowledgeItem } from '@/src/features/core/application/capture';
 import { initializeReviewSchedule } from '../review';
 import { logger } from '@/src/utils/logger';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';

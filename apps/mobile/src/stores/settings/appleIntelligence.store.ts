@@ -5,7 +5,7 @@ import {
   setAppleIntelligenceEnabledSnapshot,
   type AppleIntelligenceStoreActions,
   type AppleIntelligenceStoreState,
-} from '@glimpse/core/application/state';
+} from '@/src/features/core/application/state';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 

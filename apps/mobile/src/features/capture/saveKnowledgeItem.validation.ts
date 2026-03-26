@@ -1,1 +1,1 @@
-export { validateInput } from '@glimpse/core/application/capture/saveKnowledgeItem.validation';
+export { validateInput } from '@/src/features/core/application/capture';

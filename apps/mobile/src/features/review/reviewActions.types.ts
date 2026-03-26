@@ -4,4 +4,4 @@ export {
   type ReviewActionFailureResult,
   type ReviewActionResult,
   type ReviewActionsDeps,
-} from '@glimpse/core/application/review';
+} from '@/src/features/core/application/review';

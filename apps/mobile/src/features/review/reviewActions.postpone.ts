@@ -1,1 +1,1 @@
-export { createPostponeReview } from '@glimpse/core/application/review';
+export { createPostponeReview } from '@/src/features/core/application/review';

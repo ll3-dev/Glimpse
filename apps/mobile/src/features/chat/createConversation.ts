@@ -5,7 +5,7 @@ import {
   type CreateConversationInput,
   type CreateConversationResult,
   type CreateConversationSuccessResult,
-} from '@glimpse/core/application/chat';
+} from '@/src/features/core/application/chat';
 import { generateId } from '@/src/lib/id';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
