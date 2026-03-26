@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
   s.source       = { :path => "." }
 
   s.source_files = [
+    "cpp/**/*.{h,hpp,c,cpp,mm}",
     "nitrogen/generated/shared/**/*.{h,hpp,c,cpp,swift}",
     "nitrogen/generated/ios/**/*.{h,hpp,c,cpp,mm,swift}"
   ]
@@ -27,6 +28,8 @@ Pod::Spec.new do |s|
     "HEADER_SEARCH_PATHS" => [
       "\"$(PODS_ROOT)/react-native-nitro-modules/ios\"",
       "\"$(PODS_ROOT)/Headers/Public/react-native-nitro-modules\"",
+      "\"$(PODS_TARGET_SRCROOT)/cpp\"",
+      "\"$(PODS_TARGET_SRCROOT)/cpp/generated\"",
       "\"$(PODS_TARGET_SRCROOT)/nitrogen/generated/shared/c++\"",
       "\"$(PODS_TARGET_SRCROOT)/nitrogen/generated/shared\"",
       "\"$(PODS_TARGET_SRCROOT)/nitrogen/generated/ios/c++\"",

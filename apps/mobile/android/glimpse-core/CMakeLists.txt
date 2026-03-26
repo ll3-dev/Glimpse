@@ -10,6 +10,8 @@ add_library(glimpse_core SHARED
 target_link_options(glimpse_core PRIVATE "-Wl,--hash-style=both")
 
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../cpp/generated
     ${CMAKE_CURRENT_SOURCE_DIR}/../../nitrogen/generated/shared/c++
     ${CMAKE_CURRENT_SOURCE_DIR}/../../nitrogen/generated/android
 )

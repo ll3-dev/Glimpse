@@ -1,0 +1,99 @@
+language = "C++"
+pragma_once = true
+cpp_compat = true
+documentation = true
+
+include_guard = "GLIMPSE_CORE_FFI_H"
+
+include_version = false
+usize_is_size_t = true
+
+[parse]
+parse_deps = false
+include = ["glimpse-core"]
+
+[export]
+include = [
+  "CoreClientHandle",
+  "FfiErrorCode",
+  "FfiOptionalI64",
+  "FfiOptionalF64",
+  "FfiNullableString",
+  "FfiNullableStringArray",
+  "FfiStringPatchField",
+  "FfiNullableStringPatchField",
+  "FfiNumberPatchField",
+  "FfiNullableNumberPatchField",
+  "FfiNullableStringArrayPatchField",
+  "FfiCalculateNextReviewOutput",
+  "FfiInitializeReviewScheduleOutput",
+  "FfiKnowledgeItem",
+  "FfiKnowledgeItemArray",
+  "FfiKnowledgeItemPatch",
+  "FfiConversation",
+  "FfiConversationArray",
+  "FfiConversationPatch",
+  "FfiMessage",
+  "FfiMessageArray",
+  "FfiMessagePatch",
+  "FfiRecommendation",
+  "FfiRecommendationArray",
+  "FfiFeedbackEvent",
+  "FfiFeedbackEventArray",
+  "core_client_create",
+  "core_client_destroy",
+  "core_client_calculate_tag_overlap",
+  "core_client_calculate_next_review",
+  "core_client_initialize_review_schedule",
+  "core_client_calculate_next_review_typed",
+  "core_client_initialize_review_schedule_typed",
+  "core_client_save_knowledge_item",
+  "core_client_list_knowledge_items",
+  "core_client_get_knowledge_item_by_id",
+  "core_client_update_knowledge_item",
+  "core_client_create_conversation",
+  "core_client_list_conversations",
+  "core_client_update_conversation",
+  "core_client_delete_conversation",
+  "core_client_list_conversation_messages",
+  "core_client_add_message",
+  "core_client_update_message",
+  "core_client_delete_message",
+  "core_client_save_recommendations",
+  "core_client_list_recommendations",
+  "core_client_list_pending_recommendations",
+  "core_client_respond_to_recommendation",
+  "core_client_list_recent_feedback_events",
+  "core_client_log_recommendation_feedback",
+  "core_client_save_knowledge_item_typed",
+  "core_client_list_knowledge_items_typed",
+  "core_client_get_knowledge_item_by_id_typed",
+  "core_client_update_knowledge_item_typed",
+  "core_client_create_conversation_typed",
+  "core_client_list_conversations_typed",
+  "core_client_update_conversation_typed",
+  "core_client_list_conversation_messages_typed",
+  "core_client_add_message_typed",
+  "core_client_update_message_typed",
+  "core_client_save_recommendations_typed",
+  "core_client_list_recommendations_typed",
+  "core_client_list_pending_recommendations_typed",
+  "core_client_respond_to_recommendation_typed",
+  "core_client_list_recent_feedback_events_typed",
+  "core_client_log_recommendation_feedback_typed",
+  "ffi_string_free",
+  "ffi_string_array_free",
+  "ffi_knowledge_item_free",
+  "ffi_knowledge_item_array_free",
+  "ffi_conversation_free",
+  "ffi_conversation_array_free",
+  "ffi_message_free",
+  "ffi_message_array_free",
+  "ffi_recommendation_free",
+  "ffi_recommendation_array_free",
+  "ffi_feedback_event_free",
+  "ffi_feedback_event_array_free",
+]
+
+[enum]
+prefix_with_name = true

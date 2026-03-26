@@ -7,14 +7,13 @@ REPO_DIR="$(cd "$APP_DIR/../.." && pwd)"
 FRAMEWORK_DIR="$APP_DIR/ios/Frameworks"
 HEADERS_DIR="$REPO_DIR/target/ios-headers"
 SIM_UNIVERSAL_DIR="$REPO_DIR/target/universal-ios-sim"
+GENERATED_HEADER="$APP_DIR/cpp/generated/glimpse_core.h"
 
 mkdir -p "$FRAMEWORK_DIR" "$HEADERS_DIR" "$SIM_UNIVERSAL_DIR"
 
 export RUSTC="${RUSTC:-$(rustup which rustc)}"
-
-cat > "$HEADERS_DIR/glimpse_core.h" <<'EOF'
-#pragma once
-EOF
+"$APP_DIR/scripts/generate-core-rust-ffi-header.sh"
+cp "$GENERATED_HEADER" "$HEADERS_DIR/glimpse_core.h"
 
 pushd "$REPO_DIR" >/dev/null
 rustup run stable cargo build -p glimpse-core --release --target aarch64-apple-ios

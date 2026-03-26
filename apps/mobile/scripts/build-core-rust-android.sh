@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_DIR="$(cd "$APP_DIR/../.." && pwd)"
 OUTPUT_DIR="$APP_DIR/android/glimpse-core/libs"
+GENERATED_HEADER="$APP_DIR/cpp/generated/glimpse_core.h"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -20,6 +21,9 @@ fi
 
 export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/27.1.12297006"
 export RUSTC="${RUSTC:-$(rustup which rustc)}"
+
+"$APP_DIR/scripts/generate-core-rust-ffi-header.sh"
+[ -f "$GENERATED_HEADER" ]
 
 pushd "$REPO_DIR" >/dev/null
 rustup run stable cargo ndk \

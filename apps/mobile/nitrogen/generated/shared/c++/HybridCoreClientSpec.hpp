@@ -13,13 +13,43 @@
 #error NitroModules cannot be found! Are you sure you installed NitroModules properly?
 #endif
 
-
+// Forward declaration of `CalculateNextReviewOutput` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct CalculateNextReviewOutput; }
+// Forward declaration of `InitializeReviewScheduleOutput` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct InitializeReviewScheduleOutput; }
+// Forward declaration of `KnowledgeItem` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct KnowledgeItem; }
+// Forward declaration of `KnowledgeItemPatch` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct KnowledgeItemPatch; }
+// Forward declaration of `Conversation` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct Conversation; }
+// Forward declaration of `ConversationPatch` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct ConversationPatch; }
+// Forward declaration of `Message` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct Message; }
+// Forward declaration of `MessagePatch` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct MessagePatch; }
+// Forward declaration of `Recommendation` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct Recommendation; }
+// Forward declaration of `FeedbackEvent` to properly resolve imports.
+namespace margelo::nitro::glimpse { struct FeedbackEvent; }
 
 #include <NitroModules/Promise.hpp>
 #include <string>
+#include <vector>
+#include "CalculateNextReviewOutput.hpp"
 #include <NitroModules/Null.hpp>
 #include <variant>
 #include <optional>
+#include "InitializeReviewScheduleOutput.hpp"
+#include "KnowledgeItem.hpp"
+#include "KnowledgeItemPatch.hpp"
+#include "Conversation.hpp"
+#include "ConversationPatch.hpp"
+#include "Message.hpp"
+#include "MessagePatch.hpp"
+#include "Recommendation.hpp"
+#include "FeedbackEvent.hpp"
 
 namespace margelo::nitro::glimpse {
 
@@ -53,27 +83,27 @@ namespace margelo::nitro::glimpse {
     public:
       // Methods
       virtual std::shared_ptr<Promise<void>> initialize(const std::string& dbPath) = 0;
-      virtual double calculateTagOverlap(const std::string& leftTags, const std::string& rightTags) = 0;
-      virtual std::string calculateNextReview(const std::optional<std::variant<nitro::NullType, double>>& lastReviewedAt, const std::optional<std::variant<nitro::NullType, double>>& nextReviewAt, double feedbackType, double now) = 0;
-      virtual std::string initializeReviewSchedule(double createdAt, const std::optional<std::variant<nitro::NullType, double>>& intervalMs) = 0;
-      virtual std::shared_ptr<Promise<std::string>> saveKnowledgeItem(const std::string& itemJson) = 0;
-      virtual std::shared_ptr<Promise<std::string>> listKnowledgeItems() = 0;
-      virtual std::shared_ptr<Promise<std::variant<nitro::NullType, std::string>>> getKnowledgeItemById(const std::string& itemId) = 0;
-      virtual std::shared_ptr<Promise<std::string>> updateKnowledgeItem(const std::string& itemId, const std::string& patchJson) = 0;
-      virtual std::shared_ptr<Promise<std::string>> createConversation(const std::string& conversationJson) = 0;
-      virtual std::shared_ptr<Promise<std::string>> listConversations() = 0;
-      virtual std::shared_ptr<Promise<std::string>> updateConversation(const std::string& conversationId, const std::string& patchJson) = 0;
+      virtual double calculateTagOverlap(const std::vector<std::string>& leftTags, const std::vector<std::string>& rightTags) = 0;
+      virtual CalculateNextReviewOutput calculateNextReview(const std::optional<std::variant<nitro::NullType, double>>& lastReviewedAt, const std::optional<std::variant<nitro::NullType, double>>& nextReviewAt, double feedbackType, double now) = 0;
+      virtual InitializeReviewScheduleOutput initializeReviewSchedule(double createdAt, const std::optional<std::variant<nitro::NullType, double>>& intervalMs) = 0;
+      virtual std::shared_ptr<Promise<KnowledgeItem>> saveKnowledgeItem(const KnowledgeItem& item) = 0;
+      virtual std::shared_ptr<Promise<std::vector<KnowledgeItem>>> listKnowledgeItems() = 0;
+      virtual std::shared_ptr<Promise<std::variant<nitro::NullType, KnowledgeItem>>> getKnowledgeItemById(const std::string& itemId) = 0;
+      virtual std::shared_ptr<Promise<KnowledgeItem>> updateKnowledgeItem(const std::string& itemId, const KnowledgeItemPatch& patch) = 0;
+      virtual std::shared_ptr<Promise<Conversation>> createConversation(const Conversation& conversation) = 0;
+      virtual std::shared_ptr<Promise<std::vector<Conversation>>> listConversations() = 0;
+      virtual std::shared_ptr<Promise<Conversation>> updateConversation(const std::string& conversationId, const ConversationPatch& patch) = 0;
       virtual std::shared_ptr<Promise<void>> deleteConversation(const std::string& conversationId, double deletedAt) = 0;
-      virtual std::shared_ptr<Promise<std::string>> listConversationMessages(const std::string& conversationId) = 0;
-      virtual std::shared_ptr<Promise<std::string>> addMessage(const std::string& messageJson) = 0;
-      virtual std::shared_ptr<Promise<std::string>> updateMessage(const std::string& messageId, const std::string& patchJson) = 0;
+      virtual std::shared_ptr<Promise<std::vector<Message>>> listConversationMessages(const std::string& conversationId) = 0;
+      virtual std::shared_ptr<Promise<Message>> addMessage(const Message& message) = 0;
+      virtual std::shared_ptr<Promise<Message>> updateMessage(const std::string& messageId, const MessagePatch& patch) = 0;
       virtual std::shared_ptr<Promise<void>> deleteMessage(const std::string& messageId, double deletedAt) = 0;
-      virtual std::shared_ptr<Promise<void>> saveRecommendations(const std::string& recommendationsJson) = 0;
-      virtual std::shared_ptr<Promise<std::string>> listRecommendations() = 0;
-      virtual std::shared_ptr<Promise<std::string>> listPendingRecommendations() = 0;
-      virtual std::shared_ptr<Promise<void>> respondToRecommendation(const std::string& recommendationId, const std::string& status, const std::string& feedbackEventJson) = 0;
-      virtual std::shared_ptr<Promise<std::string>> listRecentFeedbackEvents(double limit) = 0;
-      virtual std::shared_ptr<Promise<std::string>> logRecommendationFeedback(const std::string& eventJson) = 0;
+      virtual std::shared_ptr<Promise<void>> saveRecommendations(const std::vector<Recommendation>& recommendations) = 0;
+      virtual std::shared_ptr<Promise<std::vector<Recommendation>>> listRecommendations() = 0;
+      virtual std::shared_ptr<Promise<std::vector<Recommendation>>> listPendingRecommendations() = 0;
+      virtual std::shared_ptr<Promise<void>> respondToRecommendation(const std::string& recommendationId, const std::string& status, const FeedbackEvent& feedbackEvent) = 0;
+      virtual std::shared_ptr<Promise<std::vector<FeedbackEvent>>> listRecentFeedbackEvents(double limit) = 0;
+      virtual std::shared_ptr<Promise<FeedbackEvent>> logRecommendationFeedback(const FeedbackEvent& event) = 0;
 
     protected:
       // Hybrid Setup
