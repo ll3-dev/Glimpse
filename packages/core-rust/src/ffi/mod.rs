@@ -3,12 +3,14 @@
 //! This module contains FFI-safe types and functions that can be called from C++.
 //! All types here are `#[repr(C)]` and use C-compatible layouts.
 
+mod async_ops;
 mod error;
 mod sync;
 #[cfg(test)]
 mod tests;
 mod types;
 
+pub use async_ops::*;
 pub use error::*;
 pub use sync::*;
 pub use types::*;

@@ -1,7 +1,7 @@
 //! Synchronous FFI functions - pure calculations, no SQLite access.
 
 use super::{CoreClientHandle, FfiErrorCode, FfiOptionalF64, FfiOptionalI64};
-use std::ffi::{c_int, CStr};
+use std::ffi::{c_char, c_int, CStr};
 
 /// Output for next review calculation.
 #[repr(C)]
@@ -28,9 +28,9 @@ pub struct FfiInitReviewOutput {
 #[no_mangle]
 pub unsafe extern "C" fn core_client_calculate_tag_overlap(
     _handle: CoreClientHandle,
-    left_tags: *const *const i8,
+    left_tags: *const *const c_char,
     left_tags_len: c_int,
-    right_tags: *const *const i8,
+    right_tags: *const *const c_char,
     right_tags_len: c_int,
 ) -> c_int {
     if left_tags.is_null() || right_tags.is_null() {
