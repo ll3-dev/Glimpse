@@ -202,7 +202,7 @@ export function LocalLLMSection({
               <View className="flex-row items-center gap-2">
                 <ActivityIndicator size="small" color="#37352f" />
                 <Text className="text-app-text text-sm">
-                  모델 로딩 중... {loadProgress}%
+                  모델 로딩 중... {loadProgress?.percentage ?? 0}%
                 </Text>
               </View>
             </View>
@@ -243,8 +243,12 @@ export function LocalLLMSection({
                     status={status}
                     isSelected={selectedModelId === model.id}
                     downloadProgress={
-                      status === "downloading"
-                        ? (downloadProgress ?? undefined)
+                      status === "downloading" && downloadProgress
+                        ? {
+                            written: downloadProgress.bytesReceived,
+                            total: downloadProgress.totalBytes,
+                            percentage: downloadProgress.percentage,
+                          }
                         : undefined
                     }
                   errorMessage={

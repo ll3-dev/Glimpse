@@ -132,7 +132,7 @@ export async function updateRecommendationCadence(): Promise<number> {
       return getCadence();
     }
 
-    const responseRate = calculateResponseRate(result.data);
+    const responseRate = calculateResponseRate(result.events);
     const level = determineCadenceLevel(responseRate);
     const newCadence = getCadenceInterval(level);
 

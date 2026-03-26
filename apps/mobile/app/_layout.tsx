@@ -13,6 +13,7 @@ import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling"
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
 import { ShareIntentProvider } from "expo-share-intent";
 import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
+import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
@@ -21,6 +22,8 @@ function RootProviders({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [coreInitError, setCoreInitError] = useState<Error | null>(null);
+  const [isCoreReady, setIsCoreReady] = useState(false);
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -35,6 +38,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     installGlobalErrorTraceLogger();
+    void initializeCoreClient()
+      .catch((error) => {
+        logger.error('Failed to initialize mobile core client', error);
+        setCoreInitError(error instanceof Error ? error : new Error(String(error)));
+      })
+      .finally(() => {
+        setIsCoreReady(true);
+      });
+
     void ensureLabelingBackgroundTaskRegistered().catch((error) => {
       logger.error('Failed to register labeling background task', error);
     });
@@ -48,6 +60,13 @@ export default function RootLayout() {
       ]);
     }
   }, []);
+
+  if (!isCoreReady) {
+    return null;
+  }
+  if (coreInitError) {
+    throw coreInitError;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

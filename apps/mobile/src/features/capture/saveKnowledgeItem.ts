@@ -6,6 +6,7 @@ import type {
   SaveKnowledgeItemDeps,
 } from './saveKnowledgeItem.types';
 import { metadataRouter } from '@/src/features/ai/metadata';
+import type { MetadataInput } from '@/src/features/ai/metadata/types';
 import { mobileCoreClient } from '@/src/features/core';
 
 export type {
@@ -24,7 +25,13 @@ export type {
 
 const defaultDeps: SaveKnowledgeItemDeps = {
   coreClient: mobileCoreClient,
-  generateMetadata: (input) => metadataRouter.generate(input),
+  generateMetadata: async (input: MetadataInput) => {
+    const result = await metadataRouter.generate(input);
+    if (result.success === false) {
+      throw new Error(result.error.message);
+    }
+    return result.data;
+  },
   initializeReviewSchedule,
   logger,
   generateId,

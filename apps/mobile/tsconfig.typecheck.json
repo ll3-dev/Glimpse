@@ -9,6 +9,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
+    "generate/**/*.ts",
     "../../packages/core/src/**/*.ts",
     "../../packages/shared/src/**/*.ts",
     "../../packages/ui/src/**/*.ts",

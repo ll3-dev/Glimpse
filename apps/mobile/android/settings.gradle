@@ -36,4 +36,6 @@ rootProject.name = 'glimpse'
 expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
+include ':glimpse-core'
+project(':glimpse-core').projectDir = new File(rootDir, 'glimpse-core')
 includeBuild(expoAutolinking.reactNativeGradlePlugin)

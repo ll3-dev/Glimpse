@@ -15,7 +15,7 @@ export function enableExclusiveAppleIntelligence(): boolean {
 
   disableLocalLLM();
   disableBYOK();
-  activateInferenceMode('apple-intelligence');
+  activateInferenceMode('apple');
   return true;
 }
 
@@ -27,7 +27,7 @@ export function enableExclusiveLocalLLM(): { success: boolean; error?: string } 
 
   setAppleIntelligenceEnabled(false);
   disableBYOK();
-  activateInferenceMode('local-llm');
+  activateInferenceMode('local');
   return result;
 }
 

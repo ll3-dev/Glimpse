@@ -10,6 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "build:core:ios": "zsh ./scripts/build-core-rust-ios.sh",
+    "build:core:android": "zsh ./scripts/build-core-rust-android.sh",
     "test": "bun test",
     "test:coverage": "bun test --coverage"
   },

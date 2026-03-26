@@ -157,6 +157,10 @@ const qwenPreset: LocalLLMPreset = {
 const FAMILY_PRESETS: Record<LocalLLMModelFamily, LocalLLMPreset> = {
   'generic-instruct': genericPreset,
   'qwen-chatml': qwenPreset,
+  llama: genericPreset,
+  mistral: genericPreset,
+  phi: genericPreset,
+  qwen: qwenPreset,
 };
 
 const MODEL_OVERRIDES: Partial<Record<string, Partial<LocalLLMPreset>>> = {

@@ -1,4 +1,4 @@
-import type { ModelInfo } from '@/src/features/ai/model-manager';
+import type { ModelInfo, DownloadProgress as ModelDownloaderProgress } from '@/src/features/ai/model-manager';
 import { ModelDownloader, modelDownloader } from '@/src/features/ai/model-manager';
 import {
   clearLocalLLMDownloadSession,
@@ -9,6 +9,7 @@ import {
   failLocalLLMDownload,
   updateLocalLLMDownloadProgress,
   updateLocalLLMModel,
+  type DownloadProgress,
 } from '@/src/stores/settings/local-llm.store';
 import { enableLocalLLM, selectModel } from './local-llm.commands';
 
@@ -20,6 +21,14 @@ type DownloadLocalModelResult =
 type DownloadLocalModelOptions = {
   sourceRoute?: string | null;
 };
+
+function convertProgress(progress: ModelDownloaderProgress): DownloadProgress {
+  return {
+    bytesReceived: progress.written,
+    totalBytes: progress.total,
+    percentage: progress.percentage,
+  };
+}
 
 export async function downloadLocalModel(
   model: ModelInfo,
@@ -43,7 +52,7 @@ export async function downloadLocalModel(
 
   try {
     const path = await downloader.downloadModel(model, (progress) => {
-      updateLocalLLMDownloadProgress(progress);
+      updateLocalLLMDownloadProgress(convertProgress(progress));
     });
 
     finishLocalLLMDownload(model.id, path);

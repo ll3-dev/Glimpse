@@ -10,6 +10,7 @@ import com.facebook.react.ReactPackage
 import com.facebook.react.ReactHost
 import com.facebook.react.common.ReleaseLevel
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
+import com.margelo.nitro.com.glimpse.mobile.glimpse_coreOnLoad
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ExpoReactHostFactory
@@ -29,6 +30,7 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    glimpse_coreOnLoad.initializeNative()
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())
     } catch (e: IllegalArgumentException) {

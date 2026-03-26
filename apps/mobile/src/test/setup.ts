@@ -19,6 +19,14 @@ mock.module("react-native-nitro-crypto", () => ({
   randomUUID: nodeRandomUUID,
 }));
 
+mock.module("react-native-nitro-modules", () => ({
+  NitroModules: {
+    createHybridObject: () => {
+      throw new Error('Nitro CoreClient is not registered in tests');
+    },
+  },
+}));
+
 // Mock react-native to avoid runtime errors in test environment
 mock.module("react-native", () => ({
   Platform: {
