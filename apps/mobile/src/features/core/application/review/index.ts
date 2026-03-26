@@ -23,6 +23,18 @@ export const DEFAULT_INITIAL_REVIEW_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 // Types
 // ============================================================================
 
+export interface AppError {
+  code: string;
+  message: string;
+}
+
+function toAppError(error: unknown, code: string = 'REVIEW_ERROR'): AppError {
+  return {
+    code,
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
+
 export interface ReviewActionsDeps {
   coreClient: {
     getKnowledgeItemById: (itemId: string) => Promise<KnowledgeItem | null>;
@@ -41,13 +53,13 @@ export interface ReviewActionsDeps {
 }
 
 export interface ReviewActionSuccessResult {
-  ok: true;
+  success: true;
   item: KnowledgeItem;
 }
 
 export interface ReviewActionFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
   itemId: string;
 }
 
@@ -65,13 +77,13 @@ export interface GetDueItemsOptions {
 }
 
 export interface GetDueItemsSuccessResult {
-  ok: true;
+  success: true;
   items: KnowledgeItem[];
 }
 
 export interface GetDueItemsFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type GetDueItemsResult = GetDueItemsSuccessResult | GetDueItemsFailureResult;
@@ -136,7 +148,7 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps) {
     try {
       const item = await loadKnowledgeItemOrFail(deps.coreClient, itemId, deps.logger);
       if (!item) {
-        return { ok: false, error: 'Item not found', itemId };
+        return { success: false, error: { code: 'NOT_FOUND', message: 'Item not found' }, itemId };
       }
 
       const { nextReviewAt } = deps.calculateNextReviewFromFeedback(
@@ -152,9 +164,9 @@ export function createMarkAsReviewed(deps: ReviewActionsDeps) {
         updatedAt: now,
       });
 
-      return { ok: true, item: updated };
+      return { success: true, item: updated };
     } catch (error) {
-      return { ok: false, error: String(error), itemId };
+      return { success: false, error: toAppError(error), itemId };
     }
   };
 }
@@ -164,7 +176,7 @@ export function createPostponeReview(deps: ReviewActionsDeps) {
     try {
       const item = await loadKnowledgeItemOrFail(deps.coreClient, itemId, deps.logger);
       if (!item) {
-        return { ok: false, error: 'Item not found', itemId };
+        return { success: false, error: { code: 'NOT_FOUND', message: 'Item not found' }, itemId };
       }
 
       const { nextReviewAt } = deps.calculateNextReviewFromFeedback(
@@ -179,9 +191,9 @@ export function createPostponeReview(deps: ReviewActionsDeps) {
         updatedAt: now,
       });
 
-      return { ok: true, item: updated };
+      return { success: true, item: updated };
     } catch (error) {
-      return { ok: false, error: String(error), itemId };
+      return { success: false, error: toAppError(error), itemId };
     }
   };
 }
@@ -194,16 +206,16 @@ export function createGetDueItems(deps: GetDueItemsDeps) {
         limit: options.limit,
       };
       const items = await deps.coreClient.getDueKnowledgeItems(input);
-      return { ok: true, items };
+      return { success: true, items };
     } catch (error) {
       deps.logger?.error('Failed to get due items', { error });
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
 
 export function createBatchInitializeReviewSchedules(deps: BatchInitializeReviewSchedulesDeps) {
-  return async (intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS): Promise<{ count: number; error?: string }> => {
+  return async (intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS): Promise<{ count: number; error?: AppError }> => {
     try {
       const items = await deps.coreClient.listKnowledgeItems();
       const itemsNeedingSchedule = items.filter((item) => item.nextReviewAt === null);
@@ -219,7 +231,7 @@ export function createBatchInitializeReviewSchedules(deps: BatchInitializeReview
       return { count: itemsNeedingSchedule.length };
     } catch (error) {
       deps.logger?.error('Failed to batch initialize review schedules', { error });
-      return { count: 0, error: String(error) };
+      return { count: 0, error: toAppError(error) };
     }
   };
 }

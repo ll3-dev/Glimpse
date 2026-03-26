@@ -40,6 +40,9 @@ export interface LocalModel {
   downloadCompletionHandled?: boolean;
   sourceRoute?: string | null;
   isReady?: boolean;
+  // Additional properties for model management
+  filename?: string;
+  repo?: string;
 }
 
 export interface LocalLLMConfig {
@@ -391,7 +394,7 @@ export interface InferenceModeStoreActions {
   activate: (
     mode: Exclude<InferenceMode, 'default'>,
     availability?: InferenceModeAvailability
-  ) => { ok: boolean; error?: string };
+  ) => { success: boolean; error?: string };
   reset: () => void;
   sync: (availability: InferenceModeAvailability) => void;
 }
@@ -423,22 +426,22 @@ export function activateInferenceModeSnapshot(
   state: InferenceModeStoreState,
   mode: Exclude<InferenceMode, 'default'>,
   availability?: InferenceModeAvailability
-): { ok: boolean; state?: Partial<InferenceModeStoreState>; error?: string } {
+): { success: boolean; state?: Partial<InferenceModeStoreState>; error?: string } {
   const newAvailability = availability ?? state.availability;
 
   // Check if the mode is available
   if (mode === 'apple' && !newAvailability.appleIntelligence) {
-    return { ok: false, error: 'Apple Intelligence not available' };
+    return { success: false, error: 'Apple Intelligence not available' };
   }
   if (mode === 'local' && !newAvailability.localLLM) {
-    return { ok: false, error: 'Local LLM not available' };
+    return { success: false, error: 'Local LLM not available' };
   }
   if (mode === 'byok' && !newAvailability.byok) {
-    return { ok: false, error: 'BYOK not configured' };
+    return { success: false, error: 'BYOK not configured' };
   }
 
   return {
-    ok: true,
+    success: true,
     state: {
       activeMode: mode,
       availability: newAvailability,

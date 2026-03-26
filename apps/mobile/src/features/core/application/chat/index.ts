@@ -14,6 +14,18 @@ import type {
 // Types
 // ============================================================================
 
+export interface AppError {
+  code: string;
+  message: string;
+}
+
+function toAppError(error: unknown): AppError {
+  return {
+    code: 'CHAT_ERROR',
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
+
 export interface CreateConversationInput {
   title?: string | null;
   icon?: string | null;
@@ -28,13 +40,13 @@ export interface CreateConversationDeps {
 }
 
 export interface CreateConversationSuccessResult {
-  ok: true;
+  success: true;
   conversation: Conversation;
 }
 
 export interface CreateConversationFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type CreateConversationResult =
@@ -55,13 +67,13 @@ export interface AddMessageDeps {
 }
 
 export interface AddMessageSuccessResult {
-  ok: true;
+  success: true;
   message: Message;
 }
 
 export interface AddMessageFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type AddMessageResult = AddMessageSuccessResult | AddMessageFailureResult;
@@ -73,13 +85,13 @@ export interface GetAllConversationsDeps {
 }
 
 export interface GetConversationsSuccessResult {
-  ok: true;
+  success: true;
   conversations: Conversation[];
 }
 
 export interface GetConversationsFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type GetConversationsResult =
@@ -93,13 +105,13 @@ export interface GetConversationMessagesDeps {
 }
 
 export interface GetMessagesSuccessResult {
-  ok: true;
+  success: true;
   messages: Message[];
 }
 
 export interface GetMessagesFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type GetMessagesResult = GetMessagesSuccessResult | GetMessagesFailureResult;
@@ -119,13 +131,13 @@ export interface UpdateConversationTitleDeps {
 }
 
 export interface UpdateTitleSuccessResult {
-  ok: true;
+  success: true;
   conversation: Conversation;
 }
 
 export interface UpdateTitleFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type UpdateTitleResult = UpdateTitleSuccessResult | UpdateTitleFailureResult;
@@ -147,13 +159,13 @@ export interface UpdateConversationDetailsDeps {
 }
 
 export interface UpdateConversationDetailsSuccessResult {
-  ok: true;
+  success: true;
   conversation: Conversation;
 }
 
 export interface UpdateConversationDetailsFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type UpdateConversationDetailsResult =
@@ -171,12 +183,12 @@ export interface DeleteConversationDeps {
 }
 
 export interface DeleteConversationSuccessResult {
-  ok: true;
+  success: true;
 }
 
 export interface DeleteConversationFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type DeleteConversationResult =
@@ -195,13 +207,13 @@ export interface UpdateMessageDeps {
 }
 
 export interface UpdateMessageSuccessResult {
-  ok: true;
+  success: true;
   message: Message;
 }
 
 export interface UpdateMessageFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type UpdateMessageResult = UpdateMessageSuccessResult | UpdateMessageFailureResult;
@@ -217,12 +229,12 @@ export interface DeleteMessageDeps {
 }
 
 export interface DeleteMessageSuccessResult {
-  ok: true;
+  success: true;
 }
 
 export interface DeleteMessageFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type DeleteMessageResult = DeleteMessageSuccessResult | DeleteMessageFailureResult;
@@ -246,9 +258,9 @@ export function createCreateConversation(deps: CreateConversationDeps) {
       };
 
       const saved = await deps.coreClient.createConversation(conversation);
-      return { ok: true, conversation: saved };
+      return { success: true, conversation: saved };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -268,9 +280,9 @@ export function createAddMessage(deps: AddMessageDeps) {
       };
 
       const saved = await deps.coreClient.addMessage(message);
-      return { ok: true, message: saved };
+      return { success: true, message: saved };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -279,9 +291,9 @@ export function createGetAllConversations(deps: GetAllConversationsDeps) {
   return async (): Promise<GetConversationsResult> => {
     try {
       const conversations = await deps.coreClient.listConversations();
-      return { ok: true, conversations };
+      return { success: true, conversations };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -290,9 +302,9 @@ export function createGetConversationMessages(deps: GetConversationMessagesDeps)
   return async (conversationId: string): Promise<GetMessagesResult> => {
     try {
       const messages = await deps.coreClient.listConversationMessages(conversationId);
-      return { ok: true, messages };
+      return { success: true, messages };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -304,9 +316,9 @@ export function createUpdateConversationTitle(deps: UpdateConversationTitleDeps)
         title: input.title,
         updatedAt: Date.now(),
       });
-      return { ok: true, conversation };
+      return { success: true, conversation };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -320,9 +332,9 @@ export function createUpdateConversationDetails(deps: UpdateConversationDetailsD
         contextItemId: input.contextItemId,
         updatedAt: Date.now(),
       });
-      return { ok: true, conversation };
+      return { success: true, conversation };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -331,9 +343,9 @@ export function createDeleteConversation(deps: DeleteConversationDeps) {
   return async (input: DeleteConversationInput): Promise<DeleteConversationResult> => {
     try {
       await deps.coreClient.deleteConversation(input.conversationId, Date.now());
-      return { ok: true };
+      return { success: true };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -345,9 +357,9 @@ export function createUpdateMessage(deps: UpdateMessageDeps) {
         content: input.content,
         updatedAt: Date.now(),
       });
-      return { ok: true, message };
+      return { success: true, message };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -356,9 +368,9 @@ export function createDeleteMessage(deps: DeleteMessageDeps) {
   return async (input: DeleteMessageInput): Promise<DeleteMessageResult> => {
     try {
       await deps.coreClient.deleteMessage(input.messageId, Date.now());
-      return { ok: true };
+      return { success: true };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }

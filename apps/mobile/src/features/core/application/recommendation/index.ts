@@ -17,6 +17,18 @@ import type {
 // Types
 // ============================================================================
 
+export interface AppError {
+  code: string;
+  message: string;
+}
+
+function toAppError(error: unknown, code: string = 'RECOMMENDATION_ERROR'): AppError {
+  return {
+    code,
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
+
 export interface GenerateRecommendationsDeps {
   coreClient: {
     listWeeklyKnowledgeItems: (since: number) => Promise<KnowledgeItem[]>;
@@ -35,13 +47,13 @@ export interface GeneratedRecommendation {
 }
 
 export interface GenerateResult {
-  ok: true;
+  success: true;
   recommendations: GeneratedRecommendation[];
 }
 
 export interface GenerateFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type GenerateRecommendationsDepsResult = GenerateResult | GenerateFailureResult;
@@ -62,13 +74,13 @@ export interface GetWeeklyItemsDeps {
 }
 
 export interface WeeklyItemsSuccessResult {
-  ok: true;
+  success: true;
   items: KnowledgeItem[];
 }
 
 export interface WeeklyItemsFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type WeeklyItemsResult = WeeklyItemsSuccessResult | WeeklyItemsFailureResult;
@@ -87,13 +99,13 @@ export interface GetPendingRecommendationsDeps {
 }
 
 export interface PendingSuccessResult {
-  ok: true;
+  success: true;
   recommendations: RecommendationWithItems[];
 }
 
 export interface PendingFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type PendingResult = PendingSuccessResult | PendingFailureResult;
@@ -114,25 +126,25 @@ export interface RespondToRecommendationDeps {
 }
 
 export interface RespondSuccessResult {
-  ok: true;
+  success: true;
 }
 
 export interface RespondFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type RespondResult = RespondSuccessResult | RespondFailureResult;
 
 // Proper discriminated union for RespondToRecommendation
 export interface RespondToRecommendationSuccessResult {
-  ok: true;
+  success: true;
   recommendationId: string;
 }
 
 export interface RespondToRecommendationFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
   recommendationId: string;
 }
 
@@ -151,27 +163,27 @@ export interface RecommendationFeedbackDeps {
 }
 
 export interface LogFeedbackSuccessResult {
-  ok: true;
+  success: true;
   event: FeedbackEvent;
 }
 
 export interface LogFeedbackFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type LogFeedbackResult = LogFeedbackSuccessResult | LogFeedbackFailureResult;
 
 // Proper discriminated union for LogRecommendationFeedback
 export interface LogRecommendationFeedbackSuccessResult {
-  ok: true;
+  success: true;
   event: FeedbackEvent;
   eventId?: string;
 }
 
 export interface LogRecommendationFeedbackFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
   eventId?: string;
 }
 
@@ -180,13 +192,13 @@ export type LogRecommendationFeedbackResult =
   | LogRecommendationFeedbackFailureResult;
 
 export interface RecentFeedbackSuccessResult {
-  ok: true;
+  success: true;
   events: FeedbackEvent[];
 }
 
 export interface RecentFeedbackFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: AppError;
 }
 
 export type RecentFeedbackResult = RecentFeedbackSuccessResult | RecentFeedbackFailureResult;
@@ -220,8 +232,8 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps)
   ): Promise<GenerateRecommendationsDepsResult> => {
     try {
       const result = await deps.getWeeklyItems();
-      if (!result.ok) {
-        return { ok: false, error: result.error };
+      if (result.success === false) {
+        return { success: false, error: result.error };
       }
 
       const items = result.items;
@@ -258,15 +270,17 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps)
         }
       }
 
-      return { ok: true, recommendations };
+      return { success: true, recommendations };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
 
 export function createSaveRecommendations(deps: SaveRecommendationsDeps) {
-  return async (recommendations: GeneratedRecommendation[]): Promise<{ ok: boolean; error?: string }> => {
+  return async (
+    recommendations: GeneratedRecommendation[],
+  ): Promise<{ success: boolean; error?: AppError }> => {
     try {
       const now = Date.now();
       const toSave: Recommendation[] = [];
@@ -290,13 +304,12 @@ export function createSaveRecommendations(deps: SaveRecommendationsDeps) {
       }
 
       await deps.coreClient.saveRecommendations(toSave);
-      return { ok: true };
+      return { success: true };
     } catch (error) {
       if (deps.isIdCollisionError(error)) {
-        // Could retry, but for simplicity just fail
-        return { ok: false, error: 'ID collision' };
+        return { success: false, error: { code: 'ID_COLLISION', message: 'ID collision' } };
       }
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -305,9 +318,9 @@ export function createGetWeeklyItems(deps: GetWeeklyItemsDeps) {
   return async (since: number = Date.now() - 7 * 24 * 60 * 60 * 1000): Promise<WeeklyItemsResult> => {
     try {
       const items = await deps.coreClient.listWeeklyKnowledgeItems(since);
-      return { ok: true, items };
+      return { success: true, items };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -334,9 +347,9 @@ export function createGetPendingRecommendations(deps: GetPendingRecommendationsD
         }
       }
 
-      return { ok: true, recommendations: withItems };
+      return { success: true, recommendations: withItems };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -361,12 +374,16 @@ export function createRespondToRecommendation(deps: RespondToRecommendationDeps)
         };
 
         await deps.coreClient.respondToRecommendation(recommendationId, status, event);
-        return { ok: true, recommendationId };
+        return { success: true, recommendationId };
       }
 
-      return { ok: false, error: 'Max retries exceeded', recommendationId };
+      return {
+        success: false,
+        error: { code: 'MAX_RETRIES', message: 'Max retries exceeded' },
+        recommendationId,
+      };
     } catch (error) {
-      return { ok: false, error: String(error), recommendationId };
+      return { success: false, error: toAppError(error), recommendationId };
     }
   };
 }
@@ -385,15 +402,15 @@ export function createLogRecommendationFeedback(deps: RecommendationFeedbackDeps
         };
 
         const saved = await deps.coreClient.logRecommendationFeedback(fullEvent);
-        return { ok: true, event: saved, eventId: saved.id };
+        return { success: true, event: saved, eventId: saved.id };
       }
 
-      return { ok: false, error: 'Max retries exceeded' };
+      return { success: false, error: { code: 'MAX_RETRIES', message: 'Max retries exceeded' } };
     } catch (error) {
       if (deps.isIdCollisionError(error)) {
-        return { ok: false, error: 'ID collision' };
+        return { success: false, error: { code: 'ID_COLLISION', message: 'ID collision' } };
       }
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }
@@ -402,9 +419,9 @@ export function createGetRecentFeedbackEvents(deps: RecommendationFeedbackDeps) 
   return async (limit: number = 50): Promise<GetRecentFeedbackResult> => {
     try {
       const events = await deps.coreClient.listRecentFeedbackEvents(limit);
-      return { ok: true, events };
+      return { success: true, events };
     } catch (error) {
-      return { ok: false, error: String(error) };
+      return { success: false, error: toAppError(error) };
     }
   };
 }

@@ -4,6 +4,7 @@
  */
 
 import type { KnowledgeItem, InitializeReviewScheduleOutput } from '@glimpse/shared';
+import type { MetadataInput } from '@/src/features/ai/metadata/types';
 
 // ============================================================================
 // Types
@@ -59,16 +60,36 @@ export type KnowledgeItemInput =
   | ShareInput;
 
 export interface GenerateMetadata {
-  title: string | null;
-  summary: string | null;
-  tags: string[] | null;
+  summary: string;
+  tags: string[];
+}
+
+export type GenerateMetadataFn = (input: KnowledgeItemInput) => Promise<GenerateMetadata>;
+
+function mapToMetadataInput(input: KnowledgeItemInput): MetadataInput {
+  switch (input.type) {
+    case 'note':
+      return { content: input.body, title: input.title, type: 'note' };
+    case 'link':
+      return { content: input.body ?? input.url ?? '', title: input.title, type: 'link' };
+    case 'highlight':
+      return { content: input.text ?? input.body ?? '', title: input.title, type: 'highlight' };
+    case 'screenshot':
+      return { content: input.body ?? '', title: input.title, type: 'screenshot' };
+    case 'share':
+      return { content: input.body ?? input.url ?? '', title: input.title, type: 'share' };
+    default: {
+      const _exhaustiveCheck: never = input;
+      throw new Error(`Unknown input type: ${JSON.stringify((input as KnowledgeItemInput).type)}`);
+    }
+  }
 }
 
 export interface SaveKnowledgeItemDeps {
   coreClient: {
     saveKnowledgeItem: (item: KnowledgeItem) => Promise<KnowledgeItem>;
   };
-  generateMetadata: (input: KnowledgeItemInput) => Promise<GenerateMetadata>;
+  generateMetadata: (input: MetadataInput) => Promise<GenerateMetadata>;
   initializeReviewSchedule: (createdAt: number) => InitializeReviewScheduleOutput;
   logger: { error: (message: string, meta?: unknown) => void };
   generateId: () => string;
@@ -77,13 +98,16 @@ export interface SaveKnowledgeItemDeps {
 }
 
 export interface SaveSuccessResult {
-  ok: true;
+  success: true;
   item: KnowledgeItem;
 }
 
 export interface SaveFailureResult {
-  ok: false;
-  error: string;
+  success: false;
+  error: {
+    code: string;
+    message: string;
+  };
 }
 
 export type SaveResult = SaveSuccessResult | SaveFailureResult;
@@ -166,11 +190,18 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
   return async (input: KnowledgeItemInput): Promise<SaveResult> => {
     const validationErrors = validateInput(input);
     if (validationErrors.length > 0) {
-      return { ok: false, error: validationErrors.map((e) => e.message).join(', ') };
+      return {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: validationErrors.map((e) => e.message).join(", "),
+        },
+      };
     }
 
     try {
-      const metadata = await deps.generateMetadata(input);
+      const metadataInput = mapToMetadataInput(input);
+      const metadata = await deps.generateMetadata(metadataInput);
       const now = Date.now();
       const reviewSchedule = deps.initializeReviewSchedule(now);
 
@@ -212,7 +243,7 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
         const item: KnowledgeItem = {
           id,
           type: input.type,
-          title: input.title ?? metadata.title,
+          title: input.title,
           body: bodyValue ?? metadata.summary,
           url: urlValue,
           summary: metadata.summary,
@@ -236,7 +267,7 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
 
         try {
           const saved = await deps.coreClient.saveKnowledgeItem(item);
-          return { ok: true, item: saved };
+          return { success: true, item: saved };
         } catch (error) {
           if (deps.isIdCollisionError(error)) {
             retries++;
@@ -246,10 +277,19 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
         }
       }
 
-      return { ok: false, error: 'Max ID collision retries exceeded' };
+      return {
+        success: false,
+        error: {
+          code: "MAX_RETRIES_EXCEEDED",
+          message: "Max ID collision retries exceeded",
+        },
+      };
     } catch (error) {
       deps.logger.error('Failed to save knowledge item', { error, input });
-      return { ok: false, error: String(error) };
+      return {
+        success: false,
+        error: { code: "UNKNOWN_ERROR", message: String(error) },
+      };
     }
   };
 }
