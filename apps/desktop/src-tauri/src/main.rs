@@ -2,6 +2,7 @@
 
 mod commands;
 mod models;
+mod services;
 mod state;
 
 fn main() {
