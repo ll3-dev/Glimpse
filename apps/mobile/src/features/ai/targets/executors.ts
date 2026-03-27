@@ -1,5 +1,12 @@
 import type { KnowledgeItem, KnowledgeItemLabelSource } from '@glimpse/shared';
-import { appError, isFailure, type Result } from '@/src/lib/effect-result';
+import { Effect } from "effect";
+import {
+  appError,
+  isFailure,
+  type Result,
+  type AppError,
+  runEffectResult,
+} from "@/src/lib/effect-result";
 import { appleProvider } from '../providers/apple-provider';
 import { byokProvider } from '../providers/byok-provider';
 import { localLLMProvider } from '../providers/local-llm-provider';
@@ -35,13 +42,13 @@ export async function executeMetadataTarget(
 ): Promise<Result<{ summary: string; tags: string[] }>> {
   switch (target.kind) {
     case 'apple':
-      return appleProvider.generate(input);
+      return runEffectResult(appleProvider.generate(input));
     case 'local':
-      return localLLMProvider.generate(input);
+      return runEffectResult(localLLMProvider.generate(input));
     case 'byok':
-      return byokProvider.generate(input);
+      return runEffectResult(byokProvider.generate(input));
     case 'stub':
-      return stubProvider.generate(input);
+      return runEffectResult(stubProvider.generate(input));
     case 'rules':
       return executionError('Rules target does not support metadata generation', target);
   }
@@ -253,4 +260,210 @@ export async function executeChatTarget(
     case 'rules':
       return executionError('Rules target does not support chat generation', target);
   }
+}
+
+// ============================================================================
+// Effect-based Executors
+// ============================================================================
+
+function executionEffectError(message: string, target: AITarget): Effect.Effect<never, AppError> {
+  return Effect.fail(appError('GENERATION_ERROR', message, { target }));
+}
+
+/**
+ * Execute metadata target using Effect pattern
+ */
+export function executeMetadataTargetEffect(
+  target: AITarget,
+  input: MetadataExecutionInput
+): Effect.Effect<{ summary: string; tags: string[] }, AppError> {
+  switch (target.kind) {
+    case 'apple':
+      return appleProvider.generate(input);
+    case 'local':
+      return localLLMProvider.generate(input);
+    case 'byok':
+      return byokProvider.generate(input);
+    case 'stub':
+      return stubProvider.generate(input);
+    case 'rules':
+      return executionEffectError('Rules target does not support metadata generation', target);
+  }
+}
+
+/**
+ * Execute labeling target using Effect pattern
+ */
+export function executeLabelingTargetEffect(
+  target: AITarget,
+  item: KnowledgeItem
+): Effect.Effect<LabelingResult, AppError> {
+  if (target.kind === 'rules') {
+    return Effect.succeed(deriveRuleBasedLabels(item));
+  }
+
+  return Effect.gen(function* (_) {
+    const metadataResult = yield* _(
+      executeMetadataTargetEffect(target, {
+        content: [item.title, item.body, item.summary].filter(Boolean).join('\n\n'),
+        title: item.title ?? undefined,
+        type: item.type,
+      })
+    );
+
+    return {
+      labels: normalizeLabels(metadataResult.tags, item),
+      score: 0.6,
+      source: mapTargetToLabelSource(target),
+      version:
+        target.kind === 'stub'
+          ? 'stub-label-v1'
+          : target.kind === 'apple'
+            ? 'apple-label-v1'
+            : target.kind === 'local'
+              ? 'local-label-v1'
+              : RULE_BASED_LABELER_VERSION,
+    };
+  });
+}
+
+/**
+ * Execute chat target using Effect pattern
+ */
+export function executeChatTargetEffect(
+  target: AITarget,
+  input: ChatExecutionInput
+): Effect.Effect<string, AppError> {
+  switch (target.kind) {
+    case 'stub':
+      return Effect.succeed(buildStubChatReply(input));
+    case 'apple':
+      return executionEffectError('Apple target does not support chat generation in this release', target);
+    case 'rules':
+      return executionEffectError('Rules target does not support chat generation', target);
+    case 'local':
+      return executeLocalChatTargetEffect(input);
+    case 'byok':
+      return executeBYOKChatTargetEffect(input);
+  }
+}
+
+function executeLocalChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
+  return Effect.gen(function* (_) {
+    const model = getSelectedLocalModel();
+    if (!model?.path) {
+      return yield* _(Effect.fail(
+        appError('GENERATION_ERROR', '선택된 로컬 채팅 모델이 없습니다.')
+      ));
+    }
+
+    const runtime = getLocalLLMRuntime();
+    const prompt = runtime.buildChatPrompt(
+      model,
+      [{ role: 'user', content: input.userText }],
+      input.contextItem
+    );
+
+    const result = yield* _(Effect.tryPromise({
+      try: () => runtime.generate(model, prompt, { maxTokens: 512 }),
+      catch: (e) => appError('GENERATION_ERROR', '로컬 채팅 생성 실패', { cause: e }),
+    }));
+
+    return result.text.trim();
+  });
+}
+
+function executeBYOKChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
+  return Effect.gen(function* (_) {
+    const provider = getProvider();
+    const apiKey = getApiKey();
+    const model = getModel();
+    const baseUrl = getBaseUrl();
+
+    if (!provider || !apiKey || !model) {
+      return yield* _(Effect.fail(
+        appError('GENERATION_ERROR', 'BYOK 채팅 설정이 완료되지 않았습니다.')
+      ));
+    }
+
+    const prompt = [
+      input.contextItem?.title ? `Context title: ${input.contextItem.title}` : null,
+      input.contextItem?.body ? `Context body: ${input.contextItem.body}` : null,
+      `User: ${input.userText}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    const endpoint =
+      provider === 'openai'
+        ? `${(baseUrl ?? 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`
+        : provider === 'anthropic'
+          ? 'https://api.anthropic.com/v1/messages'
+          : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+
+    const response = yield* _(Effect.tryPromise({
+      try: () => fetch(endpoint, {
+        method: 'POST',
+        headers:
+          provider === 'openai'
+            ? {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+              }
+            : provider === 'anthropic'
+              ? {
+                  'Content-Type': 'application/json',
+                  'x-api-key': apiKey,
+                  'anthropic-version': '2023-06-01',
+                }
+              : {
+                  'Content-Type': 'application/json',
+                },
+        body:
+          provider === 'openai'
+            ? JSON.stringify({
+                model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 512,
+                temperature: 0.3,
+              })
+            : provider === 'anthropic'
+              ? JSON.stringify({
+                  model,
+                  max_tokens: 512,
+                  messages: [{ role: 'user', content: prompt }],
+                })
+              : JSON.stringify({
+                  contents: [{ parts: [{ text: prompt }] }],
+                }),
+      }),
+      catch: (e) => appError('GENERATION_ERROR', 'BYOK 채팅 네트워크 오류', { cause: e }),
+    }));
+
+    if (!response.ok) {
+      return yield* _(Effect.fail(
+        appError('GENERATION_ERROR', `BYOK 채팅 요청이 실패했습니다 (${response.status})`)
+      ));
+    }
+
+    const data = yield* _(Effect.tryPromise({
+      try: () => response.json(),
+      catch: (e) => appError('GENERATION_ERROR', 'BYOK 채팅 응답 파싱 실패', { cause: e }),
+    }));
+
+    const text =
+      provider === 'openai'
+        ? (data as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content
+        : provider === 'anthropic'
+          ? (data as { content?: { text?: string }[] }).content?.[0]?.text
+          : (data as { candidates?: { content?: { parts?: { text?: string }[] } }[] }).candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      return yield* _(Effect.fail(
+        appError('GENERATION_ERROR', 'BYOK 채팅 응답이 비어 있습니다.')
+      ));
+    }
+
+    return text.trim();
+  });
 }
