@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { Effect, Exit } from 'effect';
+import { Effect, Exit, Layer } from 'effect';
 import {
   appError,
   unknownError,
@@ -13,7 +13,14 @@ import {
   trySync,
   runEffectResult,
   runEffectSuccess,
+  runEffectWithLayer,
+  DatabaseTag,
+  AiServiceTag,
+  LoggerTag,
   type AppErrorCode,
+  type Database,
+  type AiService,
+  type Logger,
 } from './effect-result';
 
 describe('appError', () => {
@@ -277,5 +284,121 @@ describe('storageError', () => {
     const error = storageError('Update failed', details);
     expect(error.code).toBe('STORAGE_ERROR');
     expect(error.details).toEqual(details);
+  });
+});
+
+// ============================================================================
+// Context & Layer Tests
+// ============================================================================
+
+describe('Context Tags', () => {
+  test('DatabaseTag has correct key', () => {
+    expect(DatabaseTag.key).toBe('@services/Database');
+  });
+
+  test('AiServiceTag has correct key', () => {
+    expect(AiServiceTag.key).toBe('@services/AiService');
+  });
+
+  test('LoggerTag has correct key', () => {
+    expect(LoggerTag.key).toBe('@services/Logger');
+  });
+});
+
+describe('runEffectWithLayer', () => {
+  test('runs effect with provided layer', async () => {
+    const mockDb: Database = {
+      query: async () => [{ id: 1, name: 'test' }],
+      execute: async () => {},
+    };
+
+    const TestDbLive = Layer.succeed(DatabaseTag, mockDb);
+
+    const effect = Effect.gen(function* (_) {
+      const db = yield* _(DatabaseTag);
+      const result = yield* _(tryPromise(
+        () => db.query<{ id: number; name: string }>('SELECT * FROM test'),
+        (e) => appError('DATABASE_ERROR', 'Query failed', e)
+      ));
+      return result;
+    });
+
+    const result = await runEffectWithLayer(effect, TestDbLive);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual([{ id: 1, name: 'test' }]);
+    }
+  });
+
+  test('returns failure when effect fails', async () => {
+    const mockDb: Database = {
+      query: async () => {
+        throw new Error('Connection failed');
+      },
+      execute: async () => {},
+    };
+
+    const TestDbLive = Layer.succeed(DatabaseTag, mockDb);
+
+    const effect = Effect.gen(function* (_) {
+      const db = yield* _(DatabaseTag);
+      const result = yield* _(tryPromise(
+        () => db.query('SELECT * FROM test'),
+        (e) => appError('DATABASE_ERROR', 'Query failed', e)
+      ));
+      return result;
+    });
+
+    const result = await runEffectWithLayer(effect, TestDbLive);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe('DATABASE_ERROR');
+    }
+  });
+
+  test('runs effect with AiService layer', async () => {
+    const mockAi: AiService = {
+      generateMetadata: async () => ({ summary: 'Test summary', tags: ['tag1'] }),
+      isAvailable: async () => true,
+    };
+
+    const TestAiLive = Layer.succeed(AiServiceTag, mockAi);
+
+    const effect = Effect.gen(function* (_) {
+      const ai = yield* _(AiServiceTag);
+      const available = yield* _(tryPromise(
+        () => ai.isAvailable(),
+        () => appError('UNKNOWN_ERROR', 'Failed to check availability')
+      ));
+      return available;
+    });
+
+    const result = await runEffectWithLayer(effect, TestAiLive);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBe(true);
+    }
+  });
+
+  test('runs effect with Logger layer', async () => {
+    const logs: string[] = [];
+    const mockLogger: Logger = {
+      debug: (msg) => logs.push(`DEBUG: ${msg}`),
+      info: (msg) => logs.push(`INFO: ${msg}`),
+      warn: (msg) => logs.push(`WARN: ${msg}`),
+      error: (msg) => logs.push(`ERROR: ${msg}`),
+    };
+
+    const TestLoggerLive = Layer.succeed(LoggerTag, mockLogger);
+
+    const effect = Effect.gen(function* (_) {
+      const logger = yield* _(LoggerTag);
+      logger.info('Test message');
+      return 'done';
+    });
+
+    const result = await runEffectWithLayer(effect, TestLoggerLive);
+    expect(result.success).toBe(true);
+    expect(logs).toContain('INFO: Test message');
   });
 });
