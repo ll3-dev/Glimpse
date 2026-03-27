@@ -5,25 +5,34 @@
  * Used when the app stays in the default inference mode.
  */
 
-import type { Result } from '@/src/lib/effect-result';
-import { appError } from '@/src/lib/effect-result';
-import { generateSummaryStub, generateTagsStub } from '@/src/features/capture/stubs';
-import type { MetadataProvider, MetadataInput, MetadataOutput } from './types';
+import { Effect } from "effect";
+import type {
+  MetadataProvider,
+  MetadataInput,
+  MetadataOutput,
+  AIProviderError,
+} from "../metadata/types";
+import {
+  generateSummaryStub,
+  generateTagsStub,
+} from "@/src/features/capture/stubs";
 
 /**
  * Stub provider that wraps existing stub functions.
  * Always available in default mode.
  */
 export const stubProvider: MetadataProvider = {
-  name: 'stub',
+  name: "stub",
 
   async isAvailable(): Promise<boolean> {
     // Stub is always available
     return true;
   },
 
-  async generate(input: MetadataInput): Promise<Result<MetadataOutput>> {
-    try {
+  generate(
+    input: MetadataInput,
+  ): Effect.Effect<MetadataOutput, AIProviderError> {
+    return Effect.gen(function* (_) {
       const content = input.title
         ? `${input.title}\n\n${input.content}`
         : input.content;
@@ -31,19 +40,7 @@ export const stubProvider: MetadataProvider = {
       const summary = generateSummaryStub(content);
       const tags = generateTagsStub(content);
 
-      return {
-        success: true,
-        data: { summary, tags },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: appError(
-          'GENERATION_ERROR',
-          'Stub generation failed',
-          { provider: 'stub', cause: error }
-        ),
-      };
-    }
+      return { summary, tags };
+    });
   },
 };

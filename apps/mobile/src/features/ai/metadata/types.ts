@@ -5,7 +5,7 @@
  * All providers (Apple, Local, BYOK) implement MetadataProvider interface.
  */
 
-import type { Result } from '@/src/lib/effect-result';
+import type { Effect } from "effect";
 
 /**
  * AI 메타데이터 생성 결과
@@ -70,11 +70,14 @@ export interface MetadataProvider {
   isAvailable(): Promise<boolean>;
 
   /**
-   * 메타데이터 생성
+   * 메타데이터 생성 (Effect 기반)
+   * Effect.js 패턴으로 비동기 처리 및 에러 핸들링
    * @param input - 생성할 콘텐츠 정보
-   * @returns 생성 결과 또는 에러
+   * @returns Effect<MetadataOutput, AIProviderError>
    */
-  generate(input: MetadataInput): Promise<Result<MetadataOutput>>;
+  generate(
+    input: MetadataInput,
+  ): Effect.Effect<MetadataOutput, AIProviderError>;
 }
 
 /**
@@ -87,7 +90,9 @@ export interface AiMetadataService {
    * 현재 선택된 provider 하나를 사용해 메타데이터를 생성한다.
    * provider 실패는 상위 호출자에서 별도로 처리한다.
    */
-  generate(input: MetadataInput): Promise<Result<MetadataOutput>>;
+  generate(
+    input: MetadataInput,
+  ): Effect.Effect<MetadataOutput, AIProviderError>;
 }
 
 // ============================================================================

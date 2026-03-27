@@ -1,26 +1,26 @@
 import { describe, expect, test } from 'bun:test';
-import { isFailure } from '@/src/lib/effect-result';
+import { Effect, Exit } from 'effect';
 import { createMetadataRouter } from './router';
-import type { MetadataInput } from './types';
+import type { MetadataInput, MetadataOutput, AIProviderError } from './types';
+import { aiProviderError, isAIProviderError } from './types';
 import { APPLE_TARGET_ID, STUB_TARGET_ID } from '../targets';
+import type { AITarget } from '../targets/types';
 
 describe('metadata router', () => {
   test('executes the resolved target once', async () => {
     const calls: string[] = [];
     const router = createMetadataRouter({
       resolveTarget: () => ({ kind: 'apple', model: 'foundation-model', id: APPLE_TARGET_ID }),
-      executeTarget: async (target, input) => {
+      executeTarget: (target: AITarget, input: MetadataInput) => {
         calls.push(`${target.id}:${input.content}`);
-        return {
-          success: true,
-          data: { summary: 'ok', tags: ['a'] },
-        };
+        return Effect.succeed({ summary: 'ok', tags: ['a'] });
       },
     });
 
-    const result = await router.generate({ content: 'hello' });
+    const effect = router.generate({ content: 'hello' });
+    const exit = await Effect.runPromiseExit(effect);
 
-    expect(result.success).toBe(true);
+    expect(Exit.isSuccess(exit)).toBe(true);
     expect(calls).toEqual([`${APPLE_TARGET_ID}:hello`]);
   });
 
@@ -29,20 +29,18 @@ describe('metadata router', () => {
 
     const router = createMetadataRouter({
       resolveTarget: () => ({ kind: 'stub', id: STUB_TARGET_ID }),
-      executeTarget: async (_target, input) => {
+      executeTarget: (_target: AITarget, input: MetadataInput) => {
         receivedInput = input;
-        return {
-          success: true,
-          data: { summary: 'ok', tags: [] },
-        };
+        return Effect.succeed({ summary: 'ok', tags: [] });
       },
     });
 
-    await router.generate({
+    const effect = router.generate({
       content: 'Test content',
       title: 'Test Title',
       type: 'note',
     });
+    await Effect.runPromise(effect);
 
     expect(receivedInput).toEqual({
       content: 'Test content',
@@ -54,21 +52,20 @@ describe('metadata router', () => {
   test('does not fall back when executor returns failure', async () => {
     const router = createMetadataRouter({
       resolveTarget: () => ({ kind: 'stub', id: STUB_TARGET_ID }),
-      executeTarget: async () => ({
-        success: false,
-        error: {
-          _tag: 'APP_ERROR',
-          code: 'GENERATION_ERROR',
-          message: 'failed',
-        },
-      }),
+      executeTarget: () => Effect.fail(
+        aiProviderError('AI_PROVIDER_INTERNAL_ERROR', 'stub', 'failed')
+      ),
     });
 
-    const result = await router.generate({ content: 'test' });
+    const effect = router.generate({ content: 'test' });
+    const exit = await Effect.runPromiseExit(effect);
 
-    expect(result.success).toBe(false);
-    if (isFailure(result)) {
-      expect(result.error.message).toBe('failed');
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+      if (isAIProviderError(error)) {
+        expect(error.message).toBe('failed');
+      }
     }
   });
 
@@ -78,23 +75,18 @@ describe('metadata router', () => {
 
     const router = createMetadataRouter({
       resolveTarget: () => ({ kind: 'stub', id: STUB_TARGET_ID }),
-      executeTarget: async () => ({
-        success: false,
-        error: {
-          _tag: 'APP_ERROR',
-          code: 'GENERATION_ERROR',
-          message: 'broken',
-        },
-      }),
-      onTargetSelected(targetId) {
+      executeTarget: () => Effect.fail(
+        aiProviderError('AI_PROVIDER_INTERNAL_ERROR', 'stub', 'broken')
+      ),
+      onTargetSelected(targetId: string) {
         selected.push(targetId);
       },
-      onTargetFailed(targetId) {
+      onTargetFailed(targetId: string, _error: AIProviderError) {
         failed.push(targetId);
       },
     });
 
-    await router.generate({ content: 'test' });
+    await Effect.runPromise(router.generate({ content: 'test' })).catch(() => {});
 
     expect(selected).toEqual([STUB_TARGET_ID]);
     expect(failed).toEqual([STUB_TARGET_ID]);
@@ -105,16 +97,13 @@ describe('metadata router', () => {
 
     const router = createMetadataRouter({
       resolveTarget: () => ({ kind: 'stub', id: STUB_TARGET_ID }),
-      executeTarget: async () => ({
-        success: true,
-        data: { summary: 'ok', tags: ['stub'] },
-      }),
-      onTargetSucceeded(targetId) {
+      executeTarget: () => Effect.succeed({ summary: 'ok', tags: ['stub'] }),
+      onTargetSucceeded(targetId: string, _result: MetadataOutput) {
         succeeded.push(targetId);
       },
     });
 
-    await router.generate({ content: 'test' });
+    await Effect.runPromise(router.generate({ content: 'test' }));
 
     expect(succeeded).toEqual([STUB_TARGET_ID]);
   });
