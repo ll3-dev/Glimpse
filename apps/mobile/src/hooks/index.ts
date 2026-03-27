@@ -6,7 +6,11 @@
 
 export * from './queries';
 export * from './mutations';
-export * from "./chat";
+export { useChat } from './chat/useChat';
+export { useChatAISetup } from './chat/useChatAISetup';
+export { useMessageActions } from './chat/useMessageActions';
+export { useConversationActions } from './chat/useConversationActions';
+export { useChatNavigation } from './chat/useChatNavigation';
 export * from './useAppForegroundLabeling';
 export * from './useForegroundLabeling';
 export * from './useWarmLocalLLM';

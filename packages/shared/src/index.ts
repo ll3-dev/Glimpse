@@ -1,5 +1,3 @@
-export type PlatformTarget = 'mobile' | 'desktop' | 'extension';
-
 export interface WorkspaceArchitecture {
   mobileApp: string;
   desktopApp: string;
@@ -33,6 +31,7 @@ export type RecommendationStatus = 'pending' | 'accepted' | 'ignored' | 'dismiss
 export type FeedbackActionType = 'accept' | 'ignore' | 'dismiss';
 export type MessageRole = 'user' | 'assistant';
 export type EmbeddingSourceType = 'message' | 'knowledge_item';
+export type InferenceMode = 'local' | 'apple' | 'byok';
 
 export interface KnowledgeItem {
   id: string;
@@ -161,5 +160,50 @@ export interface GetDueKnowledgeItemsInput {
   limit?: number;
 }
 
-// Core stub exports for backward compatibility
-export * from './core-stub';
+export interface KeyValueStorage {
+  getString: (key: string) => string | undefined;
+  set: <T extends string>(key: string, value: T) => void;
+  remove: (key: string) => void;
+}
+
+export interface CoreClient {
+  initialize(dbPath: string): Promise<void>;
+  calculateTagOverlap(input: CalculateTagOverlapInput): number;
+  calculateNextReview(input: CalculateNextReviewInput): CalculateNextReviewOutput;
+  initializeReviewSchedule(input: InitializeReviewScheduleInput): InitializeReviewScheduleOutput;
+  saveKnowledgeItem(item: KnowledgeItem): Promise<KnowledgeItem>;
+  listKnowledgeItems(): Promise<KnowledgeItem[]>;
+  listKnowledgeItemsByIds(itemIds: string[]): Promise<KnowledgeItem[]>;
+  listWeeklyKnowledgeItems(since: number): Promise<KnowledgeItem[]>;
+  listPendingKnowledgeItemsForLabeling(limit: number): Promise<KnowledgeItem[]>;
+  getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null>;
+  getDueKnowledgeItems(input: GetDueKnowledgeItemsInput): Promise<KnowledgeItem[]>;
+  updateKnowledgeItem(
+    itemId: string,
+    patch: Partial<Omit<KnowledgeItem, 'id' | 'createdAt'>>
+  ): Promise<KnowledgeItem>;
+  createConversation(conversation: Conversation): Promise<Conversation>;
+  listConversations(): Promise<Conversation[]>;
+  updateConversation(
+    conversationId: string,
+    patch: Partial<Omit<Conversation, 'id' | 'createdAt'>>
+  ): Promise<Conversation>;
+  deleteConversation(conversationId: string, deletedAt: number): Promise<void>;
+  listConversationMessages(conversationId: string): Promise<Message[]>;
+  addMessage(message: Message): Promise<Message>;
+  updateMessage(
+    messageId: string,
+    patch: Partial<Omit<Message, 'id' | 'conversationId' | 'createdAt'>>
+  ): Promise<Message>;
+  deleteMessage(messageId: string, deletedAt: number): Promise<void>;
+  saveRecommendations(recommendations: Recommendation[]): Promise<void>;
+  listRecommendations(): Promise<Recommendation[]>;
+  listPendingRecommendations(): Promise<Recommendation[]>;
+  respondToRecommendation(
+    recommendationId: string,
+    status: RecommendationStatus,
+    feedbackEvent: FeedbackEvent
+  ): Promise<void>;
+  listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]>;
+  logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
+}

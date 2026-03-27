@@ -1,5 +1,4 @@
 import {
-  BYOK_PROVIDERS,
   createBYOKSnapshot,
   isBYOKProvider,
   resetBYOKSnapshot,
@@ -108,5 +107,4 @@ export function clearBYOKStoredSettings(): void {
   resetBYOKStoreConfig();
 }
 
-export const BYOKProvider = BYOK_PROVIDERS;
 export type { BYOKConfig, BYOKProviderType, BYOKStoreActions, BYOKStoreState };
