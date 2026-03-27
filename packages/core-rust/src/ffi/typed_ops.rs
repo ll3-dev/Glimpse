@@ -40,6 +40,20 @@ unsafe fn nullable_string_to_option(input: FfiNullableString) -> Result<Option<S
     }
 }
 
+unsafe fn c_string_to_parsed<T>(
+    input: *const c_char,
+    parse: impl FnOnce(String) -> Result<T, FfiErrorCode>,
+) -> Result<T, FfiErrorCode> {
+    parse(c_str_to_string(input)?)
+}
+
+unsafe fn nullable_string_to_parsed_option<T>(
+    input: FfiNullableString,
+    parse: impl FnOnce(String) -> Result<T, FfiErrorCode> + Copy,
+) -> Result<Option<T>, FfiErrorCode> {
+    nullable_string_to_option(input)?.map(parse).transpose()
+}
+
 fn option_string_to_nullable(value: Option<String>) -> FfiNullableString {
     FfiNullableString {
         value: value.map(string_to_c_char).unwrap_or(ptr::null_mut()),
@@ -142,73 +156,73 @@ unsafe fn patch_nullable_string_array_to_option(
     Ok(Some(Some(items)))
 }
 
-fn parse_knowledge_item_type(value: String) -> Result<KnowledgeItemType, FfiErrorCode> {
-    match value.as_str() {
-        "note" => Ok(KnowledgeItemType::Note),
-        "link" => Ok(KnowledgeItemType::Link),
-        "highlight" => Ok(KnowledgeItemType::Highlight),
-        "screenshot" => Ok(KnowledgeItemType::Screenshot),
-        "share" => Ok(KnowledgeItemType::Share),
-        _ => Err(FfiErrorCode::InvalidInput),
-    }
+macro_rules! enum_string_codec {
+    ($parse_fn:ident, $format_fn:ident, $ty:ty, { $($literal:literal => $variant:path),+ $(,)? }) => {
+        fn $parse_fn(value: String) -> Result<$ty, FfiErrorCode> {
+            match value.as_str() {
+                $($literal => Ok($variant),)+
+                _ => Err(FfiErrorCode::InvalidInput),
+            }
+        }
+
+        fn $format_fn(value: $ty) -> String {
+            match value {
+                $($variant => $literal,)+
+            }
+            .to_string()
+        }
+    };
 }
 
-fn parse_label_status(value: String) -> Result<KnowledgeItemLabelStatus, FfiErrorCode> {
-    match value.as_str() {
-        "idle" => Ok(KnowledgeItemLabelStatus::Idle),
-        "pending" => Ok(KnowledgeItemLabelStatus::Pending),
-        "provisional" => Ok(KnowledgeItemLabelStatus::Provisional),
-        "final" => Ok(KnowledgeItemLabelStatus::Final),
-        "failed" => Ok(KnowledgeItemLabelStatus::Failed),
-        _ => Err(FfiErrorCode::InvalidInput),
-    }
-}
+enum_string_codec!(parse_knowledge_item_type, format_knowledge_item_type, KnowledgeItemType, {
+    "note" => KnowledgeItemType::Note,
+    "link" => KnowledgeItemType::Link,
+    "highlight" => KnowledgeItemType::Highlight,
+    "screenshot" => KnowledgeItemType::Screenshot,
+    "share" => KnowledgeItemType::Share,
+});
 
-fn parse_label_source(value: String) -> Result<KnowledgeItemLabelSource, FfiErrorCode> {
-    match value.as_str() {
-        "none" => Ok(KnowledgeItemLabelSource::None),
-        "rules" => Ok(KnowledgeItemLabelSource::Rules),
-        "apple" => Ok(KnowledgeItemLabelSource::Apple),
-        "local_small" => Ok(KnowledgeItemLabelSource::LocalSmall),
-        "local_full" => Ok(KnowledgeItemLabelSource::LocalFull),
-        "stub" => Ok(KnowledgeItemLabelSource::Stub),
-        "byok" => Ok(KnowledgeItemLabelSource::Byok),
-        _ => Err(FfiErrorCode::InvalidInput),
-    }
-}
+enum_string_codec!(parse_label_status, format_label_status, KnowledgeItemLabelStatus, {
+    "idle" => KnowledgeItemLabelStatus::Idle,
+    "pending" => KnowledgeItemLabelStatus::Pending,
+    "provisional" => KnowledgeItemLabelStatus::Provisional,
+    "final" => KnowledgeItemLabelStatus::Final,
+    "failed" => KnowledgeItemLabelStatus::Failed,
+});
 
-fn parse_message_role(value: String) -> Result<MessageRole, FfiErrorCode> {
-    match value.as_str() {
-        "user" => Ok(MessageRole::User),
-        "assistant" => Ok(MessageRole::Assistant),
-        _ => Err(FfiErrorCode::InvalidInput),
-    }
-}
+enum_string_codec!(parse_label_source, format_label_source, KnowledgeItemLabelSource, {
+    "none" => KnowledgeItemLabelSource::None,
+    "rules" => KnowledgeItemLabelSource::Rules,
+    "apple" => KnowledgeItemLabelSource::Apple,
+    "local_small" => KnowledgeItemLabelSource::LocalSmall,
+    "local_full" => KnowledgeItemLabelSource::LocalFull,
+    "stub" => KnowledgeItemLabelSource::Stub,
+    "byok" => KnowledgeItemLabelSource::Byok,
+});
 
-fn parse_recommendation_status(value: String) -> Result<RecommendationStatus, FfiErrorCode> {
-    match value.as_str() {
-        "pending" => Ok(RecommendationStatus::Pending),
-        "accepted" => Ok(RecommendationStatus::Accepted),
-        "ignored" => Ok(RecommendationStatus::Ignored),
-        "dismissed" => Ok(RecommendationStatus::Dismissed),
-        _ => Err(FfiErrorCode::InvalidInput),
-    }
-}
+enum_string_codec!(parse_message_role, format_message_role, MessageRole, {
+    "user" => MessageRole::User,
+    "assistant" => MessageRole::Assistant,
+});
 
-fn parse_feedback_action(value: String) -> Result<FeedbackActionType, FfiErrorCode> {
-    match value.as_str() {
-        "accept" => Ok(FeedbackActionType::Accept),
-        "ignore" => Ok(FeedbackActionType::Ignore),
-        "dismiss" => Ok(FeedbackActionType::Dismiss),
-        _ => Err(FfiErrorCode::InvalidInput),
-    }
-}
+enum_string_codec!(parse_recommendation_status, format_recommendation_status, RecommendationStatus, {
+    "pending" => RecommendationStatus::Pending,
+    "accepted" => RecommendationStatus::Accepted,
+    "ignored" => RecommendationStatus::Ignored,
+    "dismissed" => RecommendationStatus::Dismissed,
+});
+
+enum_string_codec!(parse_feedback_action, format_feedback_action, FeedbackActionType, {
+    "accept" => FeedbackActionType::Accept,
+    "ignore" => FeedbackActionType::Ignore,
+    "dismiss" => FeedbackActionType::Dismiss,
+});
 
 unsafe fn ffi_to_knowledge_item(input: *const FfiKnowledgeItem) -> Result<KnowledgeItem, FfiErrorCode> {
     let item = &*input;
     Ok(KnowledgeItem {
         id: c_str_to_string(item.id.cast_const())?,
-        item_type: parse_knowledge_item_type(c_str_to_string(item.item_type.cast_const())?)?,
+        item_type: c_string_to_parsed(item.item_type.cast_const(), parse_knowledge_item_type)?,
         title: nullable_string_to_option(item.title)?,
         body: nullable_string_to_option(item.body)?,
         url: nullable_string_to_option(item.url)?,
@@ -216,14 +230,8 @@ unsafe fn ffi_to_knowledge_item(input: *const FfiKnowledgeItem) -> Result<Knowle
         tags: string_array_to_option(item.tags)?,
         labels: string_array_to_option(item.labels)?,
         provisional_labels: string_array_to_option(item.provisional_labels)?,
-        label_status: match nullable_string_to_option(item.label_status)? {
-            Some(value) => Some(parse_label_status(value)?),
-            None => None,
-        },
-        label_source: match nullable_string_to_option(item.label_source)? {
-            Some(value) => Some(parse_label_source(value)?),
-            None => None,
-        },
+        label_status: nullable_string_to_parsed_option(item.label_status, parse_label_status)?,
+        label_source: nullable_string_to_parsed_option(item.label_source, parse_label_source)?,
         label_version: nullable_string_to_option(item.label_version)?,
         label_score: item.label_score.into(),
         label_requested_at: item.label_requested_at.into(),
@@ -295,7 +303,7 @@ unsafe fn ffi_to_message(input: *const FfiMessage) -> Result<Message, FfiErrorCo
     Ok(Message {
         id: c_str_to_string(message.id.cast_const())?,
         conversation_id: c_str_to_string(message.conversation_id.cast_const())?,
-        role: parse_message_role(c_str_to_string(message.role.cast_const())?)?,
+        role: c_string_to_parsed(message.role.cast_const(), parse_message_role)?,
         content: c_str_to_string(message.content.cast_const())?,
         created_at: message.created_at,
         updated_at: message.updated_at.into(),
@@ -322,7 +330,7 @@ unsafe fn ffi_to_recommendation(input: *const FfiRecommendation) -> Result<Recom
         item_a_id: c_str_to_string(recommendation.item_a_id.cast_const())?,
         item_b_id: c_str_to_string(recommendation.item_b_id.cast_const())?,
         reason: nullable_string_to_option(recommendation.reason)?,
-        status: parse_recommendation_status(c_str_to_string(recommendation.status.cast_const())?)?,
+        status: c_string_to_parsed(recommendation.status.cast_const(), parse_recommendation_status)?,
         created_at: recommendation.created_at,
         responded_at: recommendation.responded_at.into(),
     })
@@ -345,7 +353,7 @@ unsafe fn ffi_to_feedback_event(input: *const FfiFeedbackEvent) -> Result<Feedba
     Ok(FeedbackEvent {
         id: c_str_to_string(event.id.cast_const())?,
         recommendation_id: c_str_to_string(event.recommendation_id.cast_const())?,
-        action: parse_feedback_action(c_str_to_string(event.action.cast_const())?)?,
+        action: c_string_to_parsed(event.action.cast_const(), parse_feedback_action)?,
         created_at: event.created_at,
     })
 }
@@ -364,10 +372,9 @@ unsafe fn ffi_to_knowledge_item_patch(
 ) -> Result<KnowledgeItemPatch, FfiErrorCode> {
     let patch = &*patch;
     Ok(KnowledgeItemPatch {
-        item_type: match patch_string_to_option(patch.item_type)? {
-            Some(value) => Some(parse_knowledge_item_type(value)?),
-            None => None,
-        },
+        item_type: patch_string_to_option(patch.item_type)?
+            .map(parse_knowledge_item_type)
+            .transpose()?,
         title: match patch_nullable_string_to_option(patch.title)? {
             Some(Some(value)) => Some(value),
             _ => None,
@@ -396,16 +403,14 @@ unsafe fn ffi_to_knowledge_item_patch(
             Some(Some(value)) => Some(value),
             _ => None,
         },
-        label_status: match patch_nullable_string_to_option(patch.label_status)? {
-            Some(Some(value)) => Some(parse_label_status(value)?),
-            None => None,
-            Some(None) => None,
-        },
-        label_source: match patch_nullable_string_to_option(patch.label_source)? {
-            Some(Some(value)) => Some(parse_label_source(value)?),
-            None => None,
-            Some(None) => None,
-        },
+        label_status: patch_nullable_string_to_option(patch.label_status)?
+            .flatten()
+            .map(parse_label_status)
+            .transpose()?,
+        label_source: patch_nullable_string_to_option(patch.label_source)?
+            .flatten()
+            .map(parse_label_source)
+            .transpose()?,
         label_version: match patch_nullable_string_to_option(patch.label_version)? {
             Some(Some(value)) => Some(value),
             _ => None,
@@ -492,68 +497,6 @@ unsafe fn ffi_to_message_patch(patch: *const FfiMessagePatch) -> Result<MessageP
             _ => None,
         },
     })
-}
-
-fn format_knowledge_item_type(value: KnowledgeItemType) -> String {
-    match value {
-        KnowledgeItemType::Note => "note",
-        KnowledgeItemType::Link => "link",
-        KnowledgeItemType::Highlight => "highlight",
-        KnowledgeItemType::Screenshot => "screenshot",
-        KnowledgeItemType::Share => "share",
-    }
-    .to_string()
-}
-
-fn format_label_status(value: KnowledgeItemLabelStatus) -> String {
-    match value {
-        KnowledgeItemLabelStatus::Idle => "idle",
-        KnowledgeItemLabelStatus::Pending => "pending",
-        KnowledgeItemLabelStatus::Provisional => "provisional",
-        KnowledgeItemLabelStatus::Final => "final",
-        KnowledgeItemLabelStatus::Failed => "failed",
-    }
-    .to_string()
-}
-
-fn format_label_source(value: KnowledgeItemLabelSource) -> String {
-    match value {
-        KnowledgeItemLabelSource::None => "none",
-        KnowledgeItemLabelSource::Rules => "rules",
-        KnowledgeItemLabelSource::Apple => "apple",
-        KnowledgeItemLabelSource::LocalSmall => "local_small",
-        KnowledgeItemLabelSource::LocalFull => "local_full",
-        KnowledgeItemLabelSource::Stub => "stub",
-        KnowledgeItemLabelSource::Byok => "byok",
-    }
-    .to_string()
-}
-
-fn format_message_role(value: MessageRole) -> String {
-    match value {
-        MessageRole::User => "user",
-        MessageRole::Assistant => "assistant",
-    }
-    .to_string()
-}
-
-fn format_recommendation_status(value: RecommendationStatus) -> String {
-    match value {
-        RecommendationStatus::Pending => "pending",
-        RecommendationStatus::Accepted => "accepted",
-        RecommendationStatus::Ignored => "ignored",
-        RecommendationStatus::Dismissed => "dismissed",
-    }
-    .to_string()
-}
-
-fn format_feedback_action(value: FeedbackActionType) -> String {
-    match value {
-        FeedbackActionType::Accept => "accept",
-        FeedbackActionType::Ignore => "ignore",
-        FeedbackActionType::Dismiss => "dismiss",
-    }
-    .to_string()
 }
 
 unsafe fn fill_ffi_array<T, F>(items: Vec<T>, out_data: *mut *mut F, out_len: *mut c_int, map: impl Fn(T) -> F) {
@@ -945,11 +888,7 @@ pub unsafe extern "C" fn core_client_respond_to_recommendation_typed(
         Ok(value) => value,
         Err(err) => return err,
     };
-    let status = match c_str_to_string(status) {
-        Ok(value) => value,
-        Err(err) => return err,
-    };
-    let status = match parse_recommendation_status(status) {
+    let status = match c_string_to_parsed(status, parse_recommendation_status) {
         Ok(value) => value,
         Err(err) => return err,
     };
@@ -1002,153 +941,5 @@ pub unsafe extern "C" fn core_client_log_recommendation_feedback_typed(
             FfiErrorCode::Ok
         }
         Err(err) => FfiErrorCode::from(&err),
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_string_array_free(data: *mut *mut c_char, len: c_int) {
-    if data.is_null() {
-        return;
-    }
-    let items = Vec::from_raw_parts(data, len as usize, len as usize);
-    for item in items {
-        if !item.is_null() {
-            drop(CString::from_raw(item));
-        }
-    }
-}
-
-unsafe fn free_nullable_string_array(array: FfiNullableStringArray) {
-    if !array.data.is_null() {
-        ffi_string_array_free(array.data, array.len);
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_knowledge_item_free(item: *mut FfiKnowledgeItem) {
-    if item.is_null() {
-        return;
-    }
-    let item = &mut *item;
-    if !item.id.is_null() { drop(CString::from_raw(item.id)); }
-    if !item.item_type.is_null() { drop(CString::from_raw(item.item_type)); }
-    if !item.title.value.is_null() { drop(CString::from_raw(item.title.value)); }
-    if !item.body.value.is_null() { drop(CString::from_raw(item.body.value)); }
-    if !item.url.value.is_null() { drop(CString::from_raw(item.url.value)); }
-    if !item.summary.value.is_null() { drop(CString::from_raw(item.summary.value)); }
-    free_nullable_string_array(item.tags);
-    free_nullable_string_array(item.labels);
-    free_nullable_string_array(item.provisional_labels);
-    if !item.label_status.value.is_null() { drop(CString::from_raw(item.label_status.value)); }
-    if !item.label_source.value.is_null() { drop(CString::from_raw(item.label_source.value)); }
-    if !item.label_version.value.is_null() { drop(CString::from_raw(item.label_version.value)); }
-    if !item.label_error.value.is_null() { drop(CString::from_raw(item.label_error.value)); }
-    *item = FfiKnowledgeItem::default();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_knowledge_item_array_free(data: *mut FfiKnowledgeItem, len: c_int) {
-    if data.is_null() {
-        return;
-    }
-    let items = Vec::from_raw_parts(data, len as usize, len as usize);
-    for mut item in items {
-        ffi_knowledge_item_free(&mut item);
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_conversation_free(conversation: *mut FfiConversation) {
-    if conversation.is_null() {
-        return;
-    }
-    let conversation = &mut *conversation;
-    if !conversation.id.is_null() { drop(CString::from_raw(conversation.id)); }
-    if !conversation.title.value.is_null() { drop(CString::from_raw(conversation.title.value)); }
-    if !conversation.icon.value.is_null() { drop(CString::from_raw(conversation.icon.value)); }
-    if !conversation.context_item_id.value.is_null() { drop(CString::from_raw(conversation.context_item_id.value)); }
-    *conversation = FfiConversation::default();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_conversation_array_free(data: *mut FfiConversation, len: c_int) {
-    if data.is_null() {
-        return;
-    }
-    let items = Vec::from_raw_parts(data, len as usize, len as usize);
-    for mut item in items {
-        ffi_conversation_free(&mut item);
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_message_free(message: *mut FfiMessage) {
-    if message.is_null() {
-        return;
-    }
-    let message = &mut *message;
-    if !message.id.is_null() { drop(CString::from_raw(message.id)); }
-    if !message.conversation_id.is_null() { drop(CString::from_raw(message.conversation_id)); }
-    if !message.role.is_null() { drop(CString::from_raw(message.role)); }
-    if !message.content.is_null() { drop(CString::from_raw(message.content)); }
-    *message = FfiMessage::default();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_message_array_free(data: *mut FfiMessage, len: c_int) {
-    if data.is_null() {
-        return;
-    }
-    let items = Vec::from_raw_parts(data, len as usize, len as usize);
-    for mut item in items {
-        ffi_message_free(&mut item);
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_recommendation_free(recommendation: *mut FfiRecommendation) {
-    if recommendation.is_null() {
-        return;
-    }
-    let recommendation = &mut *recommendation;
-    if !recommendation.id.is_null() { drop(CString::from_raw(recommendation.id)); }
-    if !recommendation.item_a_id.is_null() { drop(CString::from_raw(recommendation.item_a_id)); }
-    if !recommendation.item_b_id.is_null() { drop(CString::from_raw(recommendation.item_b_id)); }
-    if !recommendation.reason.value.is_null() { drop(CString::from_raw(recommendation.reason.value)); }
-    if !recommendation.status.is_null() { drop(CString::from_raw(recommendation.status)); }
-    *recommendation = FfiRecommendation::default();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_recommendation_array_free(data: *mut FfiRecommendation, len: c_int) {
-    if data.is_null() {
-        return;
-    }
-    let items = Vec::from_raw_parts(data, len as usize, len as usize);
-    for mut item in items {
-        ffi_recommendation_free(&mut item);
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_feedback_event_free(event: *mut FfiFeedbackEvent) {
-    if event.is_null() {
-        return;
-    }
-    let event = &mut *event;
-    if !event.id.is_null() { drop(CString::from_raw(event.id)); }
-    if !event.recommendation_id.is_null() { drop(CString::from_raw(event.recommendation_id)); }
-    if !event.action.is_null() { drop(CString::from_raw(event.action)); }
-    *event = FfiFeedbackEvent::default();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ffi_feedback_event_array_free(data: *mut FfiFeedbackEvent, len: c_int) {
-    if data.is_null() {
-        return;
-    }
-    let items = Vec::from_raw_parts(data, len as usize, len as usize);
-    for mut item in items {
-        ffi_feedback_event_free(&mut item);
     }
 }

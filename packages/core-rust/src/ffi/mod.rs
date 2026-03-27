@@ -8,22 +8,24 @@ mod error;
 mod sync;
 #[cfg(test)]
 mod tests;
+mod typed_free;
 mod typed_ops;
 mod types;
 
 pub use async_ops::*;
 pub use error::*;
 pub use sync::*;
+pub use typed_free::*;
 pub use typed_ops::*;
 pub use types::*;
 
-use crate::CoreClientImpl;
+use crate::SharedCore;
 use std::ffi::{c_char, c_int, CStr};
 use std::ptr;
 
 /// Opaque handle to a CoreClient instance.
 /// C++ holds this and passes it back to FFI calls.
-pub type CoreClientHandle = *mut CoreClientImpl;
+pub type CoreClientHandle = *mut SharedCore;
 
 /// Creates a new CoreClient with SQLite storage at the given path.
 /// Returns null on error.
@@ -40,7 +42,7 @@ pub unsafe extern "C" fn core_client_create(db_path: *const c_char) -> CoreClien
 
     match crate::storage::sqlite::SqliteStorage::new(path) {
         Ok(storage) => {
-            let client = Box::new(CoreClientImpl::new(storage));
+            let client = Box::new(SharedCore::new(storage));
             Box::into_raw(client)
         }
         Err(_) => ptr::null_mut(),

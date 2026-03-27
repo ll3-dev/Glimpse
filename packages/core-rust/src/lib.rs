@@ -3,12 +3,14 @@
 //! This library provides the core business logic for the Glimpse application,
 //! shared between mobile (React Native) and desktop (Tauri) platforms.
 
+pub mod application;
 pub mod core_client;
 mod error;
 pub mod ffi;
 mod models;
 mod storage;
 
+pub use application::SharedCore;
 pub use core_client::CoreClientImpl;
 pub use error::Error;
 pub use ffi::{CoreClientHandle, FfiErrorCode};
