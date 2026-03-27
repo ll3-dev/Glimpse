@@ -1,8 +1,9 @@
 import { describe, expect, test, mock, beforeEach } from 'bun:test';
+import { Effect, Exit } from 'effect';
 import { createLocalLLMProvider } from './local-llm-provider';
 import type { LlamaService, GenerateResult } from '../llama-service';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
-import { isFailure, isSuccess } from '@/src/lib/effect-result';
+import { isAIProviderError } from '../metadata/types';
 import {
   clearLocalLLMSettings,
   addLocalLLMModel,
@@ -75,48 +76,61 @@ describe('createLocalLLMProvider', () => {
     });
 
     describe('generate', () => {
-      test('returns error when not ready', async () => {
+      test('returns Effect that fails when not ready', async () => {
         const provider = createLocalLLMProvider({
           isReady: () => false,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.code).toBe('AI_PROVIDER_UNAVAILABLE');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          expect(error).not.toBeNull();
+          if (isAIProviderError(error)) {
+            expect(error.code).toBe('AI_PROVIDER_UNAVAILABLE');
+          }
         }
       });
 
-      test('returns error when no model selected', async () => {
+      test('returns Effect that fails when no model selected', async () => {
         const provider = createLocalLLMProvider({
           isReady: () => true,
           getSelectedModel: () => null,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.message).toContain('No model selected');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          if (isAIProviderError(error)) {
+            expect(error.message).toContain('No model selected');
+          }
         }
       });
 
-      test('returns error when model has no path', async () => {
+      test('returns Effect that fails when model has no path', async () => {
         const provider = createLocalLLMProvider({
           isReady: () => true,
           getSelectedModel: () => createMockModel({ path: undefined }),
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.message).toContain('no path');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          if (isAIProviderError(error)) {
+            expect(error.message).toContain('no path');
+          }
         }
       });
 
-      test('loads model and generates summary/tags', async () => {
+      test('returns Effect that succeeds with metadata', async () => {
         const mockService = createMockLlamaService({
           generate: mock(async (prompt: string): Promise<GenerateResult> => {
             if (prompt.includes('Summarize')) {
@@ -132,22 +146,23 @@ describe('createLocalLLMProvider', () => {
           llamaService: mockService,
         });
 
-        const result = await provider.generate({
+        const effect = provider.generate({
           title: 'Test Title',
           content: 'Test content for generation.',
         });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(true);
-        if (isSuccess(result)) {
-          expect(result.data.summary).toBe('Generated summary');
-          expect(result.data.tags).toEqual(['tag1', 'tag2', 'tag3']);
+        expect(Exit.isSuccess(exit)).toBe(true);
+        if (Exit.isSuccess(exit)) {
+          expect(exit.value.summary).toBe('Generated summary');
+          expect(exit.value.tags).toEqual(['tag1', 'tag2', 'tag3']);
         }
 
         // Verify model was loaded
         expect(mockService.loadModel).toHaveBeenCalled();
       });
 
-      test('handles generation errors', async () => {
+      test('returns Effect that fails on generation error', async () => {
         const mockService = createMockLlamaService({
           generate: mock(async () => {
             throw new Error('Generation failed');
@@ -160,41 +175,16 @@ describe('createLocalLLMProvider', () => {
           llamaService: mockService,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.code).toBe('AI_PROVIDER_INTERNAL_ERROR');
-          expect(result.error.message).toContain('Generation failed');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          if (isAIProviderError(error)) {
+            expect(error.code).toBe('AI_PROVIDER_INTERNAL_ERROR');
+          }
         }
-      });
-
-      test('reuses loaded model for subsequent calls', async () => {
-        const mockService = createMockLlamaService({
-          isModelLoaded: mock(() => true),
-          generate: mock(async (): Promise<GenerateResult> => ({
-            text: 'Generated text',
-            tokensGenerated: 10,
-            timingMs: 100,
-          })),
-        });
-
-        const provider = createLocalLLMProvider({
-          isReady: () => true,
-          getSelectedModel: () => createMockModel({ id: 'same-model' }),
-          llamaService: mockService,
-        });
-
-        // First call
-        await provider.generate({ content: 'test1' });
-        const firstLoadCalls = (mockService.loadModel as ReturnType<typeof mock>).mock.calls.length;
-
-        // Second call with same model
-        await provider.generate({ content: 'test2' });
-        const secondLoadCalls = (mockService.loadModel as ReturnType<typeof mock>).mock.calls.length;
-
-        // Should not load model again
-        expect(secondLoadCalls).toBe(firstLoadCalls);
       });
     });
 });

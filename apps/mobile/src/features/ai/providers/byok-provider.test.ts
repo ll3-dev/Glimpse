@@ -1,9 +1,10 @@
 import { describe, expect, test, mock } from 'bun:test';
+import { Effect, Exit } from 'effect';
 import {
   createBYOKProvider,
   API_CONFIGS,
 } from './byok-provider';
-import { isFailure } from '@/src/lib/effect-result';
+import { isAIProviderError } from '../metadata/types';
 
 /**
  * Create a mock fetch function
@@ -62,6 +63,8 @@ describe('createBYOKProvider', () => {
     test('returns true when BYOK is ready', async () => {
       const provider = createBYOKProvider({
         isReady: () => true,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
       });
 
       const available = await provider.isAvailable();
@@ -79,50 +82,62 @@ describe('createBYOKProvider', () => {
   });
 
   describe('generate', () => {
-    test('returns error when not ready', async () => {
+    test('returns Effect that fails when not ready', async () => {
       const provider = createBYOKProvider({
         isReady: () => false,
       });
 
-      const result = await provider.generate({ content: 'test' });
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(false);
-      if (isFailure(result)) {
-        expect(result.error.code).toBe('AI_PROVIDER_UNAVAILABLE');
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_UNAVAILABLE');
+        }
       }
     });
 
-    test('returns error when API key is missing', async () => {
+    test('returns Effect that fails when API key is missing', async () => {
       const provider = createBYOKProvider({
         isReady: () => true,
         getApiKey: () => null,
         getProvider: () => 'openai',
       });
 
-      const result = await provider.generate({ content: 'test' });
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(false);
-      if (isFailure(result)) {
-        expect(result.error.message).toContain('API key');
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.message).toContain('API key');
+        }
       }
     });
 
-    test('returns error when provider is not selected', async () => {
+    test('returns Effect that fails when provider is not selected', async () => {
       const provider = createBYOKProvider({
         isReady: () => true,
         getApiKey: () => 'test-key',
         getProvider: () => null,
       });
 
-      const result = await provider.generate({ content: 'test' });
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(false);
-      if (isFailure(result)) {
-        expect(result.error.message).toContain('provider');
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.message).toContain('provider');
+        }
       }
     });
 
-    test('generates summary and tags successfully with OpenAI', async () => {
+    test('returns Effect that succeeds with metadata using OpenAI', async () => {
       const mockFetch = createMockFetch(
         createJsonResponse({
           choices: [{ message: { content: 'Test summary' } }],
@@ -136,15 +151,16 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      const result = await provider.generate({
+      const effect = provider.generate({
         title: 'Test Title',
         content: 'Test content for generation.',
       });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.summary).toBe('Test summary');
-        expect(Array.isArray(result.data.tags)).toBe(true);
+      expect(Exit.isSuccess(exit)).toBe(true);
+      if (Exit.isSuccess(exit)) {
+        expect(exit.value.summary).toBe('Test summary');
+        expect(Array.isArray(exit.value.tags)).toBe(true);
       }
 
       // Verify fetch was called twice (summary + tags)
@@ -166,7 +182,7 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      await provider.generate({ content: 'test' });
+      await Effect.runPromise(provider.generate({ content: 'test' }));
 
       const firstCallArgs = (mockFetch as unknown as unknown as ReturnType<typeof mock>).mock.calls[0] as [string];
       expect(firstCallArgs[0]).toBe('http://localhost:11434/v1/chat/completions');
@@ -187,7 +203,7 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      await provider.generate({ content: 'test' });
+      await Effect.runPromise(provider.generate({ content: 'test' }));
 
       const call = (mockFetch as unknown as ReturnType<typeof mock>).mock.calls[0] as [string, RequestInit];
       const body = JSON.parse(String(call[1]?.body ?? '{}')) as { model?: string };
@@ -210,14 +226,14 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      await provider.generate({ content: 'test' });
+      await Effect.runPromise(provider.generate({ content: 'test' }));
 
       const firstCallArgs = (mockFetch as unknown as ReturnType<typeof mock>).mock.calls[0] as [string];
       expect(firstCallArgs[0]).toContain('/models/gemini-3-flash-preview:generateContent');
       expect(firstCallArgs[0]).toContain('?key=AIzaSy-test-key');
     });
 
-    test('handles rate limiting (429)', async () => {
+    test('returns Effect that fails on rate limiting (429)', async () => {
       const mockFetch = mock(async () => ({
         ok: false,
         status: 429,
@@ -231,15 +247,19 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      const result = await provider.generate({ content: 'test' });
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(false);
-      if (isFailure(result)) {
-        expect(result.error.code).toBe('AI_PROVIDER_RATE_LIMITED');
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_RATE_LIMITED');
+        }
       }
     });
 
-    test('handles network errors', async () => {
+    test('returns Effect that fails on network errors', async () => {
       const mockFetch = mock(async () => {
         throw new TypeError('fetch failed');
       });
@@ -251,15 +271,19 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      const result = await provider.generate({ content: 'test' });
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(false);
-      if (isFailure(result)) {
-        expect(result.error.code).toBe('AI_PROVIDER_NETWORK_ERROR');
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_NETWORK_ERROR');
+        }
       }
     });
 
-    test('handles empty API response', async () => {
+    test('returns Effect that fails on empty API response', async () => {
       const mockFetch = createMockFetch(
         createJsonResponse({ choices: [{ message: { content: '' } }] })
       );
@@ -271,11 +295,15 @@ describe('createBYOKProvider', () => {
         fetch: mockFetch as unknown as typeof fetch,
       });
 
-      const result = await provider.generate({ content: 'test' });
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
 
-      expect(result.success).toBe(false);
-      if (isFailure(result)) {
-        expect(result.error.code).toBe('AI_PROVIDER_INVALID_RESPONSE');
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_INVALID_RESPONSE');
+        }
       }
     });
   });

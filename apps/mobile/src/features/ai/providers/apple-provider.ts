@@ -5,8 +5,13 @@
  * Available on iOS 18.1+ and macOS 15.1+.
  */
 
-import type { Result } from '@/src/lib/effect-result';
-import type { MetadataProvider, MetadataInput, MetadataOutput } from '../metadata/types';
+import { Effect } from "effect";
+import type {
+  MetadataProvider,
+  MetadataInput,
+  MetadataOutput,
+  AIProviderError,
+} from "../metadata/types";
 import { aiProviderError } from '../metadata/types';
 import {
   createAppleIntelligenceBridge,
@@ -77,7 +82,7 @@ export function createAppleProvider(config: AppleProviderConfig = {}): MetadataP
   const isToggleEnabled = config.isToggleEnabled ?? isAppleIntelligenceEnabled;
 
   return {
-    name: 'apple',
+    name: "apple",
 
     async isAvailable(): Promise<boolean> {
       // Check if toggle is enabled
@@ -90,73 +95,96 @@ export function createAppleProvider(config: AppleProviderConfig = {}): MetadataP
       return available;
     },
 
-    async generate(input: MetadataInput): Promise<Result<MetadataOutput>> {
-      // Check toggle first
-      if (!isToggleEnabled()) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'apple',
-            'Apple Intelligence is disabled in settings'
-          ),
-        };
-      }
+    generate(
+      input: MetadataInput,
+    ): Effect.Effect<MetadataOutput, AIProviderError> {
+      return Effect.gen(function* (_) {
+        // Check toggle first
+        if (!isToggleEnabled()) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "apple",
+                "Apple Intelligence is disabled in settings",
+              ),
+            ),
+          );
+        }
 
-      // Check native availability
-      const availability = await bridge.isAvailable();
-      if (!availability.available) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'apple',
-            `Apple Intelligence is not available: ${availability.reason ?? 'unknown'}`,
-            { reason: availability.reason }
-          ),
-        };
-      }
+        // Check native availability
+        const availability = yield* _(
+          Effect.tryPromise({
+            try: () => bridge.isAvailable(),
+            catch: (e) =>
+              aiProviderError(
+                "AI_PROVIDER_INTERNAL_ERROR",
+                "apple",
+                "Failed to check availability",
+                { cause: e },
+              ),
+          }),
+        );
 
-      try {
+        if (!availability.available) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "apple",
+                `Apple Intelligence is not available: ${availability.reason ?? "unknown"}`,
+                { reason: availability.reason },
+              ),
+            ),
+          );
+        }
+
         // Generate summary
         const summaryPrompt = buildSummaryPrompt(input);
-        const summaryResult = await bridge.generate(summaryPrompt, {
-          maxTokens: 128,
-          temperature: 0.3,
-        });
+        const summaryResult = yield* _(
+          Effect.tryPromise({
+            try: () =>
+              bridge.generate(summaryPrompt, {
+                maxTokens: 128,
+                temperature: 0.3,
+              }),
+            catch: (e) =>
+              aiProviderError(
+                "AI_PROVIDER_INTERNAL_ERROR",
+                "apple",
+                "Summary generation failed",
+                { cause: e },
+              ),
+          }),
+        );
 
         // Generate tags
         const tagsPrompt = buildTagsPrompt(input);
-        const tagsResult = await bridge.generate(tagsPrompt, {
-          maxTokens: 64,
-          temperature: 0.3,
-        });
+        const tagsResult = yield* _(
+          Effect.tryPromise({
+            try: () =>
+              bridge.generate(tagsPrompt, {
+                maxTokens: 64,
+                temperature: 0.3,
+              }),
+            catch: (e) =>
+              aiProviderError(
+                "AI_PROVIDER_INTERNAL_ERROR",
+                "apple",
+                "Tags generation failed",
+                { cause: e },
+              ),
+          }),
+        );
 
         // Parse tags from response
         const tags = parseTagsResponse(tagsResult.text);
 
         return {
-          success: true,
-          data: {
-            summary: summaryResult.text.trim(),
-            tags,
-          },
+          summary: summaryResult.text.trim(),
+          tags,
         };
-      } catch (error) {
-        // Map error to provider error
-        const message =
-          error instanceof Error ? error.message : 'Apple Intelligence generation failed';
-
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_INTERNAL_ERROR',
-            'apple',
-            message,
-            { cause: error }
-          ),
-        };
-      }
+      });
     },
   };
 }

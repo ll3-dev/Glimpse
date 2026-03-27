@@ -1,7 +1,8 @@
 import { describe, expect, test, mock } from 'bun:test';
+import { Effect, Exit } from 'effect';
 import { createAppleProvider } from './apple-provider';
 import type { AppleIntelligenceBridge, AppleIntelligenceAvailability, AppleGenerateResult } from '../apple-intelligence-bridge';
-import { isFailure } from '@/src/lib/effect-result';
+import { isAIProviderError } from '../metadata/types';
 
 /**
  * Create a mock Apple Intelligence bridge for testing
@@ -59,22 +60,28 @@ describe('createAppleProvider', () => {
     });
 
     describe('generate', () => {
-      test('returns error when toggle is disabled', async () => {
+      test('returns Effect that fails when toggle is disabled', async () => {
         const provider = createAppleProvider({
           bridge: createMockBridge(),
           isToggleEnabled: () => false,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.code).toBe('AI_PROVIDER_UNAVAILABLE');
-          expect(result.error.message).toContain('disabled');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          expect(error).not.toBeNull();
+          expect(isAIProviderError(error)).toBe(true);
+          if (isAIProviderError(error)) {
+            expect(error.code).toBe('AI_PROVIDER_UNAVAILABLE');
+            expect(error.message).toContain('disabled');
+          }
         }
       });
 
-      test('returns error when bridge reports unavailable', async () => {
+      test('returns Effect that fails when bridge reports unavailable', async () => {
         const provider = createAppleProvider({
           bridge: createMockBridge({
             isAvailable: mock(async (): Promise<AppleIntelligenceAvailability> => ({
@@ -85,15 +92,20 @@ describe('createAppleProvider', () => {
           isToggleEnabled: () => true,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.message).toContain('unsupported_os');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          expect(error).not.toBeNull();
+          if (isAIProviderError(error)) {
+            expect(error.message).toContain('unsupported_os');
+          }
         }
       });
 
-      test('generates summary and tags successfully', async () => {
+      test('returns Effect that succeeds with metadata', async () => {
         const mockBridge = createMockBridge({
           generate: mock(async (prompt: string): Promise<AppleGenerateResult> => {
             if (prompt.includes('Summarize')) {
@@ -108,22 +120,23 @@ describe('createAppleProvider', () => {
           isToggleEnabled: () => true,
         });
 
-        const result = await provider.generate({
+        const effect = provider.generate({
           title: 'Test Title',
           content: 'Test content for generation.',
         });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(true);
-        if (result.success) {
-          expect(result.data.summary).toBe('This is the generated summary.');
-          expect(result.data.tags).toEqual(['apple', 'banana', 'cherry']);
+        expect(Exit.isSuccess(exit)).toBe(true);
+        if (Exit.isSuccess(exit)) {
+          expect(exit.value.summary).toBe('This is the generated summary.');
+          expect(exit.value.tags).toEqual(['apple', 'banana', 'cherry']);
         }
 
         // Verify generate was called twice (summary + tags)
         expect(mockBridge.generate).toHaveBeenCalledTimes(2);
       });
 
-      test('handles generation errors', async () => {
+      test('returns Effect that fails on generation error', async () => {
         const provider = createAppleProvider({
           bridge: createMockBridge({
             isAvailable: mock(async () => ({ available: true })),
@@ -134,12 +147,16 @@ describe('createAppleProvider', () => {
           isToggleEnabled: () => true,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(false);
-        if (isFailure(result)) {
-          expect(result.error.code).toBe('AI_PROVIDER_INTERNAL_ERROR');
-          expect(result.error.message).toContain('Apple Intelligence error');
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          expect(error).not.toBeNull();
+          if (isAIProviderError(error)) {
+            expect(error.code).toBe('AI_PROVIDER_INTERNAL_ERROR');
+          }
         }
       });
 
@@ -156,11 +173,12 @@ describe('createAppleProvider', () => {
           isToggleEnabled: () => true,
         });
 
-        const result = await provider.generate({ content: 'test' });
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
 
-        expect(result.success).toBe(true);
-        if (result.success) {
-          expect(result.data.summary).toBe('Summary with whitespace');
+        expect(Exit.isSuccess(exit)).toBe(true);
+        if (Exit.isSuccess(exit)) {
+          expect(exit.value.summary).toBe('Summary with whitespace');
         }
       });
     });

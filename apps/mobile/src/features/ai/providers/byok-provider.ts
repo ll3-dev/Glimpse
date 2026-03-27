@@ -7,15 +7,15 @@
  * TODO: Integrate actual API calls for each provider
  */
 
-import type { Result } from '@/src/lib/effect-result';
-import { isFailure } from '@/src/lib/effect-result';
-import {
-  aiProviderError,
-  type MetadataProvider,
-  type MetadataInput,
-  type MetadataOutput,
-  type AIProviderErrorCode,
-} from '../metadata/types';
+import { Effect } from "effect";
+import type {
+  MetadataProvider,
+  MetadataInput,
+  MetadataOutput,
+  AIProviderError,
+  AIProviderErrorCode,
+} from "../metadata/types";
+import { aiProviderError } from "../metadata/types";
 import {
   isBYOKReady,
   getApiKey,
@@ -128,77 +128,92 @@ function mapErrorToCode(status: number): AIProviderErrorCode {
 }
 
 /**
- * Make an API call to the configured provider
+ * Make an API call to the configured provider (Effect version)
  */
-async function callAPI(
+function callAPIEffect(
   provider: BYOKProviderType,
   prompt: string,
   apiKey: string,
   baseUrl: string | null,
   modelOverride: string | null,
-  fetchFn: typeof fetch
-): Promise<Result<string>> {
-  const config = API_CONFIGS[provider];
-  const model = modelOverride || config.defaultModel;
+  fetchFn: typeof fetch,
+): Effect.Effect<string, AIProviderError> {
+  return Effect.gen(function* (_) {
+    const config = API_CONFIGS[provider];
+    const model = modelOverride || config.defaultModel;
 
-  let endpoint = config.endpoint;
-  if (provider === 'openai') {
-    const resolvedBaseUrl = normalizeBaseUrl(baseUrl) ?? DEFAULT_OPENAI_BASE_URL;
-    endpoint = `${resolvedBaseUrl}${config.endpoint}`;
-  } else if (provider === 'google') {
-    endpoint = `${config.endpoint}/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
-  }
-
-  const headers = config.buildHeaders(apiKey);
-
-  try {
-    const response = await fetchFn(endpoint, {
-      method: 'POST',
-      headers,
-      body: config.buildBody(prompt, model),
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: aiProviderError(
-          mapErrorToCode(response.status),
-          'byok',
-          `API request failed with status ${response.status}`,
-          { provider, status: response.status }
-        ),
-      };
+    let endpoint = config.endpoint;
+    if (provider === "openai") {
+      const resolvedBaseUrl =
+        normalizeBaseUrl(baseUrl) ?? DEFAULT_OPENAI_BASE_URL;
+      endpoint = `${resolvedBaseUrl}${config.endpoint}`;
+    } else if (provider === "google") {
+      endpoint = `${config.endpoint}/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
     }
 
-    const data = await response.json();
+    const headers = config.buildHeaders(apiKey);
+
+    const response = yield* _(
+      Effect.tryPromise({
+        try: () =>
+          fetchFn(endpoint, {
+            method: "POST",
+            headers,
+            body: config.buildBody(prompt, model),
+          }),
+        catch: (e) =>
+          aiProviderError(
+            "AI_PROVIDER_NETWORK_ERROR",
+            "byok",
+            "Network error during API call",
+            { provider, cause: e },
+          ),
+      }),
+    );
+
+    if (!response.ok) {
+      return yield* _(
+        Effect.fail(
+          aiProviderError(
+            mapErrorToCode(response.status),
+            "byok",
+            `API request failed with status ${response.status}`,
+            { provider, status: response.status },
+          ),
+        ),
+      );
+    }
+
+    const data = yield* _(
+      Effect.tryPromise({
+        try: () => response.json(),
+        catch: (e) =>
+          aiProviderError(
+            "AI_PROVIDER_INVALID_RESPONSE",
+            "byok",
+            "Failed to parse API response",
+            { provider, cause: e },
+          ),
+      }),
+    );
+
     const text = config.parseResponse(data);
 
     if (!text) {
-      return {
-        success: false,
-        error: aiProviderError(
-          'AI_PROVIDER_INVALID_RESPONSE',
-          'byok',
-          'Empty response from API',
-          { provider }
+      return yield* _(
+        Effect.fail(
+          aiProviderError(
+            "AI_PROVIDER_INVALID_RESPONSE",
+            "byok",
+            "Empty response from API",
+            { provider },
+          ),
         ),
-      };
+      );
     }
 
-    return { success: true, data: text };
-  } catch (error) {
-    const isNetworkError =
-      error instanceof TypeError && error.message.includes('fetch');
-    return {
-      success: false,
-      error: aiProviderError(
-        isNetworkError ? 'AI_PROVIDER_NETWORK_ERROR' : 'AI_PROVIDER_INTERNAL_ERROR',
-        'byok',
-        error instanceof Error ? error.message : 'API call failed',
-        { provider, cause: error }
-      ),
-    };
-  }
+    return text;
+  });
 }
 
 /**
@@ -218,74 +233,75 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
   const fetchFn = config.fetch ?? fetch;
 
   return {
-    name: 'byok',
+    name: "byok",
 
     async isAvailable(): Promise<boolean> {
       return checkIsReady();
     },
 
-    async generate(input: MetadataInput): Promise<Result<MetadataOutput>> {
-      // Check availability
-      if (!checkIsReady()) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'byok',
-            'BYOK is not configured or disabled'
+    generate(
+      input: MetadataInput,
+    ): Effect.Effect<MetadataOutput, AIProviderError> {
+      return Effect.gen(function* (_) {
+        // Check availability
+        if (!checkIsReady()) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "byok",
+                "BYOK is not configured or disabled",
+              ),
+            ),
+          );
+        }
+
+        const apiKey = getKey();
+        const provider = getProviderType();
+        const baseUrl = getBaseUrlValue();
+        const model = getModelValue();
+
+        if (!apiKey || !provider) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "byok",
+                "API key or provider not configured",
+              ),
+            ),
+          );
+        }
+
+        // Generate summary
+        const summaryText = yield* _(
+          callAPIEffect(
+            provider,
+            buildSummaryPrompt(input),
+            apiKey,
+            baseUrl,
+            model,
+            fetchFn,
           ),
-        };
-      }
+        );
 
-      const apiKey = getKey();
-      const provider = getProviderType();
-      const baseUrl = getBaseUrlValue();
-      const model = getModelValue();
-
-      if (!apiKey || !provider) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'byok',
-            'API key or provider not configured'
+        // Generate tags
+        const tagsText = yield* _(
+          callAPIEffect(
+            provider,
+            buildTagsPrompt(input),
+            apiKey,
+            baseUrl,
+            model,
+            fetchFn,
           ),
+        );
+
+        return {
+          summary: summaryText,
+          tags: parseTagsResponse(tagsText),
         };
-      }
-
-      // Generate summary
-      const summaryResult = await callAPI(
-        provider,
-        buildSummaryPrompt(input),
-        apiKey,
-        baseUrl,
-        model,
-        fetchFn
-      );
-      if (isFailure(summaryResult)) {
-        return { success: false, error: summaryResult.error };
-      }
-
-      // Generate tags
-      const tagsResult = await callAPI(
-        provider,
-        buildTagsPrompt(input),
-        apiKey,
-        baseUrl,
-        model,
-        fetchFn
-      );
-      if (isFailure(tagsResult)) {
-        return { success: false, error: tagsResult.error };
-      }
-
-      return {
-        success: true,
-        data: {
-          summary: summaryResult.data,
-          tags: parseTagsResponse(tagsResult.data),
-        },
-      };
+      });
     },
   };
 }

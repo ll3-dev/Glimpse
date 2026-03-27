@@ -5,8 +5,13 @@
  * Requires a downloaded model and enabled configuration.
  */
 
-import type { Result } from '@/src/lib/effect-result';
-import type { MetadataProvider, MetadataInput, MetadataOutput } from '../metadata/types';
+import { Effect } from "effect";
+import type {
+  MetadataProvider,
+  MetadataInput,
+  MetadataOutput,
+  AIProviderError,
+} from "../metadata/types";
 import { aiProviderError } from '../metadata/types';
 import {
   buildSummaryPrompt,
@@ -49,85 +54,99 @@ export function createLocalLLMProvider(config: LocalLLMProviderConfig = {}): Met
   const runtime = createLocalLLMRuntime(config.llamaService);
 
   return {
-    name: 'local',
+    name: "local",
 
     async isAvailable(): Promise<boolean> {
       return checkIsReady();
     },
 
-    async generate(input: MetadataInput): Promise<Result<MetadataOutput>> {
-      // Check availability
-      if (!checkIsReady()) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'local',
-            'Local LLM is not available or no model is selected'
-          ),
-        };
-      }
+    generate(
+      input: MetadataInput,
+    ): Effect.Effect<MetadataOutput, AIProviderError> {
+      return Effect.gen(function* (_) {
+        // Check availability
+        if (!checkIsReady()) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "local",
+                "Local LLM is not available or no model is selected",
+              ),
+            ),
+          );
+        }
 
-      const model = getSelected();
-      if (!model) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'local',
-            'No model selected'
-          ),
-        };
-      }
+        const model = getSelected();
+        if (!model) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "local",
+                "No model selected",
+              ),
+            ),
+          );
+        }
 
-      // Check model path
-      if (!model.path) {
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_UNAVAILABLE',
-            'local',
-            'Selected model has no path configured',
-            { modelId: model.id }
-          ),
-        };
-      }
+        // Check model path
+        if (!model.path) {
+          return yield* _(
+            Effect.fail(
+              aiProviderError(
+                "AI_PROVIDER_UNAVAILABLE",
+                "local",
+                "Selected model has no path configured",
+                { modelId: model.id },
+              ),
+            ),
+          );
+        }
 
-      try {
         // Generate summary
-        const summaryPrompt = runtime.buildMetadataPrompt(model, 'summary', input);
-        const summaryResult = await runtime.generate(model, summaryPrompt, {
-          maxTokens: 128,
-        });
+        const summaryPrompt = runtime.buildMetadataPrompt(
+          model,
+          "summary",
+          input,
+        );
+        const summaryResult = yield* _(
+          Effect.tryPromise({
+            try: () =>
+              runtime.generate(model, summaryPrompt, { maxTokens: 128 }),
+            catch: (e) =>
+              aiProviderError(
+                "AI_PROVIDER_INTERNAL_ERROR",
+                "local",
+                "Summary generation failed",
+                { modelId: model.id, cause: e },
+              ),
+          }),
+        );
 
         // Generate tags
-        const tagsPrompt = runtime.buildMetadataPrompt(model, 'tags', input);
-        const tagsResult = await runtime.generate(model, tagsPrompt, {
-          maxTokens: 64,
-        });
+        const tagsPrompt = runtime.buildMetadataPrompt(model, "tags", input);
+        const tagsResult = yield* _(
+          Effect.tryPromise({
+            try: () => runtime.generate(model, tagsPrompt, { maxTokens: 64 }),
+            catch: (e) =>
+              aiProviderError(
+                "AI_PROVIDER_INTERNAL_ERROR",
+                "local",
+                "Tags generation failed",
+                { modelId: model.id, cause: e },
+              ),
+          }),
+        );
 
         // Parse tags from response
         const tags = parseTagsResponse(tagsResult.text);
 
         return {
-          success: true,
-          data: {
-            summary: summaryResult.text.trim(),
-            tags,
-          },
+          summary: summaryResult.text.trim(),
+          tags,
         };
-      } catch (error) {
-        // Map to provider error
-        return {
-          success: false,
-          error: aiProviderError(
-            'AI_PROVIDER_INTERNAL_ERROR',
-            'local',
-            error instanceof Error ? error.message : 'Local LLM generation failed',
-            { modelId: model.id, cause: error }
-          ),
-        };
-      }
+      });
     },
   };
 }
