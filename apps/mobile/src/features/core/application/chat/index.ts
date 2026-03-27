@@ -19,11 +19,34 @@ export interface AppError {
   message: string;
 }
 
+export interface AppFailureResult {
+  success: false;
+  error: AppError;
+}
+
+export type AppSuccessResult<T extends object = object> = {
+  success: true;
+} & T;
+
+export type AppResult<T extends object = object> =
+  | AppSuccessResult<T>
+  | AppFailureResult;
+
 function toAppError(error: unknown): AppError {
   return {
     code: 'CHAT_ERROR',
     message: error instanceof Error ? error.message : String(error),
   };
+}
+
+async function runChatAction<T extends object>(
+  action: () => Promise<T>
+): Promise<AppResult<T>> {
+  try {
+    return { success: true, ...(await action()) };
+  } catch (error) {
+    return { success: false, error: toAppError(error) };
+  }
 }
 
 export interface CreateConversationInput {
@@ -39,19 +62,11 @@ export interface CreateConversationDeps {
   generateId: () => string;
 }
 
-export interface CreateConversationSuccessResult {
-  success: true;
+export type CreateConversationSuccessResult = AppSuccessResult<{
   conversation: Conversation;
-}
-
-export interface CreateConversationFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type CreateConversationResult =
-  | CreateConversationSuccessResult
-  | CreateConversationFailureResult;
+}>;
+export type CreateConversationFailureResult = AppFailureResult;
+export type CreateConversationResult = AppResult<{ conversation: Conversation }>;
 
 export interface AddMessageInput {
   conversationId: string;
@@ -66,17 +81,9 @@ export interface AddMessageDeps {
   generateId: () => string;
 }
 
-export interface AddMessageSuccessResult {
-  success: true;
-  message: Message;
-}
-
-export interface AddMessageFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type AddMessageResult = AddMessageSuccessResult | AddMessageFailureResult;
+export type AddMessageSuccessResult = AppSuccessResult<{ message: Message }>;
+export type AddMessageFailureResult = AppFailureResult;
+export type AddMessageResult = AppResult<{ message: Message }>;
 
 export interface GetAllConversationsDeps {
   coreClient: {
@@ -84,19 +91,11 @@ export interface GetAllConversationsDeps {
   };
 }
 
-export interface GetConversationsSuccessResult {
-  success: true;
+export type GetConversationsSuccessResult = AppSuccessResult<{
   conversations: Conversation[];
-}
-
-export interface GetConversationsFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type GetConversationsResult =
-  | GetConversationsSuccessResult
-  | GetConversationsFailureResult;
+}>;
+export type GetConversationsFailureResult = AppFailureResult;
+export type GetConversationsResult = AppResult<{ conversations: Conversation[] }>;
 
 export interface GetConversationMessagesDeps {
   coreClient: {
@@ -104,17 +103,9 @@ export interface GetConversationMessagesDeps {
   };
 }
 
-export interface GetMessagesSuccessResult {
-  success: true;
-  messages: Message[];
-}
-
-export interface GetMessagesFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type GetMessagesResult = GetMessagesSuccessResult | GetMessagesFailureResult;
+export type GetMessagesSuccessResult = AppSuccessResult<{ messages: Message[] }>;
+export type GetMessagesFailureResult = AppFailureResult;
+export type GetMessagesResult = AppResult<{ messages: Message[] }>;
 
 export interface UpdateConversationTitleInput {
   conversationId: string;
@@ -130,17 +121,9 @@ export interface UpdateConversationTitleDeps {
   };
 }
 
-export interface UpdateTitleSuccessResult {
-  success: true;
-  conversation: Conversation;
-}
-
-export interface UpdateTitleFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type UpdateTitleResult = UpdateTitleSuccessResult | UpdateTitleFailureResult;
+export type UpdateTitleSuccessResult = AppSuccessResult<{ conversation: Conversation }>;
+export type UpdateTitleFailureResult = AppFailureResult;
+export type UpdateTitleResult = AppResult<{ conversation: Conversation }>;
 
 export interface UpdateConversationDetailsInput {
   conversationId: string;
@@ -158,19 +141,13 @@ export interface UpdateConversationDetailsDeps {
   };
 }
 
-export interface UpdateConversationDetailsSuccessResult {
-  success: true;
+export type UpdateConversationDetailsSuccessResult = AppSuccessResult<{
   conversation: Conversation;
-}
-
-export interface UpdateConversationDetailsFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type UpdateConversationDetailsResult =
-  | UpdateConversationDetailsSuccessResult
-  | UpdateConversationDetailsFailureResult;
+}>;
+export type UpdateConversationDetailsFailureResult = AppFailureResult;
+export type UpdateConversationDetailsResult = AppResult<{
+  conversation: Conversation;
+}>;
 
 export interface DeleteConversationInput {
   conversationId: string;
@@ -182,18 +159,9 @@ export interface DeleteConversationDeps {
   };
 }
 
-export interface DeleteConversationSuccessResult {
-  success: true;
-}
-
-export interface DeleteConversationFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type DeleteConversationResult =
-  | DeleteConversationSuccessResult
-  | DeleteConversationFailureResult;
+export type DeleteConversationSuccessResult = AppSuccessResult;
+export type DeleteConversationFailureResult = AppFailureResult;
+export type DeleteConversationResult = AppResult;
 
 export interface UpdateMessageInput {
   messageId: string;
@@ -206,17 +174,9 @@ export interface UpdateMessageDeps {
   };
 }
 
-export interface UpdateMessageSuccessResult {
-  success: true;
-  message: Message;
-}
-
-export interface UpdateMessageFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type UpdateMessageResult = UpdateMessageSuccessResult | UpdateMessageFailureResult;
+export type UpdateMessageSuccessResult = AppSuccessResult<{ message: Message }>;
+export type UpdateMessageFailureResult = AppFailureResult;
+export type UpdateMessageResult = AppResult<{ message: Message }>;
 
 export interface DeleteMessageInput {
   messageId: string;
@@ -228,24 +188,17 @@ export interface DeleteMessageDeps {
   };
 }
 
-export interface DeleteMessageSuccessResult {
-  success: true;
-}
-
-export interface DeleteMessageFailureResult {
-  success: false;
-  error: AppError;
-}
-
-export type DeleteMessageResult = DeleteMessageSuccessResult | DeleteMessageFailureResult;
+export type DeleteMessageSuccessResult = AppSuccessResult;
+export type DeleteMessageFailureResult = AppFailureResult;
+export type DeleteMessageResult = AppResult;
 
 // ============================================================================
 // Factory Functions
 // ============================================================================
 
 export function createCreateConversation(deps: CreateConversationDeps) {
-  return async (input: CreateConversationInput): Promise<CreateConversationResult> => {
-    try {
+  return async (input: CreateConversationInput): Promise<CreateConversationResult> =>
+    runChatAction(async () => {
       const now = Date.now();
       const conversation: Conversation = {
         id: deps.generateId(),
@@ -257,17 +210,15 @@ export function createCreateConversation(deps: CreateConversationDeps) {
         deletedAt: null,
       };
 
-      const saved = await deps.coreClient.createConversation(conversation);
-      return { success: true, conversation: saved };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      return {
+        conversation: await deps.coreClient.createConversation(conversation),
+      };
+    });
 }
 
 export function createAddMessage(deps: AddMessageDeps) {
-  return async (input: AddMessageInput): Promise<AddMessageResult> => {
-    try {
+  return async (input: AddMessageInput): Promise<AddMessageResult> =>
+    runChatAction(async () => {
       const now = Date.now();
       const message: Message = {
         id: deps.generateId(),
@@ -279,98 +230,72 @@ export function createAddMessage(deps: AddMessageDeps) {
         deletedAt: null,
       };
 
-      const saved = await deps.coreClient.addMessage(message);
-      return { success: true, message: saved };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      return {
+        message: await deps.coreClient.addMessage(message),
+      };
+    });
 }
 
 export function createGetAllConversations(deps: GetAllConversationsDeps) {
-  return async (): Promise<GetConversationsResult> => {
-    try {
-      const conversations = await deps.coreClient.listConversations();
-      return { success: true, conversations };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+  return async (): Promise<GetConversationsResult> =>
+    runChatAction(async () => ({
+      conversations: await deps.coreClient.listConversations(),
+    }));
 }
 
 export function createGetConversationMessages(deps: GetConversationMessagesDeps) {
-  return async (conversationId: string): Promise<GetMessagesResult> => {
-    try {
-      const messages = await deps.coreClient.listConversationMessages(conversationId);
-      return { success: true, messages };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+  return async (conversationId: string): Promise<GetMessagesResult> =>
+    runChatAction(async () => ({
+      messages: await deps.coreClient.listConversationMessages(conversationId),
+    }));
 }
 
 export function createUpdateConversationTitle(deps: UpdateConversationTitleDeps) {
-  return async (input: UpdateConversationTitleInput): Promise<UpdateTitleResult> => {
-    try {
-      const conversation = await deps.coreClient.updateConversation(input.conversationId, {
+  return async (input: UpdateConversationTitleInput): Promise<UpdateTitleResult> =>
+    runChatAction(async () => ({
+      conversation: await deps.coreClient.updateConversation(input.conversationId, {
         title: input.title,
         updatedAt: Date.now(),
-      });
-      return { success: true, conversation };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      }),
+    }));
 }
 
 export function createUpdateConversationDetails(deps: UpdateConversationDetailsDeps) {
-  return async (input: UpdateConversationDetailsInput): Promise<UpdateConversationDetailsResult> => {
-    try {
-      const conversation = await deps.coreClient.updateConversation(input.conversationId, {
+  return async (
+    input: UpdateConversationDetailsInput
+  ): Promise<UpdateConversationDetailsResult> =>
+    runChatAction(async () => ({
+      conversation: await deps.coreClient.updateConversation(input.conversationId, {
         title: input.title,
         icon: input.icon,
         contextItemId: input.contextItemId,
         updatedAt: Date.now(),
-      });
-      return { success: true, conversation };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      }),
+    }));
 }
 
 export function createDeleteConversation(deps: DeleteConversationDeps) {
-  return async (input: DeleteConversationInput): Promise<DeleteConversationResult> => {
-    try {
+  return async (input: DeleteConversationInput): Promise<DeleteConversationResult> =>
+    runChatAction(async () => {
       await deps.coreClient.deleteConversation(input.conversationId, Date.now());
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      return {};
+    });
 }
 
 export function createUpdateMessage(deps: UpdateMessageDeps) {
-  return async (input: UpdateMessageInput): Promise<UpdateMessageResult> => {
-    try {
-      const message = await deps.coreClient.updateMessage(input.messageId, {
+  return async (input: UpdateMessageInput): Promise<UpdateMessageResult> =>
+    runChatAction(async () => ({
+      message: await deps.coreClient.updateMessage(input.messageId, {
         content: input.content,
         updatedAt: Date.now(),
-      });
-      return { success: true, message };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      }),
+    }));
 }
 
 export function createDeleteMessage(deps: DeleteMessageDeps) {
-  return async (input: DeleteMessageInput): Promise<DeleteMessageResult> => {
-    try {
+  return async (input: DeleteMessageInput): Promise<DeleteMessageResult> =>
+    runChatAction(async () => {
       await deps.coreClient.deleteMessage(input.messageId, Date.now());
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: toAppError(error) };
-    }
-  };
+      return {};
+    });
 }

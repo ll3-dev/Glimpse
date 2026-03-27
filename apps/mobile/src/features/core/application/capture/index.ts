@@ -66,6 +66,10 @@ export interface GenerateMetadata {
 
 export type GenerateMetadataFn = (input: KnowledgeItemInput) => Promise<GenerateMetadata>;
 
+function assertNever(value: never): never {
+  throw new Error(`Unknown input type: ${JSON.stringify((value as KnowledgeItemInput).type)}`);
+}
+
 function mapToMetadataInput(input: KnowledgeItemInput): MetadataInput {
   switch (input.type) {
     case 'note':
@@ -78,10 +82,38 @@ function mapToMetadataInput(input: KnowledgeItemInput): MetadataInput {
       return { content: input.body ?? '', title: input.title, type: 'screenshot' };
     case 'share':
       return { content: input.body ?? input.url ?? '', title: input.title, type: 'share' };
-    default: {
-      const _exhaustiveCheck: never = input;
-      throw new Error(`Unknown input type: ${JSON.stringify((input as KnowledgeItemInput).type)}`);
-    }
+    default:
+      return assertNever(input);
+  }
+}
+
+function resolveBodyValue(input: KnowledgeItemInput): string | null {
+  switch (input.type) {
+    case 'note':
+    case 'link':
+    case 'share':
+      return input.body;
+    case 'highlight':
+      return input.text ?? input.body;
+    case 'screenshot':
+      return input.body ?? null;
+    default:
+      return assertNever(input);
+  }
+}
+
+function resolveUrlValue(input: KnowledgeItemInput): string | null {
+  switch (input.type) {
+    case 'link':
+    case 'share':
+      return input.url ?? null;
+    case 'highlight':
+      return input.sourceUrl ?? null;
+    case 'note':
+    case 'screenshot':
+      return null;
+    default:
+      return assertNever(input);
   }
 }
 
@@ -204,38 +236,8 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
       const metadata = await deps.generateMetadata(metadataInput);
       const now = Date.now();
       const reviewSchedule = deps.initializeReviewSchedule(now);
-
-      // Get body from appropriate field based on type
-      let bodyValue: string | null;
-      switch (input.type) {
-        case 'note':
-        case 'link':
-        case 'share':
-          bodyValue = input.body;
-          break;
-        case 'highlight':
-          bodyValue = input.text ?? input.body;
-          break;
-        case 'screenshot':
-          bodyValue = input.body ?? null;
-          break;
-        default:
-          bodyValue = null;
-      }
-
-      // Get URL from appropriate field based on type
-      let urlValue: string | null;
-      switch (input.type) {
-        case 'link':
-        case 'share':
-          urlValue = input.url ?? null;
-          break;
-        case 'highlight':
-          urlValue = input.sourceUrl ?? null;
-          break;
-        default:
-          urlValue = null;
-      }
+      const bodyValue = resolveBodyValue(input);
+      const urlValue = resolveUrlValue(input);
 
       let retries = 0;
       while (retries < deps.maxIdCollisionRetries) {
@@ -280,15 +282,15 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
       return {
         success: false,
         error: {
-          code: "MAX_RETRIES_EXCEEDED",
-          message: "Max ID collision retries exceeded",
+          code: 'MAX_RETRIES_EXCEEDED',
+          message: 'Max ID collision retries exceeded',
         },
       };
     } catch (error) {
       deps.logger.error('Failed to save knowledge item', { error, input });
       return {
         success: false,
-        error: { code: "UNKNOWN_ERROR", message: String(error) },
+        error: { code: 'UNKNOWN_ERROR', message: String(error) },
       };
     }
   };
