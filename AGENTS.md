@@ -20,6 +20,7 @@
 - Use Bun stable release.
 - Prefer small, focused changes over broad refactors.
 - Before changing architecture or dependencies, check existing patterns in the codebase first.
+- For typed Nitro <-> Rust bridge work, read [`apps/mobile/docs/typed-bridge-development.md`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/docs/typed-bridge-development.md) before changing the FFI surface.
 
 ## Testing instructions
 
