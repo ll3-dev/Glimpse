@@ -34,12 +34,14 @@ export interface MobileCoreClient {
   // Knowledge Items
   saveKnowledgeItem(item: KnowledgeItem): Promise<KnowledgeItem>;
   listKnowledgeItems(): Promise<KnowledgeItem[]>;
+  getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null>;
+  updateKnowledgeItem(itemId: string, patch: Partial<Omit<KnowledgeItem, 'id' | 'createdAt'>>): Promise<KnowledgeItem>;
+
+  // App-level knowledge queries built on top of the shared core bridge
   listKnowledgeItemsByIds(itemIds: string[]): Promise<KnowledgeItem[]>;
   listWeeklyKnowledgeItems(since: number): Promise<KnowledgeItem[]>;
   listPendingKnowledgeItemsForLabeling(limit: number): Promise<KnowledgeItem[]>;
-  getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null>;
   getDueKnowledgeItems(input: GetDueKnowledgeItemsInput): Promise<KnowledgeItem[]>;
-  updateKnowledgeItem(itemId: string, patch: Partial<Omit<KnowledgeItem, 'id' | 'createdAt'>>): Promise<KnowledgeItem>;
 
   // Conversations
   createConversation(conversation: Conversation): Promise<Conversation>;
@@ -67,3 +69,11 @@ export interface MobileCoreClient {
   listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]>;
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
 }
+
+export type BridgeCoreClient = Omit<
+  MobileCoreClient,
+  | 'listKnowledgeItemsByIds'
+  | 'listWeeklyKnowledgeItems'
+  | 'listPendingKnowledgeItemsForLabeling'
+  | 'getDueKnowledgeItems'
+>;

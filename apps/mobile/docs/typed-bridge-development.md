@@ -6,6 +6,12 @@ This document describes how to add or change Rust-backed APIs in the typed Nitro
 
 The bridge is split into these layers:
 
+Platform rule of thumb:
+
+- shared domain/use-case logic belongs in `packages/core-rust`
+- React Native Nitro and Tauri commands should stay thin transport adapters
+- app-specific filtering or view-model shaping should stay in platform application/query layers
+
 1. TypeScript Nitro spec
    [`apps/mobile/generate/CoreClient.nitro.ts`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/generate/CoreClient.nitro.ts)
 2. Generated Nitro C++ structs/spec
@@ -26,6 +32,12 @@ The bridge is split into these layers:
 The data flow is:
 
 `TS interface -> Nitrogen generated C++ types -> handwritten C++ adapter -> Rust #[repr(C)] FFI -> Rust domain`
+
+For shared desktop/mobile work, prefer:
+
+`Platform adapter -> shared Rust application entrypoint -> storage/domain`
+
+before adding any new platform-specific transport surface.
 
 ## When You Change Rust
 

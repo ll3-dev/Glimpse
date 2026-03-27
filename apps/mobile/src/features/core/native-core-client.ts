@@ -1,8 +1,8 @@
 // apps/mobile/src/features/core/native-core-client.ts
 // Web fallback - native CoreClient is not available on web
-import type { MobileCoreClient } from './types';
+import type { BridgeCoreClient } from './types';
 
-function createStubCoreClient(): MobileCoreClient {
+function createStubCoreClient(): BridgeCoreClient {
   throw new Error('Native CoreClient is not available on web platform');
 }
 

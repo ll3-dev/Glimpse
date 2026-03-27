@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GlimpseCoreFfi.hpp"
+#include "HybridCoreClientFfiUtils.hpp"
 #include "../nitrogen/generated/shared/c++/HybridCoreClientSpec.hpp"
 
 #include <memory>
@@ -44,17 +45,8 @@ class HybridCoreClient final : public HybridCoreClientSpec {
     std::lock_guard<std::mutex> lock(mutex_);
     const auto handle = requireHandleLocked();
 
-    std::vector<const char*> left;
-    left.reserve(leftTags.size());
-    for (const auto& tag : leftTags) {
-      left.push_back(tag.c_str());
-    }
-
-    std::vector<const char*> right;
-    right.reserve(rightTags.size());
-    for (const auto& tag : rightTags) {
-      right.push_back(tag.c_str());
-    }
+    const auto left = ffi_utils::toConstCharVector(leftTags);
+    const auto right = ffi_utils::toConstCharVector(rightTags);
 
     return static_cast<double>(core_client_calculate_tag_overlap(
         handle,
@@ -125,12 +117,9 @@ class HybridCoreClient final : public HybridCoreClientSpec {
       ffi_bridge::OwnedArray<FfiKnowledgeItemArray, FfiKnowledgeItem, ffi_knowledge_item_array_free> output;
       ffi_bridge::throwIfError(core_client_list_knowledge_items_typed(handle, &output.value), "listKnowledgeItems");
 
-      std::vector<KnowledgeItem> items;
-      items.reserve(static_cast<size_t>(output.value.len));
-      for (int index = 0; index < output.value.len; index += 1) {
-        items.push_back(ffi_bridge::fromFfiKnowledgeItem(output.value.data[index]));
-      }
-      return items;
+      return ffi_utils::convertFfiArray<KnowledgeItem>(
+          output.value,
+          ffi_bridge::fromFfiKnowledgeItem);
     });
   }
 
@@ -187,12 +176,9 @@ class HybridCoreClient final : public HybridCoreClientSpec {
       ffi_bridge::OwnedArray<FfiConversationArray, FfiConversation, ffi_conversation_array_free> output;
       ffi_bridge::throwIfError(core_client_list_conversations_typed(handle, &output.value), "listConversations");
 
-      std::vector<Conversation> items;
-      items.reserve(static_cast<size_t>(output.value.len));
-      for (int index = 0; index < output.value.len; index += 1) {
-        items.push_back(ffi_bridge::fromFfiConversation(output.value.data[index]));
-      }
-      return items;
+      return ffi_utils::convertFfiArray<Conversation>(
+          output.value,
+          ffi_bridge::fromFfiConversation);
     });
   }
 
@@ -232,12 +218,9 @@ class HybridCoreClient final : public HybridCoreClientSpec {
           core_client_list_conversation_messages_typed(handle, conversationId.c_str(), &output.value),
           "listConversationMessages");
 
-      std::vector<Message> items;
-      items.reserve(static_cast<size_t>(output.value.len));
-      for (int index = 0; index < output.value.len; index += 1) {
-        items.push_back(ffi_bridge::fromFfiMessage(output.value.data[index]));
-      }
-      return items;
+      return ffi_utils::convertFfiArray<Message>(
+          output.value,
+          ffi_bridge::fromFfiMessage);
     });
   }
 
@@ -284,19 +267,7 @@ class HybridCoreClient final : public HybridCoreClientSpec {
       std::lock_guard<std::mutex> lock(mutex_);
       const auto handle = requireHandleLocked();
 
-      std::vector<FfiRecommendation> items;
-      items.reserve(recommendations.size());
-      for (const auto& recommendation : recommendations) {
-        items.push_back(FfiRecommendation{
-            const_cast<char*>(recommendation.id.c_str()),
-            const_cast<char*>(recommendation.itemAId.c_str()),
-            const_cast<char*>(recommendation.itemBId.c_str()),
-            ffi_bridge::toFfiNullableString(recommendation.reason),
-            const_cast<char*>(recommendation.status.c_str()),
-            static_cast<int64_t>(recommendation.createdAt),
-            ffi_bridge::toFfiOptionalI64(recommendation.respondedAt),
-        });
-      }
+      const auto items = ffi_utils::toFfiRecommendations(recommendations);
 
       ffi_bridge::throwIfError(
           core_client_save_recommendations_typed(
@@ -314,12 +285,9 @@ class HybridCoreClient final : public HybridCoreClientSpec {
       ffi_bridge::OwnedArray<FfiRecommendationArray, FfiRecommendation, ffi_recommendation_array_free> output;
       ffi_bridge::throwIfError(core_client_list_recommendations_typed(handle, &output.value), "listRecommendations");
 
-      std::vector<Recommendation> items;
-      items.reserve(static_cast<size_t>(output.value.len));
-      for (int index = 0; index < output.value.len; index += 1) {
-        items.push_back(ffi_bridge::fromFfiRecommendation(output.value.data[index]));
-      }
-      return items;
+      return ffi_utils::convertFfiArray<Recommendation>(
+          output.value,
+          ffi_bridge::fromFfiRecommendation);
     });
   }
 
@@ -332,12 +300,9 @@ class HybridCoreClient final : public HybridCoreClientSpec {
           core_client_list_pending_recommendations_typed(handle, &output.value),
           "listPendingRecommendations");
 
-      std::vector<Recommendation> items;
-      items.reserve(static_cast<size_t>(output.value.len));
-      for (int index = 0; index < output.value.len; index += 1) {
-        items.push_back(ffi_bridge::fromFfiRecommendation(output.value.data[index]));
-      }
-      return items;
+      return ffi_utils::convertFfiArray<Recommendation>(
+          output.value,
+          ffi_bridge::fromFfiRecommendation);
     });
   }
 
@@ -349,12 +314,7 @@ class HybridCoreClient final : public HybridCoreClientSpec {
     return Promise<void>::async([this, recommendationId, status, feedbackEvent]() {
       std::lock_guard<std::mutex> lock(mutex_);
       const auto handle = requireHandleLocked();
-      const FfiFeedbackEvent event{
-          const_cast<char*>(feedbackEvent.id.c_str()),
-          const_cast<char*>(feedbackEvent.recommendationId.c_str()),
-          const_cast<char*>(feedbackEvent.action.c_str()),
-          static_cast<int64_t>(feedbackEvent.createdAt),
-      };
+      const auto event = ffi_utils::toFfiFeedbackEvent(feedbackEvent);
       ffi_bridge::throwIfError(
           core_client_respond_to_recommendation_typed(handle, recommendationId.c_str(), status.c_str(), &event),
           "respondToRecommendation");
@@ -370,12 +330,9 @@ class HybridCoreClient final : public HybridCoreClientSpec {
           core_client_list_recent_feedback_events_typed(handle, static_cast<int>(limit), &output.value),
           "listRecentFeedbackEvents");
 
-      std::vector<FeedbackEvent> items;
-      items.reserve(static_cast<size_t>(output.value.len));
-      for (int index = 0; index < output.value.len; index += 1) {
-        items.push_back(ffi_bridge::fromFfiFeedbackEvent(output.value.data[index]));
-      }
-      return items;
+      return ffi_utils::convertFfiArray<FeedbackEvent>(
+          output.value,
+          ffi_bridge::fromFfiFeedbackEvent);
     });
   }
 
@@ -383,12 +340,7 @@ class HybridCoreClient final : public HybridCoreClientSpec {
     return Promise<FeedbackEvent>::async([this, event]() -> FeedbackEvent {
       std::lock_guard<std::mutex> lock(mutex_);
       const auto handle = requireHandleLocked();
-      const FfiFeedbackEvent input{
-          const_cast<char*>(event.id.c_str()),
-          const_cast<char*>(event.recommendationId.c_str()),
-          const_cast<char*>(event.action.c_str()),
-          static_cast<int64_t>(event.createdAt),
-      };
+      const auto input = ffi_utils::toFfiFeedbackEvent(event);
       ffi_bridge::OwnedValue<FfiFeedbackEvent, ffi_feedback_event_free> output;
       ffi_bridge::throwIfError(
           core_client_log_recommendation_feedback_typed(handle, &input, &output.value),

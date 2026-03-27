@@ -12,11 +12,7 @@ const bridge = {
   })),
   saveKnowledgeItem: mock((_item: unknown) => ({})),
   listKnowledgeItems: mock(() => []),
-  listKnowledgeItemsByIds: mock((_itemIds: string[]) => []),
-  listWeeklyKnowledgeItems: mock((_since: number) => []),
-  listPendingKnowledgeItemsForLabeling: mock((_limit: number) => []),
   getKnowledgeItemById: mock((_itemId: string) => null),
-  getDueKnowledgeItems: mock((_now: number, _limit: number | null) => []),
   updateKnowledgeItem: mock((_itemId: string, _patch: unknown) => ({})),
   createConversation: mock((_conversation: unknown) => ({})),
   listConversations: mock(() => []),
@@ -132,11 +128,11 @@ describe('mobileCoreClient typed bridge contract', () => {
       },
     ] satisfies KnowledgeItem[];
 
-    bridge.getDueKnowledgeItems.mockReturnValueOnce(items);
+    bridge.listKnowledgeItems.mockReturnValueOnce(items);
 
     const result = await mobileCoreClient.getDueKnowledgeItems({ now: 10, limit: 3 });
 
-    expect(bridge.getDueKnowledgeItems).toHaveBeenCalledWith({ now: 10, limit: 3 });
+    expect(bridge.listKnowledgeItems).toHaveBeenCalled();
     expect(result).toEqual(items);
   });
 });
