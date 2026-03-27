@@ -8,23 +8,34 @@ export type {
   AppleIntelligenceToggleDeps,
 } from './appleIntelligence.types';
 
-const defaultDeps: AppleIntelligenceToggleDeps = {
-  platform: resolveDefaultPlatform(),
-};
+function getDefaultDeps(): AppleIntelligenceToggleDeps {
+  return {
+    platform: resolveDefaultPlatform(),
+  };
+}
 
-export function createAppleIntelligenceToggle(deps: AppleIntelligenceToggleDeps = defaultDeps) {
+export function createAppleIntelligenceToggle(
+  deps: AppleIntelligenceToggleDeps = getDefaultDeps()
+) {
   return createAppleIntelligenceToggleService(deps);
 }
 
-const appleIntelligenceToggle = createAppleIntelligenceToggle();
-
 export const checkAppleIntelligenceAvailability =
-  appleIntelligenceToggle.checkAppleIntelligenceAvailability;
+  (...args: Parameters<ReturnType<typeof createAppleIntelligenceToggle>['checkAppleIntelligenceAvailability']>) =>
+    createAppleIntelligenceToggle().checkAppleIntelligenceAvailability(...args);
 export const resolveAppleIntelligenceAvailability =
-  appleIntelligenceToggle.resolveAppleIntelligenceAvailability;
-export const getAppleIntelligenceConfig = appleIntelligenceToggle.getAppleIntelligenceConfig;
-export const useAppleIntelligenceConfig = appleIntelligenceToggle.useAppleIntelligenceConfig;
-export const isAppleIntelligenceEnabled = appleIntelligenceToggle.isAppleIntelligenceEnabled;
-export const enableAppleIntelligence = appleIntelligenceToggle.enableAppleIntelligence;
-export const disableAppleIntelligence = appleIntelligenceToggle.disableAppleIntelligence;
-export const setAppleIntelligenceEnabled = appleIntelligenceToggle.setAppleIntelligenceEnabled;
+  (...args: Parameters<ReturnType<typeof createAppleIntelligenceToggle>['resolveAppleIntelligenceAvailability']>) =>
+    createAppleIntelligenceToggle().resolveAppleIntelligenceAvailability(...args);
+export const getAppleIntelligenceConfig = () =>
+  createAppleIntelligenceToggle().getAppleIntelligenceConfig();
+export const useAppleIntelligenceConfig = () =>
+  createAppleIntelligenceToggle().useAppleIntelligenceConfig();
+export const isAppleIntelligenceEnabled = () =>
+  createAppleIntelligenceToggle().isAppleIntelligenceEnabled();
+export const enableAppleIntelligence = () =>
+  createAppleIntelligenceToggle().enableAppleIntelligence();
+export const disableAppleIntelligence = () =>
+  createAppleIntelligenceToggle().disableAppleIntelligence();
+export const setAppleIntelligenceEnabled = (
+  ...args: Parameters<ReturnType<typeof createAppleIntelligenceToggle>['setAppleIntelligenceEnabled']>
+) => createAppleIntelligenceToggle().setAppleIntelligenceEnabled(...args);

@@ -8,9 +8,11 @@ import {
 } from '@/src/features/core/application/chat';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: DeleteMessageDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'deleteMessage'>,
-};
+function getDefaultDeps(): DeleteMessageDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'deleteMessage'>,
+  };
+}
 export type {
   DeleteMessageDeps,
   DeleteMessageFailureResult,
@@ -19,4 +21,8 @@ export type {
   DeleteMessageSuccessResult,
 };
 export { createDeleteMessage };
-export const deleteMessage = createDeleteMessage(defaultDeps);
+export function deleteMessage(
+  input: Parameters<ReturnType<typeof createDeleteMessage>>[0]
+) {
+  return createDeleteMessage(getDefaultDeps())(input);
+}

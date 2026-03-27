@@ -5,6 +5,9 @@ export type ParsedChatMessageContent = {
   isReasoningInProgress: boolean;
 };
 
+const THINK_OPEN_TAG = '<think>';
+const THINK_CLOSE_TAG = '</think>';
+
 function summarizeReasoning(reasoning: string | null): string | null {
   if (!reasoning) {
     return null;
@@ -27,41 +30,35 @@ function summarizeReasoning(reasoning: string | null): string | null {
   return summary;
 }
 
+function createParsedContent(
+  reasoning: string | null,
+  answer: string,
+  isReasoningInProgress: boolean
+): ParsedChatMessageContent {
+  return {
+    reasoning,
+    reasoningSummary: summarizeReasoning(reasoning),
+    answer: answer.trim(),
+    isReasoningInProgress,
+  };
+}
+
 export function parseChatMessageContent(content: string): ParsedChatMessageContent {
   const normalized = content ?? '';
-  const thinkOpen = normalized.indexOf('<think>');
-  const thinkClose = normalized.indexOf('</think>');
+  const thinkOpen = normalized.indexOf(THINK_OPEN_TAG);
+  const thinkClose = normalized.indexOf(THINK_CLOSE_TAG);
 
   if (thinkOpen < 0) {
-    return {
-      reasoning: null,
-      reasoningSummary: null,
-      answer: normalized.trim(),
-      isReasoningInProgress: false,
-    };
+    return createParsedContent(null, normalized, false);
   }
 
   if (thinkClose < 0 || thinkClose < thinkOpen) {
-    const reasoning = normalized.slice(thinkOpen + '<think>'.length).trim() || null;
-    return {
-      reasoning,
-      reasoningSummary: summarizeReasoning(reasoning),
-      answer: normalized.slice(0, thinkOpen).trim(),
-      isReasoningInProgress: true,
-    };
+    const reasoning = normalized.slice(thinkOpen + THINK_OPEN_TAG.length).trim() || null;
+    return createParsedContent(reasoning, normalized.slice(0, thinkOpen), true);
   }
 
-  const reasoning = normalized
-    .slice(thinkOpen + '<think>'.length, thinkClose)
-    .trim();
+  const reasoning = normalized.slice(thinkOpen + THINK_OPEN_TAG.length, thinkClose).trim() || null;
+  const answer = `${normalized.slice(0, thinkOpen)} ${normalized.slice(thinkClose + THINK_CLOSE_TAG.length)}`;
 
-  const answer = `${normalized.slice(0, thinkOpen)} ${normalized.slice(thinkClose + '</think>'.length)}`
-    .trim();
-
-  return {
-    reasoning: reasoning || null,
-    reasoningSummary: summarizeReasoning(reasoning),
-    answer,
-    isReasoningInProgress: false,
-  };
+  return createParsedContent(reasoning, answer, false);
 }

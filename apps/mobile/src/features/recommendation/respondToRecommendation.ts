@@ -8,12 +8,15 @@ import {
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 
-const defaultDeps: RespondToRecommendationDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'respondToRecommendation'>,
-  nanoid: generateId,
-  isIdCollisionError,
-  maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
-};
+function getDefaultDeps(): RespondToRecommendationDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'respondToRecommendation'>,
+    nanoid: generateId,
+    isIdCollisionError,
+    maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
+  };
+}
+
 export type {
   RespondFailureResult,
   RespondResult,
@@ -21,4 +24,10 @@ export type {
   RespondToRecommendationResult,
 };
 export { createRespondToRecommendation };
-export const respondToRecommendation = createRespondToRecommendation(defaultDeps);
+export function respondToRecommendation(
+  recommendationId: string,
+  status: Parameters<ReturnType<typeof createRespondToRecommendation>>[1],
+  action: Parameters<ReturnType<typeof createRespondToRecommendation>>[2]
+) {
+  return createRespondToRecommendation(getDefaultDeps())(recommendationId, status, action);
+}

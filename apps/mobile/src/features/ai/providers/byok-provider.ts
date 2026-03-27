@@ -7,15 +7,15 @@
  * TODO: Integrate actual API calls for each provider
  */
 
-import { Effect } from "effect";
+import { Effect } from 'effect';
 import type {
   MetadataProvider,
   MetadataInput,
   MetadataOutput,
   AIProviderError,
   AIProviderErrorCode,
-} from "../metadata/types";
-import { aiProviderError } from "../metadata/types";
+} from '../metadata/types';
+import { aiProviderError } from '../metadata/types';
 import {
   isBYOKReady,
   getApiKey,
@@ -30,6 +30,22 @@ import {
   normalizeBaseUrl,
 } from '@/src/features/settings/byok.defaults';
 import { buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from './metadata-text';
+
+type APIConfig = {
+  endpoint: string;
+  defaultModel: string;
+  buildHeaders: (apiKey: string) => Record<string, string>;
+  buildBody: (prompt: string, model: string) => string;
+  parseResponse: (data: unknown) => string;
+};
+
+type BYOKRequestContext = {
+  apiKey: string;
+  provider: BYOKProviderType;
+  baseUrl: string | null;
+  modelOverride: string | null;
+  fetchFn: typeof fetch;
+};
 
 /**
  * BYOK provider configuration
@@ -54,13 +70,7 @@ export interface BYOKProviderConfig {
  */
 const API_CONFIGS: Record<
   BYOKProviderType,
-  {
-    endpoint: string;
-    defaultModel: string;
-    buildHeaders: (apiKey: string) => Record<string, string>;
-    buildBody: (prompt: string, model: string) => string;
-    parseResponse: (data: unknown) => string;
-  }
+  APIConfig
 > = {
   openai: {
     endpoint: '/chat/completions',
@@ -127,59 +137,76 @@ function mapErrorToCode(status: number): AIProviderErrorCode {
   return 'AI_PROVIDER_NETWORK_ERROR';
 }
 
+function createBYOKError(
+  code: AIProviderErrorCode,
+  message: string,
+  details?: Record<string, unknown>
+): AIProviderError {
+  return aiProviderError(code, 'byok', message, details);
+}
+
+function failBYOK(
+  code: AIProviderErrorCode,
+  message: string,
+  details?: Record<string, unknown>
+): Effect.Effect<never, AIProviderError> {
+  return Effect.fail(createBYOKError(code, message, details));
+}
+
+function resolveEndpoint(
+  provider: BYOKProviderType,
+  config: APIConfig,
+  model: string,
+  apiKey: string,
+  baseUrl: string | null
+): string {
+  if (provider === 'openai') {
+    const resolvedBaseUrl = normalizeBaseUrl(baseUrl) ?? DEFAULT_OPENAI_BASE_URL;
+    return `${resolvedBaseUrl}${config.endpoint}`;
+  }
+
+  if (provider === 'google') {
+    return `${config.endpoint}/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+  }
+
+  return config.endpoint;
+}
+
 /**
  * Make an API call to the configured provider (Effect version)
  */
 function callAPIEffect(
-  provider: BYOKProviderType,
+  context: BYOKRequestContext,
   prompt: string,
-  apiKey: string,
-  baseUrl: string | null,
-  modelOverride: string | null,
-  fetchFn: typeof fetch,
 ): Effect.Effect<string, AIProviderError> {
   return Effect.gen(function* (_) {
+    const { provider, apiKey, baseUrl, modelOverride, fetchFn } = context;
     const config = API_CONFIGS[provider];
-    const model = modelOverride || config.defaultModel;
-
-    let endpoint = config.endpoint;
-    if (provider === "openai") {
-      const resolvedBaseUrl =
-        normalizeBaseUrl(baseUrl) ?? DEFAULT_OPENAI_BASE_URL;
-      endpoint = `${resolvedBaseUrl}${config.endpoint}`;
-    } else if (provider === "google") {
-      endpoint = `${config.endpoint}/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
-    }
-
-    const headers = config.buildHeaders(apiKey);
+    const model = modelOverride ?? config.defaultModel;
+    const endpoint = resolveEndpoint(provider, config, model, apiKey, baseUrl);
 
     const response = yield* _(
       Effect.tryPromise({
         try: () =>
           fetchFn(endpoint, {
-            method: "POST",
-            headers,
+            method: 'POST',
+            headers: config.buildHeaders(apiKey),
             body: config.buildBody(prompt, model),
           }),
-        catch: (e) =>
-          aiProviderError(
-            "AI_PROVIDER_NETWORK_ERROR",
-            "byok",
-            "Network error during API call",
-            { provider, cause: e },
-          ),
+        catch: (error) =>
+          createBYOKError('AI_PROVIDER_NETWORK_ERROR', 'Network error during API call', {
+            provider,
+            cause: error,
+          }),
       }),
     );
 
     if (!response.ok) {
       return yield* _(
-        Effect.fail(
-          aiProviderError(
-            mapErrorToCode(response.status),
-            "byok",
-            `API request failed with status ${response.status}`,
-            { provider, status: response.status },
-          ),
+        failBYOK(
+          mapErrorToCode(response.status),
+          `API request failed with status ${response.status}`,
+          { provider, status: response.status },
         ),
       );
     }
@@ -187,33 +214,50 @@ function callAPIEffect(
     const data = yield* _(
       Effect.tryPromise({
         try: () => response.json(),
-        catch: (e) =>
-          aiProviderError(
-            "AI_PROVIDER_INVALID_RESPONSE",
-            "byok",
-            "Failed to parse API response",
-            { provider, cause: e },
-          ),
+        catch: (error) =>
+          createBYOKError('AI_PROVIDER_INVALID_RESPONSE', 'Failed to parse API response', {
+            provider,
+            cause: error,
+          }),
       }),
     );
 
     const text = config.parseResponse(data);
 
     if (!text) {
-      return yield* _(
-        Effect.fail(
-          aiProviderError(
-            "AI_PROVIDER_INVALID_RESPONSE",
-            "byok",
-            "Empty response from API",
-            { provider },
-          ),
-        ),
-      );
+      return yield* _(failBYOK('AI_PROVIDER_INVALID_RESPONSE', 'Empty response from API', { provider }));
     }
 
     return text;
   });
+}
+
+function resolveRequestContext(
+  checkIsReady: () => boolean,
+  getKey: () => string | null,
+  getProviderType: () => BYOKProviderType | null,
+  getBaseUrlValue: () => string | null,
+  getModelValue: () => string | null,
+  fetchFn: typeof fetch
+): BYOKRequestContext | AIProviderError {
+  if (!checkIsReady()) {
+    return createBYOKError('AI_PROVIDER_UNAVAILABLE', 'BYOK is not configured or disabled');
+  }
+
+  const apiKey = getKey();
+  const provider = getProviderType();
+
+  if (!apiKey || !provider) {
+    return createBYOKError('AI_PROVIDER_UNAVAILABLE', 'API key or provider not configured');
+  }
+
+  return {
+    apiKey,
+    provider,
+    baseUrl: getBaseUrlValue(),
+    modelOverride: getModelValue(),
+    fetchFn,
+  };
 }
 
 /**
@@ -233,7 +277,7 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
   const fetchFn = config.fetch ?? fetch;
 
   return {
-    name: "byok",
+    name: 'byok',
 
     async isAvailable(): Promise<boolean> {
       return checkIsReady();
@@ -243,58 +287,25 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
       input: MetadataInput,
     ): Effect.Effect<MetadataOutput, AIProviderError> {
       return Effect.gen(function* (_) {
-        // Check availability
-        if (!checkIsReady()) {
-          return yield* _(
-            Effect.fail(
-              aiProviderError(
-                "AI_PROVIDER_UNAVAILABLE",
-                "byok",
-                "BYOK is not configured or disabled",
-              ),
-            ),
-          );
-        }
-
-        const apiKey = getKey();
-        const provider = getProviderType();
-        const baseUrl = getBaseUrlValue();
-        const model = getModelValue();
-
-        if (!apiKey || !provider) {
-          return yield* _(
-            Effect.fail(
-              aiProviderError(
-                "AI_PROVIDER_UNAVAILABLE",
-                "byok",
-                "API key or provider not configured",
-              ),
-            ),
-          );
-        }
-
-        // Generate summary
-        const summaryText = yield* _(
-          callAPIEffect(
-            provider,
-            buildSummaryPrompt(input),
-            apiKey,
-            baseUrl,
-            model,
-            fetchFn,
-          ),
+        const requestContext = resolveRequestContext(
+          checkIsReady,
+          getKey,
+          getProviderType,
+          getBaseUrlValue,
+          getModelValue,
+          fetchFn
         );
 
-        // Generate tags
+        if ('code' in requestContext) {
+          return yield* _(Effect.fail(requestContext));
+        }
+
+        const summaryText = yield* _(
+          callAPIEffect(requestContext, buildSummaryPrompt(input)),
+        );
+
         const tagsText = yield* _(
-          callAPIEffect(
-            provider,
-            buildTagsPrompt(input),
-            apiKey,
-            baseUrl,
-            model,
-            fetchFn,
-          ),
+          callAPIEffect(requestContext, buildTagsPrompt(input)),
         );
 
         return {

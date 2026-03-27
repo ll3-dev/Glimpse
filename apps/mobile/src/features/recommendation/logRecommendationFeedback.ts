@@ -14,15 +14,19 @@ import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 export type { FeedbackActionType };
-const defaultDeps: RecommendationFeedbackDeps = {
-  coreClient: mobileCoreClient as Pick<
-    MobileCoreClient,
-    'logRecommendationFeedback' | 'listRecentFeedbackEvents'
-  >,
-  nanoid: generateId,
-  isIdCollisionError,
-  maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
-};
+
+function getDefaultDeps(): RecommendationFeedbackDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<
+      MobileCoreClient,
+      'logRecommendationFeedback' | 'listRecentFeedbackEvents'
+    >,
+    nanoid: generateId,
+    isIdCollisionError,
+    maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
+  };
+}
+
 export type {
   GetRecentFeedbackResult,
   LogFeedbackFailureResult,
@@ -33,5 +37,12 @@ export type {
   RecentFeedbackResult,
 };
 export { createGetRecentFeedbackEvents, createLogRecommendationFeedback };
-export const logRecommendationFeedback = createLogRecommendationFeedback(defaultDeps);
-export const getRecentFeedbackEvents = createGetRecentFeedbackEvents(defaultDeps);
+export function logRecommendationFeedback(
+  event: Parameters<ReturnType<typeof createLogRecommendationFeedback>>[0]
+) {
+  return createLogRecommendationFeedback(getDefaultDeps())(event);
+}
+
+export function getRecentFeedbackEvents(limit?: number) {
+  return createGetRecentFeedbackEvents(getDefaultDeps())(limit);
+}

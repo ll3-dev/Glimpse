@@ -29,6 +29,26 @@ export interface ChatExecutionInput {
   contextItem?: KnowledgeItem | null;
 }
 
+type BYOKProvider = NonNullable<ReturnType<typeof getProvider>>;
+
+type BYOKRequest = {
+  endpoint: string;
+  init: RequestInit;
+};
+
+type BYOKChatConfig = {
+  provider: BYOKProvider;
+  apiKey: string;
+  model: string;
+  baseUrl: string | null;
+};
+
+type LocalChatContext = {
+  model: NonNullable<ReturnType<typeof getSelectedLocalModel>>;
+  prompt: string;
+  runtime: ReturnType<typeof getLocalLLMRuntime>;
+};
+
 function executionError<T>(message: string, target: AITarget): Result<T> {
   return {
     success: false as const,
@@ -83,6 +103,155 @@ function normalizeLabels(tags: string[], item: KnowledgeItem): typeof LABEL_TAXO
   return [item.type === 'link' ? 'reference' : 'personal'];
 }
 
+function buildLabelingMetadataInput(item: KnowledgeItem): MetadataExecutionInput {
+  return {
+    content: [item.title, item.body, item.summary].filter(Boolean).join('\n\n'),
+    title: item.title ?? undefined,
+    type: item.type,
+  };
+}
+
+function getLabelVersion(target: AITarget): string {
+  switch (target.kind) {
+    case 'stub':
+      return 'stub-label-v1';
+    case 'apple':
+      return 'apple-label-v1';
+    case 'local':
+      return 'local-label-v1';
+    case 'rules':
+    case 'byok':
+      return RULE_BASED_LABELER_VERSION;
+  }
+}
+
+function buildBYOKChatPrompt(input: ChatExecutionInput): string {
+  return [
+    input.contextItem?.title ? `Context title: ${input.contextItem.title}` : null,
+    input.contextItem?.body ? `Context body: ${input.contextItem.body}` : null,
+    `User: ${input.userText}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function resolveLocalChatContext(input: ChatExecutionInput): Result<LocalChatContext> {
+  const model = getSelectedLocalModel();
+  if (!model?.path) {
+    return {
+      success: false,
+      error: appError('GENERATION_ERROR', '선택된 로컬 채팅 모델이 없습니다.'),
+    };
+  }
+
+  const runtime = getLocalLLMRuntime();
+  return {
+    success: true,
+    data: {
+      model,
+      runtime,
+      prompt: runtime.buildChatPrompt(
+        model,
+        [{ role: 'user', content: input.userText }],
+        input.contextItem
+      ),
+    },
+  };
+}
+
+function resolveBYOKChatConfig(): Result<BYOKChatConfig> {
+  const provider = getProvider();
+  const apiKey = getApiKey();
+  const model = getModel();
+
+  if (!provider || !apiKey || !model) {
+    return {
+      success: false,
+      error: appError('GENERATION_ERROR', 'BYOK 채팅 설정이 완료되지 않았습니다.'),
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      provider,
+      apiKey,
+      model,
+      baseUrl: getBaseUrl(),
+    },
+  };
+}
+
+function resolveBYOKRequest(
+  provider: BYOKProvider,
+  apiKey: string,
+  model: string,
+  baseUrl: string | null,
+  prompt: string
+): BYOKRequest {
+  if (provider === 'openai') {
+    return {
+      endpoint: `${(baseUrl ?? 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`,
+      init: {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 512,
+          temperature: 0.3,
+        }),
+      },
+    };
+  }
+
+  if (provider === 'anthropic') {
+    return {
+      endpoint: 'https://api.anthropic.com/v1/messages',
+      init: {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 512,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      },
+    };
+  }
+
+  return {
+    endpoint: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
+    init: {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    },
+  };
+}
+
+function parseBYOKChatResponse(provider: BYOKProvider, data: unknown): string | null {
+  const text =
+    provider === 'openai'
+      ? (data as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content
+      : provider === 'anthropic'
+        ? (data as { content?: { text?: string }[] }).content?.[0]?.text
+        : (data as { candidates?: { content?: { parts?: { text?: string }[] } }[] }).candidates?.[0]?.content?.parts?.[0]?.text;
+
+  return text?.trim() ?? null;
+}
+
 export async function executeLabelingTarget(
   target: AITarget,
   item: KnowledgeItem
@@ -94,11 +263,7 @@ export async function executeLabelingTarget(
     };
   }
 
-  const metadataResult = await executeMetadataTarget(target, {
-    content: [item.title, item.body, item.summary].filter(Boolean).join('\n\n'),
-    title: item.title ?? undefined,
-    type: item.type,
-  });
+  const metadataResult = await executeMetadataTarget(target, buildLabelingMetadataInput(item));
 
   if (!metadataResult.success) {
     if (!isFailure(metadataResult)) {
@@ -117,14 +282,7 @@ export async function executeLabelingTarget(
       labels: normalizeLabels(metadataResult.data.tags, item),
       score: 0.6,
       source: mapTargetToLabelSource(target),
-      version:
-        target.kind === 'stub'
-          ? 'stub-label-v1'
-          : target.kind === 'apple'
-            ? 'apple-label-v1'
-            : target.kind === 'local'
-              ? 'local-label-v1'
-              : RULE_BASED_LABELER_VERSION,
+      version: getLabelVersion(target),
     },
   };
 }
@@ -137,87 +295,37 @@ function buildStubChatReply(input: ChatExecutionInput): string {
 }
 
 async function executeLocalChatTarget(input: ChatExecutionInput): Promise<Result<string>> {
-  const model = getSelectedLocalModel();
-  if (!model?.path) {
-    return {
-      success: false,
-      error: appError('GENERATION_ERROR', '선택된 로컬 채팅 모델이 없습니다.'),
-    };
+  const localChat = resolveLocalChatContext(input);
+  if (!localChat.success) {
+    return isFailure(localChat)
+      ? { success: false, error: localChat.error }
+      : { success: false, error: appError('GENERATION_ERROR', '로컬 채팅 컨텍스트를 확인할 수 없습니다.') };
   }
 
-  const runtime = getLocalLLMRuntime();
-  const prompt = runtime.buildChatPrompt(
-    model,
-    [{ role: 'user', content: input.userText }],
-    input.contextItem
+  const result = await localChat.data.runtime.generate(
+    localChat.data.model,
+    localChat.data.prompt,
+    { maxTokens: 512 }
   );
-  const result = await runtime.generate(model, prompt, { maxTokens: 512 });
   return { success: true, data: result.text.trim() };
 }
 
 async function executeBYOKChatTarget(input: ChatExecutionInput): Promise<Result<string>> {
-  const provider = getProvider();
-  const apiKey = getApiKey();
-  const model = getModel();
-  const baseUrl = getBaseUrl();
-
-  if (!provider || !apiKey || !model) {
-    return {
-      success: false,
-      error: appError('GENERATION_ERROR', 'BYOK 채팅 설정이 완료되지 않았습니다.'),
-    };
+  const byokConfig = resolveBYOKChatConfig();
+  if (!byokConfig.success) {
+    return isFailure(byokConfig)
+      ? { success: false, error: byokConfig.error }
+      : { success: false, error: appError('GENERATION_ERROR', 'BYOK 채팅 설정을 확인할 수 없습니다.') };
   }
 
-  const prompt = [
-    input.contextItem?.title ? `Context title: ${input.contextItem.title}` : null,
-    input.contextItem?.body ? `Context body: ${input.contextItem.body}` : null,
-    `User: ${input.userText}`,
-  ]
-    .filter(Boolean)
-    .join('\n\n');
-
-  const endpoint =
-    provider === 'openai'
-      ? `${(baseUrl ?? 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`
-      : provider === 'anthropic'
-        ? 'https://api.anthropic.com/v1/messages'
-        : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers:
-      provider === 'openai'
-        ? {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          }
-        : provider === 'anthropic'
-          ? {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-              'anthropic-version': '2023-06-01',
-            }
-          : {
-              'Content-Type': 'application/json',
-            },
-    body:
-      provider === 'openai'
-        ? JSON.stringify({
-            model,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 512,
-            temperature: 0.3,
-          })
-        : provider === 'anthropic'
-          ? JSON.stringify({
-              model,
-              max_tokens: 512,
-              messages: [{ role: 'user', content: prompt }],
-            })
-          : JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-            }),
-  });
+  const request = resolveBYOKRequest(
+    byokConfig.data.provider,
+    byokConfig.data.apiKey,
+    byokConfig.data.model,
+    byokConfig.data.baseUrl,
+    buildBYOKChatPrompt(input)
+  );
+  const response = await fetch(request.endpoint, request.init);
 
   if (!response.ok) {
     return {
@@ -227,12 +335,7 @@ async function executeBYOKChatTarget(input: ChatExecutionInput): Promise<Result<
   }
 
   const data = await response.json();
-  const text =
-    provider === 'openai'
-      ? (data as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content
-      : provider === 'anthropic'
-        ? (data as { content?: { text?: string }[] }).content?.[0]?.text
-        : (data as { candidates?: { content?: { parts?: { text?: string }[] } }[] }).candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = parseBYOKChatResponse(byokConfig.data.provider, data);
 
   if (!text) {
     return {
@@ -240,8 +343,7 @@ async function executeBYOKChatTarget(input: ChatExecutionInput): Promise<Result<
       error: appError('GENERATION_ERROR', 'BYOK 채팅 응답이 비어 있습니다.'),
     };
   }
-
-  return { success: true, data: text.trim() };
+  return { success: true, data: text };
 }
 
 export async function executeChatTarget(
@@ -304,25 +406,14 @@ export function executeLabelingTargetEffect(
 
   return Effect.gen(function* (_) {
     const metadataResult = yield* _(
-      executeMetadataTargetEffect(target, {
-        content: [item.title, item.body, item.summary].filter(Boolean).join('\n\n'),
-        title: item.title ?? undefined,
-        type: item.type,
-      })
+      executeMetadataTargetEffect(target, buildLabelingMetadataInput(item))
     );
 
     return {
       labels: normalizeLabels(metadataResult.tags, item),
       score: 0.6,
       source: mapTargetToLabelSource(target),
-      version:
-        target.kind === 'stub'
-          ? 'stub-label-v1'
-          : target.kind === 'apple'
-            ? 'apple-label-v1'
-            : target.kind === 'local'
-              ? 'local-label-v1'
-              : RULE_BASED_LABELER_VERSION,
+      version: getLabelVersion(target),
     };
   });
 }
@@ -350,22 +441,21 @@ export function executeChatTargetEffect(
 
 function executeLocalChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
   return Effect.gen(function* (_) {
-    const model = getSelectedLocalModel();
-    if (!model?.path) {
+    const localChat = resolveLocalChatContext(input);
+    if (!localChat.success) {
       return yield* _(Effect.fail(
-        appError('GENERATION_ERROR', '선택된 로컬 채팅 모델이 없습니다.')
+        isFailure(localChat)
+          ? localChat.error
+          : appError('GENERATION_ERROR', '로컬 채팅 컨텍스트를 확인할 수 없습니다.')
       ));
     }
 
-    const runtime = getLocalLLMRuntime();
-    const prompt = runtime.buildChatPrompt(
-      model,
-      [{ role: 'user', content: input.userText }],
-      input.contextItem
-    );
-
     const result = yield* _(Effect.tryPromise({
-      try: () => runtime.generate(model, prompt, { maxTokens: 512 }),
+      try: () => localChat.data.runtime.generate(
+        localChat.data.model,
+        localChat.data.prompt,
+        { maxTokens: 512 }
+      ),
       catch: (e) => appError('GENERATION_ERROR', '로컬 채팅 생성 실패', { cause: e }),
     }));
 
@@ -375,68 +465,25 @@ function executeLocalChatTargetEffect(input: ChatExecutionInput): Effect.Effect<
 
 function executeBYOKChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
   return Effect.gen(function* (_) {
-    const provider = getProvider();
-    const apiKey = getApiKey();
-    const model = getModel();
-    const baseUrl = getBaseUrl();
-
-    if (!provider || !apiKey || !model) {
+    const byokConfig = resolveBYOKChatConfig();
+    if (!byokConfig.success) {
       return yield* _(Effect.fail(
-        appError('GENERATION_ERROR', 'BYOK 채팅 설정이 완료되지 않았습니다.')
+        isFailure(byokConfig)
+          ? byokConfig.error
+          : appError('GENERATION_ERROR', 'BYOK 채팅 설정을 확인할 수 없습니다.')
       ));
     }
 
-    const prompt = [
-      input.contextItem?.title ? `Context title: ${input.contextItem.title}` : null,
-      input.contextItem?.body ? `Context body: ${input.contextItem.body}` : null,
-      `User: ${input.userText}`,
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-
-    const endpoint =
-      provider === 'openai'
-        ? `${(baseUrl ?? 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`
-        : provider === 'anthropic'
-          ? 'https://api.anthropic.com/v1/messages'
-          : `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+    const request = resolveBYOKRequest(
+      byokConfig.data.provider,
+      byokConfig.data.apiKey,
+      byokConfig.data.model,
+      byokConfig.data.baseUrl,
+      buildBYOKChatPrompt(input)
+    );
 
     const response = yield* _(Effect.tryPromise({
-      try: () => fetch(endpoint, {
-        method: 'POST',
-        headers:
-          provider === 'openai'
-            ? {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`,
-              }
-            : provider === 'anthropic'
-              ? {
-                  'Content-Type': 'application/json',
-                  'x-api-key': apiKey,
-                  'anthropic-version': '2023-06-01',
-                }
-              : {
-                  'Content-Type': 'application/json',
-                },
-        body:
-          provider === 'openai'
-            ? JSON.stringify({
-                model,
-                messages: [{ role: 'user', content: prompt }],
-                max_tokens: 512,
-                temperature: 0.3,
-              })
-            : provider === 'anthropic'
-              ? JSON.stringify({
-                  model,
-                  max_tokens: 512,
-                  messages: [{ role: 'user', content: prompt }],
-                })
-              : JSON.stringify({
-                  contents: [{ parts: [{ text: prompt }] }],
-                }),
-      }),
+      try: () => fetch(request.endpoint, request.init),
       catch: (e) => appError('GENERATION_ERROR', 'BYOK 채팅 네트워크 오류', { cause: e }),
     }));
 
@@ -451,19 +498,13 @@ function executeBYOKChatTargetEffect(input: ChatExecutionInput): Effect.Effect<s
       catch: (e) => appError('GENERATION_ERROR', 'BYOK 채팅 응답 파싱 실패', { cause: e }),
     }));
 
-    const text =
-      provider === 'openai'
-        ? (data as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message?.content
-        : provider === 'anthropic'
-          ? (data as { content?: { text?: string }[] }).content?.[0]?.text
-          : (data as { candidates?: { content?: { parts?: { text?: string }[] } }[] }).candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = parseBYOKChatResponse(byokConfig.data.provider, data);
 
     if (!text) {
       return yield* _(Effect.fail(
         appError('GENERATION_ERROR', 'BYOK 채팅 응답이 비어 있습니다.')
       ));
     }
-
-    return text.trim();
+    return text;
   });
 }

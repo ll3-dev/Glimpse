@@ -7,9 +7,12 @@ import {
 } from "@/src/features/core/application/recommendation";
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: GetWeeklyItemsDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'listWeeklyKnowledgeItems'>,
-};
+function getDefaultDeps(): GetWeeklyItemsDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'listWeeklyKnowledgeItems'>,
+  };
+}
+
 export type {
   GetWeeklyItemsDeps,
   WeeklyItemsFailureResult,
@@ -17,4 +20,6 @@ export type {
   WeeklyItemsSuccessResult,
 };
 export { createGetWeeklyItems };
-export const getWeeklyItems = createGetWeeklyItems(defaultDeps);
+export function getWeeklyItems(since?: number) {
+  return createGetWeeklyItems(getDefaultDeps())(since);
+}

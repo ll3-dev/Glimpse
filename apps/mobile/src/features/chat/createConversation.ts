@@ -9,10 +9,12 @@ import {
 import { generateId } from '@/src/lib/id';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: CreateConversationDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'createConversation'>,
-  generateId,
-};
+function getDefaultDeps(): CreateConversationDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'createConversation'>,
+    generateId,
+  };
+}
 export type {
   CreateConversationDeps,
   CreateConversationFailureResult,
@@ -21,4 +23,8 @@ export type {
   CreateConversationSuccessResult,
 };
 export { createCreateConversation };
-export const createConversation = createCreateConversation(defaultDeps);
+export function createConversation(
+  input: Parameters<ReturnType<typeof createCreateConversation>>[0]
+) {
+  return createCreateConversation(getDefaultDeps())(input);
+}

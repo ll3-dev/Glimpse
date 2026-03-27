@@ -7,9 +7,11 @@ import {
 } from '@/src/features/core/application/chat';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: GetConversationMessagesDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'listConversationMessages'>,
-};
+function getDefaultDeps(): GetConversationMessagesDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'listConversationMessages'>,
+  };
+}
 export type {
   GetConversationMessagesDeps,
   GetMessagesFailureResult,
@@ -17,4 +19,8 @@ export type {
   GetMessagesSuccessResult,
 };
 export { createGetConversationMessages };
-export const getConversationMessages = createGetConversationMessages(defaultDeps);
+export function getConversationMessages(
+  conversationId: Parameters<ReturnType<typeof createGetConversationMessages>>[0]
+) {
+  return createGetConversationMessages(getDefaultDeps())(conversationId);
+}

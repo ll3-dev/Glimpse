@@ -17,29 +17,42 @@ export type {
   SaveRecommendationsDeps,
 } from "./generateRecommendations.types";
 
-const defaultGenerateDeps: GenerateRecommendationsDeps = {
-  coreClient: mobileCoreClient,
-  getWeeklyItems,
-};
+function getDefaultGenerateDeps(): GenerateRecommendationsDeps {
+  return {
+    coreClient: mobileCoreClient,
+    getWeeklyItems,
+  };
+}
 
-const defaultSaveDeps: SaveRecommendationsDeps = {
-  coreClient: mobileCoreClient,
-  nanoid: generateId,
-  isIdCollisionError,
-  maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
-};
+function getDefaultSaveDeps(): SaveRecommendationsDeps {
+  return {
+    coreClient: mobileCoreClient,
+    nanoid: generateId,
+    isIdCollisionError,
+    maxIdCollisionRetries: MAX_ID_COLLISION_RETRIES,
+  };
+}
 
 export function createGenerateRecommendations(
-  deps: GenerateRecommendationsDeps = defaultGenerateDeps,
+  deps: GenerateRecommendationsDeps = getDefaultGenerateDeps(),
 ) {
   return createGenerateRecommendationsUsecase(deps);
 }
 
 export function createSaveRecommendations(
-  deps: SaveRecommendationsDeps = defaultSaveDeps,
+  deps: SaveRecommendationsDeps = getDefaultSaveDeps(),
 ) {
   return createSaveRecommendationsUsecase(deps);
 }
 
-export const generateRecommendations = createGenerateRecommendations();
-export const saveRecommendations = createSaveRecommendations();
+export function generateRecommendations(
+  input?: Parameters<ReturnType<typeof createGenerateRecommendations>>[0]
+) {
+  return createGenerateRecommendations()(input);
+}
+
+export function saveRecommendations(
+  recommendations: Parameters<ReturnType<typeof createSaveRecommendations>>[0]
+) {
+  return createSaveRecommendations()(recommendations);
+}

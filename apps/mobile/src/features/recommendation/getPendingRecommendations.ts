@@ -8,12 +8,15 @@ import {
 } from '@/src/features/core/application/recommendation';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: GetPendingRecommendationsDeps = {
-  coreClient: mobileCoreClient as Pick<
-    MobileCoreClient,
-    'listPendingRecommendations' | 'listKnowledgeItemsByIds'
-  >,
-};
+function getDefaultDeps(): GetPendingRecommendationsDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<
+      MobileCoreClient,
+      'listPendingRecommendations' | 'listKnowledgeItemsByIds'
+    >,
+  };
+}
+
 export type {
   GetPendingRecommendationsDeps,
   GetPendingResult,
@@ -22,4 +25,6 @@ export type {
   RecommendationWithItems,
 };
 export { createGetPendingRecommendations };
-export const getPendingRecommendations = createGetPendingRecommendations(defaultDeps);
+export function getPendingRecommendations() {
+  return createGetPendingRecommendations(getDefaultDeps())();
+}

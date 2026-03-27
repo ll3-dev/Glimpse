@@ -9,10 +9,12 @@ import {
 import { generateId } from '@/src/lib/id';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: AddMessageDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'addMessage'>,
-  generateId,
-};
+function getDefaultDeps(): AddMessageDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'addMessage'>,
+    generateId,
+  };
+}
 export type {
   AddMessageDeps,
   AddMessageFailureResult,
@@ -21,4 +23,8 @@ export type {
   AddMessageSuccessResult,
 };
 export { createAddMessage };
-export const addMessage = createAddMessage(defaultDeps);
+export function addMessage(
+  input: Parameters<ReturnType<typeof createAddMessage>>[0]
+) {
+  return createAddMessage(getDefaultDeps())(input);
+}

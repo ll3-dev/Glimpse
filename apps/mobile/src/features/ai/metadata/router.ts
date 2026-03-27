@@ -9,7 +9,7 @@ import type { MetadataInput, MetadataOutput, AIProviderError, AiMetadataService 
 import { aiProviderError, isAIProviderError } from './types';
 import { executeMetadataTargetEffect } from '../targets/executors';
 import { resolveEffectiveTarget } from '../targets';
-import { isAppError, type AppError } from '@/src/lib/effect-result';
+import { isAppError } from '@/src/lib/effect-result';
 
 export interface RouterConfig {
   resolveTarget?: () => ReturnType<typeof resolveEffectiveTarget>;

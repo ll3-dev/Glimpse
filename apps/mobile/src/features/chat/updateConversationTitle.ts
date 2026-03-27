@@ -8,9 +8,11 @@ import {
 } from '@/src/features/core/application/chat';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: UpdateConversationTitleDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'updateConversation'>,
-};
+function getDefaultDeps(): UpdateConversationTitleDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'updateConversation'>,
+  };
+}
 export type {
   UpdateConversationTitleDeps,
   UpdateConversationTitleInput,
@@ -19,4 +21,8 @@ export type {
   UpdateTitleSuccessResult,
 };
 export { createUpdateConversationTitle };
-export const updateConversationTitle = createUpdateConversationTitle(defaultDeps);
+export function updateConversationTitle(
+  input: Parameters<ReturnType<typeof createUpdateConversationTitle>>[0]
+) {
+  return createUpdateConversationTitle(getDefaultDeps())(input);
+}

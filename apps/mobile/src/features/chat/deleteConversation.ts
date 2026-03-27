@@ -8,9 +8,11 @@ import {
 } from '@/src/features/core/application/chat';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
-const defaultDeps: DeleteConversationDeps = {
-  coreClient: mobileCoreClient as Pick<MobileCoreClient, 'deleteConversation'>,
-};
+function getDefaultDeps(): DeleteConversationDeps {
+  return {
+    coreClient: mobileCoreClient as Pick<MobileCoreClient, 'deleteConversation'>,
+  };
+}
 export type {
   DeleteConversationDeps,
   DeleteConversationFailureResult,
@@ -19,4 +21,8 @@ export type {
   DeleteConversationSuccessResult,
 };
 export { createDeleteConversation };
-export const deleteConversation = createDeleteConversation(defaultDeps);
+export function deleteConversation(
+  input: Parameters<ReturnType<typeof createDeleteConversation>>[0]
+) {
+  return createDeleteConversation(getDefaultDeps())(input);
+}
