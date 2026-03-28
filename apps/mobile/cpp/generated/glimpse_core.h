@@ -1,6 +1,6 @@
 #pragma once
 
-struct CoreClientImpl;
+struct SharedCore;
 
 #ifndef GLIMPSE_CORE_FFI_H
 #define GLIMPSE_CORE_FFI_H
@@ -28,7 +28,7 @@ enum class FfiErrorCode {
 
 /// Opaque handle to a CoreClient instance.
 /// C++ holds this and passes it back to FFI calls.
-using CoreClientHandle = CoreClientImpl*;
+using CoreClientHandle = SharedCore*;
 
 /// FFI-safe optional i64 value.
 struct FfiOptionalI64 {
@@ -50,18 +50,6 @@ struct FfiOptionalF64 {
 
 /// Output for initialize review schedule.
 struct FfiInitReviewOutput {
-  int64_t next_review_at;
-  FfiOptionalF64 stability;
-  FfiOptionalF64 difficulty;
-  FfiOptionalI64 last_reviewed_at;
-};
-
-struct FfiCalculateNextReviewOutput {
-  int64_t interval_ms;
-  int64_t next_review_at;
-};
-
-struct FfiInitializeReviewScheduleOutput {
   int64_t next_review_at;
   FfiOptionalF64 stability;
   FfiOptionalF64 difficulty;
@@ -104,6 +92,55 @@ struct FfiKnowledgeItem {
   FfiOptionalF64 difficulty;
   FfiOptionalI64 last_reviewed_at;
   FfiOptionalI64 next_review_at;
+};
+
+struct FfiConversation {
+  char *id;
+  FfiNullableString title;
+  FfiNullableString icon;
+  FfiNullableString context_item_id;
+  int64_t created_at;
+  int64_t updated_at;
+  FfiOptionalI64 deleted_at;
+};
+
+struct FfiMessage {
+  char *id;
+  char *conversation_id;
+  char *role;
+  char *content;
+  int64_t created_at;
+  FfiOptionalI64 updated_at;
+  FfiOptionalI64 deleted_at;
+};
+
+struct FfiRecommendation {
+  char *id;
+  char *item_a_id;
+  char *item_b_id;
+  FfiNullableString reason;
+  char *status;
+  int64_t created_at;
+  FfiOptionalI64 responded_at;
+};
+
+struct FfiFeedbackEvent {
+  char *id;
+  char *recommendation_id;
+  char *action;
+  int64_t created_at;
+};
+
+struct FfiCalculateNextReviewOutput {
+  int64_t interval_ms;
+  int64_t next_review_at;
+};
+
+struct FfiInitializeReviewScheduleOutput {
+  int64_t next_review_at;
+  FfiOptionalF64 stability;
+  FfiOptionalF64 difficulty;
+  FfiOptionalI64 last_reviewed_at;
 };
 
 struct FfiKnowledgeItemArray {
@@ -168,16 +205,6 @@ struct FfiKnowledgeItemPatch {
   FfiNullableNumberPatchField next_review_at;
 };
 
-struct FfiConversation {
-  char *id;
-  FfiNullableString title;
-  FfiNullableString icon;
-  FfiNullableString context_item_id;
-  int64_t created_at;
-  int64_t updated_at;
-  FfiOptionalI64 deleted_at;
-};
-
 struct FfiConversationArray {
   FfiConversation *data;
   int len;
@@ -191,16 +218,6 @@ struct FfiConversationPatch {
   FfiNullableNumberPatchField deleted_at;
 };
 
-struct FfiMessage {
-  char *id;
-  char *conversation_id;
-  char *role;
-  char *content;
-  int64_t created_at;
-  FfiOptionalI64 updated_at;
-  FfiOptionalI64 deleted_at;
-};
-
 struct FfiMessageArray {
   FfiMessage *data;
   int len;
@@ -212,26 +229,9 @@ struct FfiMessagePatch {
   FfiNullableNumberPatchField deleted_at;
 };
 
-struct FfiRecommendation {
-  char *id;
-  char *item_a_id;
-  char *item_b_id;
-  FfiNullableString reason;
-  char *status;
-  int64_t created_at;
-  FfiOptionalI64 responded_at;
-};
-
 struct FfiRecommendationArray {
   FfiRecommendation *data;
   int len;
-};
-
-struct FfiFeedbackEvent {
-  char *id;
-  char *recommendation_id;
-  char *action;
-  int64_t created_at;
 };
 
 struct FfiFeedbackEventArray {
@@ -396,6 +396,28 @@ FfiErrorCode core_client_initialize_review_schedule(CoreClientHandle handle,
                                                     FfiOptionalI64 interval_ms,
                                                     FfiInitReviewOutput *out);
 
+void ffi_string_array_free(char **data, int len);
+
+void ffi_knowledge_item_free(FfiKnowledgeItem *item);
+
+void ffi_knowledge_item_array_free(FfiKnowledgeItem *data, int len);
+
+void ffi_conversation_free(FfiConversation *conversation);
+
+void ffi_conversation_array_free(FfiConversation *data, int len);
+
+void ffi_message_free(FfiMessage *message);
+
+void ffi_message_array_free(FfiMessage *data, int len);
+
+void ffi_recommendation_free(FfiRecommendation *recommendation);
+
+void ffi_recommendation_array_free(FfiRecommendation *data, int len);
+
+void ffi_feedback_event_free(FfiFeedbackEvent *event);
+
+void ffi_feedback_event_array_free(FfiFeedbackEvent *data, int len);
+
 FfiErrorCode core_client_calculate_next_review_typed(CoreClientHandle handle,
                                                      FfiOptionalI64 last_reviewed_at,
                                                      FfiOptionalI64 next_review_at,
@@ -472,28 +494,6 @@ FfiErrorCode core_client_list_recent_feedback_events_typed(CoreClientHandle hand
 FfiErrorCode core_client_log_recommendation_feedback_typed(CoreClientHandle handle,
                                                            const FfiFeedbackEvent *event,
                                                            FfiFeedbackEvent *out_event);
-
-void ffi_string_array_free(char **data, int len);
-
-void ffi_knowledge_item_free(FfiKnowledgeItem *item);
-
-void ffi_knowledge_item_array_free(FfiKnowledgeItem *data, int len);
-
-void ffi_conversation_free(FfiConversation *conversation);
-
-void ffi_conversation_array_free(FfiConversation *data, int len);
-
-void ffi_message_free(FfiMessage *message);
-
-void ffi_message_array_free(FfiMessage *data, int len);
-
-void ffi_recommendation_free(FfiRecommendation *recommendation);
-
-void ffi_recommendation_array_free(FfiRecommendation *data, int len);
-
-void ffi_feedback_event_free(FfiFeedbackEvent *event);
-
-void ffi_feedback_event_array_free(FfiFeedbackEvent *data, int len);
 
 }  // extern "C"
 
