@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
 import { ShareIntentProvider } from "expo-share-intent";
+import { ShareIntentNavigator } from "@/src/components/share-intent";
 import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
 import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
 
@@ -75,6 +76,7 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <RootProviders>
               <>
+                <ShareIntentNavigator />
                 <Stack
                   screenOptions={{
                     headerShown: false,
