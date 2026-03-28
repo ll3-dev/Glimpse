@@ -11,6 +11,8 @@
       "dependencies": {
         "@base-ui/react": "^1.3.0",
         "@fontsource-variable/geist": "^5.2.8",
+        "@glimpse/features": "workspace:*",
+        "@glimpse/hooks": "workspace:*",
         "@glimpse/shared": "workspace:*",
         "@glimpse/ui": "workspace:*",
         "@tailwindcss/vite": "^4.2.2",
@@ -128,6 +130,23 @@
         "prettier-plugin-tailwindcss": "^0.7.2",
         "react-native-nitro-modules": "^0.35.2",
         "typescript": "~5.9.2",
+      },
+    },
+    "packages/features": {
+      "name": "@glimpse/features",
+      "version": "0.1.0",
+      "dependencies": {
+        "@glimpse/shared": "workspace:*",
+        "@toss/hangul": "^1.7.1",
+      },
+    },
+    "packages/hooks": {
+      "name": "@glimpse/hooks",
+      "version": "0.1.0",
+      "dependencies": {
+        "@glimpse/features": "workspace:*",
+        "@glimpse/shared": "workspace:*",
+        "@tanstack/react-query": "^5.83.0",
       },
     },
     "packages/shared": {
@@ -485,6 +504,10 @@
     "@fontsource-variable/geist": ["@fontsource-variable/geist@5.2.8", "", {}, "sha512-cJ6m9e+8MQ5dCYJsLylfZrgBh6KkG4bOLckB35Tr9J/EqdkEM6QllH5PxqP1dhTvFup+HtMRPuz9xOjxXJggxw=="],
 
     "@glimpse/desktop": ["@glimpse/desktop@workspace:apps/desktop"],
+
+    "@glimpse/features": ["@glimpse/features@workspace:packages/features"],
+
+    "@glimpse/hooks": ["@glimpse/hooks@workspace:packages/hooks"],
 
     "@glimpse/mobile": ["@glimpse/mobile@workspace:apps/mobile"],
 

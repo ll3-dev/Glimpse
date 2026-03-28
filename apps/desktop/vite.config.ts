@@ -36,6 +36,22 @@ export default defineConfig({
         replacement: `${path.resolve(__dirname, '../../packages/shared/src')}/$1`,
       },
       {
+        find: /^@glimpse\/hooks$/,
+        replacement: path.resolve(__dirname, '../../packages/hooks/src/index.ts'),
+      },
+      {
+        find: /^@glimpse\/hooks\/(.*)$/,
+        replacement: `${path.resolve(__dirname, '../../packages/hooks/src')}/$1`,
+      },
+      {
+        find: /^@glimpse\/features$/,
+        replacement: path.resolve(__dirname, '../../packages/features/src/index.ts'),
+      },
+      {
+        find: /^@glimpse\/features\/(.*)$/,
+        replacement: `${path.resolve(__dirname, '../../packages/features/src')}/$1`,
+      },
+      {
         find: '@',
         replacement: path.resolve(__dirname, './src'),
       },

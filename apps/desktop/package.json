@@ -5,6 +5,8 @@
   "dependencies": {
     "@base-ui/react": "^1.3.0",
     "@fontsource-variable/geist": "^5.2.8",
+    "@glimpse/features": "workspace:*",
+    "@glimpse/hooks": "workspace:*",
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "@tailwindcss/vite": "^4.2.2",
