@@ -1,5 +1,6 @@
 use std::sync::Mutex;
 
+use crate::llm::LlmEngine;
 use crate::models::{
     default_health, default_models, CompletionRequest, CompletionResponse, LoadResult,
     ManagedModelRecord, RuntimeHealth,
@@ -8,6 +9,7 @@ use crate::models::{
 pub struct DesktopRuntimeState {
     pub models: Mutex<Vec<ManagedModelRecord>>,
     pub health: Mutex<RuntimeHealth>,
+    pub llm_engine: Mutex<LlmEngine>,
 }
 
 impl DesktopRuntimeState {
@@ -15,6 +17,7 @@ impl DesktopRuntimeState {
         Self {
             models: Mutex::new(default_models()),
             health: Mutex::new(default_health()),
+            llm_engine: Mutex::new(LlmEngine::new()),
         }
     }
 
@@ -47,6 +50,15 @@ impl DesktopRuntimeState {
             .models
             .lock()
             .map_err(|_| "models lock poisoned".to_string())?;
+
+        let model_path = models
+            .iter()
+            .find(|candidate| candidate.id == model_id)
+            .and_then(|m| m.path)
+            .ok_or_else(|| format!("Managed model not found: {model_id}"))?
+            .to_string();
+
+        // Update status for all models
         let mut found = false;
         for model in models.iter_mut() {
             if model.id == model_id {
@@ -59,6 +71,15 @@ impl DesktopRuntimeState {
 
         if !found {
             return Err(format!("Managed model not found: {model_id}"));
+        }
+
+        // Load into the LLM engine
+        {
+            let mut engine = self
+                .llm_engine
+                .lock()
+                .map_err(|_| "llm engine lock poisoned".to_string())?;
+            engine.load_model(&model_path)?;
         }
 
         let mut health = self
@@ -89,6 +110,15 @@ impl DesktopRuntimeState {
             }
         }
 
+        // Unload from the LLM engine
+        {
+            let mut engine = self
+                .llm_engine
+                .lock()
+                .map_err(|_| "llm engine lock poisoned".to_string())?;
+            engine.unload_model();
+        }
+
         let mut health = self
             .health
             .lock()
@@ -113,16 +143,41 @@ impl DesktopRuntimeState {
             .map_err(|_| "health lock poisoned".to_string())?;
         health.queue_depth = 1;
         health.loaded_model_id = Some(request.model_id.clone());
+        drop(health); // release health lock before engine access
+
         let prompt = request
             .messages
             .last()
             .map(|message| message.content.clone())
             .unwrap_or_default();
+
+        let max_tokens = request.max_tokens.unwrap_or(256);
+
+        let engine = self
+            .llm_engine
+            .lock()
+            .map_err(|_| "llm engine lock poisoned".to_string())?;
+
+        let text = engine.completion(&prompt, max_tokens)?;
+
+        let mut health = self
+            .health
+            .lock()
+            .map_err(|_| "health lock poisoned".to_string())?;
         health.queue_depth = 0;
+
         Ok(CompletionResponse {
-            text: format!("[{}] {}: {}", request.runtime_id, request.model_id, prompt),
+            text,
             stop_reason: "completed",
         })
+    }
+
+    pub fn run_embedding(&self, input: &str) -> Result<Vec<f32>, String> {
+        let engine = self
+            .llm_engine
+            .lock()
+            .map_err(|_| "llm engine lock poisoned".to_string())?;
+        engine.embedding(input)
     }
 
     pub fn get_health(&self) -> Result<RuntimeHealth, String> {

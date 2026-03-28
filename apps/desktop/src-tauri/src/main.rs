@@ -2,6 +2,7 @@
 
 mod commands;
 mod core;
+mod llm;
 mod models;
 mod services;
 mod state;

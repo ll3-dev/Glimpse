@@ -35,11 +35,9 @@ impl DesktopRuntimeService {
         state.run_completion(request)
     }
 
-    pub fn run_embedding(_state: &DesktopRuntimeState, request: EmbeddingRequest) -> Result<EmbeddingResponse, String> {
-        let base = request.input.len().max(1) as f32;
-        Ok(EmbeddingResponse {
-            vector: vec![base, base / 2.0, base / 4.0],
-        })
+    pub fn run_embedding(state: &DesktopRuntimeState, request: EmbeddingRequest) -> Result<EmbeddingResponse, String> {
+        let vector = state.run_embedding(&request.input)?;
+        Ok(EmbeddingResponse { vector })
     }
 
     pub fn get_runtime_health(state: &DesktopRuntimeState) -> Result<RuntimeHealth, String> {
