@@ -3,6 +3,8 @@
  * author: achorein (https://github.com/achorein)
  * inspired by :
  *  - https://ajith-ab.github.io/react-native-receive-sharing-intent/docs/ios#create-share-extension
+ *
+ * Modified for Glimpse: Added direct save functionality to bypass app opening.
  */
 import MobileCoreServices
 import Photos
@@ -16,6 +18,12 @@ class ShareViewController: UIViewController {
   var sharedMedia: [SharedMediaFile] = []
   var sharedWebUrl: [WebUrl] = []
   var sharedText: [String] = []
+
+  // Direct save mode: when true, saves directly to DB without opening the app
+  // Note: Requires GlimpseCore.xcframework to be linked to Share Extension target
+  // Set to false if the framework is not linked
+  let enableDirectSave = false
+
   let imageContentType: String = UTType.image.identifier
   let videoContentType: String = UTType.movie.identifier
   let textContentType: String = UTType.text.identifier
@@ -28,6 +36,16 @@ class ShareViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+
+    // Initialize the core bridge for direct save
+    if enableDirectSave {
+      do {
+        try GlimpseCoreBridge.shared.initialize()
+        NSLog("[INFO] GlimpseCoreBridge initialized successfully")
+      } catch {
+        NSLog("[ERROR] Failed to initialize GlimpseCoreBridge: \(error)")
+      }
+    }
   }
 
   override func viewDidAppear(_ animated: Bool) {
@@ -100,16 +118,23 @@ class ShareViewController: UIViewController {
         as? String
       {
         Task { @MainActor in
-
           self.sharedText.append(item)
-          // If this is the last item, save sharedText in userDefaults and redirect to host app
-          if index == (content.attachments?.count)! - 1 {
-            let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
-            userDefaults?.set(self.sharedText, forKey: self.sharedKey)
-            userDefaults?.synchronize()
-            self.redirectToHostApp(type: .text)
-          }
 
+          // If this is the last item, process the share
+          if index == (content.attachments?.count)! - 1 {
+            let combinedText = self.sharedText.joined(separator: "\n")
+
+            if self.enableDirectSave {
+              // Direct save mode: save to database without opening app
+              self.saveTextDirectly(combinedText)
+            } else {
+              // Legacy mode: save to UserDefaults and open app
+              let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
+              userDefaults?.set(self.sharedText, forKey: self.sharedKey)
+              userDefaults?.synchronize()
+              self.redirectToHostApp(type: .text)
+            }
+          }
         }
       } else {
         NSLog("[ERROR] Cannot load text content !\(String(describing: content))")
@@ -123,16 +148,22 @@ class ShareViewController: UIViewController {
     Task.detached {
       if let item = try! await attachment.loadItem(forTypeIdentifier: self.urlContentType) as? URL {
         Task { @MainActor in
-
           self.sharedWebUrl.append(WebUrl(url: item.absoluteString, meta: ""))
-          // If this is the last item, save sharedText in userDefaults and redirect to host app
-          if index == (content.attachments?.count)! - 1 {
-            let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
-            userDefaults?.set(self.toData(data: self.sharedWebUrl), forKey: self.sharedKey)
-            userDefaults?.synchronize()
-            self.redirectToHostApp(type: .weburl)
-          }
 
+          // If this is the last item, process the share
+          if index == (content.attachments?.count)! - 1 {
+            if self.enableDirectSave {
+              // Direct save mode: save to database without opening app
+              let urlString = self.sharedWebUrl.first?.url ?? item.absoluteString
+              self.saveUrlDirectly(urlString)
+            } else {
+              // Legacy mode: save to UserDefaults and open app
+              let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
+              userDefaults?.set(self.toData(data: self.sharedWebUrl), forKey: self.sharedKey)
+              userDefaults?.synchronize()
+              self.redirectToHostApp(type: .weburl)
+            }
+          }
         }
       } else {
         NSLog("[ERROR] Cannot load url content !\(String(describing: content))")
@@ -299,12 +330,20 @@ class ShareViewController: UIViewController {
                 mimeType: mimeType, type: .image))
           }
 
-          // If this is the last item, save imagesData in userDefaults and redirect to host app
+          // If this is the last item, process the share
           if index == (content.attachments?.count)! - 1 {
-            let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
-            userDefaults?.set(self.toData(data: self.sharedMedia), forKey: self.sharedKey)
-            userDefaults?.synchronize()
-            self.redirectToHostApp(type: .media)
+            if self.enableDirectSave {
+              // Direct save mode: save to database without opening app
+              if let lastMedia = self.sharedMedia.last {
+                self.saveImageDirectly(path: lastMedia.path)
+              }
+            } else {
+              // Legacy mode: save to UserDefaults and open app
+              let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
+              userDefaults?.set(self.toData(data: self.sharedMedia), forKey: self.sharedKey)
+              userDefaults?.synchronize()
+              self.redirectToHostApp(type: .media)
+            }
           }
         }
       } catch {
@@ -458,6 +497,86 @@ class ShareViewController: UIViewController {
       userDefaults?.set(self.toData(data: self.sharedMedia), forKey: self.sharedKey)
       userDefaults?.synchronize()
       self.redirectToHostApp(type: .file)
+    }
+  }
+
+  // MARK: - Direct Save Methods
+
+  /// Saves text directly to the database without opening the main app
+  private func saveTextDirectly(_ text: String) {
+    Task {
+      do {
+        _ = try GlimpseCoreBridge.shared.saveKnowledgeItem(
+          type: "share",
+          title: nil,
+          body: text,
+          url: nil,
+          text: text
+        )
+        NSLog("[INFO] Text saved directly to database")
+        await showSuccessAndDismiss()
+      } catch {
+        NSLog("[ERROR] Failed to save text directly: \(error)")
+        await dismissWithError(message: "저장 실패: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  /// Saves URL directly to the database without opening the main app
+  private func saveUrlDirectly(_ urlString: String, meta: String? = nil) {
+    Task {
+      do {
+        _ = try GlimpseCoreBridge.shared.saveKnowledgeItem(
+          type: "share",
+          title: urlString,
+          body: meta,
+          url: urlString,
+          text: nil
+        )
+        NSLog("[INFO] URL saved directly to database")
+        await showSuccessAndDismiss()
+      } catch {
+        NSLog("[ERROR] Failed to save URL directly: \(error)")
+        await dismissWithError(message: "저장 실패: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  /// Saves image directly to the database without opening the main app
+  private func saveImageDirectly(path: String) {
+    Task {
+      do {
+        _ = try GlimpseCoreBridge.shared.saveKnowledgeItem(
+          type: "screenshot",
+          title: nil,
+          body: path,
+          url: nil,
+          text: nil
+        )
+        NSLog("[INFO] Image saved directly to database")
+        await showSuccessAndDismiss()
+      } catch {
+        NSLog("[ERROR] Failed to save image directly: \(error)")
+        await dismissWithError(message: "저장 실패: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  /// Shows a success message and dismisses the extension
+  private func showSuccessAndDismiss() async {
+    await MainActor.run {
+      let alert = UIAlertController(
+        title: "저장 완료",
+        message: "Glimpse에 저장되었습니다.",
+        preferredStyle: .alert
+      )
+
+      let action = UIAlertAction(title: "확인", style: .default) { _ in
+        self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+      }
+
+      alert.addAction(action)
+      self.present(alert, animated: true)
     }
   }
 
