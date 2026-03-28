@@ -10,6 +10,7 @@
     "paths": {
       "effect": ["../mobile/node_modules/effect"],
       "effect/*": ["../mobile/node_modules/effect/*"],
+      "@/*": ["./src/*"],
       "@glimpse/core": ["../../packages/core/src/index.ts"],
       "@glimpse/core/*": ["../../packages/core/src/*"],
       "@glimpse/shared": ["../../packages/shared/src/index.ts"],

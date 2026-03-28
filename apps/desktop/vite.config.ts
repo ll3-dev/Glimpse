@@ -1,9 +1,18 @@
 import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { TanStackRouterVite } from '@tanstack/router-vite-plugin';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    TanStackRouterVite({
+      routesDirectory: './src/app',
+      generatedRouteTree: './src/routeTree.gen.ts',
+    }),
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: [
       {
@@ -25,6 +34,10 @@ export default defineConfig({
       {
         find: /^@glimpse\/shared\/(.*)$/,
         replacement: `${path.resolve(__dirname, '../../packages/shared/src')}/$1`,
+      },
+      {
+        find: '@',
+        replacement: path.resolve(__dirname, './src'),
       },
     ],
   },
