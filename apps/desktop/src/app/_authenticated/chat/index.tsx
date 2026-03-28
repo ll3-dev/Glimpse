@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ConversationList } from '@/components/chat/ConversationList';
 
 export const Route = createFileRoute('/_authenticated/chat/')({
-  component: () => <div>Chat</div>,
+  component: function ChatIndexPage() {
+    return <ConversationList />;
+  },
 });

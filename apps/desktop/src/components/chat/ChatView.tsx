@@ -1,0 +1,128 @@
+import { useEffect, useRef } from 'react';
+import { useMessagesQuery, useAddMessageMutation } from '@glimpse/hooks';
+import type { Message } from '@glimpse/shared';
+import { MessageBubble } from './MessageBubble';
+import { ChatInput } from './ChatInput';
+import { generateResponse } from '@/features/ai/chat-generation';
+import { MessageSquare, Loader2 } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { Button } from '@/components/ui/button';
+import { useState, useCallback } from 'react';
+
+interface ChatViewProps {
+  conversationId: string;
+}
+
+export function ChatView({ conversationId }: ChatViewProps) {
+  const { data: messages, isLoading } = useMessagesQuery(conversationId);
+  const addMessage = useAddMessageMutation();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const buildMessageHistory = useCallback(
+    (msgs: Message[]): { role: string; content: string }[] =>
+      msgs
+        .filter((m) => m.deletedAt === null)
+        .map((m) => ({ role: m.role, content: m.content })),
+    []
+  );
+
+  const handleSend = useCallback(
+    async (content: string) => {
+      const now = Date.now();
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        conversationId,
+        role: 'user',
+        content,
+        createdAt: now,
+        updatedAt: null,
+        deletedAt: null,
+      };
+
+      await addMessage.mutateAsync(userMessage);
+
+      setIsGenerating(true);
+      try {
+        const currentMessages = messages ?? [];
+        const history = buildMessageHistory([...currentMessages, userMessage]);
+        const response = await generateResponse(history);
+
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          conversationId,
+          role: 'assistant',
+          content: response,
+          createdAt: Date.now(),
+          updatedAt: null,
+          deletedAt: null,
+        };
+        await addMessage.mutateAsync(assistantMessage);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [conversationId, messages, addMessage, buildMessageHistory]
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const activeMessages = messages?.filter((m) => m.deletedAt === null) ?? [];
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => navigate({ to: '/chat' })}
+          aria-label="Back to conversations"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+        <h2 className="text-sm font-medium text-foreground">Conversation</h2>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+        {activeMessages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <MessageSquare className="h-8 w-8" />
+            <p className="text-sm">No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activeMessages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
+          </div>
+        )}
+        {isGenerating && (
+          <div className="mt-3 flex justify-start">
+            <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-2.5">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <ChatInput onSend={handleSend} isPending={isGenerating} />
+    </div>
+  );
+}
