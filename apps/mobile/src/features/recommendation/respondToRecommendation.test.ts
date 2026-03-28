@@ -2,82 +2,70 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createRespondToRecommendation,
   type RespondToRecommendationDeps,
-} from './respondToRecommendation';
+} from '@/src/features/core/application/recommendation';
+import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 
-const db = {
-  batch: mock(),
-  update: mock(),
-  insert: mock(),
+const createMockDeps = () => {
+  const coreClient = {
+    respondToRecommendation: mock(),
+  };
+  const nanoid = mock(() => 'event-1');
+  const isIdCollisionError = mock(() => false);
+
+  return {
+    coreClient,
+    nanoid,
+    isIdCollisionError,
+    maxIdCollisionRetries: 3,
+  } as unknown as RespondToRecommendationDeps;
 };
-
-const recommendations = {
-  id: 'recommendation_id_col',
-};
-
-const feedbackEvents = {
-  recommendationId: 'feedback_recommendation_id_col',
-};
-
-const eqMock = mock((left: unknown, right: unknown) => ({ left, right }));
-const nanoidMock = mock(() => 'event-1');
-
-const deps = {
-  db,
-  recommendations,
-  feedbackEvents,
-  eq: eqMock,
-  nanoid: nanoidMock,
-} as unknown as RespondToRecommendationDeps;
-
-const respondToRecommendation = createRespondToRecommendation(deps);
 
 describe('respondToRecommendation', () => {
+  let deps: RespondToRecommendationDeps;
+  let respondToRecommendation: ReturnType<typeof createRespondToRecommendation>;
+
   beforeEach(() => {
-    db.batch.mockReset();
-    db.update.mockReset();
-    db.insert.mockReset();
-    eqMock.mockClear();
-    nanoidMock.mockClear();
-    nanoidMock.mockReturnValue('event-1');
+    deps = createMockDeps();
+    respondToRecommendation = createRespondToRecommendation(deps);
   });
 
-  test('maps accept action to accepted status and persists feedback in one batch', async () => {
-    const where = mock(() => 'update-query');
-    const set = mock(() => ({ where }));
-    const values = mock(() => 'insert-query');
-    db.update.mockReturnValue({ set });
-    db.insert.mockReturnValue({ values });
-    db.batch.mockResolvedValue([]);
+  test('maps accept action to accepted status and persists feedback', async () => {
+    deps.coreClient.respondToRecommendation = mock(async () => {});
 
-    const result = await respondToRecommendation('rec-1', 'accept');
+    const result = await respondToRecommendation('rec-1', 'accepted', 'accept');
 
-    expect(result).toEqual({ success: true, status: 'accepted' });
-    expect(db.batch).toHaveBeenCalledWith(['update-query', 'insert-query']);
+    expect(result).toEqual({ success: true, recommendationId: 'rec-1' });
+    expect(deps.coreClient.respondToRecommendation).toHaveBeenCalledWith(
+      'rec-1',
+      'accepted',
+      expect.objectContaining({
+        id: 'event-1',
+        recommendationId: 'rec-1',
+        action: 'accept',
+      })
+    );
   });
 
   test('maps ignore and dismiss actions correctly', async () => {
-    const where = mock(() => 'update-query');
-    const set = mock(() => ({ where }));
-    const values = mock(() => 'insert-query');
-    db.update.mockReturnValue({ set });
-    db.insert.mockReturnValue({ values });
-    db.batch.mockResolvedValue([]);
+    deps.coreClient.respondToRecommendation = mock(async () => {});
 
-    const ignored = await respondToRecommendation('rec-2', 'ignore');
-    const dismissed = await respondToRecommendation('rec-3', 'dismiss');
+    const ignored = await respondToRecommendation('rec-2', 'ignored', 'ignore');
+    const dismissed = await respondToRecommendation('rec-3', 'dismissed', 'dismiss');
 
-    expect(ignored).toEqual({ success: true, status: 'ignored' });
-    expect(dismissed).toEqual({ success: true, status: 'dismissed' });
+    expect(ignored).toEqual({ success: true, recommendationId: 'rec-2' });
+    expect(dismissed).toEqual({ success: true, recommendationId: 'rec-3' });
   });
 
-  test('returns DATABASE_ERROR on failure', async () => {
-    db.batch.mockRejectedValue(new Error('batch failed'));
+  test('returns error on failure', async () => {
+    deps.coreClient.respondToRecommendation = mock(async () => {
+      throw new Error('batch failed');
+    });
 
-    const result = await respondToRecommendation('rec-4', 'accept');
+    const result = await respondToRecommendation('rec-4', 'accepted', 'accept');
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('RECOMMENDATION_ERROR');
     }
   });
 });

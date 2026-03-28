@@ -17,6 +17,8 @@ function createItem(overrides?: Partial<KnowledgeItem>): KnowledgeItem {
     difficulty: null,
     lastReviewedAt: null,
     nextReviewAt: null,
+    reviewCount: 0,
+    embedding: null,
     labelStatus: 'pending',
     labelRequestedAt: 10,
     ...overrides,
@@ -24,8 +26,34 @@ function createItem(overrides?: Partial<KnowledgeItem>): KnowledgeItem {
 }
 
 describe('createRunForegroundLabeling', () => {
+  const coreClient = {
+    listPendingKnowledgeItemsForLabeling: mock<(limit: number) => Promise<KnowledgeItem[]>>(),
+    updateKnowledgeItem: mock<(id: string, patch: any) => Promise<KnowledgeItem>>(),
+  };
+
+  const resolveEffectiveTarget = mock(() => ({ id: 'test-target' }));
+  const executeLabelingTarget = mock(async () => ({
+    success: true,
+    data: {
+      labels: ['todo', 'project'],
+      source: 'rules',
+      version: 'rules-v1',
+      score: 0.65,
+    },
+  }));
+
+  const runForegroundLabeling = createRunForegroundLabeling({
+    coreClient,
+    now: () => 100,
+    resolveEffectiveTarget,
+    executeLabelingTarget,
+  });
+
   beforeEach(() => {
-    mock.clearAllMocks();
+    coreClient.listPendingKnowledgeItemsForLabeling.mockReset();
+    coreClient.updateKnowledgeItem.mockReset();
+    resolveEffectiveTarget.mockClear();
+    executeLabelingTarget.mockClear();
   });
 
   test('processes pending items and stores provisional labels', async () => {
@@ -40,32 +68,18 @@ describe('createRunForegroundLabeling', () => {
       updatedAt: 100,
     });
 
-    const returning = mock(async () => [updatedItem]);
-    const where = mock(() => ({ returning }));
-    const set = mock(() => ({ where }));
-    const update = mock(() => ({ set }));
-    const orderBy = mock(async () => [pendingItem]);
-    const from = mock(() => ({ orderBy }));
-    const select = mock(() => ({ from }));
-
-    const runForegroundLabeling = createRunForegroundLabeling({
-      db: { select, update } as never,
-      knowledgeItems: { id: 'id', labelRequestedAt: 'label_requested_at' } as never,
-      eq: mock(() => ({})) as never,
-      asc: mock((value: unknown) => value) as never,
-      now: () => 100,
-    });
+    coreClient.listPendingKnowledgeItemsForLabeling.mockResolvedValue([pendingItem]);
+    coreClient.updateKnowledgeItem.mockResolvedValue(updatedItem);
 
     const result = await runForegroundLabeling(1);
 
     expect(result.success).toBe(true);
-    if (!result.success) {
-      return;
-    }
+    if (!result.success) return;
 
     expect(result.data.processedCount).toBe(1);
-    expect(update).toHaveBeenCalledTimes(1);
-    expect(set).toHaveBeenCalledWith(
+    expect(coreClient.updateKnowledgeItem).toHaveBeenCalledTimes(1);
+    expect(coreClient.updateKnowledgeItem).toHaveBeenCalledWith(
+      'item-1',
       expect.objectContaining({
         labelStatus: 'provisional',
         labelSource: 'rules',
@@ -75,26 +89,14 @@ describe('createRunForegroundLabeling', () => {
   });
 
   test('returns early when there are no pending items', async () => {
-    const orderBy = mock(async () => [createItem({ labelStatus: 'idle' })]);
-    const from = mock(() => ({ orderBy }));
-    const select = mock(() => ({ from }));
-    const update = mock();
-
-    const runForegroundLabeling = createRunForegroundLabeling({
-      db: { select, update } as never,
-      knowledgeItems: { labelRequestedAt: 'label_requested_at' } as never,
-      eq: mock(() => ({})) as never,
-      asc: mock((value: unknown) => value) as never,
-    });
+    coreClient.listPendingKnowledgeItemsForLabeling.mockResolvedValue([]);
 
     const result = await runForegroundLabeling(1);
 
     expect(result.success).toBe(true);
-    if (!result.success) {
-      return;
-    }
+    if (!result.success) return;
 
     expect(result.data.processedCount).toBe(0);
-    expect(update).not.toHaveBeenCalled();
+    expect(coreClient.updateKnowledgeItem).not.toHaveBeenCalled();
   });
 });

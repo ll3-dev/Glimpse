@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createGetAllKnowledgeItems,
   type GetAllKnowledgeItemsDeps,
-} from './getAllKnowledgeItems';
+} from '@/src/features/library/getAllKnowledgeItems';
 
 const coreClient = {
   listKnowledgeItems: mock(),
@@ -27,20 +27,20 @@ describe('getAllKnowledgeItems', () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual(items);
+      expect(result.items).toEqual(items);
     }
     expect(coreClient.listKnowledgeItems).toHaveBeenCalledTimes(1);
   });
 
-  test('returns DATABASE_ERROR when query throws', async () => {
+  test('returns failure result when query throws', async () => {
     coreClient.listKnowledgeItems.mockRejectedValue(new Error('db down'));
 
     const result = await getAllKnowledgeItems();
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
-      expect(result.error.message).toBe('Failed to retrieve knowledge items');
+      expect(result.error).toBeInstanceOf(Error);
+      expect(result.error.message).toBe('db down');
     }
   });
 });

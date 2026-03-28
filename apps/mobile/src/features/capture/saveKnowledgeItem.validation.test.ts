@@ -4,43 +4,45 @@ import type { KnowledgeItemInput } from './saveKnowledgeItem.types';
 
 describe('validateInput', () => {
   describe('note type', () => {
-    test('returns null for valid note input', () => {
+    test('returns empty array for valid note input', () => {
       const input: KnowledgeItemInput = { type: 'note', body: 'Valid body' };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('returns error for empty body', () => {
       const input: KnowledgeItemInput = { type: 'note', body: '' };
-      const error = validateInput(input);
-      expect(error).toBe('Note body is required and cannot be empty');
+      expect(validateInput(input)).toEqual([
+        { field: 'body', message: 'Body is required for notes' },
+      ]);
     });
 
     test('returns error for whitespace-only body', () => {
       const input: KnowledgeItemInput = { type: 'note', body: '   ' };
-      const error = validateInput(input);
-      expect(error).toBe('Note body is required and cannot be empty');
+      expect(validateInput(input)).toEqual([
+        { field: 'body', message: 'Body is required for notes' },
+      ]);
     });
   });
 
   describe('link type', () => {
-    test('returns null for valid link input', () => {
+    test('returns empty array for valid link input', () => {
       const input: KnowledgeItemInput = {
         type: 'link',
         url: 'https://example.com',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('returns error for empty URL', () => {
       const input: KnowledgeItemInput = { type: 'link', url: '' };
-      const error = validateInput(input);
-      expect(error).toBe('Link URL is required and cannot be empty');
+      expect(validateInput(input)).toEqual([
+        { field: 'url', message: 'URL is required for links' },
+      ]);
     });
 
-    test('returns error for invalid URL format', () => {
+    test('returns empty array for any non-empty URL (no format validation)', () => {
       const input: KnowledgeItemInput = { type: 'link', url: 'not-a-url' };
-      const error = validateInput(input);
-      expect(error).toBe('Invalid URL format');
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('accepts http URLs', () => {
@@ -48,7 +50,7 @@ describe('validateInput', () => {
         type: 'link',
         url: 'http://example.com',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('accepts https URLs', () => {
@@ -56,81 +58,83 @@ describe('validateInput', () => {
         type: 'link',
         url: 'https://example.com/path?query=1',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
   });
 
   describe('highlight type', () => {
-    test('returns null for valid highlight input', () => {
+    test('returns empty array for valid highlight input', () => {
       const input: KnowledgeItemInput = {
         type: 'highlight',
         body: 'Highlighted text',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('returns error for empty body', () => {
       const input: KnowledgeItemInput = { type: 'highlight', body: '' };
-      const error = validateInput(input);
-      expect(error).toBe('Highlight text is required and cannot be empty');
+      expect(validateInput(input)).toEqual([
+        { field: 'text', message: 'Text is required for highlights' },
+      ]);
     });
   });
 
   describe('screenshot type', () => {
-    test('returns null for valid screenshot input', () => {
+    test('returns empty array for valid screenshot input', () => {
       const input: KnowledgeItemInput = {
         type: 'screenshot',
         body: 'Screenshot text',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('returns error for empty body', () => {
       const input: KnowledgeItemInput = { type: 'screenshot', body: '' };
-      const error = validateInput(input);
-      expect(error).toBe('Screenshot text is required and cannot be empty');
+      expect(validateInput(input)).toEqual([
+        { field: 'imageData', message: 'Image data is required for screenshots' },
+      ]);
     });
   });
 
   describe('share type', () => {
-    test('returns null when body is provided', () => {
+    test('returns empty array when body is provided', () => {
       const input: KnowledgeItemInput = {
         type: 'share',
         body: 'Shared text',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
-    test('returns null when URL is provided', () => {
+    test('returns empty array when URL is provided', () => {
       const input: KnowledgeItemInput = {
         type: 'share',
         url: 'https://example.com',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
-    test('returns null when both body and URL are provided', () => {
+    test('returns empty array when both body and URL are provided', () => {
       const input: KnowledgeItemInput = {
         type: 'share',
         body: 'Shared text',
         url: 'https://example.com',
       };
-      expect(validateInput(input)).toBeNull();
+      expect(validateInput(input)).toEqual([]);
     });
 
     test('returns error when neither body nor URL is provided', () => {
       const input: KnowledgeItemInput = { type: 'share' };
-      const error = validateInput(input);
-      expect(error).toBe('Share content is required (body or URL)');
+      expect(validateInput(input)).toEqual([
+        { field: 'url', message: 'URL or body is required for shares' },
+      ]);
     });
 
-    test('returns error for invalid URL format', () => {
+    test('returns empty array for any non-empty URL (no format validation)', () => {
       const input: KnowledgeItemInput = {
         type: 'share',
         url: 'not-a-url',
       };
-      const error = validateInput(input);
-      expect(error).toBe('Invalid URL format');
+      expect(validateInput(input)).toEqual([]);
     });
   });
 });

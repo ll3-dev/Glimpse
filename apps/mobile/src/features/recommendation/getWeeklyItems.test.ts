@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createGetWeeklyItems, type GetWeeklyItemsDeps } from './getWeeklyItems';
+import {
+  createGetWeeklyItems,
+  type GetWeeklyItemsDeps,
+} from '@/src/features/core/application/recommendation';
 
 const coreClient = {
   listWeeklyKnowledgeItems: mock(),
@@ -26,21 +29,21 @@ describe('getWeeklyItems', () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual(items);
+      expect(result.items).toEqual(items);
     }
     expect(coreClient.listWeeklyKnowledgeItems).toHaveBeenCalledWith(
       now - 7 * 24 * 60 * 60 * 1000
     );
   });
 
-  test('returns DATABASE_ERROR when query fails', async () => {
+  test('returns error when query fails', async () => {
     coreClient.listWeeklyKnowledgeItems.mockRejectedValue(new Error('query failed'));
 
     const result = await getWeeklyItems();
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('RECOMMENDATION_ERROR');
     }
   });
 });

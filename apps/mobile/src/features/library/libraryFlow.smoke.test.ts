@@ -1,8 +1,8 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import {
   createSaveKnowledgeItem,
   type SaveKnowledgeItemDeps,
-} from '@/src/features/capture/saveKnowledgeItem';
+} from '@/src/features/core/application/capture';
 import {
   createGetAllKnowledgeItems,
   type GetAllKnowledgeItemsDeps,
@@ -11,8 +11,6 @@ import { filterKnowledgeItems } from '@/src/features/search/filterKnowledgeItems
 import { parseQueryToKeyword } from '@/src/features/search/parseQueryToKeyword';
 import type { KnowledgeItem } from '@glimpse/shared';
 import type { MetadataInput, MetadataOutput } from '@/src/features/ai/metadata';
-
-type InsertableItem = Omit<KnowledgeItem, 'id'> & { id: string };
 
 describe('library flow smoke', () => {
   test('capture save -> library query -> query-style search', async () => {
@@ -24,48 +22,39 @@ describe('library flow smoke', () => {
     };
 
     try {
-      const storedItems: InsertableItem[] = [];
-
-      const db = {
-        insert: () => ({
-          values: async (value: InsertableItem) => {
-            storedItems.push(value);
-          },
-        }),
-        select: () => ({
-          from: () => ({
-            orderBy: async () =>
-              [...storedItems].sort((a, b) => (b.createdAt as number) - (a.createdAt as number)),
-          }),
-        }),
-      };
-
-      const knowledgeItems = { createdAt: 'created_at_column' };
+      const storedItems: KnowledgeItem[] = [];
+      let idCounter = 0;
 
       const saveDeps = {
-        db,
-        knowledgeItems,
-        generateMetadata: async (input: MetadataInput): Promise<{ success: true; data: MetadataOutput }> => ({
-          success: true,
-          data: {
-            summary: `[summary] ${input.content}`,
-            tags: [input.content?.includes('React') ? 'react' : 'general'],
-          },
-        }),
-        initializeReviewSchedule: (createdAt: number) => Promise.resolve({
-          nextReviewAt: createdAt + 1000,
+        coreClient: {
+          saveKnowledgeItem: mock(async (item: KnowledgeItem) => {
+            storedItems.push(item);
+            return item;
+          }),
+        },
+        generateMetadata: mock(async (input: MetadataInput): Promise<MetadataOutput> => ({
+          summary: `[summary] ${input.content}`,
+          tags: [input.content?.includes('React') ? 'react' : 'general'],
+        })),
+        initializeReviewSchedule: mock(() => Promise.resolve({
+          nextReviewAt: Date.now() + 1000,
           stability: null,
           difficulty: null,
           lastReviewedAt: null,
-        }),
-        logger: { error: () => undefined },
+        })),
+        logger: { error: mock() },
+        generateId: () => `id-${++idCounter}`,
+        isIdCollisionError: () => false,
+        maxIdCollisionRetries: 2,
       } as unknown as SaveKnowledgeItemDeps;
 
       const queryDeps = {
-        db,
-        knowledgeItems,
-        desc: (column: unknown) => column,
-      } as unknown as GetAllKnowledgeItemsDeps;
+        coreClient: {
+          listKnowledgeItems: mock(async () =>
+            [...storedItems].sort((a, b) => b.createdAt - a.createdAt)
+          ),
+        },
+      } satisfies GetAllKnowledgeItemsDeps;
 
       const saveKnowledgeItem = createSaveKnowledgeItem(saveDeps);
       const getAllKnowledgeItems = createGetAllKnowledgeItems(queryDeps);
@@ -91,14 +80,14 @@ describe('library flow smoke', () => {
         return;
       }
 
-      expect(listResult.data.length).toBe(2);
-      expect(listResult.data[0]?.title).toBe('SQLite article');
-      expect(listResult.data[1]?.title).toBe('React memo');
+      expect(listResult.items.length).toBe(2);
+      expect(listResult.items[0]?.title).toBe('SQLite article');
+      expect(listResult.items[1]?.title).toBe('React memo');
 
       const keyword = parseQueryToKeyword('React 관련 있어?');
       expect(keyword).toBe('React');
 
-      const filtered = filterKnowledgeItems(listResult.data, keyword);
+      const filtered = filterKnowledgeItems(listResult.items, keyword);
       expect(filtered.length).toBe(1);
       expect(filtered[0]?.title).toBe('React memo');
     } finally {

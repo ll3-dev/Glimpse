@@ -27,6 +27,38 @@ mock.module("react-native-nitro-modules", () => ({
   },
 }));
 
+// Mock native-core-client to avoid "not available on web platform" errors in tests
+// The .ts (web fallback) variant throws immediately at import time
+mock.module("../features/core/native-core-client", () => {
+  const noop = async () => {};
+  const noopReturn = async () => null;
+  const noopArray = async () => [];
+  return {
+    nativeCoreClient: {
+      initialize: noop,
+      saveKnowledgeItem: noopReturn,
+      getKnowledgeItemById: noopReturn,
+      updateKnowledgeItem: noopReturn,
+      listKnowledgeItems: noopArray,
+      listKnowledgeItemsByIds: noopArray,
+      deleteKnowledgeItem: noop,
+      searchKnowledgeItems: noopArray,
+      calculateTagOverlap: async () => 0,
+      getDueKnowledgeItems: noopArray,
+      initializeReviewSchedule: noopReturn,
+      listWeeklyKnowledgeItems: noopArray,
+      listPendingRecommendations: noopArray,
+      listRecommendations: noopArray,
+      saveRecommendations: noop,
+      respondToRecommendation: noop,
+      logRecommendationFeedback: noopReturn,
+      listRecentFeedbackEvents: noopArray,
+      listPendingKnowledgeItemsForLabeling: noopArray,
+      syncKnowledgeItems: noopArray,
+    },
+  };
+});
+
 // Mock react-native to avoid runtime errors in test environment
 mock.module("react-native", () => ({
   Platform: {

@@ -3,43 +3,49 @@ import {
   createGetRecentFeedbackEvents,
   createLogRecommendationFeedback,
   type RecommendationFeedbackDeps,
-} from './logRecommendationFeedback';
+} from '@/src/features/core/application/recommendation';
+import type { FeedbackEvent } from '@glimpse/shared';
 
-const insertValues = mock(async () => undefined);
-const db = {
-  insert: mock(() => ({ values: insertValues })),
-  select: mock(),
+const createMockDeps = () => {
+  const coreClient = {
+    logRecommendationFeedback: mock<(event: FeedbackEvent) => Promise<FeedbackEvent>>(),
+    listRecentFeedbackEvents: mock<(limit: number) => Promise<FeedbackEvent[]>>(),
+  };
+  const nanoid = mock(() => 'feedback-id');
+  const isIdCollisionError = mock(() => false);
+
+  return {
+    coreClient,
+    nanoid,
+    isIdCollisionError,
+    maxIdCollisionRetries: 3,
+  } as unknown as RecommendationFeedbackDeps;
 };
-
-const feedbackEvents = {
-  createdAt: 'created_at_col',
-};
-
-const descMock = mock((column: unknown) => ({ type: 'desc', column }));
-const nanoid = mock(() => 'feedback-id');
-
-const deps = {
-  db,
-  feedbackEvents,
-  desc: descMock,
-  nanoid,
-} as unknown as RecommendationFeedbackDeps;
-
-const logRecommendationFeedback = createLogRecommendationFeedback(deps);
-const getRecentFeedbackEvents = createGetRecentFeedbackEvents(deps);
 
 describe('logRecommendationFeedback', () => {
+  let deps: RecommendationFeedbackDeps;
+  let logRecommendationFeedback: ReturnType<typeof createLogRecommendationFeedback>;
+  let getRecentFeedbackEvents: ReturnType<typeof createGetRecentFeedbackEvents>;
+
   beforeEach(() => {
-    db.insert.mockClear();
-    db.select.mockReset();
-    insertValues.mockReset();
-    insertValues.mockResolvedValue(undefined);
-    descMock.mockClear();
-    nanoid.mockClear();
+    deps = createMockDeps();
+    logRecommendationFeedback = createLogRecommendationFeedback(deps);
+    getRecentFeedbackEvents = createGetRecentFeedbackEvents(deps);
   });
 
   test('writes feedback event and returns it', async () => {
-    const result = await logRecommendationFeedback('rec-1', 'accept');
+    const savedEvent: FeedbackEvent = {
+      id: 'feedback-id',
+      recommendationId: 'rec-1',
+      action: 'accept',
+      createdAt: Date.now(),
+    };
+    deps.coreClient.logRecommendationFeedback = mock(async () => savedEvent);
+
+    const result = await logRecommendationFeedback({
+      recommendationId: 'rec-1',
+      action: 'accept',
+    });
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -47,37 +53,37 @@ describe('logRecommendationFeedback', () => {
       expect(result.event.recommendationId).toBe('rec-1');
       expect(result.event.action).toBe('accept');
     }
-    expect(db.insert).toHaveBeenCalledTimes(1);
-    expect(insertValues).toHaveBeenCalledTimes(1);
+    expect(deps.coreClient.logRecommendationFeedback).toHaveBeenCalledTimes(1);
   });
 
-  test('returns DATABASE_ERROR when insert fails', async () => {
-    insertValues.mockRejectedValue(new Error('insert failed'));
+  test('returns error when insert fails', async () => {
+    deps.coreClient.logRecommendationFeedback = mock(async () => {
+      throw new Error('insert failed');
+    });
 
-    const result = await logRecommendationFeedback('rec-2', 'ignore');
+    const result = await logRecommendationFeedback({
+      recommendationId: 'rec-2',
+      action: 'ignore',
+    });
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('RECOMMENDATION_ERROR');
     }
   });
 
   test('returns recent feedback events with limit', async () => {
-    const events = [{ id: 'e1' }, { id: 'e2' }] as any;
-    const limit = mock(async () => events);
-    const orderBy = mock(() => ({ limit }));
-    const from = mock(() => ({ orderBy }));
-    db.select.mockReturnValue({ from });
+    const events = [{ id: 'e1' }, { id: 'e2' }] as FeedbackEvent[];
+    deps.coreClient.listRecentFeedbackEvents = mock(async () => events);
 
     const result = await getRecentFeedbackEvents(2);
 
-    expect(result).toEqual({ success: true, data: events });
-    expect(descMock).toHaveBeenCalledTimes(1);
-    expect(limit).toHaveBeenCalledWith(2);
+    expect(result).toEqual({ success: true, events });
+    expect(deps.coreClient.listRecentFeedbackEvents).toHaveBeenCalledWith(2);
   });
 
-  test('returns DATABASE_ERROR when reading recent events fails', async () => {
-    db.select.mockImplementation(() => {
+  test('returns error when reading recent events fails', async () => {
+    deps.coreClient.listRecentFeedbackEvents = mock(async () => {
       throw new Error('read failed');
     });
 
@@ -85,7 +91,7 @@ describe('logRecommendationFeedback', () => {
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('RECOMMENDATION_ERROR');
     }
   });
 });

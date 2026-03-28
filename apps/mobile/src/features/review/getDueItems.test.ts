@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createGetDueItems, type GetDueItemsDeps } from './getDueItems';
+import {
+  createGetDueItems,
+  type GetDueItemsDeps,
+} from '@/src/features/core/application/review';
 
 const coreClient = {
   getDueKnowledgeItems: mock(),
@@ -20,35 +23,31 @@ describe('getDueItems', () => {
     logger.error.mockClear();
   });
 
-  test('returns due items and count', async () => {
+  test('returns due items', async () => {
     const rows = [{ id: 'a' }, { id: 'b' }] as any;
     coreClient.getDueKnowledgeItems.mockResolvedValue(rows);
 
-    const result = await getDueItems({ now: 123 });
+    const result = await getDueItems();
 
     expect(result).toEqual({
       success: true,
       items: rows,
-      count: 2,
     });
     expect(coreClient.getDueKnowledgeItems).toHaveBeenCalledWith({
-      now: 123,
+      now: expect.any(Number),
       limit: undefined,
     });
   });
 
-  test('applies limit when provided and positive', async () => {
+  test('applies limit when provided', async () => {
     const rows = [{ id: 'a' }] as any;
     coreClient.getDueKnowledgeItems.mockResolvedValue(rows);
 
-    const result = await getDueItems({ limit: 1, now: 999 });
+    const result = await getDueItems({ limit: 1 });
 
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.count).toBe(1);
-    }
     expect(coreClient.getDueKnowledgeItems).toHaveBeenCalledWith({
-      now: 999,
+      now: expect.any(Number),
       limit: 1,
     });
   });
@@ -60,7 +59,7 @@ describe('getDueItems', () => {
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('REVIEW_ERROR');
     }
     expect(logger.error).toHaveBeenCalledTimes(1);
   });

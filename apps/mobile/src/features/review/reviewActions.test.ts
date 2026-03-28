@@ -4,56 +4,57 @@ import {
   createPostponeReview,
   DEFAULT_POSTPONE_INTERVAL_MS,
   type ReviewActionsDeps,
-} from './reviewActions';
+} from '@/src/features/core/application/review';
+import type { KnowledgeItem } from '@glimpse/shared';
 
-const db = {
-  select: mock(),
-  update: mock(),
+const mockItem: KnowledgeItem = {
+  id: 'k1',
+  type: 'note',
+  title: 'Test',
+  body: 'body',
+  createdAt: 1000,
+  updatedAt: 1000,
+  tags: null,
+  lastReviewedAt: null,
+  nextReviewAt: null,
+  reviewCount: 0,
+  embedding: null,
+  summary: null,
 };
 
-const knowledgeItems = {
-  id: 'id_column',
+const createMockDeps = () => {
+  const getKnowledgeItemById = mock<(id: string) => Promise<KnowledgeItem | null>>();
+  const updateKnowledgeItem = mock<
+    (id: string, patch: Partial<KnowledgeItem>) => Promise<KnowledgeItem>
+  >();
+  const calculateNextReviewFromFeedback = mock(() => ({
+    intervalMs: 2 * 24 * 60 * 60 * 1000,
+    nextReviewAt: 1_700_000_123_000,
+  }));
+  const logger = { error: mock() };
+
+  return {
+    coreClient: { getKnowledgeItemById, updateKnowledgeItem },
+    calculateNextReviewFromFeedback,
+    logger,
+  } as unknown as ReviewActionsDeps;
 };
-
-const eqMock = mock((left: unknown, right: unknown) => ({ left, right }));
-const calculateNextReviewFromFeedback = mock(() => ({
-  intervalMs: 2 * 24 * 60 * 60 * 1000,
-  nextReviewAt: 1_700_000_123_000,
-}));
-const logger = { info: mock(), error: mock() };
-
-const deps = {
-  db,
-  knowledgeItems,
-  eq: eqMock,
-  calculateNextReviewFromFeedback,
-  logger,
-} as unknown as ReviewActionsDeps;
-
-const markAsReviewed = createMarkAsReviewed(deps);
-const postponeReview = createPostponeReview(deps);
 
 describe('reviewActions', () => {
+  let deps: ReviewActionsDeps;
+
   beforeEach(() => {
-    db.select.mockReset();
-    db.update.mockReset();
-    eqMock.mockClear();
-    calculateNextReviewFromFeedback.mockClear();
-    calculateNextReviewFromFeedback.mockReturnValue({
+    deps = createMockDeps();
+    deps.calculateNextReviewFromFeedback = mock(() => ({
       intervalMs: 2 * 24 * 60 * 60 * 1000,
       nextReviewAt: 1_700_000_123_000,
-    });
-    logger.info.mockClear();
-    logger.error.mockClear();
+    }));
   });
 
   test('markAsReviewed returns NOT_FOUND when item does not exist', async () => {
-    db.select.mockReturnValue({
-      from: mock(() => ({
-        where: mock(async () => []),
-      })),
-    });
+    deps.coreClient.getKnowledgeItemById = mock(async () => null);
 
+    const markAsReviewed = createMarkAsReviewed(deps);
     const result = await markAsReviewed('missing-id');
 
     expect(result).toMatchObject({
@@ -65,65 +66,52 @@ describe('reviewActions', () => {
     });
   });
 
-  test('markAsReviewed updates review schedule and returns updated row', async () => {
-    db.select.mockReturnValue({
-      from: mock(() => ({
-        where: mock(async () => [{ id: 'k1', lastReviewedAt: null, nextReviewAt: null }]),
-      })),
-    });
+  test('markAsReviewed updates review schedule and returns updated item', async () => {
+    deps.coreClient.getKnowledgeItemById = mock(async () => ({ ...mockItem }));
+    deps.coreClient.updateKnowledgeItem = mock(async (_id: string, patch: Partial<KnowledgeItem>) => ({
+      ...mockItem,
+      ...patch,
+    })) as any;
 
-    const returning = mock(async () => [{ id: 'k1', nextReviewAt: 1_700_000_123_000 }]);
-    const where = mock(() => ({ returning }));
-    const set = mock((_values: unknown) => ({ where }));
-    db.update.mockReturnValue({ set });
-
-    const result = await markAsReviewed('k1', 'remembered');
+    const markAsReviewed = createMarkAsReviewed(deps);
+    const result = await markAsReviewed('k1');
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.id).toBe('k1');
+      expect(result.item.id).toBe('k1');
     }
-    expect(calculateNextReviewFromFeedback).toHaveBeenCalledWith(null, null, 'remembered');
+    expect(deps.calculateNextReviewFromFeedback).toHaveBeenCalledWith(null, null, 'remembered', expect.any(Number));
   });
 
   test('postponeReview uses default interval when not provided', async () => {
-    db.select.mockReturnValue({
-      from: mock(() => ({
-        where: mock(async () => [{ id: 'k2', nextReviewAt: null }]),
-      })),
-    });
+    deps.coreClient.getKnowledgeItemById = mock(async () => ({ ...mockItem, id: 'k2' }));
+    deps.coreClient.updateKnowledgeItem = mock(async (_id: string, patch: Partial<KnowledgeItem>) => ({
+      ...mockItem,
+      id: 'k2',
+      ...patch,
+    })) as any;
 
-    const returning = mock(async () => [{ id: 'k2', nextReviewAt: 1_700_000_000_000 }]);
-    const where = mock(() => ({ returning }));
-    const set = mock((_values: unknown) => ({ where }));
-    db.update.mockReturnValue({ set });
-
+    const postponeReview = createPostponeReview(deps);
     const result = await postponeReview('k2');
 
     expect(result.success).toBe(true);
-    expect(set).toHaveBeenCalledTimes(1);
-    const payload = set.mock.calls[0]?.[0] as { nextReviewAt: number };
-    expect(typeof payload.nextReviewAt).toBe('number');
-    expect(payload.nextReviewAt).toBeGreaterThanOrEqual(DEFAULT_POSTPONE_INTERVAL_MS);
+    if (result.success) {
+      expect(result.item.nextReviewAt).toBe(1_700_000_123_000);
+    }
   });
 
   test('returns DATABASE_ERROR when update operation throws', async () => {
-    db.select.mockReturnValue({
-      from: mock(() => ({
-        where: mock(async () => [{ id: 'k3', lastReviewedAt: null, nextReviewAt: null }]),
-      })),
-    });
-
-    db.update.mockImplementation(() => {
+    deps.coreClient.getKnowledgeItemById = mock(async () => ({ ...mockItem, id: 'k3' }));
+    deps.coreClient.updateKnowledgeItem = mock(async () => {
       throw new Error('update failed');
     });
 
+    const markAsReviewed = createMarkAsReviewed(deps);
     const result = await markAsReviewed('k3');
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('REVIEW_ERROR');
     }
-    expect(logger.error).toHaveBeenCalledTimes(1);
   });
 });

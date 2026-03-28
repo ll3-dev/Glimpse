@@ -82,7 +82,7 @@ describe('createLlamaService', () => {
       expect(capturedOptions).toHaveLength(1);
       expect(capturedOptions[0]).toMatchObject({
         model: '/path/to/model.gguf',
-        use_mlock: true,
+        use_mlock: false,
         n_ctx: 2048,
         n_gpu_layers: 0,
       });
@@ -152,7 +152,7 @@ describe('createLlamaService', () => {
       expect(releaseCalls).toHaveLength(1);
     });
 
-    test('retries with use_mlock=false when initial load fails', async () => {
+    test('retries with smaller context when initial load fails', async () => {
       const capturedOptions: Record<string, unknown>[] = [];
 
       mock.module('llama.rn', () => ({
@@ -160,7 +160,7 @@ describe('createLlamaService', () => {
           capturedOptions.push(options);
 
           if (capturedOptions.length === 1) {
-            throw new Error('mlock failed');
+            throw new Error('load failed');
           }
 
           return {
@@ -180,7 +180,7 @@ describe('createLlamaService', () => {
       await service.loadModel('/path/to/model.gguf');
 
       expect(capturedOptions).toHaveLength(2);
-      expect(capturedOptions[0]?.use_mlock).toBe(true);
+      expect(capturedOptions[0]?.use_mlock).toBe(false);
       expect(capturedOptions[1]?.use_mlock).toBe(false);
       expect(service.isModelLoaded()).toBe(true);
     });
@@ -192,7 +192,7 @@ describe('createLlamaService', () => {
         initLlama: mock(async (options: Record<string, unknown>) => {
           capturedOptions.push(options);
 
-          if (capturedOptions.length < 3) {
+          if (capturedOptions.length < 2) {
             throw new Error('Failed to load model');
           }
 
@@ -215,8 +215,7 @@ describe('createLlamaService', () => {
       });
 
       expect(capturedOptions[0]?.n_ctx).toBe(4096);
-      expect(capturedOptions[1]?.n_ctx).toBe(4096);
-      expect(capturedOptions[2]?.n_ctx).toBe(2048);
+      expect(capturedOptions[1]?.n_ctx).toBe(2048);
       expect(service.isModelLoaded()).toBe(true);
     });
   });

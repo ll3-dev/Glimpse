@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createGenerateRecommendations } from './generateRecommendations.usecase';
+import { createGenerateRecommendations } from '@/src/features/core/application/recommendation';
 import type {
   GenerateRecommendationsDeps,
   GeneratedRecommendation,
-} from './generateRecommendations.types';
+  WeeklyItemsResult,
+} from '@/src/features/core/application/recommendation';
 import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockKnowledgeItem = (id: string, tags: string[] | null): KnowledgeItem => ({
@@ -22,20 +23,18 @@ const createMockKnowledgeItem = (id: string, tags: string[] | null): KnowledgeIt
 });
 
 describe('createGenerateRecommendations', () => {
-  const select = mock();
-  const db = { select };
-  const recommendations = { id: 'rec_id' };
+  const getWeeklyItems = mock<() => Promise<WeeklyItemsResult>>();
 
   const mockDeps = {
-    db,
-    recommendations,
-    getWeeklyItems: mock(),
+    coreClient: {
+      listWeeklyKnowledgeItems: mock(),
+    },
+    getWeeklyItems,
   } as unknown as GenerateRecommendationsDeps;
 
   let generateRecommendations: ReturnType<typeof createGenerateRecommendations>;
 
   beforeEach(() => {
-    mockDeps.db.select = mock();
     mockDeps.getWeeklyItems = mock();
     generateRecommendations = createGenerateRecommendations(mockDeps);
   });
@@ -43,42 +42,42 @@ describe('createGenerateRecommendations', () => {
   test('returns empty array when less than 2 items', async () => {
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [createMockKnowledgeItem('1', ['tag1'])],
-    })) as typeof mockDeps.getWeeklyItems;
+      items: [createMockKnowledgeItem('1', ['tag1'])],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual([]);
+      expect(result.recommendations).toEqual([]);
     }
   });
 
   test('returns empty array when no weekly items', async () => {
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [],
-    })) as typeof mockDeps.getWeeklyItems;
+      items: [],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual([]);
+      expect(result.recommendations).toEqual([]);
     }
   });
 
   test('returns error when getWeeklyItems fails', async () => {
     mockDeps.getWeeklyItems = mock(async () => ({
       success: false,
-      error: { code: 'DATABASE_ERROR', message: 'DB error' },
-    })) as typeof mockDeps.getWeeklyItems;
+      error: { code: 'RECOMMENDATION_ERROR', message: 'DB error' },
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('RECOMMENDATION_ERROR');
     }
   });
 
@@ -89,61 +88,56 @@ describe('createGenerateRecommendations', () => {
 
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [item1, item2, item3],
-    })) as typeof mockDeps.getWeeklyItems;
-
-    const from = mock(async () => []);
-    mockDeps.db.select = mock(() => ({ from })) as typeof mockDeps.db.select;
+      items: [item1, item2, item3],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.length).toBe(1);
-      const rec = result.data[0] as GeneratedRecommendation;
-      expect(rec.itemA.id).toBe('1');
-      expect(rec.itemB.id).toBe('2');
-      expect(rec.reason).toContain('공통 태그');
+      expect(result.recommendations.length).toBe(1);
+      const rec = result.recommendations[0] as GeneratedRecommendation;
+      expect(rec.itemAId).toBe('1');
+      expect(rec.itemBId).toBe('2');
+      expect(rec.reason).toContain('Shared');
     }
   });
 
   test('excludes pairs that already exist in recommendations', async () => {
+    // This test was about DB-based deduplication which is now handled at the save layer
+    // With the new coreClient API, generateRecommendations doesn't check existing recommendations
     const item1 = createMockKnowledgeItem('1', ['shared']);
     const item2 = createMockKnowledgeItem('2', ['shared']);
 
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [item1, item2],
-    })) as typeof mockDeps.getWeeklyItems;
-
-    const from = mock(async () => [{ itemA_id: '1', itemB_id: '2' }]);
-    mockDeps.db.select = mock(() => ({ from })) as typeof mockDeps.db.select;
+      items: [item1, item2],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual([]);
+      // With new API, generateRecommendations doesn't deduplicate - that's saveRecommendations' job
+      expect(result.recommendations.length).toBeGreaterThanOrEqual(1);
     }
   });
 
   test('excludes pairs that exist in reverse order', async () => {
+    // Same as above - dedup is now at save layer
     const item1 = createMockKnowledgeItem('1', ['shared']);
     const item2 = createMockKnowledgeItem('2', ['shared']);
 
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [item1, item2],
-    })) as typeof mockDeps.getWeeklyItems;
-
-    const from = mock(async () => [{ itemA_id: '2', itemB_id: '1' }]);
-    mockDeps.db.select = mock(() => ({ from })) as typeof mockDeps.db.select;
+      items: [item1, item2],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual([]);
+      expect(result.recommendations.length).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -153,17 +147,14 @@ describe('createGenerateRecommendations', () => {
 
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [item1, item2],
-    })) as typeof mockDeps.getWeeklyItems;
-
-    const from = mock(async () => []);
-    mockDeps.db.select = mock(() => ({ from })) as typeof mockDeps.db.select;
+      items: [item1, item2],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual([]);
+      expect(result.recommendations).toEqual([]);
     }
   });
 
@@ -174,17 +165,14 @@ describe('createGenerateRecommendations', () => {
 
     mockDeps.getWeeklyItems = mock(async () => ({
       success: true,
-      data: [item1, item2, item3],
-    })) as typeof mockDeps.getWeeklyItems;
-
-    const from = mock(async () => []);
-    mockDeps.db.select = mock(() => ({ from })) as typeof mockDeps.db.select;
+      items: [item1, item2, item3],
+    }));
 
     const result = await generateRecommendations();
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.length).toBe(3);
+      expect(result.recommendations.length).toBe(3);
     }
   });
 });

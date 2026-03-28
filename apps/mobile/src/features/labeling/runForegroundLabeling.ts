@@ -11,6 +11,8 @@ export interface RunForegroundLabelingDeps {
     'listPendingKnowledgeItemsForLabeling' | 'updateKnowledgeItem'
   >;
   now?: () => number;
+  resolveEffectiveTarget?: (feature: import('@/src/features/ai/targets/types').AIFeature) => import('@/src/features/ai/targets/types').AITarget;
+  executeLabelingTarget?: (target: import('@/src/features/ai/targets/types').AITarget, item: KnowledgeItem) => Promise<import('./types').LabelingTargetResult>;
 }
 
 const defaultDeps: RunForegroundLabelingDeps = {
@@ -41,9 +43,11 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps = de
       const completedItems: KnowledgeItem[] = [];
 
       for (const item of pendingItems) {
-        const target = resolveEffectiveTarget('labeling');
+        const resolveTarget = deps.resolveEffectiveTarget ?? resolveEffectiveTarget;
+        const executeTarget = deps.executeLabelingTarget ?? executeLabelingTarget;
+        const target = resolveTarget('labeling');
         const labelingResult = yield* tryPromise(
-          () => executeLabelingTarget(target, item),
+          () => executeTarget(target, item),
           (error): AppError =>
             appError('GENERATION_ERROR', 'Failed to execute labeling target', {
               itemId: item.id,

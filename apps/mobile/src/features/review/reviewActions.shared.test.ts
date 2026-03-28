@@ -1,34 +1,21 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { Effect, Cause, Option } from 'effect';
-import { loadKnowledgeItemOrFail } from './reviewActions.shared';
-import type { ReviewActionsDeps } from './reviewActions.types';
+import { loadKnowledgeItemOrFail } from '@/src/features/core/application/review';
 import type { KnowledgeItem } from '@glimpse/shared';
 
-const createMockDeps = () => {
-  const select = mock();
-  const db = { select };
-  const knowledgeItems = { id: 'id_column' };
-  const eq = mock((left: unknown, right: unknown) => ({ left, right }));
-  const logger = { info: mock(), error: mock() };
-  const calculateNextReviewFromFeedback = mock(() => ({
-    intervalMs: 2 * 24 * 60 * 60 * 1000,
-    nextReviewAt: 1_700_000_123_000,
-  }));
+const createMockCoreClient = () => ({
+  getKnowledgeItemById: mock<(id: string) => Promise<KnowledgeItem | null>>(),
+  updateKnowledgeItem: mock(),
+});
 
-  return {
-    db,
-    knowledgeItems,
-    eq,
-    logger,
-    calculateNextReviewFromFeedback,
-  } as unknown as ReviewActionsDeps;
-};
+const createMockLogger = () => ({ error: mock() });
 
 describe('loadKnowledgeItemOrFail', () => {
-  let deps: ReviewActionsDeps;
+  let coreClient: ReturnType<typeof createMockCoreClient>;
+  let logger: ReturnType<typeof createMockLogger>;
 
   beforeEach(() => {
-    deps = createMockDeps();
+    coreClient = createMockCoreClient();
+    logger = createMockLogger();
   });
 
   test('returns item when found', async () => {
@@ -47,75 +34,35 @@ describe('loadKnowledgeItemOrFail', () => {
       summary: null,
     };
 
-    const from = mock(() => ({
-      where: mock(async () => [mockItem]),
-    }));
+    coreClient.getKnowledgeItemById.mockResolvedValue(mockItem);
 
-    deps.db.select = mock(() => ({ from })) as typeof deps.db.select;
-
-    const effect = loadKnowledgeItemOrFail(deps, 'item-1');
-    const result = await Effect.runPromise(effect);
+    const result = await loadKnowledgeItemOrFail(coreClient, 'item-1', logger);
 
     expect(result).toEqual(mockItem);
   });
 
-  test('fails with NOT_FOUND when item does not exist', async () => {
-    const from = mock(() => ({
-      where: mock(async () => []),
-    }));
+  test('returns null when item does not exist', async () => {
+    coreClient.getKnowledgeItemById.mockResolvedValue(null);
 
-    deps.db.select = mock(() => ({ from })) as typeof deps.db.select;
+    const result = await loadKnowledgeItemOrFail(coreClient, 'missing-id', logger);
 
-    const effect = loadKnowledgeItemOrFail(deps, 'missing-id');
-    const exit = await Effect.runPromiseExit(effect);
-
-    expect(exit._tag).toBe('Failure');
-    if (exit._tag === 'Failure') {
-      const failure = Cause.failureOption(exit.cause);
-      expect(Option.isSome(failure)).toBe(true);
-      if (Option.isSome(failure)) {
-        expect(failure.value.code).toBe('NOT_FOUND');
-        expect(failure.value.message).toBe('Item not found');
-      }
-    }
+    expect(result).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith('Knowledge item not found', { itemId: 'missing-id' });
   });
 
-  test('fails with DATABASE_ERROR when query throws', async () => {
-    const from = mock(() => ({
-      where: mock(async () => {
-        throw new Error('DB connection failed');
-      }),
-    }));
+  test('throws and propagates database errors', async () => {
+    coreClient.getKnowledgeItemById.mockRejectedValue(new Error('DB connection failed'));
 
-    deps.db.select = mock(() => ({ from })) as typeof deps.db.select;
-
-    const effect = loadKnowledgeItemOrFail(deps, 'item-1');
-    const exit = await Effect.runPromiseExit(effect);
-
-    expect(exit._tag).toBe('Failure');
-    if (exit._tag === 'Failure') {
-      const failure = Cause.failureOption(exit.cause);
-      expect(Option.isSome(failure)).toBe(true);
-      if (Option.isSome(failure)) {
-        expect(failure.value.code).toBe('DATABASE_ERROR');
-      }
-    }
+    await expect(loadKnowledgeItemOrFail(coreClient, 'item-1', logger)).rejects.toThrow(
+      'DB connection failed'
+    );
   });
 
-  test('calls select with correct table and where clause', async () => {
-    const from = mock(() => ({
-      where: mock(async () => []),
-    }));
-    const select = mock(() => ({ from }));
+  test('calls getKnowledgeItemById with correct id', async () => {
+    coreClient.getKnowledgeItemById.mockResolvedValue(null);
 
-    deps.db.select = select as typeof deps.db.select;
-    deps.eq = mock((left, right) => ({ left, right })) as typeof deps.eq;
+    await loadKnowledgeItemOrFail(coreClient, 'test-id');
 
-    const effect = loadKnowledgeItemOrFail(deps, 'test-id');
-    await Effect.runPromiseExit(effect);
-
-    expect(select).toHaveBeenCalled();
-    expect(from).toHaveBeenCalledWith(deps.knowledgeItems);
-    expect(deps.eq).toHaveBeenCalledWith(deps.knowledgeItems.id, 'test-id');
+    expect(coreClient.getKnowledgeItemById).toHaveBeenCalledWith('test-id');
   });
 });

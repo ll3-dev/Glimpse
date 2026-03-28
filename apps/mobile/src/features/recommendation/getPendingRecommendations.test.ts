@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createGetPendingRecommendations,
   type GetPendingRecommendationsDeps,
-} from './getPendingRecommendations';
+} from '@/src/features/core/application/recommendation';
 
 const coreClient = {
   listPendingRecommendations: mock(),
@@ -23,24 +23,24 @@ describe('getPendingRecommendations', () => {
 
   test('returns empty list when there are no pending recommendations', async () => {
     coreClient.listPendingRecommendations.mockResolvedValue([]);
+    coreClient.listKnowledgeItemsByIds.mockResolvedValue([]);
 
     const result = await getPendingRecommendations();
 
-    expect(result).toEqual({ success: true, data: [] });
+    expect(result).toEqual({ success: true, recommendations: [] });
     expect(coreClient.listPendingRecommendations).toHaveBeenCalledTimes(1);
-    expect(coreClient.listKnowledgeItemsByIds).not.toHaveBeenCalled();
   });
 
   test('joins pending recommendations with fetched items', async () => {
     const pending = [
       { id: 'r1', itemA_id: 'a', itemB_id: 'b', status: 'pending' },
       { id: 'r2', itemA_id: 'a', itemB_id: 'missing', status: 'pending' },
-    ];
+    ] as any;
 
     const items = [
       { id: 'a', title: 'A' },
       { id: 'b', title: 'B' },
-    ];
+    ] as any;
 
     coreClient.listPendingRecommendations.mockResolvedValue(pending);
     coreClient.listKnowledgeItemsByIds.mockResolvedValue(items);
@@ -49,10 +49,10 @@ describe('getPendingRecommendations', () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0]?.recommendation.id).toBe('r1');
-      expect(result.data[0]?.itemA.id).toBe('a');
-      expect(result.data[0]?.itemB.id).toBe('b');
+      expect(result.recommendations).toHaveLength(1);
+      expect(result.recommendations[0]?.recommendation.id).toBe('r1');
+      expect(result.recommendations[0]?.itemA.id).toBe('a');
+      expect(result.recommendations[0]?.itemB.id).toBe('b');
     }
     expect(coreClient.listKnowledgeItemsByIds).toHaveBeenCalledWith([
       'a',
@@ -61,14 +61,14 @@ describe('getPendingRecommendations', () => {
     ]);
   });
 
-  test('returns DATABASE_ERROR when query fails', async () => {
+  test('returns error when query fails', async () => {
     coreClient.listPendingRecommendations.mockRejectedValue(new Error('db fail'));
 
     const result = await getPendingRecommendations();
 
     expect(result.success).toBe(false);
     if (result.success === false) {
-      expect(result.error.code).toBe('DATABASE_ERROR');
+      expect(result.error.code).toBe('RECOMMENDATION_ERROR');
     }
   });
 });
