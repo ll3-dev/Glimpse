@@ -81,6 +81,69 @@ describe('mobileCoreClient typed bridge contract', () => {
     expect(result).toEqual(item satisfies KnowledgeItem);
   });
 
+  test('builds application-layer knowledge queries on top of listKnowledgeItems', async () => {
+    const items = [
+      {
+        id: 'due-item',
+        type: 'note',
+        title: 'Due',
+        body: null,
+        url: null,
+        summary: null,
+        tags: [],
+        labels: null,
+        provisionalLabels: null,
+        labelStatus: 'pending',
+        labelSource: null,
+        labelVersion: null,
+        labelScore: null,
+        labelRequestedAt: null,
+        labelCompletedAt: null,
+        labelError: null,
+        createdAt: 10,
+        updatedAt: 10,
+        stability: null,
+        difficulty: null,
+        lastReviewedAt: null,
+        nextReviewAt: 20,
+      },
+      {
+        id: 'fresh-item',
+        type: 'note',
+        title: 'Fresh',
+        body: null,
+        url: null,
+        summary: null,
+        tags: [],
+        labels: null,
+        provisionalLabels: null,
+        labelStatus: 'final',
+        labelSource: null,
+        labelVersion: null,
+        labelScore: null,
+        labelRequestedAt: null,
+        labelCompletedAt: null,
+        labelError: null,
+        createdAt: 40,
+        updatedAt: 40,
+        stability: null,
+        difficulty: null,
+        lastReviewedAt: null,
+        nextReviewAt: 80,
+      },
+    ] satisfies KnowledgeItem[];
+
+    bridge.listKnowledgeItems.mockReturnValue(items);
+
+    await expect(mobileCoreClient.listKnowledgeItemsByIds(['fresh-item'])).resolves.toEqual([items[1]]);
+    await expect(mobileCoreClient.listWeeklyKnowledgeItems(20)).resolves.toEqual([items[1]]);
+    await expect(mobileCoreClient.listPendingKnowledgeItemsForLabeling(1)).resolves.toEqual([
+      items[0],
+    ]);
+
+    expect(bridge.listKnowledgeItems).toHaveBeenCalledTimes(3);
+  });
+
   test('passes typed values through for createConversation', async () => {
     const conversation = {
       id: 'conv-1',
@@ -134,5 +197,38 @@ describe('mobileCoreClient typed bridge contract', () => {
 
     expect(bridge.listKnowledgeItems).toHaveBeenCalled();
     expect(result).toEqual(items);
+  });
+
+  test('returns an empty list when getDueKnowledgeItems is called with limit zero', async () => {
+    const items = [
+      {
+        id: 'item-1',
+        type: 'note',
+        title: 'Due',
+        body: null,
+        url: null,
+        summary: null,
+        tags: [],
+        labels: null,
+        provisionalLabels: null,
+        labelStatus: null,
+        labelSource: null,
+        labelVersion: null,
+        labelScore: null,
+        labelRequestedAt: null,
+        labelCompletedAt: null,
+        labelError: null,
+        createdAt: 1,
+        updatedAt: 1,
+        stability: null,
+        difficulty: null,
+        lastReviewedAt: null,
+        nextReviewAt: 5,
+      },
+    ] satisfies KnowledgeItem[];
+
+    bridge.listKnowledgeItems.mockReturnValueOnce(items);
+
+    await expect(mobileCoreClient.getDueKnowledgeItems({ now: 10, limit: 0 })).resolves.toEqual([]);
   });
 });

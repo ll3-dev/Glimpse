@@ -67,6 +67,10 @@ describe('knowledge application queries', () => {
     await expect(listKnowledgeItemsByIdsWithCore(coreClient, ['two'])).resolves.toEqual([items[1]]);
   });
 
+  test('returns empty list when no ids are requested', async () => {
+    await expect(listKnowledgeItemsByIdsWithCore(coreClient, [])).resolves.toEqual([]);
+  });
+
   test('filters weekly items in application layer', async () => {
     await expect(listWeeklyKnowledgeItemsWithCore(coreClient, 20)).resolves.toEqual([items[1]]);
   });
@@ -77,5 +81,41 @@ describe('knowledge application queries', () => {
 
   test('filters due items in application layer', async () => {
     await expect(getDueKnowledgeItemsWithCore(coreClient, { now: 25 })).resolves.toEqual([items[0]]);
+  });
+
+  test('treats missing review timestamps as due and includes exact boundary matches', async () => {
+    const boundaryItems: KnowledgeItem[] = [
+      {
+        ...items[0],
+        id: 'missing-review',
+        nextReviewAt: null,
+      },
+      {
+        ...items[1],
+        id: 'exact-boundary',
+        nextReviewAt: 25,
+      },
+      {
+        ...items[1],
+        id: 'future-review',
+        nextReviewAt: 26,
+      },
+    ];
+
+    const boundaryCoreClient = {
+      listKnowledgeItems: async () => boundaryItems,
+    };
+
+    await expect(getDueKnowledgeItemsWithCore(boundaryCoreClient, { now: 25 })).resolves.toEqual([
+      boundaryItems[0],
+      boundaryItems[1],
+    ]);
+  });
+
+  test('respects explicit limit values including zero', async () => {
+    await expect(getDueKnowledgeItemsWithCore(coreClient, { now: 50, limit: 1 })).resolves.toEqual([
+      items[0],
+    ]);
+    await expect(getDueKnowledgeItemsWithCore(coreClient, { now: 50, limit: 0 })).resolves.toEqual([]);
   });
 });
