@@ -41,12 +41,14 @@ impl CoreClientImpl {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::NullablePatch;
+    use crate::error::Error;
     use crate::models::{
         CalculateNextReviewInput, CalculateTagOverlapInput, Conversation,
         CoreKnowledgeItemLike, FeedbackActionType, FeedbackEvent,
         GetDueKnowledgeItemsInput, InitializeReviewScheduleInput,
         KnowledgeItem, KnowledgeItemType, Message, MessageRole,
-        KnowledgeItemPatch, Recommendation,
+        KnowledgeItemPatch, Recommendation, ConversationPatch, MessagePatch,
         RecommendationStatus, ReviewFeedbackType,
     };
 
@@ -331,12 +333,32 @@ mod tests {
         client.save_knowledge_item(&item).unwrap();
 
         let patch = KnowledgeItemPatch {
-            title: Some("Updated Title".to_string()),
+            title: NullablePatch::Value("Updated Title".to_string()),
             ..Default::default()
         };
         let updated = client.update_knowledge_item("test-update", &patch).unwrap();
 
         assert_eq!(updated.title, Some("Updated Title".to_string()));
+    }
+
+    #[test]
+    fn test_update_knowledge_item_supports_explicit_null_clear() {
+        let client = create_test_client();
+
+        let item = create_test_knowledge_item("test-clear");
+        client.save_knowledge_item(&item).unwrap();
+
+        let patch = KnowledgeItemPatch {
+            title: NullablePatch::Null,
+            tags: NullablePatch::Null,
+            next_review_at: NullablePatch::Null,
+            ..Default::default()
+        };
+        let updated = client.update_knowledge_item("test-clear", &patch).unwrap();
+
+        assert_eq!(updated.title, None);
+        assert_eq!(updated.tags, None);
+        assert_eq!(updated.next_review_at, None);
     }
 
     // ========================================================================
@@ -384,6 +406,39 @@ mod tests {
         assert_eq!(conversations.len(), 0);
     }
 
+    #[test]
+    fn test_update_conversation_supports_explicit_null_clear() {
+        let client = create_test_client();
+
+        let conversation = Conversation {
+            id: "conv-clear".to_string(),
+            title: Some("Title".to_string()),
+            icon: Some("icon".to_string()),
+            context_item_id: Some("item-1".to_string()),
+            created_at: 1000,
+            updated_at: 1000,
+            deleted_at: None,
+        };
+        client.create_conversation(&conversation).unwrap();
+
+        let updated = client
+            .update_conversation(
+                "conv-clear",
+                &ConversationPatch {
+                    title: NullablePatch::Null,
+                    icon: NullablePatch::Null,
+                    context_item_id: NullablePatch::Null,
+                    updated_at: Some(2000),
+                    deleted_at: NullablePatch::Unset,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(updated.title, None);
+        assert_eq!(updated.icon, None);
+        assert_eq!(updated.context_item_id, None);
+    }
+
     // ========================================================================
     // Message CRUD Tests
     // ========================================================================
@@ -417,6 +472,154 @@ mod tests {
         let messages = client.list_conversation_messages("conv-msg").unwrap();
         assert_eq!(messages.len(), 1);
         assert_eq!(messages[0].content, "Hello");
+    }
+
+    #[test]
+    fn test_add_message_updates_conversation_sort_order() {
+        let client = create_test_client();
+
+        let older = Conversation {
+            id: "conv-older".to_string(),
+            title: Some("Older".to_string()),
+            icon: None,
+            context_item_id: None,
+            created_at: 1000,
+            updated_at: 1000,
+            deleted_at: None,
+        };
+        let newer = Conversation {
+            id: "conv-newer".to_string(),
+            title: Some("Newer".to_string()),
+            icon: None,
+            context_item_id: None,
+            created_at: 1001,
+            updated_at: 2000,
+            deleted_at: None,
+        };
+        client.create_conversation(&older).unwrap();
+        client.create_conversation(&newer).unwrap();
+
+        let message = Message {
+            id: "msg-sort".to_string(),
+            conversation_id: "conv-older".to_string(),
+            role: MessageRole::User,
+            content: "Bump older conversation".to_string(),
+            created_at: 3000,
+            updated_at: None,
+            deleted_at: None,
+        };
+        client.add_message(&message).unwrap();
+
+        let conversations = client.list_conversations().unwrap();
+        assert_eq!(conversations[0].id, "conv-older");
+        assert_eq!(conversations[0].updated_at, 3000);
+    }
+
+    #[test]
+    fn test_add_message_rejects_deleted_conversation() {
+        let client = create_test_client();
+
+        let conversation = Conversation {
+            id: "conv-deleted".to_string(),
+            title: Some("Deleted".to_string()),
+            icon: None,
+            context_item_id: None,
+            created_at: 1000,
+            updated_at: 1000,
+            deleted_at: None,
+        };
+        client.create_conversation(&conversation).unwrap();
+        client.delete_conversation("conv-deleted", 2000).unwrap();
+
+        let message = Message {
+            id: "msg-deleted".to_string(),
+            conversation_id: "conv-deleted".to_string(),
+            role: MessageRole::User,
+            content: "Should fail".to_string(),
+            created_at: 3000,
+            updated_at: None,
+            deleted_at: None,
+        };
+
+        let error = client.add_message(&message).unwrap_err();
+        match error {
+            Error::InvalidInput(message) => {
+                assert_eq!(message, "Cannot add message to deleted conversation")
+            }
+            other => panic!("expected invalid input error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_update_message_supports_explicit_null_clear_for_deleted_at() {
+        let client = create_test_client();
+
+        let conversation = Conversation {
+            id: "conv-msg-clear".to_string(),
+            title: None,
+            icon: None,
+            context_item_id: None,
+            created_at: 1000,
+            updated_at: 1000,
+            deleted_at: None,
+        };
+        client.create_conversation(&conversation).unwrap();
+
+        let message = Message {
+            id: "msg-clear".to_string(),
+            conversation_id: "conv-msg-clear".to_string(),
+            role: MessageRole::User,
+            content: "Hello".to_string(),
+            created_at: 1100,
+            updated_at: Some(1200),
+            deleted_at: Some(1300),
+        };
+        client.add_message(&message).unwrap();
+
+        let updated = client
+            .update_message(
+                "msg-clear",
+                &MessagePatch {
+                    content: None,
+                    updated_at: Some(1400),
+                    deleted_at: NullablePatch::Null,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(updated.deleted_at, None);
+    }
+
+    #[test]
+    fn test_delete_conversation_hides_its_messages() {
+        let client = create_test_client();
+
+        let conversation = Conversation {
+            id: "conv-soft-delete".to_string(),
+            title: Some("To Delete".to_string()),
+            icon: None,
+            context_item_id: None,
+            created_at: 1000,
+            updated_at: 1000,
+            deleted_at: None,
+        };
+        client.create_conversation(&conversation).unwrap();
+
+        let message = Message {
+            id: "msg-soft-delete".to_string(),
+            conversation_id: "conv-soft-delete".to_string(),
+            role: MessageRole::User,
+            content: "Soon deleted".to_string(),
+            created_at: 1100,
+            updated_at: None,
+            deleted_at: None,
+        };
+        client.add_message(&message).unwrap();
+
+        client.delete_conversation("conv-soft-delete", 2000).unwrap();
+
+        let messages = client.list_conversation_messages("conv-soft-delete").unwrap();
+        assert!(messages.is_empty());
     }
 
     // ========================================================================
@@ -541,5 +744,109 @@ mod tests {
         let due_items = client.get_due_knowledge_items(&input).unwrap();
         assert_eq!(due_items.len(), 1);
         assert_eq!(due_items[0].id, "due-item");
+    }
+
+    #[test]
+    fn test_get_due_knowledge_items_includes_unscheduled_items() {
+        let client = create_test_client();
+        let now = 2000_i64;
+
+        let unscheduled_item = KnowledgeItem {
+            id: "unscheduled-item".to_string(),
+            item_type: KnowledgeItemType::Note,
+            title: Some("Unscheduled Item".to_string()),
+            body: None,
+            url: None,
+            summary: None,
+            tags: None,
+            labels: None,
+            provisional_labels: None,
+            label_status: None,
+            label_source: None,
+            label_version: None,
+            label_score: None,
+            label_requested_at: None,
+            label_completed_at: None,
+            label_error: None,
+            created_at: 1000,
+            updated_at: 1000,
+            stability: None,
+            difficulty: None,
+            last_reviewed_at: None,
+            next_review_at: None,
+        };
+        client.save_knowledge_item(&unscheduled_item).unwrap();
+
+        let due_item = KnowledgeItem {
+            id: "scheduled-due-item".to_string(),
+            item_type: KnowledgeItemType::Note,
+            title: Some("Scheduled Due Item".to_string()),
+            body: None,
+            url: None,
+            summary: None,
+            tags: None,
+            labels: None,
+            provisional_labels: None,
+            label_status: None,
+            label_source: None,
+            label_version: None,
+            label_score: None,
+            label_requested_at: None,
+            label_completed_at: None,
+            label_error: None,
+            created_at: 1001,
+            updated_at: 1001,
+            stability: None,
+            difficulty: None,
+            last_reviewed_at: None,
+            next_review_at: Some(now),
+        };
+        client.save_knowledge_item(&due_item).unwrap();
+
+        let input = GetDueKnowledgeItemsInput { now, limit: None };
+        let due_items = client.get_due_knowledge_items(&input).unwrap();
+        let due_ids: Vec<&str> = due_items.iter().map(|item| item.id.as_str()).collect();
+
+        assert_eq!(due_ids, vec!["unscheduled-item", "scheduled-due-item"]);
+    }
+
+    #[test]
+    fn test_get_due_knowledge_items_respects_zero_limit() {
+        let client = create_test_client();
+        let now = 2000_i64;
+
+        let due_item = KnowledgeItem {
+            id: "due-item-limit".to_string(),
+            item_type: KnowledgeItemType::Note,
+            title: Some("Due Item".to_string()),
+            body: None,
+            url: None,
+            summary: None,
+            tags: None,
+            labels: None,
+            provisional_labels: None,
+            label_status: None,
+            label_source: None,
+            label_version: None,
+            label_score: None,
+            label_requested_at: None,
+            label_completed_at: None,
+            label_error: None,
+            created_at: 1000,
+            updated_at: 1000,
+            stability: None,
+            difficulty: None,
+            last_reviewed_at: None,
+            next_review_at: Some(1500),
+        };
+        client.save_knowledge_item(&due_item).unwrap();
+
+        let input = GetDueKnowledgeItemsInput {
+            now,
+            limit: Some(0),
+        };
+        let due_items = client.get_due_knowledge_items(&input).unwrap();
+
+        assert!(due_items.is_empty());
     }
 }

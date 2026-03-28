@@ -114,29 +114,81 @@ pub struct KnowledgeItem {
 
 pub type NewKnowledgeItem = KnowledgeItem;
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum NullablePatch<T> {
+    Value(T),
+    Null,
+    #[default]
+    Unset,
+}
+
+impl<T> NullablePatch<T> {
+    pub fn is_unset(&self) -> bool {
+        matches!(self, Self::Unset)
+    }
+
+    pub fn map<U>(self, transform: impl FnOnce(T) -> U) -> NullablePatch<U> {
+        match self {
+            Self::Value(value) => NullablePatch::Value(transform(value)),
+            Self::Null => NullablePatch::Null,
+            Self::Unset => NullablePatch::Unset,
+        }
+    }
+}
+
+impl<T, E> NullablePatch<Result<T, E>> {
+    pub fn transpose(self) -> Result<NullablePatch<T>, E> {
+        match self {
+            NullablePatch::Value(Ok(value)) => Ok(NullablePatch::Value(value)),
+            NullablePatch::Value(Err(error)) => Err(error),
+            NullablePatch::Null => Ok(NullablePatch::Null),
+            NullablePatch::Unset => Ok(NullablePatch::Unset),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct KnowledgeItemPatch {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub item_type: Option<KnowledgeItemType>,
-    pub title: Option<String>,
-    pub body: Option<String>,
-    pub url: Option<String>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub labels: Option<Vec<String>>,
-    pub provisional_labels: Option<Vec<String>>,
-    pub label_status: Option<KnowledgeItemLabelStatus>,
-    pub label_source: Option<KnowledgeItemLabelSource>,
-    pub label_version: Option<String>,
-    pub label_score: Option<f64>,
-    pub label_requested_at: Option<i64>,
-    pub label_completed_at: Option<i64>,
-    pub label_error: Option<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub title: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub body: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub url: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub summary: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub tags: NullablePatch<Vec<String>>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub labels: NullablePatch<Vec<String>>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub provisional_labels: NullablePatch<Vec<String>>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_status: NullablePatch<KnowledgeItemLabelStatus>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_source: NullablePatch<KnowledgeItemLabelSource>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_version: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_score: NullablePatch<f64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_requested_at: NullablePatch<i64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_completed_at: NullablePatch<i64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub label_error: NullablePatch<String>,
     pub updated_at: Option<i64>,
-    pub stability: Option<f64>,
-    pub difficulty: Option<f64>,
-    pub last_reviewed_at: Option<i64>,
-    pub next_review_at: Option<i64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub stability: NullablePatch<f64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub difficulty: NullablePatch<f64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub last_reviewed_at: NullablePatch<i64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub next_review_at: NullablePatch<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -154,11 +206,15 @@ pub type NewConversation = Conversation;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConversationPatch {
-    pub title: Option<String>,
-    pub icon: Option<String>,
-    pub context_item_id: Option<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub title: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub icon: NullablePatch<String>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub context_item_id: NullablePatch<String>,
     pub updated_at: Option<i64>,
-    pub deleted_at: Option<i64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub deleted_at: NullablePatch<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -178,7 +234,8 @@ pub type NewMessage = Message;
 pub struct MessagePatch {
     pub content: Option<String>,
     pub updated_at: Option<i64>,
-    pub deleted_at: Option<i64>,
+    #[serde(default, skip_serializing_if = "NullablePatch::is_unset")]
+    pub deleted_at: NullablePatch<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -259,6 +316,27 @@ pub struct CalculateNextReviewOutput {
 pub struct InitializeReviewScheduleInput {
     pub created_at: i64,
     pub interval_ms: Option<i64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{KnowledgeItemPatch, NullablePatch};
+
+    #[test]
+    fn knowledge_item_patch_deserializes_tristate_fields() {
+        let absent: KnowledgeItemPatch = serde_json::from_str("{}").unwrap();
+        assert_eq!(absent.title, NullablePatch::Unset);
+
+        let explicit_null: KnowledgeItemPatch =
+            serde_json::from_str(r#"{"title":null,"tags":null}"#).unwrap();
+        assert_eq!(explicit_null.title, NullablePatch::Null);
+        assert_eq!(explicit_null.tags, NullablePatch::Null);
+
+        let value: KnowledgeItemPatch =
+            serde_json::from_str(r#"{"title":"hello","tags":["a","b"]}"#).unwrap();
+        assert_eq!(value.title, NullablePatch::Value("hello".to_string()));
+        assert_eq!(value.tags, NullablePatch::Value(vec!["a".to_string(), "b".to_string()]));
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

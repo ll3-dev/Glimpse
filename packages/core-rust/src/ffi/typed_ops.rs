@@ -13,7 +13,7 @@ use crate::models::{
     CalculateNextReviewInput, Conversation, ConversationPatch, FeedbackActionType, FeedbackEvent,
     InitializeReviewScheduleInput, KnowledgeItem, KnowledgeItemPatch, KnowledgeItemLabelSource,
     KnowledgeItemLabelStatus, KnowledgeItemType, Message, MessagePatch, MessageRole, Recommendation,
-    RecommendationStatus, ReviewFeedbackType,
+    RecommendationStatus, ReviewFeedbackType, NullablePatch,
 };
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::ptr;
@@ -128,6 +128,14 @@ fn patch_nullable_number_to_option(field: FfiNullableNumberPatchField) -> Option
         Some(None)
     } else {
         Some(Some(field.value))
+    }
+}
+
+fn nullable_patch_from_option<T>(value: Option<Option<T>>) -> NullablePatch<T> {
+    match value {
+        Some(Some(value)) => NullablePatch::Value(value),
+        Some(None) => NullablePatch::Null,
+        None => NullablePatch::Unset,
     }
 }
 
@@ -375,83 +383,45 @@ unsafe fn ffi_to_knowledge_item_patch(
         item_type: patch_string_to_option(patch.item_type)?
             .map(parse_knowledge_item_type)
             .transpose()?,
-        title: match patch_nullable_string_to_option(patch.title)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        body: match patch_nullable_string_to_option(patch.body)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        url: match patch_nullable_string_to_option(patch.url)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        summary: match patch_nullable_string_to_option(patch.summary)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        tags: match patch_nullable_string_array_to_option(patch.tags)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        labels: match patch_nullable_string_array_to_option(patch.labels)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        provisional_labels: match patch_nullable_string_array_to_option(patch.provisional_labels)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        label_status: patch_nullable_string_to_option(patch.label_status)?
-            .flatten()
+        title: nullable_patch_from_option(patch_nullable_string_to_option(patch.title)?),
+        body: nullable_patch_from_option(patch_nullable_string_to_option(patch.body)?),
+        url: nullable_patch_from_option(patch_nullable_string_to_option(patch.url)?),
+        summary: nullable_patch_from_option(patch_nullable_string_to_option(patch.summary)?),
+        tags: nullable_patch_from_option(patch_nullable_string_array_to_option(patch.tags)?),
+        labels: nullable_patch_from_option(patch_nullable_string_array_to_option(patch.labels)?),
+        provisional_labels: nullable_patch_from_option(
+            patch_nullable_string_array_to_option(patch.provisional_labels)?
+        ),
+        label_status: nullable_patch_from_option(patch_nullable_string_to_option(patch.label_status)?)
             .map(parse_label_status)
             .transpose()?,
-        label_source: patch_nullable_string_to_option(patch.label_source)?
-            .flatten()
+        label_source: nullable_patch_from_option(patch_nullable_string_to_option(patch.label_source)?)
             .map(parse_label_source)
             .transpose()?,
-        label_version: match patch_nullable_string_to_option(patch.label_version)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        label_score: match patch_nullable_number_to_option(patch.label_score) {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        label_requested_at: match patch_nullable_number_to_option(patch.label_requested_at) {
-            Some(Some(value)) => Some(value as i64),
-            _ => None,
-        },
-        label_completed_at: match patch_nullable_number_to_option(patch.label_completed_at) {
-            Some(Some(value)) => Some(value as i64),
-            _ => None,
-        },
-        label_error: match patch_nullable_string_to_option(patch.label_error)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
+        label_version: nullable_patch_from_option(patch_nullable_string_to_option(patch.label_version)?),
+        label_score: nullable_patch_from_option(patch_nullable_number_to_option(patch.label_score)),
+        label_requested_at: nullable_patch_from_option(patch_nullable_number_to_option(
+            patch.label_requested_at,
+        ))
+        .map(|value| value as i64),
+        label_completed_at: nullable_patch_from_option(patch_nullable_number_to_option(
+            patch.label_completed_at,
+        ))
+        .map(|value| value as i64),
+        label_error: nullable_patch_from_option(patch_nullable_string_to_option(patch.label_error)?),
         updated_at: if patch.updated_at.has_value {
             Some(patch.updated_at.value as i64)
         } else {
             None
         },
-        stability: match patch_nullable_number_to_option(patch.stability) {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        difficulty: match patch_nullable_number_to_option(patch.difficulty) {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        last_reviewed_at: match patch_nullable_number_to_option(patch.last_reviewed_at) {
-            Some(Some(value)) => Some(value as i64),
-            _ => None,
-        },
-        next_review_at: match patch_nullable_number_to_option(patch.next_review_at) {
-            Some(Some(value)) => Some(value as i64),
-            _ => None,
-        },
+        stability: nullable_patch_from_option(patch_nullable_number_to_option(patch.stability)),
+        difficulty: nullable_patch_from_option(patch_nullable_number_to_option(patch.difficulty)),
+        last_reviewed_at: nullable_patch_from_option(patch_nullable_number_to_option(
+            patch.last_reviewed_at,
+        ))
+        .map(|value| value as i64),
+        next_review_at: nullable_patch_from_option(patch_nullable_number_to_option(patch.next_review_at))
+            .map(|value| value as i64),
     })
 }
 
@@ -460,27 +430,16 @@ unsafe fn ffi_to_conversation_patch(
 ) -> Result<ConversationPatch, FfiErrorCode> {
     let patch = &*patch;
     Ok(ConversationPatch {
-        title: match patch_nullable_string_to_option(patch.title)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        icon: match patch_nullable_string_to_option(patch.icon)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
-        context_item_id: match patch_nullable_string_to_option(patch.context_item_id)? {
-            Some(Some(value)) => Some(value),
-            _ => None,
-        },
+        title: nullable_patch_from_option(patch_nullable_string_to_option(patch.title)?),
+        icon: nullable_patch_from_option(patch_nullable_string_to_option(patch.icon)?),
+        context_item_id: nullable_patch_from_option(patch_nullable_string_to_option(patch.context_item_id)?),
         updated_at: if patch.updated_at.has_value {
             Some(patch.updated_at.value as i64)
         } else {
             None
         },
-        deleted_at: match patch_nullable_number_to_option(patch.deleted_at) {
-            Some(Some(value)) => Some(value as i64),
-            _ => None,
-        },
+        deleted_at: nullable_patch_from_option(patch_nullable_number_to_option(patch.deleted_at))
+            .map(|value| value as i64),
     })
 }
 
@@ -492,10 +451,8 @@ unsafe fn ffi_to_message_patch(patch: *const FfiMessagePatch) -> Result<MessageP
             Some(Some(value)) => Some(value as i64),
             _ => None,
         },
-        deleted_at: match patch_nullable_number_to_option(patch.deleted_at) {
-            Some(Some(value)) => Some(value as i64),
-            _ => None,
-        },
+        deleted_at: nullable_patch_from_option(patch_nullable_number_to_option(patch.deleted_at))
+            .map(|value| value as i64),
     })
 }
 

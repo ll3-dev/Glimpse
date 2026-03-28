@@ -3,7 +3,7 @@
 use rusqlite::{params, OptionalExtension};
 
 use crate::error::{Error, Result};
-use crate::models::{KnowledgeItem, KnowledgeItemPatch};
+use crate::models::{KnowledgeItem, KnowledgeItemPatch, NullablePatch};
 
 use super::SqliteStorage;
 
@@ -153,11 +153,11 @@ impl SqliteStorage {
     pub fn get_due_knowledge_items(&self, now: i64, limit: Option<usize>) -> Result<Vec<KnowledgeItem>> {
         let sql = match limit {
             Some(lim) => format!(
-                "SELECT {} FROM knowledge_items WHERE next_review_at IS NOT NULL AND next_review_at <= {} ORDER BY next_review_at ASC LIMIT {}",
+                "SELECT {} FROM knowledge_items WHERE next_review_at IS NULL OR next_review_at <= {} ORDER BY next_review_at ASC LIMIT {}",
                 KNOWLEDGE_ITEM_COLUMNS.trim(), now, lim
             ),
             None => format!(
-                "SELECT {} FROM knowledge_items WHERE next_review_at IS NOT NULL AND next_review_at <= {} ORDER BY next_review_at ASC",
+                "SELECT {} FROM knowledge_items WHERE next_review_at IS NULL OR next_review_at <= {} ORDER BY next_review_at ASC",
                 KNOWLEDGE_ITEM_COLUMNS.trim(), now
             ),
         };
@@ -175,29 +175,37 @@ impl SqliteStorage {
         let updated = KnowledgeItem {
             id: existing.id,
             item_type: patch.item_type.unwrap_or(existing.item_type),
-            title: patch.title.clone().or(existing.title),
-            body: patch.body.clone().or(existing.body),
-            url: patch.url.clone().or(existing.url),
-            summary: patch.summary.clone().or(existing.summary),
-            tags: patch.tags.clone().or(existing.tags),
-            labels: patch.labels.clone().or(existing.labels),
-            provisional_labels: patch.provisional_labels.clone().or(existing.provisional_labels),
-            label_status: patch.label_status.or(existing.label_status),
-            label_source: patch.label_source.or(existing.label_source),
-            label_version: patch.label_version.clone().or(existing.label_version),
-            label_score: patch.label_score.or(existing.label_score),
-            label_requested_at: patch.label_requested_at.or(existing.label_requested_at),
-            label_completed_at: patch.label_completed_at.or(existing.label_completed_at),
-            label_error: patch.label_error.clone().or(existing.label_error),
+            title: apply_nullable_patch(&patch.title, existing.title),
+            body: apply_nullable_patch(&patch.body, existing.body),
+            url: apply_nullable_patch(&patch.url, existing.url),
+            summary: apply_nullable_patch(&patch.summary, existing.summary),
+            tags: apply_nullable_patch(&patch.tags, existing.tags),
+            labels: apply_nullable_patch(&patch.labels, existing.labels),
+            provisional_labels: apply_nullable_patch(&patch.provisional_labels, existing.provisional_labels),
+            label_status: apply_nullable_patch(&patch.label_status, existing.label_status),
+            label_source: apply_nullable_patch(&patch.label_source, existing.label_source),
+            label_version: apply_nullable_patch(&patch.label_version, existing.label_version),
+            label_score: apply_nullable_patch(&patch.label_score, existing.label_score),
+            label_requested_at: apply_nullable_patch(&patch.label_requested_at, existing.label_requested_at),
+            label_completed_at: apply_nullable_patch(&patch.label_completed_at, existing.label_completed_at),
+            label_error: apply_nullable_patch(&patch.label_error, existing.label_error),
             created_at: existing.created_at,
             updated_at: patch.updated_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
-            stability: patch.stability.or(existing.stability),
-            difficulty: patch.difficulty.or(existing.difficulty),
-            last_reviewed_at: patch.last_reviewed_at.or(existing.last_reviewed_at),
-            next_review_at: patch.next_review_at.or(existing.next_review_at),
+            stability: apply_nullable_patch(&patch.stability, existing.stability),
+            difficulty: apply_nullable_patch(&patch.difficulty, existing.difficulty),
+            last_reviewed_at: apply_nullable_patch(&patch.last_reviewed_at, existing.last_reviewed_at),
+            next_review_at: apply_nullable_patch(&patch.next_review_at, existing.next_review_at),
         };
 
         self.insert_knowledge_item(&updated)?;
         Ok(updated)
+    }
+}
+
+fn apply_nullable_patch<T: Clone>(patch: &NullablePatch<T>, existing: Option<T>) -> Option<T> {
+    match patch {
+        NullablePatch::Unset => existing,
+        NullablePatch::Null => None,
+        NullablePatch::Value(value) => Some(value.clone()),
     }
 }

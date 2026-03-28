@@ -3,17 +3,31 @@
 #[cfg(test)]
 mod tests {
     use crate::ffi::*;
-    use crate::CoreClientImpl;
+    use crate::SharedCore;
     use std::ffi::{c_char, CString};
 
     fn create_test_client() -> CoreClientHandle {
-        let client = CoreClientImpl::in_memory().unwrap();
+        let client = SharedCore::in_memory().unwrap();
         Box::into_raw(Box::new(client))
     }
 
     fn destroy_test_client(handle: CoreClientHandle) {
         unsafe {
             core_client_destroy(handle);
+        }
+    }
+
+    fn nullable_string() -> FfiNullableString {
+        FfiNullableString {
+            value: std::ptr::null_mut(),
+        }
+    }
+
+    fn empty_string_array() -> FfiNullableStringArray {
+        FfiNullableStringArray {
+            is_null: false,
+            data: std::ptr::null_mut(),
+            len: 0,
         }
     }
 
@@ -257,5 +271,261 @@ mod tests {
 
         let none_f: FfiOptionalF64 = None.into();
         assert!(!none_f.has_value);
+    }
+
+    #[test]
+    fn test_typed_save_knowledge_item_rejects_invalid_item_type() {
+        let handle = create_test_client();
+        let id = CString::new("item-invalid").unwrap();
+        let item_type = CString::new("invalid-type").unwrap();
+        let mut out_item = FfiKnowledgeItem::default();
+
+        let item = FfiKnowledgeItem {
+            id: id.as_ptr() as *mut c_char,
+            item_type: item_type.as_ptr() as *mut c_char,
+            title: nullable_string(),
+            body: nullable_string(),
+            url: nullable_string(),
+            summary: nullable_string(),
+            tags: empty_string_array(),
+            labels: empty_string_array(),
+            provisional_labels: empty_string_array(),
+            label_status: nullable_string(),
+            label_source: nullable_string(),
+            label_version: nullable_string(),
+            label_score: FfiOptionalF64::default(),
+            label_requested_at: FfiOptionalI64::default(),
+            label_completed_at: FfiOptionalI64::default(),
+            label_error: nullable_string(),
+            created_at: 1000,
+            updated_at: 1000,
+            stability: FfiOptionalF64::default(),
+            difficulty: FfiOptionalF64::default(),
+            last_reviewed_at: FfiOptionalI64::default(),
+            next_review_at: FfiOptionalI64::default(),
+        };
+
+        let result = unsafe {
+            core_client_save_knowledge_item_typed(handle, &item, &mut out_item)
+        };
+
+        assert_eq!(result, FfiErrorCode::InvalidInput);
+        destroy_test_client(handle);
+    }
+
+    #[test]
+    fn test_typed_add_message_rejects_invalid_role() {
+        let handle = create_test_client();
+        let conversation_id = CString::new("conv-typed").unwrap();
+        let title = CString::new("Conversation").unwrap();
+        let mut out_conversation = FfiConversation::default();
+
+        let conversation = FfiConversation {
+            id: conversation_id.as_ptr() as *mut c_char,
+            title: FfiNullableString {
+                value: title.as_ptr() as *mut c_char,
+            },
+            icon: nullable_string(),
+            context_item_id: nullable_string(),
+            created_at: 1000,
+            updated_at: 1000,
+            deleted_at: FfiOptionalI64::default(),
+        };
+
+        let create_result = unsafe {
+            core_client_create_conversation_typed(handle, &conversation, &mut out_conversation)
+        };
+        assert_eq!(create_result, FfiErrorCode::Ok);
+        unsafe {
+            ffi_conversation_free(&mut out_conversation);
+        }
+
+        let message_id = CString::new("msg-invalid-role").unwrap();
+        let invalid_role = CString::new("system").unwrap();
+        let content = CString::new("hello").unwrap();
+        let mut out_message = FfiMessage::default();
+
+        let message = FfiMessage {
+            id: message_id.as_ptr() as *mut c_char,
+            conversation_id: conversation_id.as_ptr() as *mut c_char,
+            role: invalid_role.as_ptr() as *mut c_char,
+            content: content.as_ptr() as *mut c_char,
+            created_at: 1100,
+            updated_at: FfiOptionalI64::default(),
+            deleted_at: FfiOptionalI64::default(),
+        };
+
+        let result = unsafe { core_client_add_message_typed(handle, &message, &mut out_message) };
+
+        assert_eq!(result, FfiErrorCode::InvalidInput);
+        destroy_test_client(handle);
+    }
+
+    #[test]
+    fn test_typed_save_knowledge_item_rejects_null_array_payload_with_positive_length() {
+        let handle = create_test_client();
+        let id = CString::new("item-invalid-array").unwrap();
+        let item_type = CString::new("note").unwrap();
+        let mut out_item = FfiKnowledgeItem::default();
+
+        let item = FfiKnowledgeItem {
+            id: id.as_ptr() as *mut c_char,
+            item_type: item_type.as_ptr() as *mut c_char,
+            title: nullable_string(),
+            body: nullable_string(),
+            url: nullable_string(),
+            summary: nullable_string(),
+            tags: FfiNullableStringArray {
+                is_null: false,
+                data: std::ptr::null_mut(),
+                len: 1,
+            },
+            labels: empty_string_array(),
+            provisional_labels: empty_string_array(),
+            label_status: nullable_string(),
+            label_source: nullable_string(),
+            label_version: nullable_string(),
+            label_score: FfiOptionalF64::default(),
+            label_requested_at: FfiOptionalI64::default(),
+            label_completed_at: FfiOptionalI64::default(),
+            label_error: nullable_string(),
+            created_at: 1000,
+            updated_at: 1000,
+            stability: FfiOptionalF64::default(),
+            difficulty: FfiOptionalF64::default(),
+            last_reviewed_at: FfiOptionalI64::default(),
+            next_review_at: FfiOptionalI64::default(),
+        };
+
+        let result = unsafe {
+            core_client_save_knowledge_item_typed(handle, &item, &mut out_item)
+        };
+
+        assert_eq!(result, FfiErrorCode::InvalidInput);
+        destroy_test_client(handle);
+    }
+
+    #[test]
+    fn test_typed_update_knowledge_item_rejects_invalid_patch_enum() {
+        let handle = create_test_client();
+        let id = CString::new("item-patch").unwrap();
+        let item_type = CString::new("note").unwrap();
+        let mut saved_item = FfiKnowledgeItem::default();
+
+        let item = FfiKnowledgeItem {
+            id: id.as_ptr() as *mut c_char,
+            item_type: item_type.as_ptr() as *mut c_char,
+            title: nullable_string(),
+            body: nullable_string(),
+            url: nullable_string(),
+            summary: nullable_string(),
+            tags: empty_string_array(),
+            labels: empty_string_array(),
+            provisional_labels: empty_string_array(),
+            label_status: nullable_string(),
+            label_source: nullable_string(),
+            label_version: nullable_string(),
+            label_score: FfiOptionalF64::default(),
+            label_requested_at: FfiOptionalI64::default(),
+            label_completed_at: FfiOptionalI64::default(),
+            label_error: nullable_string(),
+            created_at: 1000,
+            updated_at: 1000,
+            stability: FfiOptionalF64::default(),
+            difficulty: FfiOptionalF64::default(),
+            last_reviewed_at: FfiOptionalI64::default(),
+            next_review_at: FfiOptionalI64::default(),
+        };
+
+        let save_result = unsafe {
+            core_client_save_knowledge_item_typed(handle, &item, &mut saved_item)
+        };
+        assert_eq!(save_result, FfiErrorCode::Ok);
+        unsafe {
+            ffi_knowledge_item_free(&mut saved_item);
+        }
+
+        let invalid_status = CString::new("totally-invalid").unwrap();
+        let patch = FfiKnowledgeItemPatch {
+            label_status: FfiNullableStringPatchField {
+                has_value: true,
+                is_null: false,
+                value: invalid_status.as_ptr(),
+            },
+            ..Default::default()
+        };
+        let mut out_item = FfiKnowledgeItem::default();
+
+        let result = unsafe {
+            core_client_update_knowledge_item_typed(handle, id.as_ptr(), &patch, &mut out_item)
+        };
+
+        assert_eq!(result, FfiErrorCode::InvalidInput);
+        destroy_test_client(handle);
+    }
+
+    #[test]
+    fn test_typed_update_knowledge_item_supports_explicit_null_clear() {
+        let handle = create_test_client();
+        let id = CString::new("item-null-clear").unwrap();
+        let item_type = CString::new("note").unwrap();
+        let title = CString::new("Original title").unwrap();
+        let mut saved_item = FfiKnowledgeItem::default();
+
+        let item = FfiKnowledgeItem {
+            id: id.as_ptr() as *mut c_char,
+            item_type: item_type.as_ptr() as *mut c_char,
+            title: FfiNullableString {
+                value: title.as_ptr() as *mut c_char,
+            },
+            body: nullable_string(),
+            url: nullable_string(),
+            summary: nullable_string(),
+            tags: empty_string_array(),
+            labels: empty_string_array(),
+            provisional_labels: empty_string_array(),
+            label_status: nullable_string(),
+            label_source: nullable_string(),
+            label_version: nullable_string(),
+            label_score: FfiOptionalF64::default(),
+            label_requested_at: FfiOptionalI64::default(),
+            label_completed_at: FfiOptionalI64::default(),
+            label_error: nullable_string(),
+            created_at: 1000,
+            updated_at: 1000,
+            stability: FfiOptionalF64::default(),
+            difficulty: FfiOptionalF64::default(),
+            last_reviewed_at: FfiOptionalI64::default(),
+            next_review_at: FfiOptionalI64::default(),
+        };
+
+        let save_result = unsafe {
+            core_client_save_knowledge_item_typed(handle, &item, &mut saved_item)
+        };
+        assert_eq!(save_result, FfiErrorCode::Ok);
+        unsafe {
+            ffi_knowledge_item_free(&mut saved_item);
+        }
+
+        let patch = FfiKnowledgeItemPatch {
+            title: FfiNullableStringPatchField {
+                has_value: true,
+                is_null: true,
+                value: std::ptr::null(),
+            },
+            ..Default::default()
+        };
+        let mut out_item = FfiKnowledgeItem::default();
+
+        let result = unsafe {
+            core_client_update_knowledge_item_typed(handle, id.as_ptr(), &patch, &mut out_item)
+        };
+
+        assert_eq!(result, FfiErrorCode::Ok);
+        assert!(out_item.title.value.is_null());
+        unsafe {
+            ffi_knowledge_item_free(&mut out_item);
+        }
+        destroy_test_client(handle);
     }
 }

@@ -3,7 +3,7 @@
 use rusqlite::{params, OptionalExtension};
 
 use crate::error::{Error, Result};
-use crate::models::{Conversation, ConversationPatch};
+use crate::models::{Conversation, ConversationPatch, NullablePatch};
 
 use super::SqliteStorage;
 
@@ -86,12 +86,12 @@ impl SqliteStorage {
 
         let updated = Conversation {
             id: existing.id,
-            title: patch.title.clone().or(existing.title),
-            icon: patch.icon.clone().or(existing.icon),
-            context_item_id: patch.context_item_id.clone().or(existing.context_item_id),
+            title: apply_nullable_patch(&patch.title, existing.title),
+            icon: apply_nullable_patch(&patch.icon, existing.icon),
+            context_item_id: apply_nullable_patch(&patch.context_item_id, existing.context_item_id),
             created_at: existing.created_at,
             updated_at: patch.updated_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
-            deleted_at: patch.deleted_at.or(existing.deleted_at),
+            deleted_at: apply_nullable_patch(&patch.deleted_at, existing.deleted_at),
         };
 
         self.insert_conversation(&updated)?;
@@ -129,5 +129,13 @@ impl SqliteStorage {
             params![updated_at, conversation_id],
         )?;
         Ok(())
+    }
+}
+
+fn apply_nullable_patch<T: Clone>(patch: &NullablePatch<T>, existing: Option<T>) -> Option<T> {
+    match patch {
+        NullablePatch::Unset => existing,
+        NullablePatch::Null => None,
+        NullablePatch::Value(value) => Some(value.clone()),
     }
 }

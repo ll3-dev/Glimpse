@@ -3,7 +3,7 @@
 use rusqlite::{params, OptionalExtension};
 
 use crate::error::{Error, Result};
-use crate::models::{Message, MessagePatch};
+use crate::models::{Message, MessagePatch, NullablePatch};
 
 use super::SqliteStorage;
 
@@ -91,7 +91,7 @@ impl SqliteStorage {
             content: patch.content.clone().unwrap_or(existing.content),
             created_at: existing.created_at,
             updated_at: Some(patch.updated_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis())),
-            deleted_at: patch.deleted_at.or(existing.deleted_at),
+            deleted_at: apply_nullable_patch(&patch.deleted_at, existing.deleted_at),
         };
 
         self.insert_message(&updated)?;
@@ -114,5 +114,13 @@ impl SqliteStorage {
 
         self.insert_message(&updated)?;
         Ok(())
+    }
+}
+
+fn apply_nullable_patch<T: Clone>(patch: &NullablePatch<T>, existing: Option<T>) -> Option<T> {
+    match patch {
+        NullablePatch::Unset => existing,
+        NullablePatch::Null => None,
+        NullablePatch::Value(value) => Some(value.clone()),
     }
 }
