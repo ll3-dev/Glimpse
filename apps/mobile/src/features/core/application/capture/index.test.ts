@@ -51,7 +51,7 @@ describe('core capture application layer', () => {
     const result = await createSaveKnowledgeItem({
       coreClient: { saveKnowledgeItem },
       generateMetadata,
-      initializeReviewSchedule: mock(() => ({
+      initializeReviewSchedule: mock(() => Promise.resolve({
         nextReviewAt: 123,
         stability: null,
         difficulty: null,
@@ -96,7 +96,7 @@ describe('core capture application layer', () => {
         summary: 'generated summary',
         tags: ['generated'],
       })),
-      initializeReviewSchedule: mock(() => ({
+      initializeReviewSchedule: mock(() => Promise.resolve({
         nextReviewAt: 1_700_000_600_000,
         stability: null,
         difficulty: null,
@@ -135,7 +135,7 @@ describe('core capture application layer', () => {
         }),
       },
       generateMetadata: mock(async () => ({ summary: 'summary', tags: [] })),
-      initializeReviewSchedule: mock(() => ({
+      initializeReviewSchedule: mock(() => Promise.resolve({
         nextReviewAt: 123,
         stability: null,
         difficulty: null,

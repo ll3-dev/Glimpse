@@ -127,11 +127,11 @@ export async function loadKnowledgeItemOrFail(
 // Core Functions
 // ============================================================================
 
-export function initializeReviewScheduleWithCore(
+export async function initializeReviewScheduleWithCore(
   coreClient: Pick<CoreClient, 'initializeReviewSchedule'>,
   createdAt: number,
   intervalMs: number = DEFAULT_INITIAL_REVIEW_INTERVAL_MS
-): InitializeReviewScheduleOutput {
+): Promise<InitializeReviewScheduleOutput> {
   const input: InitializeReviewScheduleInput = {
     createdAt,
     intervalMs,

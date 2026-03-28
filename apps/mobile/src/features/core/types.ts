@@ -21,15 +21,15 @@ export interface MobileCoreClient {
   // Lifecycle
   initialize(dbPath: string): Promise<void>;
 
-  // Sync calculations (pure functions, no SQLite)
-  calculateTagOverlap(input: { left: CoreKnowledgeItemLike; right: CoreKnowledgeItemLike }): number;
+  // Calculations (pure functions, no SQLite — wrapped in Promise for interface consistency)
+  calculateTagOverlap(input: { left: CoreKnowledgeItemLike; right: CoreKnowledgeItemLike }): Promise<number>;
   calculateNextReview(input: {
     lastReviewedAt: number | null;
     nextReviewAt: number | null;
     feedbackType: ReviewFeedbackType;
     now: number;
-  }): { intervalMs: number; nextReviewAt: number };
-  initializeReviewSchedule(input: InitializeReviewScheduleInput): InitializeReviewScheduleOutput;
+  }): Promise<{ intervalMs: number; nextReviewAt: number }>;
+  initializeReviewSchedule(input: InitializeReviewScheduleInput): Promise<InitializeReviewScheduleOutput>;
 
   // Knowledge Items
   saveKnowledgeItem(item: KnowledgeItem): Promise<KnowledgeItem>;

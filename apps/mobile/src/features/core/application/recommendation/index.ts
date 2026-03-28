@@ -34,11 +34,11 @@ import type {
 
 export * from './types';
 
-export function calculateTagOverlap(
+export async function calculateTagOverlap(
   coreClient: Pick<CoreClient, 'calculateTagOverlap'>,
   left: KnowledgeItem,
   right: KnowledgeItem
-): number {
+): Promise<number> {
   return coreClient.calculateTagOverlap(toTagOverlapInput(left, right));
 }
 

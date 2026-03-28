@@ -51,7 +51,7 @@ describe('core review application layer', () => {
     expect(calculateInitialReviewAt(1_000, 500)).toBe(1_500);
   });
 
-  test('initializeReviewScheduleWithCore delegates typed input to core', () => {
+  test('initializeReviewScheduleWithCore delegates typed input to core', async () => {
     const initializeReviewSchedule = mock(() => ({
       nextReviewAt: 1_500,
       stability: null,
@@ -59,7 +59,7 @@ describe('core review application layer', () => {
       lastReviewedAt: null,
     }));
 
-    const result = initializeReviewScheduleWithCore(
+    const result = await initializeReviewScheduleWithCore(
       { initializeReviewSchedule },
       1_000,
       500

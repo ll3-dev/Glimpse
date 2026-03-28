@@ -8,7 +8,7 @@ export function createLifecycleAndSyncAdapter(
   BridgeCoreClient,
   'initialize' | 'calculateTagOverlap' | 'calculateNextReview' | 'initializeReviewSchedule'
 > {
-  const { fallbackClient, runCore, runCoreAsync } = deps;
+  const { fallbackClient, runCoreAsync } = deps;
 
   return {
     async initialize(dbPath) {
@@ -19,14 +19,20 @@ export function createLifecycleAndSyncAdapter(
     },
 
     calculateTagOverlap(input) {
-      return runCore(
-        (client) => client.calculateTagOverlap(input.left.tags ?? [], input.right.tags ?? []),
+      return runCoreAsync(
+        (client) => {
+          const overlap = client.calculateTagOverlap(
+            input.left.tags ?? [],
+            input.right.tags ?? [],
+          );
+          return Promise.resolve(overlap);
+        },
         () => fallbackClient.calculateTagOverlap(input),
       );
     },
 
     calculateNextReview(input) {
-      return runCore(
+      return runCoreAsync(
         (client) => {
           const result = client.calculateNextReview(
             input.lastReviewedAt ?? null,
@@ -34,28 +40,28 @@ export function createLifecycleAndSyncAdapter(
             input.feedbackType === 'remembered' ? 0 : 1,
             input.now,
           );
-          return {
+          return Promise.resolve({
             intervalMs: result.intervalMs,
             nextReviewAt: result.nextReviewAt,
-          };
+          });
         },
         () => fallbackClient.calculateNextReview(input),
       );
     },
 
     initializeReviewSchedule(input) {
-      return runCore(
+      return runCoreAsync(
         (client) => {
           const result = client.initializeReviewSchedule(
             input.createdAt,
             input.intervalMs ?? null,
           );
-          return {
+          return Promise.resolve({
             nextReviewAt: result.nextReviewAt,
             stability: result.stability,
             difficulty: result.difficulty,
             lastReviewedAt: result.lastReviewedAt,
-          };
+          });
         },
         () => fallbackClient.initializeReviewSchedule(input),
       );

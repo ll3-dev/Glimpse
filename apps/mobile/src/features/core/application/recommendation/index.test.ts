@@ -43,12 +43,12 @@ describe('recommendation application layer', () => {
     spyOn(Date, 'now').mockRestore();
   });
 
-  test('calculateTagOverlap delegates transformed tag input to core', () => {
+  test('calculateTagOverlap delegates transformed tag input to core', async () => {
     const calculateTagOverlapCore = mock(() => 2);
     const left = createItem('left', ['a']);
     const right = createItem('right', ['a', 'b']);
 
-    const overlap = calculateTagOverlap(
+    const overlap = await calculateTagOverlap(
       { calculateTagOverlap: calculateTagOverlapCore },
       left,
       right

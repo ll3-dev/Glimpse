@@ -168,9 +168,9 @@ export interface KeyValueStorage {
 
 export interface CoreClient {
   initialize(dbPath: string): Promise<void>;
-  calculateTagOverlap(input: CalculateTagOverlapInput): number;
-  calculateNextReview(input: CalculateNextReviewInput): CalculateNextReviewOutput;
-  initializeReviewSchedule(input: InitializeReviewScheduleInput): InitializeReviewScheduleOutput;
+  calculateTagOverlap(input: CalculateTagOverlapInput): Promise<number>;
+  calculateNextReview(input: CalculateNextReviewInput): Promise<CalculateNextReviewOutput>;
+  initializeReviewSchedule(input: InitializeReviewScheduleInput): Promise<InitializeReviewScheduleOutput>;
   saveKnowledgeItem(item: KnowledgeItem): Promise<KnowledgeItem>;
   listKnowledgeItems(): Promise<KnowledgeItem[]>;
   listKnowledgeItemsByIds(itemIds: string[]): Promise<KnowledgeItem[]>;

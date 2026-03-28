@@ -23,21 +23,21 @@ describe('nativeCoreClient local review calculations', () => {
     });
   });
 
-  test('calculates tag overlap locally', () => {
-    expect(
+  test('calculates tag overlap locally', async () => {
+    await expect(
       nativeCoreClient.calculateTagOverlap({
         left: { tags: ['a', 'b'] },
         right: { tags: ['b', 'c'] },
       })
-    ).toBeCloseTo(1 / 3);
+    ).resolves.toBeCloseTo(1 / 3);
   });
 
-  test('initializes review schedule locally', () => {
-    expect(
+  test('initializes review schedule locally', async () => {
+    await expect(
       nativeCoreClient.initializeReviewSchedule({
         createdAt: 10,
       })
-    ).toEqual({
+    ).resolves.toEqual({
       nextReviewAt: 10 + 24 * 60 * 60 * 1000,
       stability: null,
       difficulty: null,
@@ -45,15 +45,15 @@ describe('nativeCoreClient local review calculations', () => {
     });
   });
 
-  test('calculates next review from provided now value', () => {
-    expect(
+  test('calculates next review from provided now value', async () => {
+    await expect(
       nativeCoreClient.calculateNextReview({
         lastReviewedAt: 0,
         nextReviewAt: 24 * 60 * 60 * 1000,
         feedbackType: 'remembered',
         now: 100,
       })
-    ).toEqual({
+    ).resolves.toEqual({
       intervalMs: 24 * 60 * 60 * 1000,
       nextReviewAt: 100 + 24 * 60 * 60 * 1000,
     });

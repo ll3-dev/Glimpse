@@ -122,7 +122,7 @@ export interface SaveKnowledgeItemDeps {
     saveKnowledgeItem: (item: KnowledgeItem) => Promise<KnowledgeItem>;
   };
   generateMetadata: (input: MetadataInput) => Promise<GenerateMetadata>;
-  initializeReviewSchedule: (createdAt: number) => InitializeReviewScheduleOutput;
+  initializeReviewSchedule: (createdAt: number) => Promise<InitializeReviewScheduleOutput>;
   logger: { error: (message: string, meta?: unknown) => void };
   generateId: () => string;
   isIdCollisionError: (error: unknown) => boolean;
@@ -235,7 +235,7 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
       const metadataInput = mapToMetadataInput(input);
       const metadata = await deps.generateMetadata(metadataInput);
       const now = Date.now();
-      const reviewSchedule = deps.initializeReviewSchedule(now);
+      const reviewSchedule = await deps.initializeReviewSchedule(now);
       const bodyValue = resolveBodyValue(input);
       const urlValue = resolveUrlValue(input);
 

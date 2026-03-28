@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { Conversation, KnowledgeItem, NewConversation, NewKnowledgeItem } from '@glimpse/shared';
 
 const bridge = {
-  calculateTagOverlap: mock((_input: unknown) => 0),
-  calculateNextReview: mock((_input: unknown) => ({ intervalMs: 0, nextReviewAt: 0 })),
-  initializeReviewSchedule: mock((_input: unknown) => ({
+  calculateTagOverlap: mock((_input: unknown) => Promise.resolve(0)),
+  calculateNextReview: mock((_input: unknown) => Promise.resolve({ intervalMs: 0, nextReviewAt: 0 })),
+  initializeReviewSchedule: mock((_input: unknown) => Promise.resolve({
     nextReviewAt: 0,
     stability: null,
     difficulty: null,

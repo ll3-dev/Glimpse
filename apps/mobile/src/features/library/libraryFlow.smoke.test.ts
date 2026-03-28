@@ -52,7 +52,7 @@ describe('library flow smoke', () => {
             tags: [input.content?.includes('React') ? 'react' : 'general'],
           },
         }),
-        initializeReviewSchedule: (createdAt: number) => ({
+        initializeReviewSchedule: (createdAt: number) => Promise.resolve({
           nextReviewAt: createdAt + 1000,
           stability: null,
           difficulty: null,

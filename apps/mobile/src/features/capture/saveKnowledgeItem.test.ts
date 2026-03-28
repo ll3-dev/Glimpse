@@ -14,7 +14,7 @@ const db = {
 };
 
 const knowledgeItems = { table: 'knowledge_items' };
-const initializeReviewSchedule = mock((createdAt: number) => ({
+const initializeReviewSchedule = mock((createdAt: number) => Promise.resolve({
   nextReviewAt: createdAt + 1_000,
   stability: null,
   difficulty: null,

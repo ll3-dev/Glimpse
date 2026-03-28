@@ -12,7 +12,7 @@ import { logger } from '@/src/utils/logger';
 export { calculateInitialReviewAt, DEFAULT_INITIAL_REVIEW_INTERVAL_MS };
 export type { BatchInitializeReviewSchedulesDeps };
 
-export function initializeReviewSchedule(createdAt: number): InitializeReviewScheduleOutput {
+export async function initializeReviewSchedule(createdAt: number): Promise<InitializeReviewScheduleOutput> {
   return initializeReviewScheduleWithCore(mobileCoreClient, createdAt);
 }
 

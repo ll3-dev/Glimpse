@@ -25,11 +25,11 @@ function unwrapOrThrow<T>(entityName: string, id: string, value: T | undefined):
 
 function calculateTagOverlap(
   input: Parameters<BridgeCoreClient['calculateTagOverlap']>[0],
-): number {
+): Promise<number> {
   const leftTags = new Set(input.left.tags ?? []);
   const rightTags = new Set(input.right.tags ?? []);
   if (leftTags.size === 0 && rightTags.size === 0) {
-    return 0;
+    return Promise.resolve(0);
   }
 
   let intersection = 0;
@@ -40,7 +40,7 @@ function calculateTagOverlap(
   }
 
   const union = leftTags.size + rightTags.size - intersection;
-  return union > 0 ? intersection / union : 0;
+  return Promise.resolve(union > 0 ? intersection / union : 0);
 }
 
 function calculateNextReview(
@@ -49,21 +49,21 @@ function calculateNextReview(
   const intervalMs =
     input.feedbackType === 'remembered' ? DAY_MS : FORGOTTEN_REVIEW_INTERVAL_MS;
 
-  return {
+  return Promise.resolve({
     intervalMs,
     nextReviewAt: input.now + intervalMs,
-  };
+  });
 }
 
 function initializeReviewSchedule(
   input: Parameters<BridgeCoreClient['initializeReviewSchedule']>[0],
 ): ReturnType<BridgeCoreClient['initializeReviewSchedule']> {
-  return {
+  return Promise.resolve({
     nextReviewAt: input.createdAt + (input.intervalMs ?? DAY_MS),
     stability: null,
     difficulty: null,
     lastReviewedAt: null,
-  };
+  });
 }
 
 export function createFallbackCoreClient(
