@@ -1,10 +1,71 @@
-import RNBlobUtil from 'react-native-blob-util';
-import { mobileCoreClient } from './mobile-core-client';
+import RNBlobUtil from "react-native-blob-util";
+import { Platform } from "react-native";
+import { mobileCoreClient } from "./mobile-core-client";
+import { getAppGroupContainerPath } from "@/src/utils/app-group-path";
+import { logger } from "@/src/utils/logger";
 
-const CORE_DIRECTORY = `${RNBlobUtil.fs.dirs.DocumentDir}/glimpse`;
-const CORE_DB_PATH = `${CORE_DIRECTORY}/glimpse.sqlite`;
+// Legacy path (before App Group migration)
+const LEGACY_CORE_DIRECTORY = `${RNBlobUtil.fs.dirs.DocumentDir}/glimpse`;
+const LEGACY_DB_PATH = `${LEGACY_CORE_DIRECTORY}/glimpse.sqlite`;
 
 let initializationPromise: Promise<string> | null = null;
+
+/**
+ * Migrates the database from legacy DocumentDir to App Group container.
+ * This allows both the main app and share extension to access the same DB.
+ */
+async function migrateToAppGroup(appGroupPath: string): Promise<void> {
+  const newDbPath = `${appGroupPath}/glimpse.sqlite`;
+  const legacyDbExists = await RNBlobUtil.fs.exists(LEGACY_DB_PATH);
+  const newDbExists = await RNBlobUtil.fs.exists(newDbPath);
+
+  if (legacyDbExists && !newDbExists) {
+    logger.info("Migrating database from DocumentDir to App Group container...");
+
+    // Copy the database file
+    await RNBlobUtil.fs.cp(LEGACY_DB_PATH, newDbPath);
+
+    // Verify the copy succeeded
+    const newDbExistsAfterCopy = await RNBlobUtil.fs.exists(newDbPath);
+    if (!newDbExistsAfterCopy) {
+      throw new Error("Database migration failed: copy did not succeed");
+    }
+
+    // Remove the old database (keep the directory for other files)
+    await RNBlobUtil.fs.unlink(LEGACY_DB_PATH);
+
+    logger.info("Database migration completed successfully");
+  }
+}
+
+/**
+ * Gets the database path, preferring App Group container on iOS.
+ */
+async function getDbPath(): Promise<string> {
+  // On iOS, use App Group container for shared access with Share Extension
+  if (Platform.OS === "ios") {
+    const appGroupPath = await getAppGroupContainerPath();
+
+    if (appGroupPath) {
+      // Migrate existing database if needed
+      await migrateToAppGroup(appGroupPath);
+      return `${appGroupPath}/glimpse.sqlite`;
+    }
+
+    // Fallback to DocumentDir if App Group is not available
+    logger.warn(
+      "App Group container not available, falling back to DocumentDir"
+    );
+  }
+
+  // Android or iOS fallback: use DocumentDir
+  const directoryExists = await RNBlobUtil.fs.isDir(LEGACY_CORE_DIRECTORY);
+  if (!directoryExists) {
+    await RNBlobUtil.fs.mkdir(LEGACY_CORE_DIRECTORY);
+  }
+
+  return LEGACY_DB_PATH;
+}
 
 export function initializeCoreClient(): Promise<string> {
   if (initializationPromise) {
@@ -12,15 +73,25 @@ export function initializeCoreClient(): Promise<string> {
   }
 
   initializationPromise = (async () => {
-    const directoryExists = await RNBlobUtil.fs.isDir(CORE_DIRECTORY);
-
-    if (!directoryExists) {
-      await RNBlobUtil.fs.mkdir(CORE_DIRECTORY);
-    }
-
-    await mobileCoreClient.initialize(CORE_DB_PATH);
-    return CORE_DB_PATH;
+    const dbPath = await getDbPath();
+    await mobileCoreClient.initialize(dbPath);
+    logger.info(`Core client initialized with DB at: ${dbPath}`);
+    return dbPath;
   })();
 
   return initializationPromise;
+}
+
+/**
+ * Returns the current database path without initializing.
+ * Useful for Share Extension to know where the DB is.
+ */
+export async function getCoreDbPath(): Promise<string> {
+  if (Platform.OS === "ios") {
+    const appGroupPath = await getAppGroupContainerPath();
+    if (appGroupPath) {
+      return `${appGroupPath}/glimpse.sqlite`;
+    }
+  }
+  return LEGACY_DB_PATH;
 }

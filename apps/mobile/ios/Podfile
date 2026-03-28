@@ -26,6 +26,11 @@ target 'glimpse' do
   use_expo_modules!
   pod 'GlimpseCore', :path => '..'
 
+  # Share Extension target for direct save functionality
+  target 'ShareExtension' do
+    pod 'GlimpseCore', :path => '..'
+  end
+
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else
