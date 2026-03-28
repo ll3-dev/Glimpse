@@ -40,5 +40,5 @@ export async function getDueKnowledgeItemsWithCore(
     }
     return item.nextReviewAt <= input.now;
   });
-  return input.limit ? due.slice(0, input.limit) : due;
+  return input.limit === undefined ? due : due.slice(0, input.limit);
 }
