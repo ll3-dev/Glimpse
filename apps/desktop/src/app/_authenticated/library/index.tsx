@@ -1,5 +1,41 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState, useMemo } from 'react';
+import { useKnowledgeItemsQuery } from '@glimpse/hooks';
+import { filterKnowledgeItems } from '@glimpse/features/search';
+import { SearchBar } from '@/components/library/SearchBar';
+import { KnowledgeItemList } from '@/components/library/KnowledgeItemList';
+
+function LibraryPage() {
+  const { data: items, isLoading } = useKnowledgeItemsQuery();
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+
+  const filteredItems = useMemo(() => {
+    if (!items) return [];
+    if (!searchQuery) return items;
+    return filterKnowledgeItems(items, searchQuery);
+  }, [items, searchQuery]);
+
+  return (
+    <div className="flex h-full flex-col gap-4 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Library</h1>
+        <span className="text-sm text-muted-foreground">
+          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <SearchBar onSearch={setSearchQuery} />
+      <div className="flex-1 overflow-y-auto">
+        <KnowledgeItemList
+          items={filteredItems}
+          isLoading={isLoading}
+          onItemClick={(id) => navigate({ to: '/library/$itemId', params: { itemId: id } })}
+        />
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute('/_authenticated/library/')({
-  component: () => <div>Library</div>,
+  component: LibraryPage,
 });
