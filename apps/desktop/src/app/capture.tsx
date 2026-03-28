@@ -1,5 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { CaptureModal } from '@/components/capture/CaptureModal';
 
 export const Route = createFileRoute('/capture')({
-  component: () => <div>Capture</div>,
+  component: function CaptureRoute() {
+    return <CaptureModal />;
+  },
 });
