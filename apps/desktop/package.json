@@ -10,6 +10,7 @@
     "@glimpse/shared": "workspace:*",
     "@glimpse/ui": "workspace:*",
     "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-router": "^1.168.7",
     "@tanstack/router-devtools": "^1.166.11",
     "@tanstack/router-vite-plugin": "^1.166.23",

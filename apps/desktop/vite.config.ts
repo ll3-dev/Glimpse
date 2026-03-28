@@ -14,6 +14,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
     alias: [
       {
         find: 'react-native',
