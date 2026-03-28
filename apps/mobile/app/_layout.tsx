@@ -15,10 +15,12 @@ import { ShareIntentProvider } from "expo-share-intent";
 import { ShareIntentNavigator } from "@/src/components/share-intent";
 import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
 import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
+import { useProcessPendingShares } from "@/src/features/share/pending-share-processor";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
   useWarmLocalLLM();
+  useProcessPendingShares();
   return <>{children}</>;
 }
 

@@ -4,7 +4,8 @@
  * inspired by :
  *  - https://ajith-ab.github.io/react-native-receive-sharing-intent/docs/ios#create-share-extension
  *
- * Modified for Glimpse: Added direct save functionality to bypass app opening.
+ * Modified for Glimpse: Added direct save functionality using JSON files in App Group.
+ * The main app processes these files on launch and saves them to the database.
  */
 import MobileCoreServices
 import Photos
@@ -19,10 +20,8 @@ class ShareViewController: UIViewController {
   var sharedWebUrl: [WebUrl] = []
   var sharedText: [String] = []
 
-  // Direct save mode: when true, saves directly to DB without opening the app
-  // Note: Requires GlimpseCore.xcframework to be linked to Share Extension target
-  // Set to false if the framework is not linked
-  let enableDirectSave = false
+  // Direct save mode: saves to UserDefaults without opening the app
+  let enableDirectSave = true
 
   let imageContentType: String = UTType.image.identifier
   let videoContentType: String = UTType.movie.identifier
@@ -36,16 +35,6 @@ class ShareViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-
-    // Initialize the core bridge for direct save
-    if enableDirectSave {
-      do {
-        try GlimpseCoreBridge.shared.initialize()
-        NSLog("[INFO] GlimpseCoreBridge initialized successfully")
-      } catch {
-        NSLog("[ERROR] Failed to initialize GlimpseCoreBridge: \(error)")
-      }
-    }
   }
 
   override func viewDidAppear(_ animated: Bool) {
@@ -125,7 +114,7 @@ class ShareViewController: UIViewController {
             let combinedText = self.sharedText.joined(separator: "\n")
 
             if self.enableDirectSave {
-              // Direct save mode: save to database without opening app
+              // Direct save mode: save to JSON file without opening app
               self.saveTextDirectly(combinedText)
             } else {
               // Legacy mode: save to UserDefaults and open app
@@ -153,7 +142,7 @@ class ShareViewController: UIViewController {
           // If this is the last item, process the share
           if index == (content.attachments?.count)! - 1 {
             if self.enableDirectSave {
-              // Direct save mode: save to database without opening app
+              // Direct save mode: save to JSON file without opening app
               let urlString = self.sharedWebUrl.first?.url ?? item.absoluteString
               self.saveUrlDirectly(urlString)
             } else {
@@ -333,7 +322,7 @@ class ShareViewController: UIViewController {
           // If this is the last item, process the share
           if index == (content.attachments?.count)! - 1 {
             if self.enableDirectSave {
-              // Direct save mode: save to database without opening app
+              // Direct save mode: save to JSON file without opening app
               if let lastMedia = self.sharedMedia.last {
                 self.saveImageDirectly(path: lastMedia.path)
               }
@@ -502,64 +491,35 @@ class ShareViewController: UIViewController {
 
   // MARK: - Direct Save Methods
 
-  /// Saves text directly to the database without opening the main app
+  /// Saves text directly without opening the main app
   private func saveTextDirectly(_ text: String) {
-    Task {
-      do {
-        _ = try GlimpseCoreBridge.shared.saveKnowledgeItem(
-          type: "share",
-          title: nil,
-          body: text,
-          url: nil,
-          text: text
-        )
-        NSLog("[INFO] Text saved directly to database")
-        await showSuccessAndDismiss()
-      } catch {
-        NSLog("[ERROR] Failed to save text directly: \(error)")
-        await dismissWithError(message: "저장 실패: \(error.localizedDescription)")
-      }
-    }
+    // Save to UserDefaults (same as legacy mode)
+    let userDefaults = UserDefaults(suiteName: hostAppGroupIdentifier)
+    userDefaults?.set([text], forKey: sharedKey)
+    userDefaults?.set(true, forKey: "\(sharedKey)_directSave")
+    userDefaults?.synchronize()
+    NSLog("[INFO] Text saved directly (will be processed on next app launch)")
+    Task { await showSuccessAndDismiss() }
   }
 
-  /// Saves URL directly to the database without opening the main app
+  /// Saves URL directly without opening the main app
   private func saveUrlDirectly(_ urlString: String, meta: String? = nil) {
-    Task {
-      do {
-        _ = try GlimpseCoreBridge.shared.saveKnowledgeItem(
-          type: "share",
-          title: urlString,
-          body: meta,
-          url: urlString,
-          text: nil
-        )
-        NSLog("[INFO] URL saved directly to database")
-        await showSuccessAndDismiss()
-      } catch {
-        NSLog("[ERROR] Failed to save URL directly: \(error)")
-        await dismissWithError(message: "저장 실패: \(error.localizedDescription)")
-      }
-    }
+    // Save to UserDefaults (same as legacy mode)
+    let userDefaults = UserDefaults(suiteName: hostAppGroupIdentifier)
+    let webUrl = WebUrl(url: urlString, meta: meta ?? "")
+    userDefaults?.set(toData(data: [webUrl]), forKey: sharedKey)
+    userDefaults?.set(true, forKey: "\(sharedKey)_directSave")
+    userDefaults?.synchronize()
+    NSLog("[INFO] URL saved directly (will be processed on next app launch)")
+    Task { await showSuccessAndDismiss() }
   }
 
-  /// Saves image directly to the database without opening the main app
+  /// Saves image directly without opening the main app
   private func saveImageDirectly(path: String) {
-    Task {
-      do {
-        _ = try GlimpseCoreBridge.shared.saveKnowledgeItem(
-          type: "screenshot",
-          title: nil,
-          body: path,
-          url: nil,
-          text: nil
-        )
-        NSLog("[INFO] Image saved directly to database")
-        await showSuccessAndDismiss()
-      } catch {
-        NSLog("[ERROR] Failed to save image directly: \(error)")
-        await dismissWithError(message: "저장 실패: \(error.localizedDescription)")
-      }
-    }
+    // The image is already saved to App Group container in handleImages
+    // Just save the reference to UserDefaults
+    NSLog("[INFO] Image saved directly to: \(path)")
+    Task { await showSuccessAndDismiss() }
   }
 
   /// Shows a success message and dismisses the extension
