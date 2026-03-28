@@ -7,6 +7,8 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:core": "zsh ./scripts/run-ios-with-core.sh",
+    "ios:device:core": "zsh ./scripts/run-ios-with-core.sh --device",
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",

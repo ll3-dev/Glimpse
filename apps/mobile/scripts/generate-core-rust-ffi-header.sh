@@ -22,7 +22,7 @@ cbindgen "$SOURCE_FILE" --config "$CRATE_DIR/cbindgen.toml" --lang c++ --output 
 {
   echo "#pragma once"
   echo
-  echo "struct CoreClientImpl;"
+  echo "struct SharedCore;"
   echo
   cat "$TMP_FILE"
 } > "$OUTPUT_FILE"

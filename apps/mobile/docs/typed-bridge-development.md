@@ -241,3 +241,37 @@ For most bridge work, this sequence is enough:
 6. Update [`GlimpseCoreFfi.hpp`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/cpp/GlimpseCoreFfi.hpp) and [`HybridCoreClient.hpp`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/cpp/HybridCoreClient.hpp).
 7. Rebuild the iOS Rust xcframework.
 8. Run validation.
+
+## Fast iOS Loop
+
+When Rust changes need to show up in iOS immediately, use one of these commands from
+[`apps/mobile`](/Users/loopy/dev/ll3/Glimpse/apps/mobile):
+
+```sh
+bun run build:core:ios
+```
+
+This regenerates the C++ header and rebuilds
+[`ios/Frameworks/GlimpseCore.xcframework`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/ios/Frameworks/GlimpseCore.xcframework).
+
+To rebuild Rust first and then launch iOS in one step:
+
+```sh
+bun run ios:core
+```
+
+To rebuild Rust first and then install on a connected device:
+
+```sh
+bun run ios:device:core
+```
+
+Or pass an explicit device name:
+
+```sh
+bun run ios:core -- --device "My iPhone"
+```
+
+The wrapper command is implemented in
+[`scripts/run-ios-with-core.sh`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/scripts/run-ios-with-core.sh),
+so Rust bridge updates are always compiled before `expo run:ios` starts.

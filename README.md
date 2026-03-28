@@ -36,6 +36,28 @@ Glimpse는 단순한 화면 데모가 아니라, 로컬 앱 경험과 네이티�
 - `packages/shared`: 공통 타입과 유틸리티
 - `packages/ui`: 공유 UI 패키지
 
+워크스페이스 의존 관계:
+
+```mermaid
+graph TB
+  subgraph apps
+    MOBILE["apps/mobile<br/>Expo React Native"]
+    DESKTOP["apps/desktop<br/>Vite + React + Tauri"]
+  end
+
+  subgraph packages
+    SHARED["packages/shared<br/>Types &amp; utilities"]
+    UI["packages/ui<br/>Shared UI components"]
+    CORE["packages/core-rust<br/>Rust domain logic"]
+  end
+
+  MOBILE --> SHARED
+  MOBILE --> UI
+  MOBILE -->|"FFI (Nitro)"| CORE
+  DESKTOP --> SHARED
+  DESKTOP --> UI
+```
+
 ## 주요 기술 스택
 
 - Bun workspaces
@@ -98,6 +120,58 @@ bun run start
 - `nitrogen/generated/`: Nitro 생성 결과물
 - `ios/`, `android/`: 네이티브 플랫폼 프로젝트
 
+레이어 의존 관계:
+
+```mermaid
+graph TB
+  ROUTES["app/<br/>expo-router screens"]
+  COMP["src/components/<br/>Feature-composed UI"]
+  FEAT["src/features/<br/>Domain logic"]
+  HOOKS["src/hooks/<br/>Queries &amp; mutations"]
+  STORES["src/stores/<br/>Zustand state"]
+  LIB["src/lib/<br/>Storage, init, utils"]
+
+  ROUTES --> COMP
+  ROUTES --> FEAT
+  COMP --> FEAT
+  FEAT --> HOOKS
+  FEAT --> STORES
+  HOOKS --> LIB
+  STORES --> LIB
+```
+
+화면 흐름:
+
+```mermaid
+graph LR
+  ROOT["RootLayout"] --> TABS["(tabs)"]
+  ROOT --> CAPTURE["capture<br/>modal"]
+  ROOT --> DETAIL["library/[id]<br/>detail"]
+
+  TABS --> LIBRARY["보관함<br/>library"]
+  TABS --> CHAT["채팅<br/>chat"]
+  TABS --> REVIEW["다시 보기<br/>review"]
+  TABS --> DIGEST["다이제스트<br/>digest"]
+```
+
+## 상태 관리
+
+모바일 앱은 목적에 따라 여러 상태 관리 도구를 병행합니다.
+
+```mermaid
+graph TB
+  UI_LOCAL["React useState<br/>화면 내 로컬 UI 상태"]
+  ZUSTAND["Zustand<br/>앱 전역 공유 상태"]
+  TANSTACK["TanStack Query<br/>서버 &amp; DB 데이터 캐시"]
+  MMKV["MMKV<br/>영속 키값 저장소"]
+  SQLITE["SQLite (via Rust)<br/>구조화된 도메인 데이터"]
+
+  UI_LOCAL --- ZUSTAND
+  ZUSTAND --- TANSTACK
+  TANSTACK -->|"cache"| SQLITE
+  ZUSTAND -->|"settings"| MMKV
+```
+
 ## 데스크톱 앱 구조
 
 데스크톱 앱은 `apps/desktop`에 있습니다.
@@ -109,6 +183,20 @@ bun run start
 ## Rust 코어와 Typed Bridge
 
 모바일 앱의 일부 핵심 기능은 Rust 코어를 통해 동작하며, JS와 네이티브 사이 연결은 typed Nitro bridge를 사용합니다.
+
+Bridge 호출 흐름:
+
+```mermaid
+graph LR
+  TS["TypeScript<br/>CoreClient.nitro.ts"]
+  NITRO["Nitrogen<br/>generated C++"]
+  CPP["Handwritten C++<br/>HybridCoreClient.hpp"]
+  FFI["Rust FFI<br/>#[repr(C)]"]
+  DOMAIN["Rust Domain<br/>CoreClientImpl"]
+  DB["SQLite<br/>SqliteStorage"]
+
+  TS --> NITRO --> CPP --> FFI --> DOMAIN --> DB
+```
 
 주요 위치:
 
