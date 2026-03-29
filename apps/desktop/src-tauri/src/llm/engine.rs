@@ -125,6 +125,90 @@ mod imp {
             Ok(text)
         }
 
+        pub fn completion_stream<F>(
+            &self,
+            prompt: &str,
+            max_tokens: u32,
+            on_token: F,
+        ) -> Result<String, String>
+        where
+            F: FnMut(&str),
+        {
+            let model = self.model.as_ref().ok_or("No model loaded")?;
+
+            // Create a context for this completion request
+            let ctx_params = llama_cpp_2::context::LlamaContextParams::default();
+            let mut ctx = model
+                .create_context(&ctx_params)
+                .map_err(|e| format!("Failed to create context: {}", e))?;
+
+            // Tokenize the prompt
+            let tokens = model
+                .str_to_token(prompt, AddBos::Always)
+                .map_err(|e| format!("Tokenization failed: {}", e))?;
+
+            let n_ctx = ctx.n_ctx() as usize;
+            if tokens.len() >= n_ctx {
+                return Err("Prompt exceeds context length".to_string());
+            }
+
+            // Create a batch and evaluate the prompt
+            let n_tokens = tokens.len().min(n_ctx - 1);
+            let mut batch = LlamaBatch::new(n_tokens as i32, 1);
+
+            for (i, &token) in tokens.iter().take(n_tokens).enumerate() {
+                let is_last = i == n_tokens - 1;
+                batch.add(token, i as i32, &[0], is_last).map_err(|e| {
+                    format!("Failed to add token to batch: {}", e)
+                })?;
+            }
+
+            ctx.decode(&mut batch)
+                .map_err(|e| format!("Decode failed: {}", e))?;
+
+            let eos_token = model.eos_token();
+            let mut sampler = LlamaSampler::chain_simple(vec![
+                LlamaSampler::dist_default_seed(),
+            ]);
+
+            let mut generated_tokens = Vec::new();
+            let mut n_cur = n_tokens as i32;
+            let mut on_token = on_token;
+
+            for _ in 0..max_tokens {
+                let logits = ctx.logits_last();
+                sampler.accept(&logits);
+                let new_token = sampler.sample_token(&model, &logits);
+
+                if new_token == eos_token {
+                    break;
+                }
+
+                generated_tokens.push(new_token);
+
+                // Convert this single token to a string and invoke the callback
+                if let Ok(token_str) = model.tokens_to_str(&[new_token]) {
+                    on_token(&token_str);
+                }
+
+                batch.clear();
+                batch
+                    .add(new_token, n_cur, &[0], true)
+                    .map_err(|e| format!("Failed to add token to batch: {}", e))?;
+                n_cur += 1;
+
+                ctx.decode(&mut batch)
+                    .map_err(|e| format!("Decode failed: {}", e))?;
+            }
+
+            // Convert all tokens back to a full string
+            let text = model
+                .tokens_to_str(generated_tokens.as_slice())
+                .map_err(|e| format!("Token-to-string failed: {}", e))?;
+
+            Ok(text)
+        }
+
         pub fn embedding(&self, text: &str) -> Result<Vec<f32>, String> {
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
@@ -206,6 +290,30 @@ mod imp {
             Ok(format!(
                 "[stub] LLM response (max_tokens={max_tokens}) to: {preview}"
             ))
+        }
+
+        pub fn completion_stream<F>(
+            &self,
+            prompt: &str,
+            max_tokens: u32,
+            on_token: F,
+        ) -> Result<String, String>
+        where
+            F: FnMut(&str),
+        {
+            if !self.is_loaded() {
+                return Err("No model loaded".to_string());
+            }
+            let preview = &prompt[..prompt.len().min(50)];
+            let full_response = format!(
+                "[stub] LLM response (max_tokens={max_tokens}) to: {preview}"
+            );
+            let mut on_token = on_token;
+            for ch in full_response.chars() {
+                let s = ch.to_string();
+                on_token(&s);
+            }
+            Ok(full_response)
         }
 
         pub fn embedding(&self, text: &str) -> Result<Vec<f32>, String> {

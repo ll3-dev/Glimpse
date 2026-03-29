@@ -11,7 +11,7 @@ use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
-        .manage(state::DesktopRuntimeState::from_defaults())
+        .manage(state::DesktopRuntimeStateInner::from_defaults())
         .setup(|app| {
             let app_data_dir = app
                 .path()
@@ -34,6 +34,7 @@ fn main() {
             commands::load_model,
             commands::unload_model,
             commands::run_completion,
+            commands::stream_completion,
             commands::run_embedding,
             commands::get_runtime_health,
             // Knowledge Items

@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::llm::LlmEngine;
 use crate::models::{
@@ -6,19 +6,21 @@ use crate::models::{
     ManagedModelRecord, RuntimeHealth,
 };
 
-pub struct DesktopRuntimeState {
+pub type DesktopRuntimeState = Arc<DesktopRuntimeStateInner>;
+
+pub struct DesktopRuntimeStateInner {
     pub models: Mutex<Vec<ManagedModelRecord>>,
     pub health: Mutex<RuntimeHealth>,
     pub llm_engine: Mutex<LlmEngine>,
 }
 
-impl DesktopRuntimeState {
-    pub fn from_defaults() -> Self {
-        Self {
+impl DesktopRuntimeStateInner {
+    pub fn from_defaults() -> DesktopRuntimeState {
+        Arc::new(Self {
             models: Mutex::new(default_models()),
             health: Mutex::new(default_health()),
             llm_engine: Mutex::new(LlmEngine::new()),
-        }
+        })
     }
 
     pub fn list_models(&self) -> Result<Vec<ManagedModelRecord>, String> {
@@ -159,6 +161,49 @@ impl DesktopRuntimeState {
             .map_err(|_| "llm engine lock poisoned".to_string())?;
 
         let text = engine.completion(&prompt, max_tokens)?;
+
+        let mut health = self
+            .health
+            .lock()
+            .map_err(|_| "health lock poisoned".to_string())?;
+        health.queue_depth = 0;
+
+        Ok(CompletionResponse {
+            text,
+            stop_reason: "completed",
+        })
+    }
+
+    pub fn run_completion_stream<F>(
+        &self,
+        request: CompletionRequest,
+        on_token: F,
+    ) -> Result<CompletionResponse, String>
+    where
+        F: FnMut(&str),
+    {
+        let mut health = self
+            .health
+            .lock()
+            .map_err(|_| "health lock poisoned".to_string())?;
+        health.queue_depth = 1;
+        health.loaded_model_id = Some(request.model_id.clone());
+        drop(health);
+
+        let prompt = request
+            .messages
+            .last()
+            .map(|message| message.content.clone())
+            .unwrap_or_default();
+
+        let max_tokens = request.max_tokens.unwrap_or(256);
+
+        let engine = self
+            .llm_engine
+            .lock()
+            .map_err(|_| "llm engine lock poisoned".to_string())?;
+
+        let text = engine.completion_stream(&prompt, max_tokens, on_token)?;
 
         let mut health = self
             .health

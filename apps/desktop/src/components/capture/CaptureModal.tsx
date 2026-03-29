@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { X, Save, Plus } from 'lucide-react';
+import { X, Save, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { validateInput, type KnowledgeItemInput } from '@glimpse/features/capture';
 import { useSaveKnowledgeItemMutation } from '@glimpse/hooks';
+import { useMetadataGeneration } from '@/features/ai/use-metadata-generation';
 import type { KnowledgeItem } from '@glimpse/shared';
 
 type CaptureType = 'note' | 'link' | 'highlight';
@@ -19,13 +20,6 @@ interface FormData {
 
 interface FieldErrors {
   [key: string]: string;
-}
-
-async function generateMetadataStub(content: string, _title?: string | null) {
-  return {
-    summary: content.slice(0, 200) + (content.length > 200 ? '...' : ''),
-    tags: [] as string[],
-  };
 }
 
 function generateId(): string {
@@ -54,6 +48,7 @@ const TABS: { key: CaptureType; label: string }[] = [
 export function CaptureModal() {
   const router = useRouter();
   const saveMutation = useSaveKnowledgeItemMutation();
+  const metadataMutation = useMetadataGeneration();
 
   const [activeType, setActiveType] = useState<CaptureType>('note');
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
@@ -136,7 +131,18 @@ export function CaptureModal() {
     const content = [form.title, form.body, form.url, form.text, form.sourceUrl]
       .filter(Boolean)
       .join('\n\n');
-    const metadata = await generateMetadataStub(content, form.title || null);
+
+    // Generate metadata via the AI router (falls back to rules/stub automatically)
+    let metadata;
+    try {
+      metadata = await metadataMutation.mutateAsync({ content, title: form.title || null });
+    } catch {
+      // Fallback: use truncated content as summary if AI generation fails
+      metadata = {
+        summary: content.slice(0, 200) + (content.length > 200 ? '...' : ''),
+        tags: [] as string[],
+      };
+    }
     const now = Date.now();
 
     const tagsArray = form.tags
@@ -355,10 +361,14 @@ export function CaptureModal() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || metadataMutation.isPending}
             >
-              <Save className="h-4 w-4" />
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
+              {metadataMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {metadataMutation.isPending ? 'Generating metadata...' : saveMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

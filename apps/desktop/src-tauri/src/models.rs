@@ -81,6 +81,21 @@ pub struct LoadResult {
     pub runtime_id: String,
 }
 
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StreamTokenEvent {
+    pub request_id: String,
+    pub token: String,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StreamDoneEvent {
+    pub request_id: String,
+    pub full_text: String,
+    pub stop_reason: String,
+}
+
 pub fn default_runtimes() -> Vec<RuntimeDescriptor> {
     vec![
         RuntimeDescriptor {
