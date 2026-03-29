@@ -6,9 +6,11 @@ import {
   ExternalLink,
   Brain,
   BarChart3,
+  Sparkles,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatKnowledgeLabel, getDisplayLabels } from '@/features/labeling';
 
 interface KnowledgeItemDetailProps {
   item: KnowledgeItem;
@@ -103,16 +105,27 @@ export function KnowledgeItemDetail({ item, onBack }: KnowledgeItemDetailProps) 
           )}
 
           {/* Labels */}
-          {item.labels && item.labels.length > 0 && (
+          {getDisplayLabels(item).length > 0 && (
             <div>
               <h3 className="mb-2 text-sm font-medium text-muted-foreground">Labels</h3>
               <div className="flex flex-wrap gap-1.5">
-                {item.labels.map((label) => (
+                {getDisplayLabels(item).map((label) => (
                   <Badge key={label} variant="outline">
-                    {label}
+                    {formatKnowledgeLabel(label)}
                   </Badge>
                 ))}
               </div>
+              {item.labelStatus && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  <span>
+                    {item.labelSource === 'rules' ? 'Rule-based' : item.labelSource}
+                    {' · '}
+                    {item.labelStatus}
+                    {item.labelScore != null && ` · score ${item.labelScore.toFixed(2)}`}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

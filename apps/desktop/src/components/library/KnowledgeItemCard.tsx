@@ -9,6 +9,7 @@ import {
   Tag,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { formatKnowledgeLabel, getDisplayLabels } from '@/features/labeling';
 
 const typeIcons: Record<string, React.ReactNode> = {
   note: <BookOpen className="h-4 w-4" />,
@@ -77,6 +78,15 @@ export function KnowledgeItemCard({ item, onClick }: KnowledgeItemCardProps) {
                   +{item.tags.length - 4}
                 </span>
               )}
+            </div>
+          )}
+          {getDisplayLabels(item).length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {getDisplayLabels(item).map((label) => (
+                <Badge key={label} variant="outline" className="text-[10px] px-1.5 py-0">
+                  {formatKnowledgeLabel(label)}
+                </Badge>
+              ))}
             </div>
           )}
         </div>

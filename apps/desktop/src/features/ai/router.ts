@@ -1,0 +1,138 @@
+/**
+ * AI Provider Router
+ *
+ * Selects the appropriate provider for each AI feature (metadata, labeling, chat)
+ * based on the current desktop settings. Falls back through a chain:
+ *
+ *   configured provider -> rules -> stub
+ *
+ * No Effect dependency -- plain async/await.
+ */
+
+import type { AIProvider, AIFeature, CompletionRequest, CompletionResponse, MetadataOutput } from './types';
+import { createLocalLLMProvider } from './providers/local-llm-provider';
+import { createBYOKProvider } from './providers/byok-provider';
+import { rulesProvider } from './providers/rules-provider';
+import { stubProvider } from './providers/stub-provider';
+import { loadSettings } from '@/lib/settings-storage';
+
+// ---------------------------------------------------------------------------
+// Provider resolution
+// ---------------------------------------------------------------------------
+
+function providerFromKind(kind: string): AIProvider {
+  switch (kind) {
+    case 'local-llm':
+      return createLocalLLMProvider();
+    case 'byok':
+      return createBYOKProvider();
+    case 'rules':
+      return rulesProvider;
+    case 'stub':
+      return stubProvider;
+    default:
+      return rulesProvider;
+  }
+}
+
+/**
+ * Return a provider that is actually available, walking the fallback chain:
+ *   preferred -> rules -> stub
+ */
+async function resolveProvider(preferredKind: string): Promise<AIProvider> {
+  const preferred = providerFromKind(preferredKind);
+  if (await preferred.isAvailable()) return preferred;
+
+  if (preferredKind !== 'rules') {
+    if (await rulesProvider.isAvailable()) return rulesProvider;
+  }
+
+  return stubProvider;
+}
+
+/**
+ * Map a feature to the configured provider kind from settings.
+ */
+function configuredKindForFeature(feature: AIFeature): string {
+  const settings = loadSettings();
+
+  // Chat uses the top-level aiProvider setting
+  if (feature === 'chat') return settings.aiProvider;
+
+  // Metadata and labeling use the same provider for now
+  return settings.aiProvider;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Get the best available provider for a given feature.
+ */
+export async function getProviderForFeature(feature: AIFeature): Promise<AIProvider> {
+  const kind = configuredKindForFeature(feature);
+  return resolveProvider(kind);
+}
+
+/**
+ * Complete a prompt using the provider configured for the given feature.
+ */
+export async function completeForFeature(
+  feature: AIFeature,
+  request: CompletionRequest,
+): Promise<CompletionResponse> {
+  const provider = await getProviderForFeature(feature);
+  return provider.complete(request);
+}
+
+/**
+ * Generate metadata (summary + tags) using the provider configured for metadata.
+ */
+export async function generateMetadata(
+  content: string,
+  title?: string | null,
+): Promise<MetadataOutput> {
+  const provider = await getProviderForFeature('metadata');
+  return provider.generateMetadata(content, title);
+}
+
+/**
+ * Generate a chat response using the provider configured for chat.
+ */
+export async function generateChatResponse(
+  messages: { role: string; content: string }[],
+): Promise<string> {
+  const provider = await getProviderForFeature('chat');
+
+  // Convert message history into a single prompt for providers that need it.
+  // Local LLM and BYOK providers handle multi-turn differently, but the
+  // CompletionRequest interface accepts a single prompt. For chat we join
+  // the conversation into a structured prompt.
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+  const systemPrompt = messages
+    .filter((m) => m.role === 'system')
+    .map((m) => m.content)
+    .join('\n') || undefined;
+
+  const contextMessages = messages
+    .filter((m) => m.role !== 'system')
+    .slice(-10) // keep last 10 messages for context window
+    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+    .join('\n');
+
+  const prompt = contextMessages;
+
+  const response = await provider.complete({
+    prompt,
+    systemPrompt: systemPrompt || 'You are a helpful assistant. Respond concisely.',
+    maxTokens: 512,
+    temperature: 0.7,
+  });
+
+  // Strip any "Assistant: " prefix the model might echo
+  const text = response.text.replace(/^Assistant:\s*/i, '').trim();
+  return text || lastUserMsg?.content
+    ? `I received your message about "${(lastUserMsg?.content ?? '').slice(0, 50)}..."`
+    : '[No response]';
+}
