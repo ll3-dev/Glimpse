@@ -1,8 +1,8 @@
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
-import { appError, isFailure, runEffectSuccess, type AppError, tryPromise } from '@/src/lib/effect-result';
+import { appError, isFailure, runEffectSuccess, type AppError, type Result, tryPromise } from '@/src/lib/effect-result';
 import { Effect } from 'effect';
 import { executeLabelingTarget, resolveEffectiveTarget } from '@/src/features/ai/targets';
-import type { LabelingJobRunResult } from './types';
+import type { LabelingJobRunResult, LabelingResult } from './types';
 import type { KnowledgeItem } from '@glimpse/shared';
 
 export interface RunForegroundLabelingDeps {
@@ -12,7 +12,7 @@ export interface RunForegroundLabelingDeps {
   >;
   now?: () => number;
   resolveEffectiveTarget?: (feature: import('@/src/features/ai/targets/types').AIFeature) => import('@/src/features/ai/targets/types').AITarget;
-  executeLabelingTarget?: (target: import('@/src/features/ai/targets/types').AITarget, item: KnowledgeItem) => Promise<import('./types').LabelingTargetResult>;
+  executeLabelingTarget?: (target: import('@/src/features/ai/targets/types').AITarget, item: KnowledgeItem) => Promise<Result<LabelingResult>>;
 }
 
 const defaultDeps: RunForegroundLabelingDeps = {
