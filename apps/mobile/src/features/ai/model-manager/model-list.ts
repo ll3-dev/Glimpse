@@ -2,8 +2,11 @@
  * Recommended model list for Local LLM
  *
  * Curated list of GGUF models that work well on mobile devices.
+ * Model definitions are sourced from the shared @glimpse/shared registry.
  */
 
+import type { LocalModelDefinition } from '@glimpse/shared';
+import { LOCAL_MODEL_REGISTRY } from '@glimpse/shared';
 import type { LocalLLMModelFamily } from '../local-llm';
 
 /**
@@ -27,6 +30,21 @@ export interface ModelInfo {
 }
 
 /**
+ * Convert a LocalModelDefinition from the shared registry to the mobile ModelInfo shape.
+ */
+function toModelInfo(def: LocalModelDefinition): ModelInfo {
+  return {
+    id: def.id,
+    name: def.name,
+    repo: def.repo,
+    filename: def.filename,
+    family: def.family as LocalLLMModelFamily,
+    size: def.displaySize,
+    description: def.description,
+  };
+}
+
+/**
  * Recommended models for mobile devices
  *
  * Selection criteria:
@@ -34,44 +52,9 @@ export interface ModelInfo {
  * - Good performance/quality ratio
  * - Compatible with llama.rn
  */
-export const RECOMMENDED_MODELS: ModelInfo[] = [
-  {
-    id: "qwen3.5-0.8b-unsloth-q4",
-    name: "Qwen 3.5 0.8B Unsloth (Q4_K_M)",
-    repo: "unsloth/Qwen3.5-0.8B-GGUF",
-    filename: "Qwen3.5-0.8B-Q4_K_M.gguf",
-    family: 'qwen-chatml',
-    size: "~535MB",
-    description: "가장 가벼운 Qwen 3.5",
-  },
-  {
-    id: "qwen3.5-2b-unsloth-q4",
-    name: "Qwen 3.5 2B Unsloth (Q4_K_M)",
-    repo: "unsloth/Qwen3.5-2B-GGUF",
-    filename: "Qwen3.5-2B-Q4_K_M.gguf",
-    family: 'qwen-chatml',
-    size: "~1.29GB",
-    description: "속도와 성능의 균형",
-  },
-  {
-    id: "qwen3.5-4b-unsloth-q4",
-    name: "Qwen 3.5 4B Unsloth (Q4_K_M)",
-    repo: "unsloth/Qwen3.5-4B-GGUF",
-    filename: "Qwen3.5-4B-Q4_K_M.gguf",
-    family: 'qwen-chatml',
-    size: "~2.7GB",
-    description: "Unsloth 최적화 버전",
-  },
-  {
-    id: "gemma-3n-e2b-q3",
-    name: "Gemma 3N E2B IT (Q3_K_M)",
-    repo: "unsloth/gemma-3n-E2B-it-GGUF",
-    filename: "gemma-3n-E2B-it-Q3_K_M.gguf",
-    family: 'generic-instruct',
-    size: "~2.3GB",
-    description: "균형 잡힌 성능",
-  },
-];
+export const RECOMMENDED_MODELS: ModelInfo[] = LOCAL_MODEL_REGISTRY
+  .filter((m) => m.capabilities.includes('chat'))
+  .map(toModelInfo);
 
 /**
  * Get a model by its ID

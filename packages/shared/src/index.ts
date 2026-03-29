@@ -207,3 +207,124 @@ export interface CoreClient {
   listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]>;
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
 }
+
+// ============================================================================
+// Local LLM Model Registry
+// ============================================================================
+
+export type LocalLLMModelFamily =
+  | 'qwen-chatml'
+  | 'qwen'
+  | 'llama'
+  | 'mistral'
+  | 'phi'
+  | 'nomic'
+  | 'gemma'
+  | 'generic-instruct';
+
+export type ModelCapability = 'chat' | 'embedding' | 'tools';
+
+export interface LocalModelDefinition {
+  /** Unique model identifier (also used as filename stem) */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** HuggingFace repository for downloading */
+  repo: string;
+  /** GGUF filename in the repository */
+  filename: string;
+  /** Template/prompt family */
+  family: LocalLLMModelFamily;
+  /** Quantization level */
+  quantization: string;
+  /** Size in bytes (approximate) */
+  sizeBytes: number;
+  /** Display size string (e.g., "~535MB") */
+  displaySize: string;
+  /** Context window length */
+  contextLength: number;
+  /** What this model can do */
+  capabilities: ModelCapability[];
+  /** Brief description */
+  description?: string;
+}
+
+export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
+  {
+    id: 'qwen3.5-0.8b-unsloth-q4',
+    name: 'Qwen 3.5 0.8B Unsloth (Q4_K_M)',
+    repo: 'unsloth/Qwen3.5-0.8B-GGUF',
+    filename: 'Qwen3.5-0.8B-Q4_K_M.gguf',
+    family: 'qwen-chatml',
+    quantization: 'Q4_K_M',
+    sizeBytes: 562_036_672,
+    displaySize: '~535MB',
+    contextLength: 8192,
+    capabilities: ['chat', 'tools'],
+    description: '가장 가벼운 Qwen 3.5',
+  },
+  {
+    id: 'qwen3.5-2b-unsloth-q4',
+    name: 'Qwen 3.5 2B Unsloth (Q4_K_M)',
+    repo: 'unsloth/Qwen3.5-2B-GGUF',
+    filename: 'Qwen3.5-2B-Q4_K_M.gguf',
+    family: 'qwen-chatml',
+    quantization: 'Q4_K_M',
+    sizeBytes: 1_353_293_824,
+    displaySize: '~1.29GB',
+    contextLength: 8192,
+    capabilities: ['chat', 'tools'],
+    description: '속도와 성능의 균형',
+  },
+  {
+    id: 'qwen3.5-4b-unsloth-q4',
+    name: 'Qwen 3.5 4B Unsloth (Q4_K_M)',
+    repo: 'unsloth/Qwen3.5-4B-GGUF',
+    filename: 'Qwen3.5-4B-Q4_K_M.gguf',
+    family: 'qwen-chatml',
+    quantization: 'Q4_K_M',
+    sizeBytes: 2_899_560_448,
+    displaySize: '~2.7GB',
+    contextLength: 8192,
+    capabilities: ['chat', 'tools'],
+    description: 'Unsloth 최적화 버전',
+  },
+  {
+    id: 'gemma-3n-e2b-q3',
+    name: 'Gemma 3N E2B IT (Q3_K_M)',
+    repo: 'unsloth/gemma-3n-E2B-it-GGUF',
+    filename: 'gemma-3n-E2B-it-Q3_K_M.gguf',
+    family: 'generic-instruct',
+    quantization: 'Q3_K_M',
+    sizeBytes: 2_462_556_160,
+    displaySize: '~2.3GB',
+    contextLength: 8192,
+    capabilities: ['chat'],
+    description: '균형 잡힌 성능',
+  },
+  {
+    id: 'nomic-embed-text-v1.5-q8_0',
+    name: 'Nomic Embed Text v1.5 (Q8_0)',
+    repo: 'nomic-ai/nomic-embed-text-v1.5-GGUF',
+    filename: 'nomic-embed-text-v1.5.Q8_0.gguf',
+    family: 'nomic',
+    quantization: 'Q8_0',
+    sizeBytes: 327_155_712,
+    displaySize: '~312MB',
+    contextLength: 2048,
+    capabilities: ['embedding'],
+    description: '텍스트 임베딩 전용',
+  },
+];
+
+export function getModelDefinition(modelId: string): LocalModelDefinition | undefined {
+  return LOCAL_MODEL_REGISTRY.find((m) => m.id === modelId);
+}
+
+export function getChatModels(): LocalModelDefinition[] {
+  return LOCAL_MODEL_REGISTRY.filter((m) => m.capabilities.includes('chat'));
+}
+
+export function getEmbeddingModels(): LocalModelDefinition[] {
+  return LOCAL_MODEL_REGISTRY.filter((m) => m.capabilities.includes('embedding'));
+}
