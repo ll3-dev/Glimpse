@@ -11,6 +11,8 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
       "@/*": ["./src/*"],
       "@glimpse/shared": ["../../packages/shared/src/index.ts"],
       "@glimpse/shared/*": ["../../packages/shared/src/*"],

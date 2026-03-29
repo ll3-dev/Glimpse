@@ -168,11 +168,12 @@ export function createContentForProcessing(input: KnowledgeItemInput): string {
 function resolveBodyValue(input: KnowledgeItemInput): string | null {
   switch (input.type) {
     case 'note':
+      return input.body;
     case 'link':
     case 'share':
-      return input.body;
+      return input.body ?? null;
     case 'highlight':
-      return input.text ?? input.body;
+      return input.text ?? input.body ?? null;
     case 'screenshot':
       return input.body ?? null;
     default:

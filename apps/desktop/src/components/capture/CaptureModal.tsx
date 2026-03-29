@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useRouter } from '@tanstack/react-router';
 import { X, Save, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { validateInput, type KnowledgeItemInput } from '@glimpse/features/capture';
@@ -52,7 +52,7 @@ const TABS: { key: CaptureType; label: string }[] = [
 ];
 
 export function CaptureModal() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const saveMutation = useSaveKnowledgeItemMutation();
 
   const [activeType, setActiveType] = useState<CaptureType>('note');
@@ -61,8 +61,8 @@ export function CaptureModal() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const handleClose = useCallback(() => {
-    void navigate({ to: -1 });
-  }, [navigate]);
+    router.history.back();
+  }, [router]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
