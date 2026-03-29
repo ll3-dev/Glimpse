@@ -46,7 +46,7 @@ interface TauriRuntimeHealth {
 
 export function createLocalLLMProvider(
   runtimeId = 'managed-local',
-  modelId = 'qwen2.5-3b-instruct-q4_k_m',
+  modelId = 'qwen3.5-2b-unsloth-q4',
 ): AIProvider {
   return {
     kind: 'local-llm' as const,
@@ -114,7 +114,7 @@ export async function completeLocalLLMStream(
   messages: { role: string; content: string }[],
   callbacks: StreamingCallbacks,
   runtimeId = 'managed-local',
-  modelId = 'qwen2.5-3b-instruct-q4_k_m',
+  modelId = 'qwen3.5-2b-unsloth-q4',
 ): Promise<string | null> {
   try {
     const health = await invoke<TauriRuntimeHealth>('get_runtime_health');
