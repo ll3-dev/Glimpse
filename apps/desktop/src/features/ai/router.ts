@@ -9,9 +9,9 @@
  * No Effect dependency -- plain async/await.
  */
 
-import type { AIProvider, AIFeature, CompletionRequest, CompletionResponse, MetadataOutput } from './types';
+import type { AIProvider, AIFeature, CompletionRequest, CompletionResponse, MetadataOutput, StreamingCallbacks } from './types';
 import { createLocalLLMProvider } from './providers/local-llm-provider';
-import { createBYOKProvider } from './providers/byok-provider';
+import { createBYOKProvider, completeBYOKStream } from './providers/byok-provider';
 import { rulesProvider } from './providers/rules-provider';
 import { stubProvider } from './providers/stub-provider';
 import { loadSettings } from '@/lib/settings-storage';
@@ -135,4 +135,46 @@ export async function generateChatResponse(
   return text || lastUserMsg?.content
     ? `I received your message about "${(lastUserMsg?.content ?? '').slice(0, 50)}..."`
     : '[No response]';
+}
+
+/**
+ * Generate a chat response with streaming token delivery.
+ *
+ * Attempts to stream tokens via the BYOK SSE endpoint. If the provider
+ * doesn't support streaming (e.g. local-llm, rules, stub), falls back
+ * to the non-streaming `generateChatResponse` path.
+ *
+ * Returns the full response text after streaming completes.
+ */
+export async function generateChatStreamResponse(
+  messages: { role: string; content: string }[],
+  callbacks: StreamingCallbacks,
+): Promise<string> {
+  const settings = loadSettings();
+
+  // Only BYOK providers support streaming right now.
+  // Local LLM streaming requires Rust-side async event emission (not yet ready).
+  if (settings.aiProvider === 'byok') {
+    const streamResult = await completeBYOKStream(messages, callbacks);
+    if (streamResult !== null) {
+      // Strip any "Assistant: " prefix the model might echo
+      const text = streamResult.replace(/^Assistant:\s*/i, '').trim();
+      return text || '[No response]';
+    }
+    // Streaming failed or unsupported -- fall through to non-streaming
+  }
+
+  // Fallback: non-streaming path
+  try {
+    const fullText = await generateChatResponse(messages);
+    // Deliver as a single token burst so the UI still gets onToken/onDone
+    if (fullText) {
+      callbacks.onToken(fullText);
+    }
+    callbacks.onDone(fullText);
+    return fullText;
+  } catch (err) {
+    callbacks.onError(err instanceof Error ? err : new Error(String(err)));
+    throw err;
+  }
 }
