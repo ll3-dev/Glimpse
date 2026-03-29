@@ -6,7 +6,8 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import type { AIProvider, CompletionRequest, CompletionResponse, MetadataOutput } from '../types';
+import { listen } from '@tauri-apps/api/event';
+import type { AIProvider, CompletionRequest, CompletionResponse, MetadataOutput, StreamingCallbacks } from '../types';
 import { buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from '../metadata-text';
 
 // ---------------------------------------------------------------------------
@@ -103,6 +104,70 @@ export function createLocalLLMProvider(
       };
     },
   };
+}
+
+/**
+ * Stream a completion using the Rust `stream_completion` command.
+ * Listens for `llm:stream-token` events and calls onToken for each.
+ */
+export async function completeLocalLLMStream(
+  messages: { role: string; content: string }[],
+  callbacks: StreamingCallbacks,
+  runtimeId = 'managed-local',
+  modelId = 'qwen2.5-3b-instruct-q4_k_m',
+): Promise<string | null> {
+  try {
+    const health = await invoke<TauriRuntimeHealth>('get_runtime_health');
+    if (health.status !== 'healthy' || health.loadedModelId === null) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  const requestId = crypto.randomUUID();
+
+  const tauriMessages: TauriCompletionMessage[] = messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  const tauriRequest: TauriCompletionRequest = {
+    runtimeId,
+    modelId,
+    messages: tauriMessages,
+    maxTokens: 512,
+    temperature: 0.7,
+  };
+
+  let fullText = '';
+  let unlisten: (() => void) | null = null;
+
+  try {
+    unlisten = await listen<{ requestId: string; token: string }>(
+      'llm:stream-token',
+      (event) => {
+        if (event.payload.requestId === requestId) {
+          fullText += event.payload.token;
+          callbacks.onToken(event.payload.token);
+        }
+      },
+    );
+
+    await invoke<TauriCompletionResponse>('stream_completion', {
+      request: tauriRequest,
+      requestId,
+    });
+
+    const text = fullText.replace(/^Assistant:\s*/i, '').trim();
+    callbacks.onDone(text);
+    return text || null;
+  } catch (err) {
+    callbacks.onError(err instanceof Error ? err : new Error(String(err)));
+    return null;
+  } finally {
+    unlisten?.();
+  }
 }
 
 export const localLLMProvider = createLocalLLMProvider();

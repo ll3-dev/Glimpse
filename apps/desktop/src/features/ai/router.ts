@@ -10,7 +10,7 @@
  */
 
 import type { AIProvider, AIFeature, CompletionRequest, CompletionResponse, MetadataOutput, StreamingCallbacks } from './types';
-import { createLocalLLMProvider } from './providers/local-llm-provider';
+import { createLocalLLMProvider, completeLocalLLMStream } from './providers/local-llm-provider';
 import { createBYOKProvider, completeBYOKStream } from './providers/byok-provider';
 import { rulesProvider } from './providers/rules-provider';
 import { stubProvider } from './providers/stub-provider';
@@ -152,16 +152,32 @@ export async function generateChatStreamResponse(
 ): Promise<string> {
   const settings = loadSettings();
 
-  // Only BYOK providers support streaming right now.
-  // Local LLM streaming requires Rust-side async event emission (not yet ready).
+  // BYOK: stream via SSE
   if (settings.aiProvider === 'byok') {
     const streamResult = await completeBYOKStream(messages, callbacks);
     if (streamResult !== null) {
-      // Strip any "Assistant: " prefix the model might echo
       const text = streamResult.replace(/^Assistant:\s*/i, '').trim();
       return text || '[No response]';
     }
-    // Streaming failed or unsupported -- fall through to non-streaming
+  }
+
+  // Local LLM: stream via Tauri events
+  if (settings.aiProvider === 'local-llm') {
+    const contextMessages = messages
+      .filter((m) => m.role !== 'system')
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    const systemMsg = messages.find((m) => m.role === 'system');
+    const allMessages = [
+      ...(systemMsg ? [systemMsg] : []),
+      ...contextMessages,
+    ];
+
+    const streamResult = await completeLocalLLMStream(allMessages, callbacks);
+    if (streamResult !== null) {
+      return streamResult || '[No response]';
+    }
   }
 
   // Fallback: non-streaming path
