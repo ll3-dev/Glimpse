@@ -20,8 +20,6 @@
     "lucide-react": "^1.7.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-native": "0.83.2",
-    "react-native-web": "^0.21.0",
     "shadcn": "^4.1.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
@@ -33,13 +31,14 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.9.3",
     "vite": "^7.1.12"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "../mobile/node_modules/.bin/tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   }

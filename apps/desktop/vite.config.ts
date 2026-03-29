@@ -17,10 +17,6 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
     alias: [
       {
-        find: 'react-native',
-        replacement: 'react-native-web',
-      },
-      {
         find: /^@glimpse\/core$/,
         replacement: path.resolve(__dirname, '../../packages/core/src/index.ts'),
       },

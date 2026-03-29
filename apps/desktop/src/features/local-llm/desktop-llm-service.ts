@@ -1,18 +1,93 @@
-import {
-  createDefaultLocalLLMMemoryPolicy,
-  createStaticDesktopLLMService,
-  type CompletionRequest,
-  type CompletionResponse,
-  type DesktopLLMRuntimeDescriptor,
-  type DesktopLLMRuntimeId,
-  type DesktopLLMService,
-  type EmbeddingRequest,
-  type EmbeddingResponse,
-  type LocalLLMMemoryPolicy,
-  type ManagedModelRecord,
-  type RuntimeHealth,
-} from '@glimpse/core/ai/runtime-registry';
+/**
+ * Desktop LLM Service
+ *
+ * Provides local LLM runtime management for the desktop app.
+ * Types are self-contained until @glimpse/core AI types are promoted.
+ */
+
 import { invoke } from '@tauri-apps/api/core';
+
+// ============================================================================
+// Types (mirrored from eventual @glimpse/core/ai/runtime-registry)
+// ============================================================================
+
+export interface DesktopLLMRuntimeDescriptor {
+  id: string;
+  displayName: string;
+  priority: number;
+  availability: 'available' | 'degraded' | 'unavailable';
+  reason: string | null;
+}
+
+export type DesktopLLMRuntimeId = string;
+
+export interface ManagedModelRecord {
+  id: string;
+  name: string;
+  family: string;
+  quantization: string;
+  format: string;
+  path: string | null;
+  size: number;
+  contextLength: number;
+  supportsEmbedding: boolean;
+  supportsTools: boolean;
+  status: string;
+}
+
+export interface CompletionRequest {
+  prompt: string;
+  maxTokens?: number;
+  temperature?: number;
+  modelId?: string;
+}
+
+export interface CompletionResponse {
+  text: string;
+  tokensUsed: number;
+  modelId: string;
+}
+
+export interface EmbeddingRequest {
+  text: string;
+  modelId?: string;
+}
+
+export interface EmbeddingResponse {
+  embedding: number[];
+  tokensUsed: number;
+  modelId: string;
+}
+
+export interface RuntimeHealth {
+  status: string;
+  loadedModelId: string | null;
+  lastUnloadAt: number | null;
+  queueDepth: number;
+  memoryPressure: 'normal' | 'warning' | 'critical';
+}
+
+export interface LocalLLMMemoryPolicy {
+  maxActiveModels: number;
+  idleUnloadMs: number;
+  maxQueueDepthWhenSyncing: number;
+  allowAggressivePreload: boolean;
+}
+
+export interface DesktopLLMService {
+  listAvailableRuntimes(): Promise<DesktopLLMRuntimeDescriptor[]>;
+  listManagedModels(): Promise<ManagedModelRecord[]>;
+  downloadModel(modelId: string): Promise<ManagedModelRecord>;
+  loadModel(modelId: string, runtimeId: DesktopLLMRuntimeId): Promise<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>;
+  unloadModel(modelId: string): Promise<void>;
+  runCompletion(request: CompletionRequest): Promise<CompletionResponse>;
+  runEmbedding(request: EmbeddingRequest): Promise<EmbeddingResponse>;
+  getRuntimeHealth(): Promise<RuntimeHealth>;
+}
+
+// ============================================================================
+// Defaults
+// ============================================================================
 
 const DEFAULT_RUNTIMES: DesktopLLMRuntimeDescriptor[] = [
   {
@@ -67,21 +142,22 @@ const DEFAULT_MODELS: ManagedModelRecord[] = [
   },
 ];
 
-const staticDesktopLLMService = createStaticDesktopLLMService({
-  runtimes: DEFAULT_RUNTIMES,
-  models: DEFAULT_MODELS,
-});
+export const defaultDesktopLLMMemoryPolicy: LocalLLMMemoryPolicy = {
+  maxActiveModels: 1,
+  idleUnloadMs: 5 * 60 * 1000,
+  maxQueueDepthWhenSyncing: 2,
+  allowAggressivePreload: false,
+};
 
-export const defaultDesktopLLMMemoryPolicy = createDefaultLocalLLMMemoryPolicy();
+// ============================================================================
+// Bridge
+// ============================================================================
 
 interface DesktopLLMBridge {
   listAvailableRuntimes(): Promise<DesktopLLMRuntimeDescriptor[]>;
   listManagedModels(): Promise<ManagedModelRecord[]>;
   downloadModel(modelId: string): Promise<ManagedModelRecord>;
-  loadModel(
-    modelId: string,
-    runtimeId: DesktopLLMRuntimeId
-  ): Promise<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>;
+  loadModel(modelId: string, runtimeId: DesktopLLMRuntimeId): Promise<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>;
   unloadModel(modelId: string): Promise<void>;
   runCompletion(request: CompletionRequest): Promise<CompletionResponse>;
   runEmbedding(request: EmbeddingRequest): Promise<EmbeddingResponse>;
@@ -92,12 +168,26 @@ function isTauriRuntimeAvailable(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-function readDesktopBridge(): DesktopLLMBridge | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
+function createStaticDesktopLLMService(overrides?: Partial<{ runtimes: DesktopLLMRuntimeDescriptor[]; models: ManagedModelRecord[] }>): DesktopLLMService {
+  const runtimes = overrides?.runtimes ?? DEFAULT_RUNTIMES;
+  const models = overrides?.models ?? DEFAULT_MODELS;
 
-  return window.__GLIMPSE_DESKTOP_BRIDGE__ ?? null;
+  return {
+    listAvailableRuntimes: async () => runtimes,
+    listManagedModels: async () => models,
+    downloadModel: async (modelId: string) => models.find(m => m.id === modelId) ?? models[0],
+    loadModel: async (modelId: string, runtimeId: DesktopLLMRuntimeId) => ({ loadedModelId: modelId, runtimeId }),
+    unloadModel: async () => {},
+    runCompletion: async () => ({ text: '', tokensUsed: 0, modelId: models[0].id }),
+    runEmbedding: async () => ({ embedding: [], tokensUsed: 0, modelId: models[1].id }),
+    getRuntimeHealth: async () => ({
+      status: 'healthy',
+      loadedModelId: null,
+      lastUnloadAt: null,
+      queueDepth: 0,
+      memoryPressure: 'normal' as const,
+    }),
+  };
 }
 
 function createTauriBridge(): DesktopLLMBridge {
@@ -106,19 +196,10 @@ function createTauriBridge(): DesktopLLMBridge {
     listManagedModels: () => invoke<ManagedModelRecord[]>('list_managed_models'),
     downloadModel: (modelId) => invoke<ManagedModelRecord>('download_model', { modelId }),
     loadModel: (modelId, runtimeId) =>
-      invoke<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>('load_model', {
-        modelId,
-        runtimeId,
-      }),
+      invoke<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>('load_model', { modelId, runtimeId }),
     unloadModel: (modelId) => invoke<void>('unload_model', { modelId }),
-    runCompletion: (request) =>
-      invoke<CompletionResponse>('run_completion', {
-        request,
-      }),
-    runEmbedding: (request) =>
-      invoke<EmbeddingResponse>('run_embedding', {
-        request,
-      }),
+    runCompletion: (request) => invoke<CompletionResponse>('run_completion', { request }),
+    runEmbedding: (request) => invoke<EmbeddingResponse>('run_embedding', { request }),
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
   };
 }
@@ -137,17 +218,16 @@ function wrapBridge(bridge: DesktopLLMBridge): DesktopLLMService {
 }
 
 export function getDesktopLLMService(): DesktopLLMService {
-  const bridge = readDesktopBridge();
-  if (bridge) {
-    return wrapBridge(bridge);
-  }
-
   if (isTauriRuntimeAvailable()) {
     return wrapBridge(createTauriBridge());
   }
 
-  return staticDesktopLLMService;
+  return createStaticDesktopLLMService();
 }
+
+// ============================================================================
+// Overview
+// ============================================================================
 
 export interface DesktopLLMOverview {
   runtimes: DesktopLLMRuntimeDescriptor[];

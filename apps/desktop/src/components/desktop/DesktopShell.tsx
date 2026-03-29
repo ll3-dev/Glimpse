@@ -1,10 +1,8 @@
 import type {
   DesktopLLMOverview,
-} from '../../features/local-llm/desktop-llm-service';
-import type {
   DesktopLLMRuntimeDescriptor,
   ManagedModelRecord,
-} from '@glimpse/core/ai/runtime-registry';
+} from '../../features/local-llm/desktop-llm-service';
 import type { WorkspaceArchitecture } from '@glimpse/shared';
 import { styles } from './styles';
 

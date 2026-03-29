@@ -8,5 +8,8 @@
     "@glimpse/shared": "workspace:*",
     "@glimpse/features": "workspace:*",
     "@tanstack/react-query": "^5.83.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   }
 }

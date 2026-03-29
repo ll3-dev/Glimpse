@@ -243,9 +243,9 @@ export function createSaveKnowledgeItem(deps: SaveKnowledgeItemDeps) {
         const item: KnowledgeItem = {
           id,
           type: input.type,
-          title: input.title,
+          title: input.title ?? null,
           body: bodyValue ?? metadata.summary,
-          url: urlValue,
+          url: urlValue ?? null,
           summary: metadata.summary,
           tags: input.tags ?? metadata.tags,
           labels: null,
