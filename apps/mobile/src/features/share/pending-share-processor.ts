@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { AppState, Platform, AppStateStatus } from "react-native";
 import { mobileCoreClient } from "@/src/features/core/mobile-core-client";
 import { logger } from "@/src/utils/logger";
+import type { KnowledgeItem, KnowledgeItemType } from "@glimpse/shared";
 import { getPendingShareData, clearPendingShareData } from "@/src/utils/app-group-path";
 
 interface PendingShareData {
@@ -28,9 +29,9 @@ async function processShareData(data: PendingShareData): Promise<boolean> {
     // Process text share
     if (data.text && data.text.length > 0) {
       const combinedText = data.text.join("\n");
-      const item = {
+      const item: KnowledgeItem = {
         id: crypto.randomUUID(),
-        type: "share",
+        type: "share" as KnowledgeItemType,
         title: null,
         body: combinedText,
         url: null,
@@ -60,9 +61,9 @@ async function processShareData(data: PendingShareData): Promise<boolean> {
     // Process URL share
     if (data.webUrl && data.webUrl.length > 0) {
       for (const webUrl of data.webUrl) {
-        const item = {
+        const item: KnowledgeItem = {
           id: crypto.randomUUID(),
-          type: "share",
+          type: "share" as KnowledgeItemType,
           title: webUrl.url,
           body: webUrl.meta || null,
           url: webUrl.url,
@@ -85,7 +86,7 @@ async function processShareData(data: PendingShareData): Promise<boolean> {
           nextReviewAt: null,
         };
         await mobileCoreClient.saveKnowledgeItem(item);
-        logger.info("[PendingShareProcessor] Saved URL share:", webUrl.url);
+        logger.info("[PendingShareProcessor] Saved URL share:", { url: webUrl.url });
       }
       saved = true;
     }
