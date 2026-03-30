@@ -2,6 +2,7 @@
 
 mod commands;
 mod core;
+mod download;
 mod llm;
 mod models;
 mod services;
@@ -31,6 +32,7 @@ fn main() {
             commands::list_available_runtimes,
             commands::list_managed_models,
             commands::download_model,
+            commands::delete_model,
             commands::load_model,
             commands::unload_model,
             commands::run_completion,

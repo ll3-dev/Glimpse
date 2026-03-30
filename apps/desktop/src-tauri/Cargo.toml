@@ -8,10 +8,14 @@ description = "Tauri shell for the Glimpse desktop runtime."
 tauri-build = { version = "2.0.0", features = [] }
 
 [dependencies]
+dirs = "6"
+futures-util = "0.3"
 glimpse-core = { path = "../../../packages/core-rust" }
 llama-cpp-2 = { git = "https://github.com/utilityai/llama-cpp-rs", branch = "main", optional = true }
+reqwest = { version = "0.12", features = ["stream"] }
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "2.0.0", features = [] }
+tokio = { version = "1", features = ["fs", "io-util"] }
 
 [features]
 default = []

@@ -15,15 +15,7 @@ impl DesktopRuntimeService {
         state.list_models()
     }
 
-    pub fn download_model(state: &DesktopRuntimeState, model_id: String) -> Result<ManagedModelRecord, String> {
-        state.download_model(model_id)
-    }
-
-    pub fn load_model(
-        state: &DesktopRuntimeState,
-        model_id: String,
-        runtime_id: String,
-    ) -> Result<LoadResult, String> {
+    pub fn load_model(state: &DesktopRuntimeState, model_id: String, runtime_id: String) -> Result<LoadResult, String> {
         state.load_model(model_id, runtime_id)
     }
 

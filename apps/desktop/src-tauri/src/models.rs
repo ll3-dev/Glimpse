@@ -10,30 +10,32 @@ pub struct RuntimeDescriptor {
     pub reason: Option<&'static str>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManagedModelRecord {
-    pub id: &'static str,
-    pub name: &'static str,
-    pub family: &'static str,
-    pub quantization: &'static str,
-    pub format: &'static str,
-    pub path: Option<&'static str>,
+    pub id: String,
+    pub name: String,
+    pub family: String,
+    pub quantization: String,
+    pub format: String,
+    pub repo: String,
+    pub filename: String,
+    pub path: Option<String>,
     pub size: u64,
     pub context_length: u32,
     pub supports_embedding: bool,
     pub supports_tools: bool,
-    pub status: &'static str,
+    pub status: String,
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeHealth {
-    pub status: &'static str,
+    pub status: String,
     pub loaded_model_id: Option<String>,
     pub last_unload_at: Option<u64>,
     pub queue_depth: u8,
-    pub memory_pressure: &'static str,
+    pub memory_pressure: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -57,7 +59,7 @@ pub struct CompletionRequest {
 #[serde(rename_all = "camelCase")]
 pub struct CompletionResponse {
     pub text: String,
-    pub stop_reason: &'static str,
+    pub stop_reason: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -96,6 +98,22 @@ pub struct StreamDoneEvent {
     pub stop_reason: String,
 }
 
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadProgressEvent {
+    pub model_id: String,
+    pub bytes_received: u64,
+    pub total_bytes: u64,
+    pub percentage: f64,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadDoneEvent {
+    pub model_id: String,
+    pub path: String,
+}
+
 pub fn default_runtimes() -> Vec<RuntimeDescriptor> {
     vec![
         RuntimeDescriptor {
@@ -126,66 +144,74 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
     // -- Synced with packages/shared LOCAL_MODEL_REGISTRY --
     vec![
         ManagedModelRecord {
-            id: "qwen3.5-0.8b-q4",
-            name: "Qwen 3.5 0.8B (Q4_K_M)",
-            family: "qwen-chatml",
-            quantization: "Q4_K_M",
-            format: "gguf",
+            id: "qwen3.5-0.8b-q4".into(),
+            name: "Qwen 3.5 0.8B (Q4_K_M)".into(),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Qwen3.5-0.8B-GGUF".into(),
+            filename: "Qwen3.5-0.8B-Q4_K_M.gguf".into(),
             path: None,
             size: 536_870_912,
             context_length: 262_144,
             supports_embedding: false,
             supports_tools: true,
-            status: "ready",
+            status: "not_downloaded".into(),
         },
         ManagedModelRecord {
-            id: "qwen3.5-2b-q4",
-            name: "Qwen 3.5 2B (Q4_K_M)",
-            family: "qwen-chatml",
-            quantization: "Q4_K_M",
-            format: "gguf",
+            id: "qwen3.5-2b-q4".into(),
+            name: "Qwen 3.5 2B (Q4_K_M)".into(),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Qwen3.5-2B-GGUF".into(),
+            filename: "Qwen3.5-2B-Q4_K_M.gguf".into(),
             path: None,
             size: 1_277_802_496,
             context_length: 262_144,
             supports_embedding: false,
             supports_tools: true,
-            status: "ready",
+            status: "not_downloaded".into(),
         },
         ManagedModelRecord {
-            id: "qwen3.5-4b-q4",
-            name: "Qwen 3.5 4B (Q4_K_M)",
-            family: "qwen-chatml",
-            quantization: "Q4_K_M",
-            format: "gguf",
+            id: "qwen3.5-4b-q4".into(),
+            name: "Qwen 3.5 4B (Q4_K_M)".into(),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Qwen3.5-4B-GGUF".into(),
+            filename: "Qwen3.5-4B-Q4_K_M.gguf".into(),
             path: None,
             size: 2_738_398_208,
             context_length: 262_144,
             supports_embedding: false,
             supports_tools: true,
-            status: "ready",
+            status: "not_downloaded".into(),
         },
         ManagedModelRecord {
-            id: "nomic-embed-text-v1.5-q8_0",
-            name: "Nomic Embed v1.5 (Q8_0)",
-            family: "nomic",
-            quantization: "Q8_0",
-            format: "gguf",
+            id: "nomic-embed-text-v1.5-q8_0".into(),
+            name: "Nomic Embed v1.5 (Q8_0)".into(),
+            family: "nomic".into(),
+            quantization: "Q8_0".into(),
+            format: "gguf".into(),
+            repo: "nomic-ai/nomic-embed-text-v1.5-GGUF".into(),
+            filename: "nomic-embed-text-v1.5.Q8_0.gguf".into(),
             path: None,
             size: 327_155_712,
             context_length: 8192,
             supports_embedding: true,
             supports_tools: false,
-            status: "ready",
+            status: "not_downloaded".into(),
         },
     ]
 }
 
 pub fn default_health() -> RuntimeHealth {
     RuntimeHealth {
-        status: "healthy",
+        status: "healthy".into(),
         loaded_model_id: None,
         last_unload_at: None,
         queue_depth: 0,
-        memory_pressure: "normal",
+        memory_pressure: "normal".into(),
     }
 }

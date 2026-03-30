@@ -1,3 +1,4 @@
+use crate::download;
 use crate::models::{
     CompletionRequest, CompletionResponse, EmbeddingRequest, EmbeddingResponse, LoadResult,
     ManagedModelRecord, RuntimeDescriptor, RuntimeHealth, StreamDoneEvent, StreamTokenEvent,
@@ -20,11 +21,53 @@ pub fn list_managed_models(
 }
 
 #[tauri::command]
-pub fn download_model(
+pub async fn download_model(
     model_id: String,
+    app: tauri::AppHandle,
     state: tauri::State<'_, DesktopRuntimeState>,
 ) -> Result<ManagedModelRecord, String> {
-    DesktopRuntimeService::download_model(&state, model_id)
+    // Get model metadata (repo, filename) before starting download
+    let model = state.get_model(&model_id)?;
+
+    // Mark as downloading
+    state.mark_model_downloading(&model_id)?;
+
+    let app_clone = app.clone();
+    let model_clone = model.clone();
+
+    // Perform the actual download
+    let result = download::download_model(&app_clone, &model_clone).await;
+
+    match result {
+        Ok(path) => {
+            let path_str = path.to_string_lossy().to_string();
+            state.mark_model_downloaded(&model_id, &path_str)
+        }
+        Err(e) => {
+            state.mark_model_download_failed(&model_id, &e)?;
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn delete_model(
+    model_id: String,
+    state: tauri::State<'_, DesktopRuntimeState>,
+) -> Result<(), String> {
+    // Unload if active
+    {
+        let model = state.get_model(&model_id)?;
+        if model.status == "active" {
+            state.unload_model(model_id.clone())?;
+        }
+    }
+
+    // Delete from disk
+    download::delete_model_file(&model_id).await?;
+
+    // Update state
+    state.delete_model(&model_id)
 }
 
 #[tauri::command]
@@ -96,7 +139,7 @@ pub async fn stream_completion(
         StreamDoneEvent {
             request_id: request_id.clone(),
             full_text: result.text.clone(),
-            stop_reason: result.stop_reason.to_string(),
+            stop_reason: result.stop_reason.clone(),
         },
     );
 

@@ -39,6 +39,7 @@ const FAMILY_COLORS: Record<string, string> = {
   llama: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   phi: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   gemma: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  glm: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
   nomic: 'bg-gray-100 text-gray-700 dark:bg-gray-800/40 dark:text-gray-300',
   'generic-instruct': 'bg-slate-100 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300',
   mistral: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
@@ -81,7 +82,7 @@ export function ModelCard({
   downloadProgress = 0,
 }: ModelCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const isInstalled = installedModel?.status === 'ready' || installedModel?.status === 'loaded';
+  const isInstalled = installedModel?.status === 'ready' || installedModel?.status === 'active';
 
   return (
     <div

@@ -2,13 +2,15 @@
  * Desktop LLM Service
  *
  * Provides local LLM runtime management for the desktop app.
- * Types are self-contained until @glimpse/core AI types are promoted.
+ * Bridges TypeScript frontend with Tauri Rust backend for model
+ * downloading, loading, inference, and file management.
  */
 
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 // ============================================================================
-// Types (mirrored from eventual @glimpse/core/ai/runtime-registry)
+// Types
 // ============================================================================
 
 export interface DesktopLLMRuntimeDescriptor {
@@ -21,18 +23,27 @@ export interface DesktopLLMRuntimeDescriptor {
 
 export type DesktopLLMRuntimeId = string;
 
+export type ModelDownloadStatus =
+  | 'not_downloaded'
+  | 'downloading'
+  | 'download_failed'
+  | 'ready'
+  | 'active';
+
 export interface ManagedModelRecord {
   id: string;
   name: string;
   family: string;
   quantization: string;
   format: string;
+  repo: string;
+  filename: string;
   path: string | null;
   size: number;
   contextLength: number;
   supportsEmbedding: boolean;
   supportsTools: boolean;
-  status: string;
+  status: ModelDownloadStatus;
 }
 
 export interface CompletionRequest {
@@ -74,15 +85,30 @@ export interface LocalLLMMemoryPolicy {
   allowAggressivePreload: boolean;
 }
 
+export interface DownloadProgressEvent {
+  modelId: string;
+  bytesReceived: number;
+  totalBytes: number;
+  percentage: number;
+}
+
+export interface DownloadDoneEvent {
+  modelId: string;
+  path: string;
+}
+
 export interface DesktopLLMService {
   listAvailableRuntimes(): Promise<DesktopLLMRuntimeDescriptor[]>;
   listManagedModels(): Promise<ManagedModelRecord[]>;
   downloadModel(modelId: string): Promise<ManagedModelRecord>;
+  deleteModel(modelId: string): Promise<void>;
   loadModel(modelId: string, runtimeId: DesktopLLMRuntimeId): Promise<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>;
   unloadModel(modelId: string): Promise<void>;
   runCompletion(request: CompletionRequest): Promise<CompletionResponse>;
   runEmbedding(request: EmbeddingRequest): Promise<EmbeddingResponse>;
   getRuntimeHealth(): Promise<RuntimeHealth>;
+  onDownloadProgress(callback: (event: DownloadProgressEvent) => void): Promise<() => void>;
+  onDownloadDone(callback: (event: DownloadDoneEvent) => void): Promise<() => void>;
 }
 
 // ============================================================================
@@ -120,12 +146,14 @@ const DEFAULT_MODELS: ManagedModelRecord[] = [
     family: 'qwen-chatml',
     quantization: 'Q4_K_M',
     format: 'gguf',
+    repo: 'unsloth/Qwen3.5-0.8B-GGUF',
+    filename: 'Qwen3.5-0.8B-Q4_K_M.gguf',
     path: null,
     size: 536_870_912,
     contextLength: 262_144,
     supportsEmbedding: false,
     supportsTools: true,
-    status: 'ready',
+    status: 'not_downloaded',
   },
   {
     id: 'qwen3.5-2b-q4',
@@ -133,12 +161,14 @@ const DEFAULT_MODELS: ManagedModelRecord[] = [
     family: 'qwen-chatml',
     quantization: 'Q4_K_M',
     format: 'gguf',
+    repo: 'unsloth/Qwen3.5-2B-GGUF',
+    filename: 'Qwen3.5-2B-Q4_K_M.gguf',
     path: null,
     size: 1_277_802_496,
     contextLength: 262_144,
     supportsEmbedding: false,
     supportsTools: true,
-    status: 'ready',
+    status: 'not_downloaded',
   },
   {
     id: 'qwen3.5-4b-q4',
@@ -146,12 +176,14 @@ const DEFAULT_MODELS: ManagedModelRecord[] = [
     family: 'qwen-chatml',
     quantization: 'Q4_K_M',
     format: 'gguf',
+    repo: 'unsloth/Qwen3.5-4B-GGUF',
+    filename: 'Qwen3.5-4B-Q4_K_M.gguf',
     path: null,
     size: 2_738_398_208,
     contextLength: 262_144,
     supportsEmbedding: false,
     supportsTools: true,
-    status: 'ready',
+    status: 'not_downloaded',
   },
   {
     id: 'nomic-embed-text-v1.5-q8_0',
@@ -159,12 +191,14 @@ const DEFAULT_MODELS: ManagedModelRecord[] = [
     family: 'nomic',
     quantization: 'Q8_0',
     format: 'gguf',
+    repo: 'nomic-ai/nomic-embed-text-v1.5-GGUF',
+    filename: 'nomic-embed-text-v1.5.Q8_0.gguf',
     path: null,
     size: 327_155_712,
     contextLength: 8_192,
     supportsEmbedding: true,
     supportsTools: false,
-    status: 'ready',
+    status: 'not_downloaded',
   },
 ];
 
@@ -179,73 +213,76 @@ export const defaultDesktopLLMMemoryPolicy: LocalLLMMemoryPolicy = {
 // Bridge
 // ============================================================================
 
-interface DesktopLLMBridge {
-  listAvailableRuntimes(): Promise<DesktopLLMRuntimeDescriptor[]>;
-  listManagedModels(): Promise<ManagedModelRecord[]>;
-  downloadModel(modelId: string): Promise<ManagedModelRecord>;
-  loadModel(modelId: string, runtimeId: DesktopLLMRuntimeId): Promise<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>;
-  unloadModel(modelId: string): Promise<void>;
-  runCompletion(request: CompletionRequest): Promise<CompletionResponse>;
-  runEmbedding(request: EmbeddingRequest): Promise<EmbeddingResponse>;
-  getRuntimeHealth(): Promise<RuntimeHealth>;
-}
-
 function isTauriRuntimeAvailable(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-function createStaticDesktopLLMService(overrides?: Partial<{ runtimes: DesktopLLMRuntimeDescriptor[]; models: ManagedModelRecord[] }>): DesktopLLMService {
-  const runtimes = overrides?.runtimes ?? DEFAULT_RUNTIMES;
-  const models = overrides?.models ?? DEFAULT_MODELS;
+function createStaticDesktopLLMService(): DesktopLLMService {
+  const models = DEFAULT_MODELS;
 
   return {
-    listAvailableRuntimes: async () => runtimes,
+    listAvailableRuntimes: async () => DEFAULT_RUNTIMES,
     listManagedModels: async () => models,
-    downloadModel: async (modelId: string) => models.find(m => m.id === modelId) ?? models[0],
-    loadModel: async (modelId: string, runtimeId: DesktopLLMRuntimeId) => ({ loadedModelId: modelId, runtimeId }),
-    unloadModel: async () => {},
+    downloadModel: async (modelId: string) => {
+      const model = models.find(m => m.id === modelId);
+      if (model) {
+        model.status = 'ready';
+        model.path = `~/Library/Application Support/com.glimpse.desktop/models/${modelId}.gguf`;
+      }
+      return model ?? models[0];
+    },
+    deleteModel: async (modelId: string) => {
+      const model = models.find(m => m.id === modelId);
+      if (model) {
+        model.status = 'not_downloaded';
+        model.path = null;
+      }
+    },
+    loadModel: async (modelId: string, runtimeId: DesktopLLMRuntimeId) => {
+      const model = models.find(m => m.id === modelId);
+      if (model) model.status = 'active';
+      return { loadedModelId: modelId, runtimeId };
+    },
+    unloadModel: async (modelId: string) => {
+      const model = models.find(m => m.id === modelId);
+      if (model && model.status === 'active') model.status = 'ready';
+    },
     runCompletion: async () => ({ text: '', tokensUsed: 0, modelId: models[0].id }),
-    runEmbedding: async () => ({ embedding: [], tokensUsed: 0, modelId: models[1].id }),
+    runEmbedding: async () => ({ embedding: [], tokensUsed: 0, modelId: models[3].id }),
     getRuntimeHealth: async () => ({
       status: 'healthy',
       loadedModelId: null,
       lastUnloadAt: null,
-      queueDepth: 0,
+      queueDepth:  0,
       memoryPressure: 'normal' as const,
     }),
+    onDownloadProgress: async () => () => {},
+    onDownloadDone: async () => () => {},
   };
 }
 
-function createTauriBridge(): DesktopLLMBridge {
+function createTauriBridge(): DesktopLLMService {
   return {
     listAvailableRuntimes: () => invoke<DesktopLLMRuntimeDescriptor[]>('list_available_runtimes'),
     listManagedModels: () => invoke<ManagedModelRecord[]>('list_managed_models'),
     downloadModel: (modelId) => invoke<ManagedModelRecord>('download_model', { modelId }),
+    deleteModel: (modelId) => invoke<void>('delete_model', { modelId }),
     loadModel: (modelId, runtimeId) =>
       invoke<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>('load_model', { modelId, runtimeId }),
     unloadModel: (modelId) => invoke<void>('unload_model', { modelId }),
     runCompletion: (request) => invoke<CompletionResponse>('run_completion', { request }),
     runEmbedding: (request) => invoke<EmbeddingResponse>('run_embedding', { request }),
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
-  };
-}
-
-function wrapBridge(bridge: DesktopLLMBridge): DesktopLLMService {
-  return {
-    listAvailableRuntimes: () => bridge.listAvailableRuntimes(),
-    listManagedModels: () => bridge.listManagedModels(),
-    downloadModel: (modelId) => bridge.downloadModel(modelId),
-    loadModel: (modelId, runtimeId) => bridge.loadModel(modelId, runtimeId),
-    unloadModel: (modelId) => bridge.unloadModel(modelId),
-    runCompletion: (request) => bridge.runCompletion(request),
-    runEmbedding: (request) => bridge.runEmbedding(request),
-    getRuntimeHealth: () => bridge.getRuntimeHealth(),
+    onDownloadProgress: (callback) =>
+      listen<DownloadProgressEvent>('model:download-progress', (e) => callback(e.payload)),
+    onDownloadDone: (callback) =>
+      listen<DownloadDoneEvent>('model:download-done', (e) => callback(e.payload)),
   };
 }
 
 export function getDesktopLLMService(): DesktopLLMService {
   if (isTauriRuntimeAvailable()) {
-    return wrapBridge(createTauriBridge());
+    return createTauriBridge();
   }
 
   return createStaticDesktopLLMService();
