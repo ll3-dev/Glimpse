@@ -1,7 +1,7 @@
 import { useState, useCallback, type ReactNode } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { BYOKSection } from './BYOKSection';
-import { LLMSection } from './LLMSection';
+import { ModelManagerSection } from './ModelManagerSection';
 import { loadSettings, saveSettings, type DesktopSettings } from '@/lib/settings-storage';
 
 type AiProvider = DesktopSettings['aiProvider'];
@@ -84,7 +84,7 @@ export function SettingsPanel() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Local LLM
         </h2>
-        <LLMSection
+        <ModelManagerSection
           enabled={settings.localLlm.enabled}
           onToggle={(enabled) =>
             handleSettingsChange({
