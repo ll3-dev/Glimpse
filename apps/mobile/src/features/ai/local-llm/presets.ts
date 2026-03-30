@@ -161,10 +161,13 @@ const FAMILY_PRESETS: Record<LocalLLMModelFamily, LocalLLMPreset> = {
   mistral: genericPreset,
   phi: genericPreset,
   qwen: qwenPreset,
+  gemma: genericPreset,
+  glm: qwenPreset,
+  nomic: genericPreset,
 };
 
 const MODEL_OVERRIDES: Partial<Record<string, Partial<LocalLLMPreset>>> = {
-  'qwen3.5-4b-unsloth-q4': {
+  'qwen3.5-4b-q4': {
     defaults: {
       maxTokens: 384,
       temperature: 0.2,

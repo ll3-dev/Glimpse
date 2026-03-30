@@ -8,6 +8,9 @@ export type LocalLLMModelFamily =
   | 'phi'
   | 'qwen'
   | 'qwen-chatml'
+  | 'gemma'
+  | 'glm'
+  | 'nomic'
   | 'generic-instruct';
 
 export interface DownloadProgress {
