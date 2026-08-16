@@ -95,8 +95,45 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 
 | 리스크 | 완화 |
 |---|---|
-| rustra pre-1.0 API 변동 | 버전 고정(pin) + 변경 시 마이그레이션 노트 |
+| rustra pre-1.0 API 변동 | 버전 고정(pin) + 변경 시 마이그레이션 노트 — 1주차에 이중 고정 적용 (`@rustra/*` 0.1.1 정확 핀 + Cargo `=0.1.1`, 계약 해시 커플링 메모 포함) |
 | RN 네이티브 모듈 구축 공수 (TS 절반만 배포됨) | 예제 코드 이식 + rustra 문서 개선 산출물로 |
 | async 미지원으로 인한 스레드 폭증 | 작업 큐/전용 스레드 풀 패턴으로 제한 |
 | 1MB 상한 도달 (임베딩·대형 배치) | 3주차에 실측 후 상향 또는 청킹 |
 | 모바일 전환 중 기능 정지 | 교살자 패턴 — Nitro 경로를 끝까지 유지 |
+| 브릿지 전역 뮤텍스 오염(poisoning) 시 앱 크래시 (1주차 실측, 기존 리스크 테이블에 없었음) | 트레이드오프 수용 — 기존 손글 커맨드의 우아한 에러 반환과 달리 poisoned 글로벌은 이후 dispatch 전부 panic. 데스크톱 단일 연결 단순성을 우선; 3주차 재평가 |
+
+## 1주차 결과 (2026-08-16 완료)
+
+계획된 1주차 스코프(데스크톱 전환)를 완료했다.
+
+### 출하된 것
+
+- **`packages/bridge-rust` (crate `glimpse-bridge`)**: `glimpse-core` SharedCore 위에 rustra `#[command]` 25개 정의 — knowledge(9) / conversation(5) / message(4) / recommendation(4) / feedback(2) / review(3). IO 구조체는 camelCase rename, 도메인 타입 재정의 없이 코어 모델 위에 얇은 어댑터.
+- **데스크톱 전환 완료**: 프론트 `CoreClient` 구현체를 `rustra-core-client.ts`(생성된 클라이언트 `@glimpse/bridge-generated` 기반)로 교체. 모든 도메인 명령이 단일 `rustra_dispatch` Tauri 커맨드로 라우팅되며 `main.tsx`의 `createTauriEngine`이 엔진을 구성한다.
+- **코드젠**: `bun run bridge:generate`(`cargo run -p glimpse-bridge --bin generate`)로 `@glimpse/bridge-generated` TS 클라이언트 생성. camelCase 엔드투엔드라 키 변환 불필요.
+- **구 브릿지 삭제 (교살자 완료)**: `src-tauri/src/core/`(손글 도메인 커맨드 25개)와 `desktop-core-client.ts` 제거. `generate_handler!`에는 `rustra_dispatch` + LLM 런타임 커맨드 10개만 남음.
+- **테스트 13개 통과**: bridge 크레이트 단위 12개(왕복/패치 삼치/에러 봉투·열거형 검증 포함) + 데스크톱 통합 1개(실제 sqlite 파일 위 dispatch 스모크).
+- **리뷰 픽스**: `serde_json`을 dev-dependencies로 이동(통합 테스트만 사용), 양쪽 Cargo에서 `rustra = "=0.1.1"` 정확 핀 + 계약 해시 커플링 주석, `main.rs` `assert!` 관용구 통일.
+
+### 계획에서 달라진 점
+
+- **`register()` 사용 불가 → 수동 배선**: 계획은 `tauri_support::register` 사용을 명시했으나, 실제로는 자체 `invoke_handler`를 설치해 앱의 단일 `generate_handler!`와 충돌한다. 대신 `RustraState`를 `.manage()`로 등록하고 `rustra_dispatch`를 기존 핸들러 목록에 나열하는 우회법을 사용한다 — `src-tauri/src/main.rs`에 문서화됨.
+- **`CoreState` 삭제**: 손글 커맨드용 managed state(`SharedCore`)는 삭제되고 브릿지 글로벌(`glimpse_bridge::init_core`)이 유일한 `SharedCore` 소유권을 가진다 — 프로세스당 정확히 하나의 SQLite 연결이라는 불변식 때문. 손글 커맨드는 삭제 시점까지 같은 글로벌을 공유했다.
+
+### 알려진 후속 작업
+
+- **뮤텍스 오염 트레이드오프 수용**: 브릿지 글로벌이 panic으로 오염되면 이후 모든 dispatch가 panic — 기존 손글 경로의 우아한 `Result` 에러와는 다른 장애 모드. 데스크톱에서는 수용하고 3주차에 재평가.
+- **pending-labeling 코어 버그**: `listPendingKnowledgeItemsForLabeling`이 결과를 반환하지 않는 코어 버그 — sqlite가 enum을 serde 인용 문자열로 저장하는데 필터가 plain 문자열과 비교해 절대 매치되지 않음. 코어(`packages/core-rust`) 수정 필요, 브릿지 문제 아님.
+- **계약 해시 드리프트 검증 미사용**: rustra의 `contractHash` 엔진 옵션은 rkyvV2/JSI 엔진 전용 opt-in이라 Tauri 경로에는 적용되지 않음. 3주차(RN 전환) 후보 — 그 전까지는 버전 이중 핀(TS 정확 핀 + Cargo `=`)이 드리프트 방어선.
+
+### 사용자 수동 검증 체크리스트
+
+데스크톱 앱이 자동화 검증(테스트/tsc/vite build/기동) 외에 사용자 GUI 검증이 아직 진행되지 않았다. rustra 경로가 실제로 살아있는지 확인하려면:
+
+1. **Library 로드** — 저장된 지식 아이템 목록 표시
+2. **Capture 저장** — 새 항목 저장 후 목록에 반영
+3. **Chat CRUD** — 대화 생성/수정/삭제, 메시지 추가
+4. **Review 큐** — 복습 예정 항목 조회·응답
+5. **Digest 액션** — 추천 저장·응답 플로우
+6. **에러 렌더링** — 존재하지 않는 ID 조회 등으로 `RustraCommandError` 표시 확인
+7. **Models 화면** — LLM 런타임 커맨드(손글 유지분) 정상 동작 확인

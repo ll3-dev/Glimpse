@@ -1,5 +1,11 @@
 # Typed Bridge Development Guide
 
+> **Note (2026-08-16):** This Nitro bridge is scheduled for replacement by
+> [rustra](/Users/loopy/dev/ll3/Glimpse/docs/plans/2026-08-16-rustra-integration-design.md)
+> (week 2 of the migration). The desktop app has already migrated; mobile
+> switches after the RN JSI adapter is ported. Until then this guide remains
+> the source of truth for the mobile FFI surface.
+
 This document describes how to add or change Rust-backed APIs in the typed Nitro bridge.
 
 ## Architecture
