@@ -1,0 +1,2634 @@
+{
+  "packageId": "glimpse.core",
+  "commands": [
+    {
+      "name": "addMessage",
+      "commandId": 16,
+      "inputType": "AddMessageInput",
+      "outputType": "AddMessageOutput",
+      "inputSchema": {
+        "title": "AddMessageInput",
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "$ref": "#/definitions/MessageIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "AddMessageOutput",
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "$ref": "#/definitions/MessageIo"
+          }
+        }
+      },
+      "definitions": {
+        "MessageIo": {
+          "type": "object",
+          "required": [
+            "content",
+            "conversationId",
+            "createdAt",
+            "id",
+            "role"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "conversationId": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "deletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "calculateNextReview",
+      "commandId": 24,
+      "inputType": "CalculateNextReviewIoInput",
+      "outputType": "CalculateNextReviewIoOutput",
+      "inputSchema": {
+        "title": "CalculateNextReviewIoInput",
+        "type": "object",
+        "required": [
+          "feedbackType",
+          "now"
+        ],
+        "properties": {
+          "lastReviewedAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "nextReviewAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "feedbackType": {
+            "type": "string"
+          },
+          "now": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "CalculateNextReviewIoOutput",
+        "type": "object",
+        "required": [
+          "intervalMs",
+          "nextReviewAt"
+        ],
+        "properties": {
+          "intervalMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nextReviewAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      }
+    },
+    {
+      "name": "calculateTagOverlap",
+      "commandId": 23,
+      "inputType": "CalculateTagOverlapIoInput",
+      "outputType": "CalculateTagOverlapIoOutput",
+      "inputSchema": {
+        "title": "CalculateTagOverlapIoInput",
+        "type": "object",
+        "required": [
+          "left",
+          "right"
+        ],
+        "properties": {
+          "left": {
+            "$ref": "#/definitions/CoreKnowledgeItemLikeIo"
+          },
+          "right": {
+            "$ref": "#/definitions/CoreKnowledgeItemLikeIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "CalculateTagOverlapIoOutput",
+        "type": "object",
+        "required": [
+          "overlap"
+        ],
+        "properties": {
+          "overlap": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "definitions": {
+        "CoreKnowledgeItemLikeIo": {
+          "type": "object",
+          "properties": {
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "createdAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "createConversation",
+      "commandId": 1,
+      "inputType": "CreateConversationInput",
+      "outputType": "CreateConversationOutput",
+      "inputSchema": {
+        "title": "CreateConversationInput",
+        "type": "object",
+        "required": [
+          "conversation"
+        ],
+        "properties": {
+          "conversation": {
+            "$ref": "#/definitions/ConversationIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "CreateConversationOutput",
+        "type": "object",
+        "required": [
+          "conversation"
+        ],
+        "properties": {
+          "conversation": {
+            "$ref": "#/definitions/ConversationIo"
+          }
+        }
+      },
+      "definitions": {
+        "ConversationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "icon": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "contextItemId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "deletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "deleteConversation",
+      "commandId": 4,
+      "inputType": "DeleteConversationInput",
+      "outputType": "DeleteConversationOutput",
+      "inputSchema": {
+        "title": "DeleteConversationInput",
+        "type": "object",
+        "required": [
+          "conversationId",
+          "deletedAt"
+        ],
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "deletedAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "DeleteConversationOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "deleteMessage",
+      "commandId": 18,
+      "inputType": "DeleteMessageInput",
+      "outputType": "DeleteMessageOutput",
+      "inputSchema": {
+        "title": "DeleteMessageInput",
+        "type": "object",
+        "required": [
+          "deletedAt",
+          "messageId"
+        ],
+        "properties": {
+          "messageId": {
+            "type": "string"
+          },
+          "deletedAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "DeleteMessageOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "getDueKnowledgeItems",
+      "commandId": 14,
+      "inputType": "GetDueKnowledgeItemsIoInput",
+      "outputType": "GetDueKnowledgeItemsIoOutput",
+      "inputSchema": {
+        "title": "GetDueKnowledgeItemsIoInput",
+        "type": "object",
+        "required": [
+          "now"
+        ],
+        "properties": {
+          "now": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "GetDueKnowledgeItemsIoOutput",
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/KnowledgeItemIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "getKnowledgeItemById",
+      "commandId": 9,
+      "inputType": "GetKnowledgeItemByIdInput",
+      "outputType": "GetKnowledgeItemByIdOutput",
+      "inputSchema": {
+        "title": "GetKnowledgeItemByIdInput",
+        "type": "object",
+        "required": [
+          "itemId"
+        ],
+        "properties": {
+          "itemId": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "GetKnowledgeItemByIdOutput",
+        "type": "object",
+        "properties": {
+          "item": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/KnowledgeItemIo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "initializeReviewSchedule",
+      "commandId": 25,
+      "inputType": "InitializeReviewScheduleIoInput",
+      "outputType": "InitializeReviewScheduleIoOutput",
+      "inputSchema": {
+        "title": "InitializeReviewScheduleIoInput",
+        "type": "object",
+        "required": [
+          "createdAt"
+        ],
+        "properties": {
+          "createdAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "intervalMs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "InitializeReviewScheduleIoOutput",
+        "type": "object",
+        "required": [
+          "nextReviewAt"
+        ],
+        "properties": {
+          "nextReviewAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "stability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "difficulty": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "lastReviewedAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      }
+    },
+    {
+      "name": "listConversationMessages",
+      "commandId": 15,
+      "inputType": "ListConversationMessagesInput",
+      "outputType": "ListConversationMessagesOutput",
+      "inputSchema": {
+        "title": "ListConversationMessagesInput",
+        "type": "object",
+        "required": [
+          "conversationId"
+        ],
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "ListConversationMessagesOutput",
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/MessageIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "MessageIo": {
+          "type": "object",
+          "required": [
+            "content",
+            "conversationId",
+            "createdAt",
+            "id",
+            "role"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "conversationId": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "deletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listConversations",
+      "commandId": 2,
+      "inputType": "ListConversationsInput",
+      "outputType": "ListConversationsOutput",
+      "inputSchema": {
+        "title": "ListConversationsInput",
+        "type": "object"
+      },
+      "outputSchema": {
+        "title": "ListConversationsOutput",
+        "type": "object",
+        "required": [
+          "conversations"
+        ],
+        "properties": {
+          "conversations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/ConversationIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "ConversationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "icon": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "contextItemId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "deletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listKnowledgeItems",
+      "commandId": 8,
+      "inputType": "ListKnowledgeItemsInput",
+      "outputType": "ListKnowledgeItemsOutput",
+      "inputSchema": {
+        "title": "ListKnowledgeItemsInput",
+        "type": "object"
+      },
+      "outputSchema": {
+        "title": "ListKnowledgeItemsOutput",
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/KnowledgeItemIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listKnowledgeItemsByIds",
+      "commandId": 11,
+      "inputType": "ListKnowledgeItemsByIdsInput",
+      "outputType": "ListKnowledgeItemsOutputByIds",
+      "inputSchema": {
+        "title": "ListKnowledgeItemsByIdsInput",
+        "type": "object",
+        "required": [
+          "itemIds"
+        ],
+        "properties": {
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "ListKnowledgeItemsOutputByIds",
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/KnowledgeItemIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listPendingKnowledgeItemsForLabeling",
+      "commandId": 13,
+      "inputType": "ListPendingKnowledgeItemsForLabelingInput",
+      "outputType": "ListPendingKnowledgeItemsForLabelingOutput",
+      "inputSchema": {
+        "title": "ListPendingKnowledgeItemsForLabelingInput",
+        "type": "object",
+        "required": [
+          "limit"
+        ],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "ListPendingKnowledgeItemsForLabelingOutput",
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/KnowledgeItemIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listPendingRecommendations",
+      "commandId": 21,
+      "inputType": "ListPendingRecommendationsInput",
+      "outputType": "ListPendingRecommendationsOutput",
+      "inputSchema": {
+        "title": "ListPendingRecommendationsInput",
+        "type": "object"
+      },
+      "outputSchema": {
+        "title": "ListPendingRecommendationsOutput",
+        "type": "object",
+        "required": [
+          "recommendations"
+        ],
+        "properties": {
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/RecommendationIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "RecommendationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "itemA_id",
+            "itemB_id",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "itemA_id": {
+              "type": "string"
+            },
+            "itemB_id": {
+              "type": "string"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "respondedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listRecentFeedbackEvents",
+      "commandId": 5,
+      "inputType": "ListRecentFeedbackEventsInput",
+      "outputType": "ListRecentFeedbackEventsOutput",
+      "inputSchema": {
+        "title": "ListRecentFeedbackEventsInput",
+        "type": "object",
+        "required": [
+          "limit"
+        ],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "ListRecentFeedbackEventsOutput",
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/FeedbackEventIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "FeedbackEventIo": {
+          "type": "object",
+          "required": [
+            "action",
+            "createdAt",
+            "id",
+            "recommendationId"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "recommendationId": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listRecommendations",
+      "commandId": 20,
+      "inputType": "ListRecommendationsInput",
+      "outputType": "ListRecommendationsOutput",
+      "inputSchema": {
+        "title": "ListRecommendationsInput",
+        "type": "object"
+      },
+      "outputSchema": {
+        "title": "ListRecommendationsOutput",
+        "type": "object",
+        "required": [
+          "recommendations"
+        ],
+        "properties": {
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/RecommendationIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "RecommendationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "itemA_id",
+            "itemB_id",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "itemA_id": {
+              "type": "string"
+            },
+            "itemB_id": {
+              "type": "string"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "respondedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listWeeklyKnowledgeItems",
+      "commandId": 12,
+      "inputType": "ListWeeklyKnowledgeItemsInput",
+      "outputType": "ListWeeklyKnowledgeItemsOutput",
+      "inputSchema": {
+        "title": "ListWeeklyKnowledgeItemsInput",
+        "type": "object",
+        "required": [
+          "since"
+        ],
+        "properties": {
+          "since": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "ListWeeklyKnowledgeItemsOutput",
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/KnowledgeItemIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "logRecommendationFeedback",
+      "commandId": 6,
+      "inputType": "LogRecommendationFeedbackInput",
+      "outputType": "LogRecommendationFeedbackOutput",
+      "inputSchema": {
+        "title": "LogRecommendationFeedbackInput",
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "$ref": "#/definitions/FeedbackEventIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "LogRecommendationFeedbackOutput",
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "$ref": "#/definitions/FeedbackEventIo"
+          }
+        }
+      },
+      "definitions": {
+        "FeedbackEventIo": {
+          "type": "object",
+          "required": [
+            "action",
+            "createdAt",
+            "id",
+            "recommendationId"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "recommendationId": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "respondToRecommendation",
+      "commandId": 22,
+      "inputType": "RespondToRecommendationInput",
+      "outputType": "RespondToRecommendationOutput",
+      "inputSchema": {
+        "title": "RespondToRecommendationInput",
+        "type": "object",
+        "required": [
+          "feedbackEvent",
+          "recommendationId",
+          "status"
+        ],
+        "properties": {
+          "recommendationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "feedbackEvent": {
+            "$ref": "#/definitions/FeedbackEventIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "RespondToRecommendationOutput",
+        "type": "object"
+      },
+      "definitions": {
+        "FeedbackEventIo": {
+          "type": "object",
+          "required": [
+            "action",
+            "createdAt",
+            "id",
+            "recommendationId"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "recommendationId": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "saveKnowledgeItem",
+      "commandId": 7,
+      "inputType": "SaveKnowledgeItemInput",
+      "outputType": "SaveKnowledgeItemOutput",
+      "inputSchema": {
+        "title": "SaveKnowledgeItemInput",
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/definitions/KnowledgeItemIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "SaveKnowledgeItemOutput",
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/definitions/KnowledgeItemIo"
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "saveRecommendations",
+      "commandId": 19,
+      "inputType": "SaveRecommendationsInput",
+      "outputType": "SaveRecommendationsOutput",
+      "inputSchema": {
+        "title": "SaveRecommendationsInput",
+        "type": "object",
+        "required": [
+          "recommendations"
+        ],
+        "properties": {
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/RecommendationIo"
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "SaveRecommendationsOutput",
+        "type": "object"
+      },
+      "definitions": {
+        "RecommendationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "itemA_id",
+            "itemB_id",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "itemA_id": {
+              "type": "string"
+            },
+            "itemB_id": {
+              "type": "string"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "respondedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "updateConversation",
+      "commandId": 3,
+      "inputType": "UpdateConversationInput",
+      "outputType": "UpdateConversationOutput",
+      "inputSchema": {
+        "title": "UpdateConversationInput",
+        "type": "object",
+        "required": [
+          "conversationId",
+          "patch"
+        ],
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "patch": {
+            "$ref": "#/definitions/ConversationPatchIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "UpdateConversationOutput",
+        "type": "object",
+        "required": [
+          "conversation"
+        ],
+        "properties": {
+          "conversation": {
+            "$ref": "#/definitions/ConversationIo"
+          }
+        }
+      },
+      "definitions": {
+        "ConversationPatchIo": {
+          "type": "object",
+          "properties": {
+            "title": true,
+            "icon": true,
+            "contextItemId": true,
+            "updatedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "deletedAt": true
+          }
+        },
+        "ConversationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "icon": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "contextItemId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "deletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "updateKnowledgeItem",
+      "commandId": 10,
+      "inputType": "UpdateKnowledgeItemInput",
+      "outputType": "UpdateKnowledgeItemOutput",
+      "inputSchema": {
+        "title": "UpdateKnowledgeItemInput",
+        "type": "object",
+        "required": [
+          "itemId",
+          "patch"
+        ],
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "patch": {
+            "$ref": "#/definitions/KnowledgeItemPatchIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "UpdateKnowledgeItemOutput",
+        "type": "object",
+        "required": [
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/definitions/KnowledgeItemIo"
+          }
+        }
+      },
+      "definitions": {
+        "KnowledgeItemPatchIo": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": true,
+            "body": true,
+            "url": true,
+            "summary": true,
+            "tags": true,
+            "labels": true,
+            "provisionalLabels": true,
+            "labelStatus": true,
+            "labelSource": true,
+            "labelVersion": true,
+            "labelScore": true,
+            "labelRequestedAt": true,
+            "labelCompletedAt": true,
+            "labelError": true,
+            "updatedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "stability": true,
+            "difficulty": true,
+            "lastReviewedAt": true,
+            "nextReviewAt": true
+          }
+        },
+        "KnowledgeItemIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "type",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "body": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "summary": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tags": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "provisionalLabels": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "labelStatus": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "labelScore": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "labelRequestedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelCompletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "labelError": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "stability": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "difficulty": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "format": "double"
+            },
+            "lastReviewedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "nextReviewAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "updateMessage",
+      "commandId": 17,
+      "inputType": "UpdateMessageInput",
+      "outputType": "UpdateMessageOutput",
+      "inputSchema": {
+        "title": "UpdateMessageInput",
+        "type": "object",
+        "required": [
+          "messageId",
+          "patch"
+        ],
+        "properties": {
+          "messageId": {
+            "type": "string"
+          },
+          "patch": {
+            "$ref": "#/definitions/MessagePatchIo"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "UpdateMessageOutput",
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "$ref": "#/definitions/MessageIo"
+          }
+        }
+      },
+      "definitions": {
+        "MessagePatchIo": {
+          "type": "object",
+          "properties": {
+            "content": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "updatedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "deletedAt": true
+          }
+        },
+        "MessageIo": {
+          "type": "object",
+          "required": [
+            "content",
+            "conversationId",
+            "createdAt",
+            "id",
+            "role"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "conversationId": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "updatedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            },
+            "deletedAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

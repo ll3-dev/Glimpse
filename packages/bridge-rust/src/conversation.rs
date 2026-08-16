@@ -97,14 +97,24 @@ pub fn conversation_package() -> rustra::Package {
     static CACHED: std::sync::OnceLock<rustra::Package> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            rustra::register!(
-                rustra::Package::builder("glimpse.conversation"),
-                create_conversation,
-                list_conversations,
-                update_conversation,
-                delete_conversation
-            )
-            .build()
+            register_commands(rustra::Package::builder("glimpse.conversation")).build()
         })
         .clone()
+}
+
+/// Registers this domain's commands onto an existing package builder.
+///
+/// Used both by [`conversation_package`] and by the unified `glimpse.core`
+/// package — must live in this module because `#[command]`'s generated
+/// metadata consts are module-private.
+pub(crate) fn register_commands(
+    builder: rustra::PackageBuilder,
+) -> rustra::PackageBuilder {
+    rustra::register!(
+        builder,
+        create_conversation,
+        list_conversations,
+        update_conversation,
+        delete_conversation
+    )
 }

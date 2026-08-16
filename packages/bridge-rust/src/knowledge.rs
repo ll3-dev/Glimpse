@@ -206,18 +206,28 @@ pub fn knowledge_package() -> rustra::Package {
     static CACHED: std::sync::OnceLock<rustra::Package> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            rustra::register!(
-                rustra::Package::builder("glimpse.knowledge"),
-                save_knowledge_item,
-                list_knowledge_items,
-                get_knowledge_item_by_id,
-                update_knowledge_item,
-                list_knowledge_items_by_ids,
-                list_weekly_knowledge_items,
-                list_pending_knowledge_items_for_labeling,
-                get_due_knowledge_items
-            )
-            .build()
+            register_commands(rustra::Package::builder("glimpse.knowledge")).build()
         })
         .clone()
+}
+
+/// Registers this domain's commands onto an existing package builder.
+///
+/// Used both by [`knowledge_package`] and by the unified `glimpse.core`
+/// package — must live in this module because `#[command]`'s generated
+/// metadata consts are module-private.
+pub(crate) fn register_commands(
+    builder: rustra::PackageBuilder,
+) -> rustra::PackageBuilder {
+    rustra::register!(
+        builder,
+        save_knowledge_item,
+        list_knowledge_items,
+        get_knowledge_item_by_id,
+        update_knowledge_item,
+        list_knowledge_items_by_ids,
+        list_weekly_knowledge_items,
+        list_pending_knowledge_items_for_labeling,
+        get_due_knowledge_items
+    )
 }

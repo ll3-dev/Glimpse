@@ -459,3 +459,49 @@ fn review_commands_roundtrip() {
     assert_eq!(init["nextReviewAt"], 6000);
     assert!(init.get("next_review_at").is_none());
 }
+
+// ============================================================================
+// Unified glimpse.core package
+// ============================================================================
+
+#[test]
+fn glimpse_core_package_dispatches_across_all_domains() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::glimpse_package();
+
+    // knowledge via the unified package
+    let saved = pkg
+        .invoke_json(
+            "saveKnowledgeItem",
+            json!({
+                "item": {
+                    "id": "u-1", "type": "note", "title": "unified", "body": null, "url": null,
+                    "summary": null, "tags": null, "labels": null, "provisionalLabels": null,
+                    "labelStatus": null, "labelSource": null, "labelVersion": null,
+                    "labelScore": null, "labelRequestedAt": null, "labelCompletedAt": null,
+                    "labelError": null, "createdAt": 1000, "updatedAt": 1000,
+                    "stability": null, "difficulty": null, "lastReviewedAt": null,
+                    "nextReviewAt": null
+                }
+            }),
+        )
+        .expect("saveKnowledgeItem via unified package should succeed");
+    assert_eq!(saved["item"]["id"], "u-1");
+
+    // review calculation via the unified package
+    let overlap = pkg
+        .invoke_json(
+            "calculateTagOverlap",
+            json!({
+                "left": { "tags": ["x"], "lastReviewedAt": null, "nextReviewAt": null, "createdAt": null },
+                "right": { "tags": ["x", "y"], "lastReviewedAt": null, "nextReviewAt": null, "createdAt": null }
+            }),
+        )
+        .expect("calculateTagOverlap via unified package should succeed");
+    assert_eq!(overlap["overlap"], 1);
+
+    // schema exposes all 25 commands
+    let schema = pkg.live_schema();
+    let commands = schema["commands"].as_array().expect("commands array");
+    assert_eq!(commands.len(), 25, "unified package must expose 25 commands");
+}
