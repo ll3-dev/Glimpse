@@ -19,14 +19,6 @@ mock.module("react-native-nitro-crypto", () => ({
   randomUUID: nodeRandomUUID,
 }));
 
-mock.module("react-native-nitro-modules", () => ({
-  NitroModules: {
-    createHybridObject: () => {
-      throw new Error('Nitro CoreClient is not registered in tests');
-    },
-  },
-}));
-
 // Mock native-core-client to avoid "not available on web platform" errors in tests
 // The .ts (web fallback) variant throws immediately at import time
 mock.module("../features/core/native-core-client", () => {

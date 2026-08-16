@@ -7,7 +7,8 @@ import type {
 } from '@glimpse/shared';
 
 /**
- * In-memory stub storage for development when Nitro module is not available.
+ * In-memory stub storage for development when the rustra JSI bridge is
+ * not available (Expo Go, unbundled JS).
  */
 export class InMemoryStorage {
   private knowledgeItems = new Map<string, KnowledgeItem>();

@@ -1,12 +1,13 @@
 import type {
   Conversation,
+  CoreClient,
   FeedbackEvent,
+  GetDueKnowledgeItemsInput,
   KnowledgeItem,
   Message,
   Recommendation,
 } from '@glimpse/shared';
 
-import type { BridgeCoreClient } from './types';
 import { InMemoryStorage } from './native-core-in-memory-storage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -24,7 +25,7 @@ function unwrapOrThrow<T>(entityName: string, id: string, value: T | undefined):
 }
 
 function calculateTagOverlap(
-  input: Parameters<BridgeCoreClient['calculateTagOverlap']>[0],
+  input: Parameters<CoreClient['calculateTagOverlap']>[0],
 ): Promise<number> {
   const leftTags = new Set(input.left.tags ?? []);
   const rightTags = new Set(input.right.tags ?? []);
@@ -44,8 +45,8 @@ function calculateTagOverlap(
 }
 
 function calculateNextReview(
-  input: Parameters<BridgeCoreClient['calculateNextReview']>[0],
-): ReturnType<BridgeCoreClient['calculateNextReview']> {
+  input: Parameters<CoreClient['calculateNextReview']>[0],
+): ReturnType<CoreClient['calculateNextReview']> {
   const intervalMs =
     input.feedbackType === 'remembered' ? DAY_MS : FORGOTTEN_REVIEW_INTERVAL_MS;
 
@@ -56,8 +57,8 @@ function calculateNextReview(
 }
 
 function initializeReviewSchedule(
-  input: Parameters<BridgeCoreClient['initializeReviewSchedule']>[0],
-): ReturnType<BridgeCoreClient['initializeReviewSchedule']> {
+  input: Parameters<CoreClient['initializeReviewSchedule']>[0],
+): ReturnType<CoreClient['initializeReviewSchedule']> {
   return Promise.resolve({
     nextReviewAt: input.createdAt + (input.intervalMs ?? DAY_MS),
     stability: null,
@@ -68,7 +69,7 @@ function initializeReviewSchedule(
 
 export function createFallbackCoreClient(
   storage: InMemoryStorage = new InMemoryStorage(),
-): BridgeCoreClient {
+): CoreClient {
   return {
     async initialize(): Promise<void> {},
 
@@ -83,6 +84,31 @@ export function createFallbackCoreClient(
 
     async listKnowledgeItems(): Promise<KnowledgeItem[]> {
       return storage.getAllKnowledgeItems();
+    },
+
+    async listKnowledgeItemsByIds(itemIds: string[]): Promise<KnowledgeItem[]> {
+      const idSet = new Set(itemIds);
+      return (await this.listKnowledgeItems()).filter((item) => idSet.has(item.id));
+    },
+
+    async listWeeklyKnowledgeItems(since: number): Promise<KnowledgeItem[]> {
+      return (await this.listKnowledgeItems()).filter((item) => item.createdAt >= since);
+    },
+
+    async listPendingKnowledgeItemsForLabeling(limit: number): Promise<KnowledgeItem[]> {
+      return (await this.listKnowledgeItems())
+        .filter((item) => item.labelStatus === 'pending')
+        .slice(0, limit);
+    },
+
+    async getDueKnowledgeItems(input: GetDueKnowledgeItemsInput): Promise<KnowledgeItem[]> {
+      const due = (await this.listKnowledgeItems()).filter((item) => {
+        if (!item.nextReviewAt) {
+          return true;
+        }
+        return item.nextReviewAt <= input.now;
+      });
+      return input.limit === undefined ? due : due.slice(0, input.limit);
     },
 
     async getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null> {

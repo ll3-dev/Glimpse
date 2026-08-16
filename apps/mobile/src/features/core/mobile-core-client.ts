@@ -1,7 +1,4 @@
-import type {
-  GetDueKnowledgeItemsInput,
-  RecommendationStatus,
-} from '@glimpse/shared';
+import type { GetDueKnowledgeItemsInput } from '@glimpse/shared';
 import { nativeCoreClient } from './native-core-client';
 import type { MobileCoreClient } from './types';
 import {
@@ -42,7 +39,7 @@ export const mobileCoreClient: MobileCoreClient = {
   saveRecommendations: (recommendations) => nativeCoreClient.saveRecommendations(recommendations),
   listRecommendations: () => nativeCoreClient.listRecommendations(),
   listPendingRecommendations: () => nativeCoreClient.listPendingRecommendations(),
-  respondToRecommendation: (recommendationId: string, status: RecommendationStatus, event) =>
+  respondToRecommendation: (recommendationId: string, status, event) =>
     nativeCoreClient.respondToRecommendation(recommendationId, status, event),
 
   listRecentFeedbackEvents: (limit) => nativeCoreClient.listRecentFeedbackEvents(limit),

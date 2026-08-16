@@ -10,9 +10,7 @@
       "@glimpse/shared": ["../../packages/shared/src/index.ts"],
       "@glimpse/shared/*": ["../../packages/shared/src/*"],
       "@glimpse/ui": ["../../packages/ui/src/index.ts"],
-      "@glimpse/ui/*": ["../../packages/ui/src/*"],
-      "@glimpse/specs": ["./src/features/core/specs/index.ts"],
-      "@glimpse/specs/*": ["./src/features/core/specs/*"]
+      "@glimpse/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [
@@ -21,7 +19,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
-    "generate/**/*.ts",
+    "modules/**/*.ts",
     "../../packages/shared/src/**/*.ts",
     "../../packages/ui/src/**/*.ts",
     "../../packages/ui/src/**/*.tsx",

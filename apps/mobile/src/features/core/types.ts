@@ -15,7 +15,7 @@ import type {
 
 /**
  * MobileCoreClient interface - the API contract for the mobile app.
- * This is implemented by the Nitro bridge adapter.
+ * Implemented by the rustra core client adapter (with an in-memory fallback).
  */
 export interface MobileCoreClient {
   // Lifecycle
@@ -69,11 +69,3 @@ export interface MobileCoreClient {
   listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]>;
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
 }
-
-export type BridgeCoreClient = Omit<
-  MobileCoreClient,
-  | 'listKnowledgeItemsByIds'
-  | 'listWeeklyKnowledgeItems'
-  | 'listPendingKnowledgeItemsForLabeling'
-  | 'getDueKnowledgeItems'
->;
