@@ -375,7 +375,11 @@ impl From<MessagePatchIo> for MessagePatch {
 #[serde(rename_all = "camelCase")]
 pub struct RecommendationIo {
     pub id: String,
+    // camelCase rename_all would produce `itemAId`; the `@glimpse/shared`
+    // contract uses `itemA_id`/`itemB_id`, so pin the wire names explicitly.
+    #[serde(rename = "itemA_id")]
     pub item_a_id: String,
+    #[serde(rename = "itemB_id")]
     pub item_b_id: String,
     pub reason: Option<String>,
     pub status: String,

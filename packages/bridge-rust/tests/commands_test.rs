@@ -190,3 +190,272 @@ fn list_and_query_knowledge_commands_roundtrip() {
         .collect();
     assert!(due_ids.contains(&"k-3"), "k-3 missing from {due_ids:?}");
 }
+
+// ============================================================================
+// Conversation
+// ============================================================================
+
+#[test]
+fn conversation_commands_roundtrip() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::conversation_package();
+
+    let created = pkg
+        .invoke_json(
+            "createConversation",
+            json!({
+                "conversation": {
+                    "id": "c-1", "title": "Chat", "icon": null, "contextItemId": null,
+                    "createdAt": 1000, "updatedAt": 1000, "deletedAt": null
+                }
+            }),
+        )
+        .expect("createConversation should succeed");
+    assert_eq!(created["conversation"]["id"], "c-1");
+    assert_eq!(created["conversation"]["title"], "Chat");
+    assert!(created["conversation"].get("created_at").is_none());
+
+    let listed = pkg
+        .invoke_json("listConversations", json!({}))
+        .expect("listConversations should succeed");
+    let ids: Vec<&str> = listed["conversations"]
+        .as_array()
+        .expect("conversations array")
+        .iter()
+        .map(|c| c["id"].as_str().expect("id"))
+        .collect();
+    assert!(ids.contains(&"c-1"));
+
+    let updated = pkg
+        .invoke_json(
+            "updateConversation",
+            json!({ "conversationId": "c-1", "patch": { "title": "Renamed", "icon": null } }),
+        )
+        .expect("updateConversation should succeed");
+    assert_eq!(updated["conversation"]["title"], "Renamed");
+    assert_eq!(updated["conversation"]["icon"], serde_json::Value::Null);
+
+    pkg.invoke_json(
+        "deleteConversation",
+        json!({ "conversationId": "c-1", "deletedAt": 2000 }),
+    )
+    .expect("deleteConversation should succeed");
+}
+
+// ============================================================================
+// Message
+// ============================================================================
+
+#[test]
+fn message_commands_roundtrip() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::message_package();
+    // messages reference conversations via FK — seed the parent first.
+    glimpse_bridge::conversation_package()
+        .invoke_json(
+            "createConversation",
+            json!({
+                "conversation": {
+                    "id": "c-9", "title": null, "icon": null, "contextItemId": null,
+                    "createdAt": 1000, "updatedAt": 1000, "deletedAt": null
+                }
+            }),
+        )
+        .expect("seed conversation should succeed");
+
+    let added = pkg
+        .invoke_json(
+            "addMessage",
+            json!({
+                "message": {
+                    "id": "m-1", "conversationId": "c-9", "role": "user",
+                    "content": "hello", "createdAt": 1000, "updatedAt": null, "deletedAt": null
+                }
+            }),
+        )
+        .expect("addMessage should succeed");
+    assert_eq!(added["message"]["id"], "m-1");
+    assert_eq!(added["message"]["role"], "user");
+    assert_eq!(added["message"]["conversationId"], "c-9");
+
+    let listed = pkg
+        .invoke_json("listConversationMessages", json!({ "conversationId": "c-9" }))
+        .expect("listConversationMessages should succeed");
+    let ids: Vec<&str> = listed["messages"]
+        .as_array()
+        .expect("messages array")
+        .iter()
+        .map(|m| m["id"].as_str().expect("id"))
+        .collect();
+    assert!(ids.contains(&"m-1"));
+
+    let updated = pkg
+        .invoke_json(
+            "updateMessage",
+            json!({ "messageId": "m-1", "patch": { "content": "edited" } }),
+        )
+        .expect("updateMessage should succeed");
+    assert_eq!(updated["message"]["content"], "edited");
+
+    pkg.invoke_json("deleteMessage", json!({ "messageId": "m-1", "deletedAt": 2000 }))
+        .expect("deleteMessage should succeed");
+}
+
+// ============================================================================
+// Recommendation
+// ============================================================================
+
+#[test]
+fn recommendation_commands_roundtrip() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::recommendation_package();
+
+    pkg.invoke_json(
+        "saveRecommendations",
+        json!({
+            "recommendations": [{
+                "id": "r-1", "itemA_id": "a", "itemB_id": "b", "reason": "same tag",
+                "status": "pending", "createdAt": 1000, "respondedAt": null
+            }]
+        }),
+    )
+    .expect("saveRecommendations should succeed");
+
+    let listed = pkg
+        .invoke_json("listRecommendations", json!({}))
+        .expect("listRecommendations should succeed");
+    let recs = listed["recommendations"].as_array().expect("array");
+    let ours = recs
+        .iter()
+        .find(|r| r["id"] == "r-1")
+        .expect("saved recommendation present");
+    assert_eq!(ours["itemA_id"], "a");
+    assert_eq!(ours["itemB_id"], "b");
+    assert_eq!(ours["status"], "pending");
+
+    let pending = pkg
+        .invoke_json("listPendingRecommendations", json!({}))
+        .expect("listPendingRecommendations should succeed");
+    assert!(
+        pending["recommendations"]
+            .as_array()
+            .expect("array")
+            .iter()
+            .any(|r| r["id"] == "r-1")
+    );
+
+    pkg.invoke_json(
+        "respondToRecommendation",
+        json!({
+            "recommendationId": "r-1",
+            "status": "accepted",
+            "feedbackEvent": {
+                "id": "f-1", "recommendationId": "r-1", "action": "accept", "createdAt": 2000
+            }
+        }),
+    )
+    .expect("respondToRecommendation should succeed");
+
+    let after = pkg
+        .invoke_json("listRecommendations", json!({}))
+        .expect("listRecommendations should succeed");
+    let updated = after["recommendations"]
+        .as_array()
+        .expect("array")
+        .iter()
+        .find(|r| r["id"] == "r-1")
+        .expect("recommendation present");
+    assert_eq!(updated["status"], "accepted");
+}
+
+// ============================================================================
+// Feedback
+// ============================================================================
+
+#[test]
+fn feedback_commands_roundtrip() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::feedback_package();
+    // feedback_events reference recommendations via FK — seed the parent first.
+    glimpse_bridge::recommendation_package()
+        .invoke_json(
+            "saveRecommendations",
+            json!({
+                "recommendations": [{
+                    "id": "r-9", "itemA_id": "a", "itemB_id": "b", "reason": null,
+                    "status": "pending", "createdAt": 1000, "respondedAt": null
+                }]
+            }),
+        )
+        .expect("seed recommendation should succeed");
+
+    let logged = pkg
+        .invoke_json(
+            "logRecommendationFeedback",
+            json!({
+                "event": {
+                    "id": "fe-1", "recommendationId": "r-9", "action": "ignore", "createdAt": 1000
+                }
+            }),
+        )
+        .expect("logRecommendationFeedback should succeed");
+    assert_eq!(logged["event"]["id"], "fe-1");
+    assert_eq!(logged["event"]["action"], "ignore");
+    assert_eq!(logged["event"]["recommendationId"], "r-9");
+
+    let recent = pkg
+        .invoke_json("listRecentFeedbackEvents", json!({ "limit": 10 }))
+        .expect("listRecentFeedbackEvents should succeed");
+    let ids: Vec<&str> = recent["events"]
+        .as_array()
+        .expect("events array")
+        .iter()
+        .map(|e| e["id"].as_str().expect("id"))
+        .collect();
+    assert!(ids.contains(&"fe-1"));
+}
+
+// ============================================================================
+// Review
+// ============================================================================
+
+#[test]
+fn review_commands_roundtrip() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::review_package();
+
+    let overlap = pkg
+        .invoke_json(
+            "calculateTagOverlap",
+            json!({
+                "left": { "tags": ["a", "b"], "lastReviewedAt": null, "nextReviewAt": null, "createdAt": null },
+                "right": { "tags": ["b", "c"], "lastReviewedAt": null, "nextReviewAt": null, "createdAt": null }
+            }),
+        )
+        .expect("calculateTagOverlap should succeed");
+    assert_eq!(overlap["overlap"], 1);
+
+    let next = pkg
+        .invoke_json(
+            "calculateNextReview",
+            json!({
+                "lastReviewedAt": 1000,
+                "nextReviewAt": 2000,
+                "feedbackType": "remembered",
+                "now": 3000
+            }),
+        )
+        .expect("calculateNextReview should succeed");
+    assert!(next["intervalMs"].as_i64().expect("intervalMs") > 0);
+    assert!(next["nextReviewAt"].as_i64().expect("nextReviewAt") > 3000);
+    assert!(next.get("interval_ms").is_none());
+
+    let init = pkg
+        .invoke_json(
+            "initializeReviewSchedule",
+            json!({ "createdAt": 1000, "intervalMs": 5000 }),
+        )
+        .expect("initializeReviewSchedule should succeed");
+    assert_eq!(init["nextReviewAt"], 6000);
+    assert!(init.get("next_review_at").is_none());
+}
