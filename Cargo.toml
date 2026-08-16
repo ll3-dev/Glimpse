@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "apps/desktop/src-tauri",
+  "packages/bridge-rust",
   "packages/core-rust",
 ]
 resolver = "2"
