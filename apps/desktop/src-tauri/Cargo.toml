@@ -16,9 +16,13 @@ llama-cpp-2 = { git = "https://github.com/utilityai/llama-cpp-rs", branch = "mai
 reqwest = { version = "0.12", features = ["stream"] }
 rustra = { version = "0.1.1", features = ["tauri"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 tauri = { version = "2.0.0", features = [] }
 tokio = { version = "1", features = ["fs", "io-util"] }
 
 [features]
 default = []
 llm = ["llama-cpp-2"]
+
+[dev-dependencies]
+tempfile = "3"
