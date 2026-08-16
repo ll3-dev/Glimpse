@@ -15,8 +15,7 @@ static CORE: OnceLock<Mutex<SharedCore>> = OnceLock::new();
 pub fn init_core(core: SharedCore) -> Option<SharedCore> {
     CORE.set(Mutex::new(core))
         .err()
-        .map(|mutex| mutex.into_inner().ok())
-        .flatten()
+        .and_then(|mutex| mutex.into_inner().ok())
 }
 
 /// Locks and returns the global SharedCore.
