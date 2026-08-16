@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 description = "rustra bridge commands over glimpse-core (desktop + mobile)."
 
+[lib]
+# "lib" keeps the Tauri/desktop and cargo test paths working; "staticlib" adds
+# the C-ABI .a consumed by the iOS/Android mobile shells (rustra FFI symbols).
+crate-type = ["lib", "staticlib"]
+
 [dependencies]
 glimpse-core = { path = "../core-rust" }
 # Pin TS and Rust sides together: the generated client contract hash is

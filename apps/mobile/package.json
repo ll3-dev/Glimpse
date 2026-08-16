@@ -14,6 +14,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "build:core:ios": "zsh ./scripts/build-core-rust-ios.sh",
     "build:core:android": "zsh ./scripts/build-core-rust-android.sh",
+    "build:bridge:ios": "zsh ./scripts/build-bridge-rust-ios.sh",
+    "build:bridge:android": "zsh ./scripts/build-bridge-rust-android.sh",
     "test": "bun test",
     "test:coverage": "bun test --coverage"
   },

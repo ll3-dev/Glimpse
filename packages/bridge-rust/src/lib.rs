@@ -3,6 +3,8 @@
 //! Thin rustra `#[command]` wrappers around `glimpse_core::SharedCore`,
 //! shared by the Tauri desktop shell and the React Native mobile bridge.
 
+use rustra::ffi::FfiFormat;
+
 pub mod conversation;
 pub mod error;
 pub mod feedback;
@@ -30,7 +32,7 @@ pub fn glimpse_package() -> rustra::Package {
     static CACHED: std::sync::OnceLock<rustra::Package> = std::sync::OnceLock::new();
     CACHED
         .get_or_init(|| {
-            rustra::Package::builder("glimpse.core")
+            let pkg = rustra::Package::builder("glimpse.core")
                 // Each domain registers its own commands (its `#[command]`
                 // metadata consts are module-private, so registration must
                 // happen inside the defining module).
@@ -40,7 +42,15 @@ pub fn glimpse_package() -> rustra::Package {
                 .pipe(message::register_commands)
                 .pipe(recommendation::register_commands)
                 .pipe(review::register_commands)
-                .build()
+                .build();
+
+            // Expose the generic rustra FFI symbols (`rustra_ffi_invoke_json`,
+            // ...) from this crate's staticlib. JSON default matches the
+            // mobile JSI bridge wire format. Independent of the Tauri
+            // `rustra_dispatch` path, which invokes the package directly.
+            pkg.register_ffi_with_default(FfiFormat::Json);
+
+            pkg
         })
         .clone()
 }
@@ -53,3 +63,31 @@ trait Pipe: Sized {
 }
 
 impl Pipe for rustra::PackageBuilder {}
+
+// ── Staticlib self-registration on load ────────────────────
+// Apple targets get a `__DATA,__mod_init_func` constructor so the staticlib
+// registers itself with the rustra FFI globals when linked into the app —
+// generic FFI calls work without any prior glimpse-specific call.
+#[cfg(target_vendor = "apple")]
+mod apple_init {
+    extern "C" fn rustra_auto_init() {
+        super::glimpse_package();
+    }
+
+    #[used]
+    #[cfg_attr(
+        target_vendor = "apple",
+        unsafe(link_section = "__DATA,__mod_init_func")
+    )]
+    static AUTO_INIT: extern "C" fn() = rustra_auto_init;
+}
+
+/// C entry point: idempotently register `glimpse.core` for FFI.
+///
+/// Deterministic fallback for platforms without a loader-run constructor
+/// section (Android), and for iOS debug builds where the `__mod_init_func`
+/// constructor can be dead-stripped — the JSI install() should call this.
+#[unsafe(no_mangle)]
+pub extern "C" fn glimpse_ffi_init() {
+    let _ = glimpse_package();
+}
