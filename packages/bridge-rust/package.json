@@ -1,0 +1,16 @@
+{
+  "name": "@glimpse/bridge-generated",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./generated/commands.ts",
+  "types": "./generated/commands.ts",
+  "exports": {
+    ".": "./generated/commands.ts",
+    "./commands": "./generated/commands.ts",
+    "./types": "./generated/types.ts",
+    "./contract": "./generated/contract.ts"
+  },
+  "dependencies": {
+    "@rustra/types": "0.1.1"
+  }
+}

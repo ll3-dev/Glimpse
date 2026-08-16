@@ -11,10 +11,13 @@
       "dependencies": {
         "@base-ui/react": "^1.3.0",
         "@fontsource-variable/geist": "^5.2.8",
+        "@glimpse/bridge-generated": "workspace:*",
         "@glimpse/features": "workspace:*",
         "@glimpse/hooks": "workspace:*",
         "@glimpse/shared": "workspace:*",
         "@glimpse/ui": "workspace:*",
+        "@rustra/tauri": "0.1.1",
+        "@rustra/types": "0.1.1",
         "@tailwindcss/vite": "^4.2.2",
         "@tanstack/react-query": "^5.95.2",
         "@tanstack/react-router": "^1.168.7",
@@ -130,6 +133,13 @@
         "prettier-plugin-tailwindcss": "^0.7.2",
         "react-native-nitro-modules": "^0.35.2",
         "typescript": "~5.9.2",
+      },
+    },
+    "packages/bridge-rust": {
+      "name": "@glimpse/bridge-generated",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rustra/types": "0.1.1",
       },
     },
     "packages/features": {
@@ -506,6 +516,8 @@
 
     "@fontsource-variable/geist": ["@fontsource-variable/geist@5.2.8", "", {}, "sha512-cJ6m9e+8MQ5dCYJsLylfZrgBh6KkG4bOLckB35Tr9J/EqdkEM6QllH5PxqP1dhTvFup+HtMRPuz9xOjxXJggxw=="],
 
+    "@glimpse/bridge-generated": ["@glimpse/bridge-generated@workspace:packages/bridge-rust"],
+
     "@glimpse/desktop": ["@glimpse/desktop@workspace:apps/desktop"],
 
     "@glimpse/features": ["@glimpse/features@workspace:packages/features"],
@@ -775,6 +787,10 @@
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PrsWNQ8BuE00O3Xsx3ALh2Df8fAj9+cvvX9AIA6o4KpATR98c9mud4XtDWVvsEuyia5U4tVSTKygawyJkjm60w=="],
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
+
+    "@rustra/tauri": ["@rustra/tauri@0.1.1", "", { "dependencies": { "@rustra/types": "^0.1.1" } }, "sha512-TKvAQPjlSHBdn06DWJrLGt7ZnxKf9R8ph/w55JUjrm6s81bPul7poJpGN5k6eQwDrsh9FApc0VJPixesb0EHkw=="],
+
+    "@rustra/types": ["@rustra/types@0.1.1", "", {}, "sha512-6Vqm/MUnNIPy/xMiQczoEJ490cMGFj6SJlWB/tnb57CH86UbWio4vgbNofcvi1dJZyd4YPm+n2Yxjg7BbyWoGA=="],
 
     "@sec-ant/readable-stream": ["@sec-ant/readable-stream@0.4.1", "", {}, "sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg=="],
 
