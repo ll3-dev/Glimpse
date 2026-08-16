@@ -4,7 +4,7 @@
 //! package's JSON entrypoint (`invoke_json`) — the same wire the TS client and
 //! host adapters use — and asserts camelCase JSON field names.
 
-use glimpse_bridge::{init_core, knowledge_package};
+use glimpse_bridge::{init_core, knowledge_package, reset_core};
 use glimpse_core::SharedCore;
 use serde_json::json;
 use std::sync::{Mutex, Once};
@@ -500,10 +500,10 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 25 commands
+    // schema exposes all 26 commands (25 domain + initializeCore)
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
-    assert_eq!(commands.len(), 25, "unified package must expose 25 commands");
+    assert_eq!(commands.len(), 26, "unified package must expose 26 commands");
 }
 
 // ============================================================================
@@ -609,4 +609,77 @@ fn respond_to_recommendation_bad_enum_returns_invalid_args() {
         .find(|r| r["id"] == "r-bad")
         .expect("recommendation present");
     assert_eq!(status["status"], "pending", "bad enum must not persist a fallback");
+}
+
+// ============================================================================
+// initialize_core (mobile bootstrap)
+// ============================================================================
+
+#[test]
+fn initialize_core_is_idempotent_and_serves_subsequent_commands() {
+    // Takes TEST_LOCK like every other test and resets the global core first:
+    // this test owns the global for its duration and restores the in-memory
+    // core on exit, so it stays order-independent whether the Once init above
+    // has run yet or not.
+    let _guard = setup();
+    let pkg = glimpse_bridge::glimpse_package();
+
+    let previous = reset_core().expect("setup() must have installed a core");
+
+    let dir = std::env::temp_dir().join(format!(
+        "glimpse-bridge-init-core-{}-{}.sqlite",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("system clock after epoch")
+            .as_nanos()
+    ));
+    let db_path = dir.to_string_lossy().to_string();
+
+    let first = pkg
+        .invoke_json("initializeCore", json!({ "dbPath": db_path }))
+        .expect("first initializeCore should succeed");
+    assert_eq!(first["initialized"], true, "first call opens the database");
+
+    // Second call with a different path must keep the first connection —
+    // exactly one SQLite connection per process. It must not even touch the
+    // bogus path (no "unable to open database file" error).
+    let second = pkg
+        .invoke_json("initializeCore", json!({ "dbPath": "/dev/null/other.sqlite" }))
+        .expect("second initializeCore should succeed");
+    assert_eq!(second["initialized"], false, "second call is a no-op");
+
+    // The swapped-in core serves domain commands over the new file.
+    let saved = pkg
+        .invoke_json(
+            "saveKnowledgeItem",
+            json!({
+                "item": {
+                    "id": "init-1", "type": "note", "title": "via initializeCore", "body": null,
+                    "url": null, "summary": null, "tags": null, "labels": null,
+                    "provisionalLabels": null, "labelStatus": null, "labelSource": null,
+                    "labelVersion": null, "labelScore": null, "labelRequestedAt": null,
+                    "labelCompletedAt": null, "labelError": null, "createdAt": 1000,
+                    "updatedAt": 1000, "stability": null, "difficulty": null,
+                    "lastReviewedAt": null, "nextReviewAt": null
+                }
+            }),
+        )
+        .expect("saveKnowledgeItem after initializeCore should succeed");
+    assert_eq!(saved["item"]["id"], "init-1");
+
+    let listed = pkg
+        .invoke_json("listKnowledgeItems", json!({}))
+        .expect("listKnowledgeItems should succeed");
+    let ids: Vec<&str> = listed["items"]
+        .as_array()
+        .expect("items array")
+        .iter()
+        .map(|item| item["id"].as_str().expect("id string"))
+        .collect();
+    assert_eq!(ids, vec!["init-1"], "fresh db must contain only the new item");
+
+    // Restore the in-memory core other tests rely on.
+    let _ = init_core(previous);
+    let _ = std::fs::remove_file(&db_path);
 }

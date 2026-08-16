@@ -175,6 +175,14 @@ export type GetKnowledgeItemByIdOutput = {
   item?: KnowledgeItemIo | null;
 };
 
+export type InitializeCoreInput = {
+  dbPath: string;
+};
+
+export type InitializeCoreOutput = {
+  initialized: boolean;
+};
+
 export type InitializeReviewScheduleInput = {
   createdAt: number;
   intervalMs?: number | null;

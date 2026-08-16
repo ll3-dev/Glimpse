@@ -22,9 +22,10 @@ pub use knowledge::knowledge_package;
 pub use message::message_package;
 pub use recommendation::recommendation_package;
 pub use review::review_package;
-pub use state::{core_state, init_core};
+pub use state::{core_state, init_core, initialize_core, reset_core};
 
-/// Assembles the flat `glimpse.core` package with ALL 25 domain commands.
+/// Assembles the flat `glimpse.core` package with ALL 26 commands (25 domain
+/// + `initializeCore`).
 ///
 /// Hosts that want a single registration surface (Tauri dispatch, mobile FFI)
 /// use this; per-domain packages remain available for granular hosting.
@@ -42,6 +43,7 @@ pub fn glimpse_package() -> rustra::Package {
                 .pipe(message::register_commands)
                 .pipe(recommendation::register_commands)
                 .pipe(review::register_commands)
+                .pipe(state::register_commands)
                 .build();
 
             // Expose the generic rustra FFI symbols (`rustra_ffi_invoke_json`,
@@ -75,10 +77,7 @@ mod apple_init {
     }
 
     #[used]
-    #[cfg_attr(
-        target_vendor = "apple",
-        unsafe(link_section = "__DATA,__mod_init_func")
-    )]
+    #[unsafe(link_section = "__DATA,__mod_init_func")]
     static AUTO_INIT: extern "C" fn() = rustra_auto_init;
 }
 

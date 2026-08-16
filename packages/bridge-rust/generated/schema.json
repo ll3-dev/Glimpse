@@ -713,6 +713,38 @@
       }
     },
     {
+      "name": "initializeCore",
+      "commandId": 26,
+      "inputType": "InitializeCoreInput",
+      "outputType": "InitializeCoreOutput",
+      "inputSchema": {
+        "title": "InitializeCoreInput",
+        "type": "object",
+        "required": [
+          "dbPath"
+        ],
+        "properties": {
+          "dbPath": {
+            "description": "Absolute path of the SQLite database file to open. Ignored when the core is already initialized (the first path wins).",
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "InitializeCoreOutput",
+        "type": "object",
+        "required": [
+          "initialized"
+        ],
+        "properties": {
+          "initialized": {
+            "description": "True when this call opened the database; false when a previous call (or the desktop Tauri setup hook) had already initialized the core.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
       "name": "initializeReviewSchedule",
       "commandId": 25,
       "inputType": "InitializeReviewScheduleInput",
