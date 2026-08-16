@@ -62,8 +62,11 @@ pub struct InitializeCoreOutput {
 /// when the core is already installed (previous call, or the desktop Tauri
 /// setup hook) it returns `initialized: false` without touching the disk,
 /// preserving the "exactly one SQLite connection per process" invariant
-/// across host styles. If two callers race past the fast path, the OnceLock
-/// keeps the first connection and the loser's is closed on drop.
+/// across host styles. If two callers race past the fast path, the lock is
+/// held across the swap: the last racer's connection survives and the
+/// earlier one is closed on drop (last-wins under a true race; sequential
+/// double-init is first-wins via the fast path above). The JS layer makes a
+/// race impossible in practice — the bootstrap promise is memoized.
 #[command]
 pub fn initialize_core(input: InitializeCoreInput) -> Result<InitializeCoreOutput> {
     if CORE
@@ -78,16 +81,18 @@ pub fn initialize_core(input: InitializeCoreInput) -> Result<InitializeCoreOutpu
         .map_err(crate::error::to_rustra_err)?;
     let replaced = init_core(SharedCore::new(storage));
     let initialized = replaced.is_none();
-    // A racing caller's connection we must not leak — the global kept the
-    // first one, so close the newcomer.
+    // Under a true race a previous racer's connection is returned here — the
+    // global now holds ours, so close theirs (no leak, one live connection).
     drop(replaced);
     Ok(InitializeCoreOutput { initialized })
 }
 
 /// Installs the process-wide [`SharedCore`].
 ///
-/// Returns the previously installed core, if any. Calling this more than once
-/// keeps the first instance (first-wins) and hands the new one back.
+/// Returns the previously installed core, if any, and installs the new one
+/// (last-wins). Hosts call this exactly once, so in practice nothing is
+/// replaced; the fast path in [`initialize_core`] keeps sequential
+/// double-init first-wins.
 pub fn init_core(core: SharedCore) -> Option<SharedCore> {
     let mut slot = CORE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     slot.replace(core)
