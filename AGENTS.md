@@ -20,8 +20,8 @@
 - Use Bun stable release.
 - Prefer small, focused changes over broad refactors.
 - Before changing architecture or dependencies, check existing patterns in the codebase first.
-- For typed Nitro <-> Rust bridge work, read [`apps/mobile/docs/typed-bridge-development.md`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/docs/typed-bridge-development.md) before changing the FFI surface.
-- Desktop domain commands go through the rustra bridge (`packages/bridge-rust`); regenerate the TS client with `bun run bridge:generate`. Mobile stays on Nitro until week 2 of the rustra migration (see `docs/plans/2026-08-16-rustra-integration-design.md`).
+- For rustra bridge work (domain commands Rust <-> TS), read [`apps/mobile/docs/rustra-bridge-development.md`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/docs/rustra-bridge-development.md) before changing the bridge surface.
+- Domain commands go through the shared rustra bridge (`packages/bridge-rust`) on both desktop and mobile; regenerate the TS client with `bun run bridge:generate` after changing `#[command]`s (see `docs/plans/2026-08-16-rustra-integration-design.md`).
 
 ## Testing instructions
 

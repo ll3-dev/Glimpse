@@ -4,7 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-"$SCRIPT_DIR/build-core-rust-ios.sh"
+# Build the rustra bridge staticlib (GlimpseBridge.xcframework), then run iOS.
+"$SCRIPT_DIR/build-bridge-rust-ios.sh"
 
 pushd "$APP_DIR" >/dev/null
 bun run ios -- "$@"

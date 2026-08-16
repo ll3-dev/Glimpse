@@ -137,3 +137,40 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 5. **Digest 액션** — 추천 저장·응답 플로우
 6. **에러 렌더링** — 존재하지 않는 ID 조회 등으로 `RustraCommandError` 표시 확인
 7. **Models 화면** — LLM 런타임 커맨드(손글 유지분) 정상 동작 확인
+
+## 2주차 결과 (2026-08-16 완료)
+
+계획된 2주차 스코프(모바일 전환 + Nitro 도메인 브릿지 삭제)를 완료했다.
+
+### 출하된 것
+
+- **JSI 네이티브 모듈 이식**: rustra 예제의 `RustraJSIBridge`를 `apps/mobile/modules/rustra-jsi/`로 이식 (iOS `.mm` + C++ HostObject, Android JNI + Kotlin). `installRustraJSI()`가 `globalThis.__rustraNative`에 invoke/invokeJson/invokePostcardFFI/getSchema/getContractHash를 노출하고, 설치 시 `glimpse_ffi_init()`으로 `glimpse.core` 패키지를 결정적으로 등록한다.
+- **`initializeCore` 커맨드 추가 (26번째)**: 모바일에는 Tauri setup hook이 없으므로, JS가 DB 경로를 들고 브릿지 글로벌을 초기화하는 rustra-side 진입점이 필요했다. `initializeCore({dbPath})`는 이미 초기화된 경우 디스크를 건드리지 않고 `{initialized: false}`를 반환 — 프로세스당 정확히 하나의 SQLite 연결 불변식 유지. 이 과정에서 브릿지 상태를 `OnceLock<Mutex<..>>`에서 `Mutex<Option<..>>`로 리팩터링(테스트용 reset 지원).
+- **모바일 CoreClient 전환**: `src/features/core/rustra-core-client.ts`가 데스크톱과 동일한 봉투 언래핑 패턴으로 생성 클라이언트를 `CoreClient`에 어댑팅. 엔진 부트스트랩은 `rustra-engine.native.ts` — 설치 성공 시 rustra 경로, 실패 시(Expo Go 등) 기존 in-memory 폴백. 두 경로는 상호배타적이라 이중 연결이 없다.
+- **Nitro 도메인 브릿지 삭제 (교살자 완료)**: `generate/CoreClient.nitro.ts`, `cpp/` 쉼 + cbindgen 헤더, `nitrogen/generated/`, `native-core-adapters/`(8파일), `native-core-bridge.ts`, `native-core-runtime.ts`, iOS `GlimpseCore` pod + xcframework, Android `glimpse-core` 그래들 모듈, 관련 빌드 스크립트 3종 제거. `llama.rn`·임베딩은 무관.
+- **Android DSO 심볼 누출 수정**: `librustrajsi.so`가 staticlib 심볼 7,278개(`core_client_*`, `sqlite3_*` 전부)를 재수출하던 문제를 `-Wl,--exclude-libs,ALL`로 해결 — 127개(JNI 진입점 + 자체 C++ 글루)만 남음.
+- **리뷰 픽스**: Apple `mod_init` static의 중복 `cfg_attr` 제거, `modules/**`를 typecheck include에 추가.
+
+### 계획에서 달라진 점
+
+- **`createReactNativeEngine` 미사용 — 로컬 JSON 엔진 작성**: npm `@rustra/react-native` 0.1.1의 엔진은 응답 디코딩에 `TextDecoder`를 쓰는데, Hermes(RN 0.83.2)는 `TextEncoder`만 제공하고 RN core에도 폴리필이 없다(바이너리 스트링 검증: TextDecoder 0회). rustra 예제는 벤치마크가 Node/Bun에서만 돌아 이 문제가 드러나지 않았다. 동일 와이어 계약(`{command,args}` → `{ok,result,error}`)에 순수 JS UTF-8 디코더를 쓰는 `rustra-json-engine.ts`를 대신 사용한다. rustra 업스트림에 제보할 후보.
+- **rkyvV2 fast path 미사용**: 계획에는 `createFastEngine`(postcard/rkyvV2 이진 코덱)이 언급됐으나 week-2 스코프는 JSON 경로 전환이었다. fast path는 3주차로 이월.
+- **폴백이 Nitro가 아닌 in-memory로 변경**: 계획의 "폴백은 기존 경로 유지"는 Nitro 클라이언트를 의미했지만, Task 5가 같은 브랜치에서 Nitro를 삭제하므로 폴백을 in-memory 클라이언트로 통일했다. 폴백 상태에서는 데이터가 영속되지 않는다(Expo Go 등 개발 환경 한정).
+
+### 알려진 후속 작업
+
+- **계약 해시 드리프트 검증 미사용**: JSI 엔진이 `getContractHash`를 노출하지만 `contractHash` 옵션은 rkyvV2 엔진 전용이라 JSON 경로에는 적용되지 않음. fast path 이전 시점에 활성화 후보.
+- **1MB FFI 페이로드 상한**: 대량 knowledge 목록 조회 시 도달 가능성 점검 필요 (3주차).
+- **`packages/core-rust/src/ffi/` 잔존**: `core_client_*` C ABI는 이제 소비자가 없다. core-rust 정리 시 삭제 후보.
+- **`nitroModuleError` 등 네이밍 잔존**: `effect-result.ts`의 제네릭 에러 헬퍼명 — 기능은 무관하므로 유지, 향후 리네임 후보.
+
+### 사용자 수동 검증 체크리스트
+
+모바일 앱 자동화 검증(테스트/typecheck/lint/iOS 빌드+기동) 외에 사용자 GUI 검증이 진행되지 않았다:
+
+1. **Library 로드** — 기존 DB(app group container)의 지식 아이템 목록 표시
+2. **Capture 저장** — 새 항목 저장 후 목록 반영, 앱 재시작 시에도 유지
+3. **Chat CRUD** — 대화 생성/수정/삭제, 메시지 추가
+4. **Review 큐** — 복습 예정 항목 조회·응답
+5. **기존 데이터 마이그레이션** — 구 버전에서 만든 glimpse.sqlite가 rustra 경로에서 읽히는지
+6. **에러 렌더링** — `RustraCommandError` 표시 확인

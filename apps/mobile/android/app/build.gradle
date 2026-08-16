@@ -154,7 +154,6 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation project(":glimpse-core")
     implementation project(":rustra-jsi")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";

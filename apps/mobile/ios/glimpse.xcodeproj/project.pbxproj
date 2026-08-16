@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1A2B3C4D5E6F789012345678 /* AppGroupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7890123456789A /* AppGroupModule.swift */; };
+		2B3C4D5E6F7890123456789B /* AppGroupModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F7890123456789ABC /* AppGroupModule.m */; };
 		3A86FDA75BB24D23BA5C3C53 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A480D10E13C94759BFCEF1C8 /* MainInterface.storyboard */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		43A5854242941AE72B390448 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F81E9C9E5409B127151B7D16 /* ExpoModulesProvider.swift */; };
@@ -19,8 +21,6 @@
 		E4D19D6EEF8A45E588991314 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 399B0A8A11214959934FD020 /* PrivacyInfo.xcprivacy */; };
 		E7A253F6D872CC24E4E5542F /* libPods-glimpse.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 12E46AE2004F85BC392429C8 /* libPods-glimpse.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-			1A2B3C4D5E6F789012345678 /* AppGroupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7890123456789A /* AppGroupModule.swift */; };
-			2B3C4D5E6F7890123456789B /* AppGroupModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F7890123456789ABC /* AppGroupModule.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,7 +53,9 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = glimpse/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = glimpse/Info.plist; sourceTree = "<group>"; };
 		24618DB4884B574E360ED8F9 /* Pods-glimpse.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-glimpse.debug.xcconfig"; path = "Target Support Files/Pods-glimpse/Pods-glimpse.debug.xcconfig"; sourceTree = "<group>"; };
+		2B3C4D5E6F7890123456789A /* AppGroupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppGroupModule.swift; path = glimpse/AppGroupModule.swift; sourceTree = "<group>"; };
 		399B0A8A11214959934FD020 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		3C4D5E6F7890123456789ABC /* AppGroupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppGroupModule.m; path = glimpse/AppGroupModule.m; sourceTree = "<group>"; };
 		62944ACBC99A4DC69186EABB /* ShareExtension.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		92207BFF5381453097B13B7E /* ShareExtensionPreprocessor.js */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ShareExtensionPreprocessor.js; sourceTree = "<group>"; };
 		9284CAF38FE542F5B0D42483 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 9; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -65,8 +67,6 @@
 		C444877E58C14465BD5DF001 /* ShareExtension-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; path = "ShareExtension-Info.plist"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = glimpse/AppDelegate.swift; sourceTree = "<group>"; };
-		2B3C4D5E6F7890123456789A /* AppGroupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppGroupModule.swift; path = glimpse/AppGroupModule.swift; sourceTree = "<group>"; };
-		3C4D5E6F7890123456789ABC /* AppGroupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppGroupModule.m; path = glimpse/AppGroupModule.m; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* glimpse-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "glimpse-Bridging-Header.h"; path = "glimpse/glimpse-Bridging-Header.h"; sourceTree = "<group>"; };
 		F81E9C9E5409B127151B7D16 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-glimpse/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */

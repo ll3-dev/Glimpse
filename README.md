@@ -180,48 +180,47 @@ graph TB
 - 네이티브 셸은 `apps/desktop/src-tauri`에서 Tauri로 관리합니다.
 - `packages/shared`, `packages/ui`를 함께 사용해 공통 타입과 UI를 재사용합니다.
 
-## Rust 코어와 Typed Bridge
+## Rust 코어와 rustra 브리지
 
-모바일 앱의 일부 핵심 기능은 Rust 코어를 통해 동작하며, JS와 네이티브 사이 연결은 typed Nitro bridge를 사용합니다.
+모바일·데스크톱 앱의 도메인 CRUD는 Rust 코어를 통해 동작하며, JS와 네이티브 사이 연결은 rustra 브리지를 공유 사용합니다.
 
 Bridge 호출 흐름:
 
 ```mermaid
 graph LR
-  TS["TypeScript<br/>CoreClient.nitro.ts"]
-  NITRO["Nitrogen<br/>generated C++"]
-  CPP["Handwritten C++<br/>HybridCoreClient.hpp"]
-  FFI["Rust FFI<br/>#[repr(C)]"]
+  TS["TypeScript<br/>@glimpse/bridge-generated"]
+  ENGINE["rustra engine<br/>JSI JSON wire"]
+  FFI["rustra FFI<br/>staticlib"]
+  PKG["glimpse.core package<br/>26 commands"]
   DOMAIN["Rust Domain<br/>CoreClientImpl"]
   DB["SQLite<br/>SqliteStorage"]
 
-  TS --> NITRO --> CPP --> FFI --> DOMAIN --> DB
+  TS --> ENGINE --> FFI --> PKG --> DOMAIN --> DB
 ```
 
 주요 위치:
 
-- `packages/core-rust`: Rust 도메인 로직, 저장소, FFI
-- `apps/mobile/generate/CoreClient.nitro.ts`: TypeScript bridge spec
-- `apps/mobile/cpp`: C++ shim / FFI adapter
-- `apps/mobile/cpp/generated/glimpse_core.h`: 생성된 Rust FFI 헤더
+- `packages/core-rust`: Rust 도메인 로직, 저장소
+- `packages/bridge-rust`: rustra `#[command]` 정의 + 생성된 TS 클라이언트
+- `apps/mobile/modules/rustra-jsi`: 모바일 JSI 네이티브 모듈 (iOS/Android)
 
 이 구성을 두는 이유:
 
 - 앱 코드와 코어 로직의 책임을 분리할 수 있습니다.
-- JS에서 쓰는 타입과 네이티브 쪽 계약을 맞추기 쉽습니다.
+- JS에서 쓰는 타입과 네이티브 쪽 계약을 코드젠으로 맞춥니다.
 - 성능 민감 로직을 모바일 앱 코드와 독립적으로 유지하기 좋습니다.
-- iOS/Android 네이티브 레이어에서 동일한 코어를 공유하기 쉬워집니다.
+- 데스크톱(Tauri)과 모바일(RN JSI)이 같은 명령 정의를 공유합니다.
 
 모바일 네이티브 브리지 변경 시에는 아래 문서를 먼저 보는 것이 좋습니다.
 
-- [`apps/mobile/docs/typed-bridge-development.md`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/docs/typed-bridge-development.md)
+- [`apps/mobile/docs/rustra-bridge-development.md`](/Users/loopy/dev/ll3/Glimpse/apps/mobile/docs/rustra-bridge-development.md)
 
 이 문서에는 다음이 정리되어 있습니다.
 
 - TypeScript에서 Rust까지 이어지는 브리지 구조
-- `glimpse_core.h` 재생성 방법
+- TS 클라이언트 재생성 방법 (`bun run bridge:generate`)
 - iOS / Android 네이티브 산출물 재빌드 시점
-- Nitro, C++, Rust, JS 계층을 함께 수정해야 하는 경우
+- rustra, C++, Rust, JS 계층을 함께 수정해야 하는 경우
 
 ## 검증 방법
 
