@@ -23,6 +23,14 @@ add_library(rustrajsi SHARED
     ${CPP_DIR}/RustraJSIBridge.cpp
 )
 
+# libglimpse_bridge.a is a Rust staticlib that links the full glimpse-core
+# (sqlite3 bundled) object code. Without --exclude-libs every symbol in those
+# objects (core_client_*, sqlite3_*, ...) is re-exported from librustrajsi.so,
+# duplicating libglimpse_core.so's dynamic symbol table and risking symbol
+# interposition across the two DSOs. ALL keeps only this library's own
+# exports — the Java_so_glimpse_mobile_* JNI entry points.
+target_link_options(rustrajsi PRIVATE "-Wl,--exclude-libs,ALL")
+
 target_include_directories(rustrajsi PRIVATE
     ${CPP_DIR}
     src/main/cpp
