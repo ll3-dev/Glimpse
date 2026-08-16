@@ -43,8 +43,13 @@ fn enum_to_value<T: Serialize>(value: T) -> Value {
     serde_json::to_value(value).unwrap_or(Value::Null)
 }
 
-fn enum_from_value<T: for<'de> Deserialize<'de>>(value: Value) -> T {
-    serde_json::from_value(value).expect("valid enum wire value")
+/// Parses a wire enum string, falling back to `fallback` on unknown values.
+///
+/// Matches glimpse-core's own convention (`str_to_recommendation_status`
+/// etc. default unknown strings) so a malformed enum never panics inside a
+/// rustra command handler.
+fn parse_enum<T: for<'de> Deserialize<'de>>(value: String, fallback: T) -> T {
+    serde_json::from_value::<T>(Value::String(value)).unwrap_or(fallback)
 }
 
 // ============================================================================
@@ -80,11 +85,11 @@ pub struct KnowledgeItemIo {
 }
 
 fn label_status_from_str(value: Option<String>) -> Option<KnowledgeItemLabelStatus> {
-    value.map(|s| serde_json::from_value::<KnowledgeItemLabelStatus>(Value::String(s)).expect("valid labelStatus"))
+    value.map(|s| parse_enum(s, KnowledgeItemLabelStatus::Idle))
 }
 
 fn label_source_from_str(value: Option<String>) -> Option<KnowledgeItemLabelSource> {
-    value.map(|s| serde_json::from_value::<KnowledgeItemLabelSource>(Value::String(s)).expect("valid labelSource"))
+    value.map(|s| parse_enum(s, KnowledgeItemLabelSource::None))
 }
 
 impl From<KnowledgeItem> for KnowledgeItemIo {
@@ -127,8 +132,7 @@ impl From<KnowledgeItemIo> for KnowledgeItem {
     fn from(item: KnowledgeItemIo) -> Self {
         Self {
             id: item.id,
-            item_type: serde_json::from_value::<KnowledgeItemType>(Value::String(item.item_type))
-                .expect("valid knowledge item type"),
+            item_type: parse_enum(item.item_type, KnowledgeItemType::Note),
             title: item.title,
             body: item.body,
             url: item.url,
@@ -201,10 +205,7 @@ pub struct KnowledgeItemPatchIo {
 impl From<KnowledgeItemPatchIo> for KnowledgeItemPatch {
     fn from(patch: KnowledgeItemPatchIo) -> Self {
         Self {
-            item_type: patch.item_type.map(|s| {
-                serde_json::from_value::<KnowledgeItemType>(Value::String(s))
-                    .expect("valid knowledge item type")
-            }),
+            item_type: patch.item_type.map(|s| parse_enum(s, KnowledgeItemType::Note)),
             title: to_patch(patch.title),
             body: to_patch(patch.body),
             url: to_patch(patch.url),
@@ -337,7 +338,7 @@ impl From<MessageIo> for Message {
         Self {
             id: message.id,
             conversation_id: message.conversation_id,
-            role: enum_from_value(Value::String(message.role)),
+            role: parse_enum(message.role, MessageRole::User),
             content: message.content,
             created_at: message.created_at,
             updated_at: message.updated_at,
@@ -411,7 +412,7 @@ impl From<RecommendationIo> for Recommendation {
             item_a_id: recommendation.item_a_id,
             item_b_id: recommendation.item_b_id,
             reason: recommendation.reason,
-            status: enum_from_value(Value::String(recommendation.status)),
+            status: parse_enum(recommendation.status, RecommendationStatus::Pending),
             created_at: recommendation.created_at,
             responded_at: recommendation.responded_at,
         }
@@ -450,7 +451,7 @@ impl From<FeedbackEventIo> for FeedbackEvent {
         Self {
             id: event.id,
             recommendation_id: event.recommendation_id,
-            action: enum_from_value(Value::String(event.action)),
+            action: parse_enum(event.action, glimpse_core::FeedbackActionType::Accept),
             created_at: event.created_at,
         }
     }
@@ -510,7 +511,7 @@ impl From<CalculateNextReviewInputIo> for CalculateNextReviewInput {
         Self {
             last_reviewed_at: value.last_reviewed_at,
             next_review_at: value.next_review_at,
-            feedback_type: enum_from_value(Value::String(value.feedback_type)),
+            feedback_type: parse_enum(value.feedback_type, ReviewFeedbackType::Remembered),
             now: value.now,
         }
     }
@@ -568,21 +569,9 @@ impl From<InitializeReviewScheduleOutput> for InitializeReviewScheduleOutputIo {
     }
 }
 
-// Re-exported so command modules can build status enums from wire strings.
-pub use glimpse_core::RecommendationStatus as CoreRecommendationStatus;
-pub use glimpse_core::ReviewFeedbackType as CoreReviewFeedbackType;
-
 /// Parses a wire status string into a core [`RecommendationStatus`].
+///
+/// Used by the recommendation domain's `respondToRecommendation` command.
 pub fn recommendation_status_from_wire(value: String) -> RecommendationStatus {
-    enum_from_value(Value::String(value))
-}
-
-/// Parses a wire feedback type string into a core [`ReviewFeedbackType`].
-pub fn review_feedback_type_from_wire(value: String) -> ReviewFeedbackType {
-    enum_from_value(Value::String(value))
-}
-
-/// Parses a wire role string into a core [`MessageRole`].
-pub fn message_role_from_wire(value: String) -> MessageRole {
-    enum_from_value(Value::String(value))
+    parse_enum(value, RecommendationStatus::Pending)
 }
