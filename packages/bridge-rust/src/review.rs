@@ -48,7 +48,7 @@ pub struct CalculateNextReviewIoOutput {
 #[command]
 pub fn calculate_next_review(input: CalculateNextReviewIoInput) -> Result<CalculateNextReviewIoOutput> {
     let core = crate::state::core_state();
-    let core_input: glimpse_core::CalculateNextReviewInput = input.input.into();
+    let core_input: glimpse_core::CalculateNextReviewInput = input.input.try_into()?;
     let output = core.calculate_next_review(&core_input);
     Ok(CalculateNextReviewIoOutput {
         output: output.into(),

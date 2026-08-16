@@ -25,7 +25,7 @@ fn setup() -> std::sync::MutexGuard<'static, ()> {
 
 #[test]
 fn save_knowledge_item_roundtrips_with_camel_case_fields() {
-    setup();
+    let _guard = setup();
     let pkg = knowledge_package();
 
     let out = pkg
@@ -69,7 +69,7 @@ fn save_knowledge_item_roundtrips_with_camel_case_fields() {
 
 #[test]
 fn update_knowledge_item_applies_tristate_patch() {
-    setup();
+    let _guard = setup();
     let pkg = knowledge_package();
 
     pkg.invoke_json(
@@ -108,7 +108,7 @@ fn update_knowledge_item_applies_tristate_patch() {
 
 #[test]
 fn list_and_query_knowledge_commands_roundtrip() {
-    setup();
+    let _guard = setup();
     let pkg = knowledge_package();
 
     let seed = json!({
@@ -504,4 +504,109 @@ fn glimpse_core_package_dispatches_across_all_domains() {
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
     assert_eq!(commands.len(), 25, "unified package must expose 25 commands");
+}
+
+// ============================================================================
+// Error paths
+// ============================================================================
+
+#[test]
+fn update_knowledge_item_missing_id_returns_not_found() {
+    let _guard = setup();
+    let pkg = knowledge_package();
+
+    let err = pkg
+        .invoke_json(
+            "updateKnowledgeItem",
+            json!({ "itemId": "does-not-exist", "patch": { "title": "x" } }),
+        )
+        .expect_err("updating a missing id must fail");
+
+    assert_eq!(err.code(), "glimpse.not_found");
+    assert!(err.message().contains("does-not-exist"));
+}
+
+#[test]
+fn malformed_patch_value_returns_invalid_args_not_silent_null() {
+    let _guard = setup();
+    let pkg = knowledge_package();
+
+    // Seed, then send a labelScore typed as string — must be rejected, not
+    // silently nulled (which storage would read as "clear the column").
+    pkg.invoke_json(
+        "saveKnowledgeItem",
+        json!({
+            "item": {
+                "id": "k-err", "type": "note", "title": "t", "body": null, "url": null,
+                "summary": null, "tags": null, "labels": null, "provisionalLabels": null,
+                "labelStatus": null, "labelSource": null, "labelVersion": null,
+                "labelScore": 0.5, "labelRequestedAt": null, "labelCompletedAt": null,
+                "labelError": null, "createdAt": 1000, "updatedAt": 1000,
+                "stability": null, "difficulty": null, "lastReviewedAt": null,
+                "nextReviewAt": null
+            }
+        }),
+    )
+    .expect("seed should succeed");
+
+    let err = pkg
+        .invoke_json(
+            "updateKnowledgeItem",
+            json!({ "itemId": "k-err", "patch": { "labelScore": "0.9" } }),
+        )
+        .expect_err("string-typed labelScore must be rejected");
+
+    assert_eq!(err.code(), "command.invalid_args");
+    assert!(err.message().contains("labelScore"), "message: {}", err.message());
+
+    // The rejection must NOT have mutated the stored value.
+    let got = pkg
+        .invoke_json("getKnowledgeItemById", json!({ "itemId": "k-err" }))
+        .expect("read-back should succeed");
+    assert_eq!(got["item"]["labelScore"], 0.5, "malformed patch must not clear the column");
+}
+
+#[test]
+fn respond_to_recommendation_bad_enum_returns_invalid_args() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::recommendation_package();
+
+    pkg.invoke_json(
+        "saveRecommendations",
+        json!({
+            "recommendations": [{
+                "id": "r-bad", "itemA_id": "a", "itemB_id": "b", "reason": null,
+                "status": "pending", "createdAt": 1000, "respondedAt": null
+            }]
+        }),
+    )
+    .expect("seed recommendation should succeed");
+
+    let err = pkg
+        .invoke_json(
+            "respondToRecommendation",
+            json!({
+                "recommendationId": "r-bad",
+                "status": "accpeted", // typo'd enum must be rejected, not coerced to pending
+                "feedbackEvent": {
+                    "id": "f-bad", "recommendationId": "r-bad", "action": "accept", "createdAt": 2000
+                }
+            }),
+        )
+        .expect_err("unknown enum string must be rejected");
+
+    assert_eq!(err.code(), "command.invalid_args");
+    assert!(err.message().contains("status"), "message: {}", err.message());
+
+    // The typo must not have been persisted as a fallback status.
+    let after = pkg
+        .invoke_json("listRecommendations", json!({}))
+        .expect("listRecommendations should succeed");
+    let status = after["recommendations"]
+        .as_array()
+        .expect("array")
+        .iter()
+        .find(|r| r["id"] == "r-bad")
+        .expect("recommendation present");
+    assert_eq!(status["status"], "pending", "bad enum must not persist a fallback");
 }

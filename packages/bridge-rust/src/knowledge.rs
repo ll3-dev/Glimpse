@@ -19,8 +19,9 @@ pub struct SaveKnowledgeItemOutput {
 #[command]
 pub fn save_knowledge_item(input: SaveKnowledgeItemInput) -> Result<SaveKnowledgeItemOutput> {
     let core = crate::state::core_state();
+    let item: glimpse_core::KnowledgeItem = input.item.try_into()?;
     let item = core
-        .save_knowledge_item(&input.item.into())
+        .save_knowledge_item(&item)
         .map_err(crate::error::to_rustra_err)?;
     Ok(SaveKnowledgeItemOutput { item: item.into() })
 }
@@ -89,7 +90,7 @@ pub fn update_knowledge_item(
     input: UpdateKnowledgeItemInput,
 ) -> Result<UpdateKnowledgeItemOutput> {
     let core = crate::state::core_state();
-    let patch: glimpse_core::KnowledgeItemPatch = input.patch.into();
+    let patch: glimpse_core::KnowledgeItemPatch = input.patch.try_into()?;
     let item = core
         .update_knowledge_item(&input.item_id, &patch)
         .map_err(crate::error::to_rustra_err)?;

@@ -9,14 +9,21 @@
 //! - Tristate patch fields (`NullablePatch<T>` in core) are modeled as
 //!   `Option<serde_json::Value>`: `None` = unset, `Some(Value::Null)` =
 //!   explicit null, `Some(v)` = value. See [`NullableValue`].
+//!
+//! Conversion strictness: wire → core conversions are write paths and reject
+//! malformed values with [`RustraError::invalid_args`] (wrong-typed patch
+//! values, unknown enum strings) instead of silently nulling fields or
+//! falling back to a default enum. Core → wire conversions are read paths and
+//! stay infallible: core enums serialize to their known wire strings.
 
 use glimpse_core::{
     CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput, Conversation,
     ConversationPatch, CoreKnowledgeItemLike, FeedbackEvent, InitializeReviewScheduleInput,
     InitializeReviewScheduleOutput, KnowledgeItem, KnowledgeItemLabelSource,
-    KnowledgeItemLabelStatus, KnowledgeItemPatch, KnowledgeItemType, Message, MessagePatch,
-    MessageRole, NullablePatch, Recommendation, RecommendationStatus, ReviewFeedbackType,
+    KnowledgeItemLabelStatus, KnowledgeItemPatch, Message, MessagePatch, NullablePatch,
+    Recommendation, RecommendationStatus,
 };
+use rustra::RustraError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -26,16 +33,24 @@ use serde_json::Value;
 /// `Some(v)` → [`NullablePatch::Value`] with `v` deserialized into `T`.
 pub type NullableValue = Option<Value>;
 
-fn to_patch<T: for<'de> Deserialize<'de>>(value: NullableValue) -> NullablePatch<T> {
+/// Converts a wire tristate into a core [`NullablePatch`], rejecting malformed values.
+///
+/// The generated TS types model patch fields as `unknown`, so this is the last
+/// line of defense: a `Some(v)` that fails to deserialize into `T` becomes an
+/// `invalid_args` error naming `field` — never a silent [`NullablePatch::Null`]
+/// (which storage would treat as "clear the column").
+fn to_patch<T: for<'de> Deserialize<'de>>(
+    field: &'static str,
+    value: NullableValue,
+) -> Result<NullablePatch<T>, RustraError> {
     match value {
-        None => NullablePatch::Unset,
-        Some(Value::Null) => NullablePatch::Null,
-        Some(v) => match serde_json::from_value::<T>(v.clone()) {
-            Ok(parsed) => NullablePatch::Value(parsed),
-            // Malformed payloads collapse to Null; rustra's arg validation has
-            // already accepted the JSON shape, so keep the patch lenient here.
-            Err(_) => NullablePatch::Null,
-        },
+        None => Ok(NullablePatch::Unset),
+        Some(Value::Null) => Ok(NullablePatch::Null),
+        Some(v) => serde_json::from_value::<T>(v)
+            .map(NullablePatch::Value)
+            .map_err(|err| {
+                RustraError::invalid_args(format!("patch field `{field}` is invalid: {err}"))
+            }),
     }
 }
 
@@ -43,13 +58,19 @@ fn enum_to_value<T: Serialize>(value: T) -> Value {
     serde_json::to_value(value).unwrap_or(Value::Null)
 }
 
-/// Parses a wire enum string, falling back to `fallback` on unknown values.
+/// Parses a wire enum string on a write path, rejecting unknown values.
 ///
-/// Matches glimpse-core's own convention (`str_to_recommendation_status`
-/// etc. default unknown strings) so a malformed enum never panics inside a
-/// rustra command handler.
-fn parse_enum<T: for<'de> Deserialize<'de>>(value: String, fallback: T) -> T {
-    serde_json::from_value::<T>(Value::String(value)).unwrap_or(fallback)
+/// Unlike glimpse-core's own `str_to_*` helpers (which default unknown
+/// strings), the bridge must not persist a fallback enum for a typo'd status —
+/// `respondToRecommendation("accpeted")` fails loudly instead of writing
+/// `pending`.
+fn parse_enum<T: for<'de> Deserialize<'de>>(
+    field: &'static str,
+    value: String,
+) -> Result<T, RustraError> {
+    serde_json::from_value::<T>(Value::String(value)).map_err(|err| {
+        RustraError::invalid_args(format!("field `{field}` has invalid enum value: {err}"))
+    })
 }
 
 // ============================================================================
@@ -84,12 +105,18 @@ pub struct KnowledgeItemIo {
     pub next_review_at: Option<i64>,
 }
 
-fn label_status_from_str(value: Option<String>) -> Option<KnowledgeItemLabelStatus> {
-    value.map(|s| parse_enum(s, KnowledgeItemLabelStatus::Idle))
+fn label_status_from_str(
+    field: &'static str,
+    value: Option<String>,
+) -> Result<Option<KnowledgeItemLabelStatus>, RustraError> {
+    value.map(|s| parse_enum(field, s)).transpose()
 }
 
-fn label_source_from_str(value: Option<String>) -> Option<KnowledgeItemLabelSource> {
-    value.map(|s| parse_enum(s, KnowledgeItemLabelSource::None))
+fn label_source_from_str(
+    field: &'static str,
+    value: Option<String>,
+) -> Result<Option<KnowledgeItemLabelSource>, RustraError> {
+    value.map(|s| parse_enum(field, s)).transpose()
 }
 
 impl From<KnowledgeItem> for KnowledgeItemIo {
@@ -128,11 +155,13 @@ impl From<KnowledgeItem> for KnowledgeItemIo {
     }
 }
 
-impl From<KnowledgeItemIo> for KnowledgeItem {
-    fn from(item: KnowledgeItemIo) -> Self {
-        Self {
+impl TryFrom<KnowledgeItemIo> for KnowledgeItem {
+    type Error = RustraError;
+
+    fn try_from(item: KnowledgeItemIo) -> Result<Self, RustraError> {
+        Ok(Self {
             id: item.id,
-            item_type: parse_enum(item.item_type, KnowledgeItemType::Note),
+            item_type: parse_enum("type", item.item_type)?,
             title: item.title,
             body: item.body,
             url: item.url,
@@ -140,8 +169,8 @@ impl From<KnowledgeItemIo> for KnowledgeItem {
             tags: item.tags,
             labels: item.labels,
             provisional_labels: item.provisional_labels,
-            label_status: label_status_from_str(item.label_status),
-            label_source: label_source_from_str(item.label_source),
+            label_status: label_status_from_str("labelStatus", item.label_status)?,
+            label_source: label_source_from_str("labelSource", item.label_source)?,
             label_version: item.label_version,
             label_score: item.label_score,
             label_requested_at: item.label_requested_at,
@@ -153,7 +182,7 @@ impl From<KnowledgeItemIo> for KnowledgeItem {
             difficulty: item.difficulty,
             last_reviewed_at: item.last_reviewed_at,
             next_review_at: item.next_review_at,
-        }
+        })
     }
 }
 
@@ -202,30 +231,35 @@ pub struct KnowledgeItemPatchIo {
     pub next_review_at: NullableValue,
 }
 
-impl From<KnowledgeItemPatchIo> for KnowledgeItemPatch {
-    fn from(patch: KnowledgeItemPatchIo) -> Self {
-        Self {
-            item_type: patch.item_type.map(|s| parse_enum(s, KnowledgeItemType::Note)),
-            title: to_patch(patch.title),
-            body: to_patch(patch.body),
-            url: to_patch(patch.url),
-            summary: to_patch(patch.summary),
-            tags: to_patch(patch.tags),
-            labels: to_patch(patch.labels),
-            provisional_labels: to_patch(patch.provisional_labels),
-            label_status: to_patch(patch.label_status),
-            label_source: to_patch(patch.label_source),
-            label_version: to_patch(patch.label_version),
-            label_score: to_patch(patch.label_score),
-            label_requested_at: to_patch(patch.label_requested_at),
-            label_completed_at: to_patch(patch.label_completed_at),
-            label_error: to_patch(patch.label_error),
+impl TryFrom<KnowledgeItemPatchIo> for KnowledgeItemPatch {
+    type Error = RustraError;
+
+    fn try_from(patch: KnowledgeItemPatchIo) -> Result<Self, RustraError> {
+        Ok(Self {
+            item_type: patch
+                .item_type
+                .map(|s| parse_enum("type", s))
+                .transpose()?,
+            title: to_patch("title", patch.title)?,
+            body: to_patch("body", patch.body)?,
+            url: to_patch("url", patch.url)?,
+            summary: to_patch("summary", patch.summary)?,
+            tags: to_patch("tags", patch.tags)?,
+            labels: to_patch("labels", patch.labels)?,
+            provisional_labels: to_patch("provisionalLabels", patch.provisional_labels)?,
+            label_status: to_patch("labelStatus", patch.label_status)?,
+            label_source: to_patch("labelSource", patch.label_source)?,
+            label_version: to_patch("labelVersion", patch.label_version)?,
+            label_score: to_patch("labelScore", patch.label_score)?,
+            label_requested_at: to_patch("labelRequestedAt", patch.label_requested_at)?,
+            label_completed_at: to_patch("labelCompletedAt", patch.label_completed_at)?,
+            label_error: to_patch("labelError", patch.label_error)?,
             updated_at: patch.updated_at,
-            stability: to_patch(patch.stability),
-            difficulty: to_patch(patch.difficulty),
-            last_reviewed_at: to_patch(patch.last_reviewed_at),
-            next_review_at: to_patch(patch.next_review_at),
-        }
+            stability: to_patch("stability", patch.stability)?,
+            difficulty: to_patch("difficulty", patch.difficulty)?,
+            last_reviewed_at: to_patch("lastReviewedAt", patch.last_reviewed_at)?,
+            next_review_at: to_patch("nextReviewAt", patch.next_review_at)?,
+        })
     }
 }
 
@@ -288,15 +322,17 @@ pub struct ConversationPatchIo {
     pub deleted_at: NullableValue,
 }
 
-impl From<ConversationPatchIo> for ConversationPatch {
-    fn from(patch: ConversationPatchIo) -> Self {
-        Self {
-            title: to_patch(patch.title),
-            icon: to_patch(patch.icon),
-            context_item_id: to_patch(patch.context_item_id),
+impl TryFrom<ConversationPatchIo> for ConversationPatch {
+    type Error = RustraError;
+
+    fn try_from(patch: ConversationPatchIo) -> Result<Self, RustraError> {
+        Ok(Self {
+            title: to_patch("title", patch.title)?,
+            icon: to_patch("icon", patch.icon)?,
+            context_item_id: to_patch("contextItemId", patch.context_item_id)?,
             updated_at: patch.updated_at,
-            deleted_at: to_patch(patch.deleted_at),
-        }
+            deleted_at: to_patch("deletedAt", patch.deleted_at)?,
+        })
     }
 }
 
@@ -333,17 +369,19 @@ impl From<Message> for MessageIo {
     }
 }
 
-impl From<MessageIo> for Message {
-    fn from(message: MessageIo) -> Self {
-        Self {
+impl TryFrom<MessageIo> for Message {
+    type Error = RustraError;
+
+    fn try_from(message: MessageIo) -> Result<Self, RustraError> {
+        Ok(Self {
             id: message.id,
             conversation_id: message.conversation_id,
-            role: parse_enum(message.role, MessageRole::User),
+            role: parse_enum("role", message.role)?,
             content: message.content,
             created_at: message.created_at,
             updated_at: message.updated_at,
             deleted_at: message.deleted_at,
-        }
+        })
     }
 }
 
@@ -358,13 +396,15 @@ pub struct MessagePatchIo {
     pub deleted_at: NullableValue,
 }
 
-impl From<MessagePatchIo> for MessagePatch {
-    fn from(patch: MessagePatchIo) -> Self {
-        Self {
+impl TryFrom<MessagePatchIo> for MessagePatch {
+    type Error = RustraError;
+
+    fn try_from(patch: MessagePatchIo) -> Result<Self, RustraError> {
+        Ok(Self {
             content: patch.content,
             updated_at: patch.updated_at,
-            deleted_at: to_patch(patch.deleted_at),
-        }
+            deleted_at: to_patch("deletedAt", patch.deleted_at)?,
+        })
     }
 }
 
@@ -405,17 +445,19 @@ impl From<Recommendation> for RecommendationIo {
     }
 }
 
-impl From<RecommendationIo> for Recommendation {
-    fn from(recommendation: RecommendationIo) -> Self {
-        Self {
+impl TryFrom<RecommendationIo> for Recommendation {
+    type Error = RustraError;
+
+    fn try_from(recommendation: RecommendationIo) -> Result<Self, RustraError> {
+        Ok(Self {
             id: recommendation.id,
             item_a_id: recommendation.item_a_id,
             item_b_id: recommendation.item_b_id,
             reason: recommendation.reason,
-            status: parse_enum(recommendation.status, RecommendationStatus::Pending),
+            status: parse_enum("status", recommendation.status)?,
             created_at: recommendation.created_at,
             responded_at: recommendation.responded_at,
-        }
+        })
     }
 }
 
@@ -446,14 +488,16 @@ impl From<FeedbackEvent> for FeedbackEventIo {
     }
 }
 
-impl From<FeedbackEventIo> for FeedbackEvent {
-    fn from(event: FeedbackEventIo) -> Self {
-        Self {
+impl TryFrom<FeedbackEventIo> for FeedbackEvent {
+    type Error = RustraError;
+
+    fn try_from(event: FeedbackEventIo) -> Result<Self, RustraError> {
+        Ok(Self {
             id: event.id,
             recommendation_id: event.recommendation_id,
-            action: parse_enum(event.action, glimpse_core::FeedbackActionType::Accept),
+            action: parse_enum("action", event.action)?,
             created_at: event.created_at,
-        }
+        })
     }
 }
 
@@ -506,14 +550,16 @@ pub struct CalculateNextReviewInputIo {
     pub now: i64,
 }
 
-impl From<CalculateNextReviewInputIo> for CalculateNextReviewInput {
-    fn from(value: CalculateNextReviewInputIo) -> Self {
-        Self {
+impl TryFrom<CalculateNextReviewInputIo> for CalculateNextReviewInput {
+    type Error = RustraError;
+
+    fn try_from(value: CalculateNextReviewInputIo) -> Result<Self, RustraError> {
+        Ok(Self {
             last_reviewed_at: value.last_reviewed_at,
             next_review_at: value.next_review_at,
-            feedback_type: parse_enum(value.feedback_type, ReviewFeedbackType::Remembered),
+            feedback_type: parse_enum("feedbackType", value.feedback_type)?,
             now: value.now,
-        }
+        })
     }
 }
 
@@ -571,7 +617,11 @@ impl From<InitializeReviewScheduleOutput> for InitializeReviewScheduleOutputIo {
 
 /// Parses a wire status string into a core [`RecommendationStatus`].
 ///
-/// Used by the recommendation domain's `respondToRecommendation` command.
-pub fn recommendation_status_from_wire(value: String) -> RecommendationStatus {
-    parse_enum(value, RecommendationStatus::Pending)
+/// Used by the recommendation domain's `respondToRecommendation` command;
+/// unknown status strings are rejected as `invalid_args` rather than written
+/// back as a fallback status.
+pub(crate) fn recommendation_status_from_wire(
+    value: String,
+) -> Result<RecommendationStatus, RustraError> {
+    parse_enum("status", value)
 }

@@ -17,8 +17,11 @@ pub struct SaveRecommendationsOutput {}
 #[command]
 pub fn save_recommendations(input: SaveRecommendationsInput) -> Result<SaveRecommendationsOutput> {
     let core = crate::state::core_state();
-    let recommendations: Vec<glimpse_core::Recommendation> =
-        input.recommendations.into_iter().map(Into::into).collect();
+    let recommendations: Vec<glimpse_core::Recommendation> = input
+        .recommendations
+        .into_iter()
+        .map(<_ as TryInto<glimpse_core::Recommendation>>::try_into)
+        .collect::<std::result::Result<Vec<_>, _>>()?;
     core.save_recommendations(&recommendations)
         .map_err(crate::error::to_rustra_err)?;
     Ok(SaveRecommendationsOutput {})
@@ -85,8 +88,8 @@ pub fn respond_to_recommendation(
     input: RespondToRecommendationInput,
 ) -> Result<RespondToRecommendationOutput> {
     let core = crate::state::core_state();
-    let status = recommendation_status_from_wire(input.status);
-    let feedback_event: glimpse_core::FeedbackEvent = input.feedback_event.into();
+    let status = recommendation_status_from_wire(input.status)?;
+    let feedback_event: glimpse_core::FeedbackEvent = input.feedback_event.try_into()?;
     core.respond_to_recommendation(&input.recommendation_id, status, &feedback_event)
         .map_err(crate::error::to_rustra_err)?;
     Ok(RespondToRecommendationOutput {})

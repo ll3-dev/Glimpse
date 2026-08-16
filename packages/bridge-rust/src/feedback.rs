@@ -46,7 +46,7 @@ pub fn log_recommendation_feedback(
     input: LogRecommendationFeedbackInput,
 ) -> Result<LogRecommendationFeedbackOutput> {
     let core = crate::state::core_state();
-    let event: glimpse_core::FeedbackEvent = input.event.into();
+    let event: glimpse_core::FeedbackEvent = input.event.try_into()?;
     let event = core
         .log_recommendation_feedback(&event)
         .map_err(crate::error::to_rustra_err)?;

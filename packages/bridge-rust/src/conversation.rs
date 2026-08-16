@@ -64,7 +64,7 @@ pub struct UpdateConversationOutput {
 #[command]
 pub fn update_conversation(input: UpdateConversationInput) -> Result<UpdateConversationOutput> {
     let core = crate::state::core_state();
-    let patch: glimpse_core::ConversationPatch = input.patch.into();
+    let patch: glimpse_core::ConversationPatch = input.patch.try_into()?;
     let conversation = core
         .update_conversation(&input.conversation_id, &patch)
         .map_err(crate::error::to_rustra_err)?;

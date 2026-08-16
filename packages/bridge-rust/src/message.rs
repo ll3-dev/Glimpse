@@ -44,8 +44,9 @@ pub struct AddMessageOutput {
 #[command]
 pub fn add_message(input: AddMessageInput) -> Result<AddMessageOutput> {
     let core = crate::state::core_state();
+    let message: glimpse_core::Message = input.message.try_into()?;
     let message = core
-        .add_message(&input.message.into())
+        .add_message(&message)
         .map_err(crate::error::to_rustra_err)?;
     Ok(AddMessageOutput {
         message: message.into(),
@@ -68,7 +69,7 @@ pub struct UpdateMessageOutput {
 #[command]
 pub fn update_message(input: UpdateMessageInput) -> Result<UpdateMessageOutput> {
     let core = crate::state::core_state();
-    let patch: glimpse_core::MessagePatch = input.patch.into();
+    let patch: glimpse_core::MessagePatch = input.patch.try_into()?;
     let message = core
         .update_message(&input.message_id, &patch)
         .map_err(crate::error::to_rustra_err)?;
