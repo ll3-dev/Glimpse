@@ -1,7 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
-mod core;
 mod download;
 mod llm;
 mod models;
@@ -32,12 +31,12 @@ fn main() {
                 glimpse_core::SqliteStorage::new(&db_path).expect("failed to initialize core database");
 
             // SharedCore owns the SQLite connection and is not Clone, so the
-            // bridge global takes sole ownership. Legacy `core::commands`
-            // dispatch through the same global (see core/commands.rs), keeping
-            // exactly one connection per process until Task 8 removes them.
-            if glimpse_bridge::init_core(glimpse_core::SharedCore::new(storage)).is_some() {
-                panic!("glimpse core was initialized more than once");
-            }
+            // bridge global takes sole ownership — exactly one connection per
+            // process.
+            assert!(
+                glimpse_bridge::init_core(glimpse_core::SharedCore::new(storage)).is_none(),
+                "glimpse core was initialized more than once"
+            );
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -53,34 +52,7 @@ fn main() {
             commands::run_completion,
             commands::stream_completion,
             commands::run_embedding,
-            commands::get_runtime_health,
-            // Legacy hand-written domain commands (strangler pattern; served
-            // from the same SharedCore as the rustra bridge, removed in Task 8)
-            core::commands::save_knowledge_item,
-            core::commands::list_knowledge_items,
-            core::commands::get_knowledge_item_by_id,
-            core::commands::update_knowledge_item,
-            core::commands::list_knowledge_items_by_ids,
-            core::commands::list_weekly_knowledge_items,
-            core::commands::list_pending_knowledge_items_for_labeling,
-            core::commands::get_due_knowledge_items,
-            core::commands::create_conversation,
-            core::commands::list_conversations,
-            core::commands::update_conversation,
-            core::commands::delete_conversation,
-            core::commands::list_conversation_messages,
-            core::commands::add_message,
-            core::commands::update_message,
-            core::commands::delete_message,
-            core::commands::save_recommendations,
-            core::commands::list_recommendations,
-            core::commands::list_pending_recommendations,
-            core::commands::respond_to_recommendation,
-            core::commands::list_recent_feedback_events,
-            core::commands::log_recommendation_feedback,
-            core::commands::calculate_tag_overlap,
-            core::commands::calculate_next_review,
-            core::commands::initialize_review_schedule
+            commands::get_runtime_health
         ])
         .run(tauri::generate_context!())
         .expect("error while running glimpse desktop tauri shell");

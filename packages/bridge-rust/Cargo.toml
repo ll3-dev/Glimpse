@@ -6,7 +6,9 @@ description = "rustra bridge commands over glimpse-core (desktop + mobile)."
 
 [dependencies]
 glimpse-core = { path = "../core-rust" }
-rustra = "0.1.1"
+# Pin TS and Rust sides together: the generated client contract hash is
+# coupled to the rustra crate version (see apps/desktop + @rustra/*).
+rustra = "=0.1.1"
 schemars = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

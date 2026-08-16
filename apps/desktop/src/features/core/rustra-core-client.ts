@@ -6,10 +6,10 @@
  * routes every command through the single `rustra_dispatch` Tauri command.
  *
  * The wire is already camelCase end-to-end (bridge IO structs rename to
- * camelCase), so no key conversion happens here — unlike the legacy
- * `desktop-core-client.ts`, this adapter only unwraps the command output
- * envelopes (`{ item }`, `{ items }`, ...) and narrows wire types (enums as
- * plain strings) back to the shared string-literal-union domain types.
+ * camelCase), so no key conversion happens here — this adapter only
+ * unwraps the command output envelopes (`{ item }`, `{ items }`, ...) and
+ * narrows wire types (enums as plain strings) back to the shared
+ * string-literal-union domain types.
  *
  * Errors: the engine rejects with `RustraCommandError` (an Error subclass
  * carrying `code` + `message`), which propagates as-is to consumers.
@@ -118,6 +118,8 @@ export function createRustraCoreClient(): CoreClient {
       (await logRecommendationFeedback({ event })).event as FeedbackEvent,
 
     // -- Review Calculations --
+    // The flattened review outputs already match the shared shape; only
+    // calculateTagOverlap wraps its result in an `overlap` field.
     calculateTagOverlap: async (input) => (await calculateTagOverlap(input)).overlap,
     calculateNextReview: async (input) =>
       (await calculateNextReview(input)) as CalculateNextReviewOutput,
