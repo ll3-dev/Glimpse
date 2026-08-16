@@ -25,6 +25,8 @@ prepare_react_native_project!
 target 'glimpse' do
   use_expo_modules!
   pod 'GlimpseCore', :path => '..'
+  # RustraJSI — raw JSI bridge over glimpse-bridge (not an Expo module)
+  pod 'RustraJSI', :path => '../modules/rustra-jsi/ios'
 
   # Note: ShareExtension target is intentionally not included here because
   # react-native-blob-util doesn't support App Extensions (uses UIApplication.sharedApplication).

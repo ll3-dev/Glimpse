@@ -1,0 +1,9 @@
+{
+  "name": "rustra-jsi",
+  "version": "1.0.0",
+  "description": "Rustra JSI native module over glimpse-bridge for Glimpse mobile",
+  "main": "src/index.ts",
+  "license": "UNLICENSED",
+  "private": true,
+  "react-native": "src/index.ts"
+}

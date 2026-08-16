@@ -2359,9 +2359,12 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - SDWebImage (5.21.6):
-    - SDWebImage/Core (= 5.21.6)
-  - SDWebImage/Core (5.21.6)
+  - RustraJSI (1.0.0):
+    - React-Core
+    - React-jsi
+  - SDWebImage (5.21.7):
+    - SDWebImage/Core (= 5.21.7)
+  - SDWebImage/Core (5.21.7)
   - SDWebImageAVIFCoder (0.11.1):
     - libavif/core (>= 0.11.0)
     - SDWebImage (~> 5.10)
@@ -2487,6 +2490,7 @@ DEPENDENCIES:
   - "RNScreens (from `../../../node_modules/.bun/react-native-screens@4.23.0+069b4c9d3e085d94/node_modules/react-native-screens`)"
   - "RNSVG (from `../../../node_modules/.bun/react-native-svg@15.15.3+069b4c9d3e085d94/node_modules/react-native-svg`)"
   - "RNWorklets (from `../../../node_modules/.bun/react-native-worklets@0.7.2+069b4c9d3e085d94/node_modules/react-native-worklets`)"
+  - RustraJSI (from `../modules/rustra-jsi/ios`)
   - "UMAppLoader (from `../../../node_modules/.bun/unimodules-app-loader@55.0.2/node_modules/unimodules-app-loader/ios`)"
   - "Yoga (from `../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native/ReactCommon/yoga`)"
 
@@ -2727,6 +2731,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.bun/react-native-svg@15.15.3+069b4c9d3e085d94/node_modules/react-native-svg"
   RNWorklets:
     :path: "../../../node_modules/.bun/react-native-worklets@0.7.2+069b4c9d3e085d94/node_modules/react-native-worklets"
+  RustraJSI:
+    :path: "../modules/rustra-jsi/ios"
   UMAppLoader:
     :path: "../../../node_modules/.bun/unimodules-app-loader@55.0.2/node_modules/unimodules-app-loader/ios"
   Yoga:
@@ -2849,13 +2855,14 @@ SPEC CHECKSUMS:
   RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
   RNSVG: 0bd149b873018bc6e0e3321e2f6435bdba294460
   RNWorklets: 29fba88bb8be097d8dc233a3fae4093c7d11e24b
-  SDWebImage: 1bb6a1b84b6fe87b972a102bdc77dd589df33477
+  RustraJSI: c0f4e8534b5b8cd2a029de6562b0cf15bef71dc4
+  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   UMAppLoader: 71b50bcc31d86495e52c0b4cd17e2708bf297be3
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
 
-PODFILE CHECKSUM: 62025e0d68f6c055b4e573b9997d4325a8431b93
+PODFILE CHECKSUM: 67b8e54a23efa3561cbb13a30c905b88dc1a6d66
 
 COCOAPODS: 1.16.2
