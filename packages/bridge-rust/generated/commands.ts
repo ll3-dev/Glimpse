@@ -1,16 +1,16 @@
-import type { AddMessageInput, AddMessageOutput, CalculateNextReviewIoInput, CalculateNextReviewIoOutput, CalculateTagOverlapIoInput, CalculateTagOverlapIoOutput, CreateConversationInput, CreateConversationOutput, DeleteConversationInput, DeleteConversationOutput, DeleteMessageInput, DeleteMessageOutput, GetDueKnowledgeItemsIoInput, GetDueKnowledgeItemsIoOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, InitializeReviewScheduleIoInput, InitializeReviewScheduleIoOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
+import type { AddMessageInput, AddMessageOutput, CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteConversationInput, DeleteConversationOutput, DeleteMessageInput, DeleteMessageOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
 import { invoke } from '@rustra/types';
 
 export function addMessage(input: AddMessageInput): Promise<AddMessageOutput> {
   return invoke<AddMessageOutput>('addMessage', input);
 }
 
-export function calculateNextReview(input: CalculateNextReviewIoInput): Promise<CalculateNextReviewIoOutput> {
-  return invoke<CalculateNextReviewIoOutput>('calculateNextReview', input);
+export function calculateNextReview(input: CalculateNextReviewInput): Promise<CalculateNextReviewOutput> {
+  return invoke<CalculateNextReviewOutput>('calculateNextReview', input);
 }
 
-export function calculateTagOverlap(input: CalculateTagOverlapIoInput): Promise<CalculateTagOverlapIoOutput> {
-  return invoke<CalculateTagOverlapIoOutput>('calculateTagOverlap', input);
+export function calculateTagOverlap(input: CalculateTagOverlapInput): Promise<CalculateTagOverlapOutput> {
+  return invoke<CalculateTagOverlapOutput>('calculateTagOverlap', input);
 }
 
 export function createConversation(input: CreateConversationInput): Promise<CreateConversationOutput> {
@@ -25,16 +25,16 @@ export function deleteMessage(input: DeleteMessageInput): Promise<DeleteMessageO
   return invoke<DeleteMessageOutput>('deleteMessage', input);
 }
 
-export function getDueKnowledgeItems(input: GetDueKnowledgeItemsIoInput): Promise<GetDueKnowledgeItemsIoOutput> {
-  return invoke<GetDueKnowledgeItemsIoOutput>('getDueKnowledgeItems', input);
+export function getDueKnowledgeItems(input: GetDueKnowledgeItemsInput): Promise<GetDueKnowledgeItemsOutput> {
+  return invoke<GetDueKnowledgeItemsOutput>('getDueKnowledgeItems', input);
 }
 
 export function getKnowledgeItemById(input: GetKnowledgeItemByIdInput): Promise<GetKnowledgeItemByIdOutput> {
   return invoke<GetKnowledgeItemByIdOutput>('getKnowledgeItemById', input);
 }
 
-export function initializeReviewSchedule(input: InitializeReviewScheduleIoInput): Promise<InitializeReviewScheduleIoOutput> {
-  return invoke<InitializeReviewScheduleIoOutput>('initializeReviewSchedule', input);
+export function initializeReviewSchedule(input: InitializeReviewScheduleInput): Promise<InitializeReviewScheduleOutput> {
+  return invoke<InitializeReviewScheduleOutput>('initializeReviewSchedule', input);
 }
 
 export function listConversationMessages(input: ListConversationMessagesInput): Promise<ListConversationMessagesOutput> {

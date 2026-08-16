@@ -78,10 +78,10 @@
     {
       "name": "calculateNextReview",
       "commandId": 24,
-      "inputType": "CalculateNextReviewIoInput",
-      "outputType": "CalculateNextReviewIoOutput",
+      "inputType": "CalculateNextReviewInput",
+      "outputType": "CalculateNextReviewOutput",
       "inputSchema": {
-        "title": "CalculateNextReviewIoInput",
+        "title": "CalculateNextReviewInput",
         "type": "object",
         "required": [
           "feedbackType",
@@ -112,7 +112,7 @@
         }
       },
       "outputSchema": {
-        "title": "CalculateNextReviewIoOutput",
+        "title": "CalculateNextReviewOutput",
         "type": "object",
         "required": [
           "intervalMs",
@@ -133,10 +133,10 @@
     {
       "name": "calculateTagOverlap",
       "commandId": 23,
-      "inputType": "CalculateTagOverlapIoInput",
-      "outputType": "CalculateTagOverlapIoOutput",
+      "inputType": "CalculateTagOverlapInput",
+      "outputType": "CalculateTagOverlapOutput",
       "inputSchema": {
-        "title": "CalculateTagOverlapIoInput",
+        "title": "CalculateTagOverlapInput",
         "type": "object",
         "required": [
           "left",
@@ -152,7 +152,7 @@
         }
       },
       "outputSchema": {
-        "title": "CalculateTagOverlapIoOutput",
+        "title": "CalculateTagOverlapOutput",
         "type": "object",
         "required": [
           "overlap"
@@ -337,10 +337,10 @@
     {
       "name": "getDueKnowledgeItems",
       "commandId": 14,
-      "inputType": "GetDueKnowledgeItemsIoInput",
-      "outputType": "GetDueKnowledgeItemsIoOutput",
+      "inputType": "GetDueKnowledgeItemsInput",
+      "outputType": "GetDueKnowledgeItemsOutput",
       "inputSchema": {
-        "title": "GetDueKnowledgeItemsIoInput",
+        "title": "GetDueKnowledgeItemsInput",
         "type": "object",
         "required": [
           "now"
@@ -361,7 +361,7 @@
         }
       },
       "outputSchema": {
-        "title": "GetDueKnowledgeItemsIoOutput",
+        "title": "GetDueKnowledgeItemsOutput",
         "type": "object",
         "required": [
           "items"
@@ -715,10 +715,10 @@
     {
       "name": "initializeReviewSchedule",
       "commandId": 25,
-      "inputType": "InitializeReviewScheduleIoInput",
-      "outputType": "InitializeReviewScheduleIoOutput",
+      "inputType": "InitializeReviewScheduleInput",
+      "outputType": "InitializeReviewScheduleOutput",
       "inputSchema": {
-        "title": "InitializeReviewScheduleIoInput",
+        "title": "InitializeReviewScheduleInput",
         "type": "object",
         "required": [
           "createdAt"
@@ -738,7 +738,7 @@
         }
       },
       "outputSchema": {
-        "title": "InitializeReviewScheduleIoOutput",
+        "title": "InitializeReviewScheduleOutput",
         "type": "object",
         "required": [
           "nextReviewAt"

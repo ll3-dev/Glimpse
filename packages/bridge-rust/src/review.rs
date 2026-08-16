@@ -11,72 +11,72 @@ use crate::io::{
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CalculateTagOverlapIoInput {
+pub struct CalculateTagOverlapInput {
     #[serde(flatten)]
     pub input: CalculateTagOverlapInputIo,
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CalculateTagOverlapIoOutput {
+pub struct CalculateTagOverlapOutput {
     pub overlap: i32,
 }
 
 #[command]
-pub fn calculate_tag_overlap(input: CalculateTagOverlapIoInput) -> Result<CalculateTagOverlapIoOutput> {
+pub fn calculate_tag_overlap(input: CalculateTagOverlapInput) -> Result<CalculateTagOverlapOutput> {
     let core = crate::state::core_state();
     let core_input: glimpse_core::CalculateTagOverlapInput = input.input.into();
-    Ok(CalculateTagOverlapIoOutput {
+    Ok(CalculateTagOverlapOutput {
         overlap: core.calculate_tag_overlap(&core_input),
     })
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CalculateNextReviewIoInput {
+pub struct CalculateNextReviewInput {
     #[serde(flatten)]
     pub input: CalculateNextReviewInputIo,
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CalculateNextReviewIoOutput {
+pub struct CalculateNextReviewOutput {
     #[serde(flatten)]
     pub output: CalculateNextReviewOutputIo,
 }
 
 #[command]
-pub fn calculate_next_review(input: CalculateNextReviewIoInput) -> Result<CalculateNextReviewIoOutput> {
+pub fn calculate_next_review(input: CalculateNextReviewInput) -> Result<CalculateNextReviewOutput> {
     let core = crate::state::core_state();
     let core_input: glimpse_core::CalculateNextReviewInput = input.input.try_into()?;
     let output = core.calculate_next_review(&core_input);
-    Ok(CalculateNextReviewIoOutput {
+    Ok(CalculateNextReviewOutput {
         output: output.into(),
     })
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct InitializeReviewScheduleIoInput {
+pub struct InitializeReviewScheduleInput {
     #[serde(flatten)]
     pub input: InitializeReviewScheduleInputIo,
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct InitializeReviewScheduleIoOutput {
+pub struct InitializeReviewScheduleOutput {
     #[serde(flatten)]
     pub output: InitializeReviewScheduleOutputIo,
 }
 
 #[command]
 pub fn initialize_review_schedule(
-    input: InitializeReviewScheduleIoInput,
-) -> Result<InitializeReviewScheduleIoOutput> {
+    input: InitializeReviewScheduleInput,
+) -> Result<InitializeReviewScheduleOutput> {
     let core = crate::state::core_state();
     let core_input: glimpse_core::InitializeReviewScheduleInput = input.input.into();
     let output = core.initialize_review_schedule(&core_input);
-    Ok(InitializeReviewScheduleIoOutput {
+    Ok(InitializeReviewScheduleOutput {
         output: output.into(),
     })
 }

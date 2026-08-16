@@ -115,24 +115,24 @@ export type AddMessageOutput = {
   message: MessageIo;
 };
 
-export type CalculateNextReviewIoInput = {
+export type CalculateNextReviewInput = {
   lastReviewedAt?: number | null;
   nextReviewAt?: number | null;
   feedbackType: string;
   now: number;
 };
 
-export type CalculateNextReviewIoOutput = {
+export type CalculateNextReviewOutput = {
   intervalMs: number;
   nextReviewAt: number;
 };
 
-export type CalculateTagOverlapIoInput = {
+export type CalculateTagOverlapInput = {
   left: CoreKnowledgeItemLikeIo;
   right: CoreKnowledgeItemLikeIo;
 };
 
-export type CalculateTagOverlapIoOutput = {
+export type CalculateTagOverlapOutput = {
   overlap: number;
 };
 
@@ -158,12 +158,12 @@ export type DeleteMessageInput = {
 
 export type DeleteMessageOutput = Record<string, unknown>;
 
-export type GetDueKnowledgeItemsIoInput = {
+export type GetDueKnowledgeItemsInput = {
   now: number;
   limit?: number | null;
 };
 
-export type GetDueKnowledgeItemsIoOutput = {
+export type GetDueKnowledgeItemsOutput = {
   items: KnowledgeItemIo[];
 };
 
@@ -175,12 +175,12 @@ export type GetKnowledgeItemByIdOutput = {
   item?: KnowledgeItemIo | null;
 };
 
-export type InitializeReviewScheduleIoInput = {
+export type InitializeReviewScheduleInput = {
   createdAt: number;
   intervalMs?: number | null;
 };
 
-export type InitializeReviewScheduleIoOutput = {
+export type InitializeReviewScheduleOutput = {
   nextReviewAt: number;
   stability?: number | null;
   difficulty?: number | null;

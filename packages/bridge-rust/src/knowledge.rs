@@ -174,21 +174,21 @@ pub fn list_pending_knowledge_items_for_labeling(
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct GetDueKnowledgeItemsIoInput {
+pub struct GetDueKnowledgeItemsInput {
     pub now: i64,
     pub limit: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct GetDueKnowledgeItemsIoOutput {
+pub struct GetDueKnowledgeItemsOutput {
     pub items: Vec<KnowledgeItemIo>,
 }
 
 #[command]
 pub fn get_due_knowledge_items(
-    input: GetDueKnowledgeItemsIoInput,
-) -> Result<GetDueKnowledgeItemsIoOutput> {
+    input: GetDueKnowledgeItemsInput,
+) -> Result<GetDueKnowledgeItemsOutput> {
     let core = crate::state::core_state();
     let due_input = glimpse_core::GetDueKnowledgeItemsInput {
         now: input.now,
@@ -197,7 +197,7 @@ pub fn get_due_knowledge_items(
     let items = core
         .get_due_knowledge_items(&due_input)
         .map_err(crate::error::to_rustra_err)?;
-    Ok(GetDueKnowledgeItemsIoOutput {
+    Ok(GetDueKnowledgeItemsOutput {
         items: items.into_iter().map(Into::into).collect(),
     })
 }
