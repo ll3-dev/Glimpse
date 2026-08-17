@@ -1,11 +1,10 @@
 use crate::download;
 use crate::models::{
     CompletionRequest, CompletionResponse, EmbeddingRequest, EmbeddingResponse, LoadResult,
-    ManagedModelRecord, RuntimeDescriptor, RuntimeHealth, StreamDoneEvent, StreamTokenEvent,
+    ManagedModelRecord, RuntimeDescriptor, RuntimeHealth,
 };
 use crate::services::runtime_service::DesktopRuntimeService;
 use crate::state::DesktopRuntimeState;
-use tauri::Emitter;
 
 #[tauri::command]
 pub fn list_available_runtimes() -> Vec<RuntimeDescriptor> {
@@ -113,34 +112,29 @@ pub fn get_runtime_health(state: tauri::State<'_, DesktopRuntimeState>) -> Runti
 pub async fn stream_completion(
     request: CompletionRequest,
     request_id: String,
-    app: tauri::AppHandle,
     state: tauri::State<'_, DesktopRuntimeState>,
 ) -> Result<CompletionResponse, String> {
-    let app_handle = app.clone();
     let rid = request_id.clone();
     let state_clone: DesktopRuntimeState = (*state).clone();
 
+    // Token events go through the rustra package's push path: the
+    // `tauri_event_sink` installed in main.rs setup delivers them to the
+    // webview on channel `rustra://llm:stream-token` (same camelCase payload
+    // shape as the previous hand-written `app.emit`). Emitting from this
+    // blocking thread is safe — the sink only needs an `AppHandle`, which is
+    // internally thread-safe.
     let result = tauri::async_runtime::spawn_blocking(move || {
         state_clone.run_completion_stream(request, |token: &str| {
-            let _ = app_handle.emit(
-                "llm:stream-token",
-                StreamTokenEvent {
-                    request_id: rid.clone(),
-                    token: token.to_string(),
-                },
-            );
+            glimpse_bridge::emit_llm_token(&rid, token);
         })
     })
     .await
     .map_err(|e| format!("Streaming task failed: {}", e))??;
 
-    let _ = app.emit(
-        "llm:stream-done",
-        StreamDoneEvent {
-            request_id: request_id.clone(),
-            full_text: result.text.clone(),
-            stop_reason: result.stop_reason.clone(),
-        },
+    glimpse_bridge::emit_llm_done(
+        &request_id,
+        &result.text,
+        &result.stop_reason,
     );
 
     Ok(result)

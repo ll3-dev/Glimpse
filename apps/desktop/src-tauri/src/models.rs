@@ -83,20 +83,10 @@ pub struct LoadResult {
     pub runtime_id: String,
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StreamTokenEvent {
-    pub request_id: String,
-    pub token: String,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StreamDoneEvent {
-    pub request_id: String,
-    pub full_text: String,
-    pub stop_reason: String,
-}
+// LLM stream events (`llm:stream-token` / `llm:stream-done`) moved to the
+// rustra push path — payloads now live in `glimpse-bridge` `src/events.rs`
+// (`emit_llm_token` / `emit_llm_done`). The former `StreamTokenEvent` /
+// `StreamDoneEvent` structs were removed with that switch.
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

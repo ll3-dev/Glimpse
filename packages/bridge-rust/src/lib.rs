@@ -7,6 +7,7 @@ use rustra::ffi::FfiFormat;
 
 pub mod conversation;
 pub mod error;
+pub mod events;
 pub mod feedback;
 pub mod io;
 pub mod knowledge;
@@ -17,6 +18,7 @@ pub mod state;
 
 pub use conversation::conversation_package;
 pub use error::to_rustra_err;
+pub use events::{emit_llm_done, emit_llm_token, STREAM_DONE_EVENT, STREAM_TOKEN_EVENT};
 pub use feedback::feedback_package;
 pub use knowledge::knowledge_package;
 pub use message::message_package;

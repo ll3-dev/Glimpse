@@ -108,7 +108,14 @@ export function createLocalLLMProvider(
 
 /**
  * Stream a completion using the Rust `stream_completion` command.
- * Listens for `llm:stream-token` events and calls onToken for each.
+ *
+ * Token events now travel the rustra event-push path: Rust emits through the
+ * `glimpse.core` package and the `tauri_event_sink` installed in src-tauri
+ * setup delivers them on the `rustra://`-prefixed channel. `:` and `-` pass
+ * rustra's channel-name sanitization unchanged, so the suffix is identical to
+ * the old hand-written event name. The payload arrives as an already-parsed
+ * object (Tauri emit_str splices raw JSON into JS source) with the same
+ * camelCase shape as before — no JSON.parse, no handler changes.
  */
 export async function completeLocalLLMStream(
   messages: { role: string; content: string }[],
@@ -145,7 +152,7 @@ export async function completeLocalLLMStream(
 
   try {
     unlisten = await listen<{ requestId: string; token: string }>(
-      'llm:stream-token',
+      'rustra://llm:stream-token',
       (event) => {
         if (event.payload.requestId === requestId) {
           fullText += event.payload.token;

@@ -37,6 +37,19 @@ fn main() {
                 glimpse_bridge::init_core(glimpse_core::SharedCore::new(storage)).is_none(),
                 "glimpse core was initialized more than once"
             );
+
+            // rustra event push: route `Package::emit` (LLM token streaming)
+            // straight to the webview. With the sink installed, `emit` bypasses
+            // the polling EventBus and calls `app.emit_str` immediately —
+            // channel names follow `event_channel()` (`rustra://llm:stream-token`,
+            // `rustra://llm:stream-done`; `:`/`-` pass sanitization unchanged).
+            // `glimpse_package()` is Arc-backed and shares state with the
+            // `RustraState` managed above, so installing here covers every emit.
+            // `register_with_events` cannot be used because this shell wires
+            // `rustra_dispatch` through its own single `generate_handler!`.
+            glimpse_bridge::glimpse_package().set_event_sink(Some(rustra::tauri_support::tauri_event_sink(
+                app.handle().clone(),
+            )));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

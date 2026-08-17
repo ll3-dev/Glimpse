@@ -13,7 +13,14 @@ crate-type = ["lib", "staticlib"]
 glimpse-core = { path = "../core-rust" }
 # Pin TS and Rust sides together: the generated client contract hash is
 # coupled to the rustra crate version (see apps/desktop + @rustra/*).
-rustra = "=0.1.1"
+#
+# TEMPORARY local path link for week-3 development (event push + streaming
+# switch): rustra 0.1.2 is not on crates.io yet. The rustra checkout lives
+# OUTSIDE this repo, hence the upward relative path. Replace with
+# `rustra = "=0.1.2"` once 0.1.2 is published. The contract hash does not
+# embed the crate version, so regenerating while on the path dep produces
+# byte-identical generated/ output for unchanged commands.
+rustra = { path = "../../../rustra-bridge/crates/rustra" }
 schemars = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
