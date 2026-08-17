@@ -34,6 +34,10 @@ Key files:
 
 1. rustra commands + IO structs
    [`packages/bridge-rust/src/`](/Users/loopy/dev/ll3/Glimpse/packages/bridge-rust/src/)
+   (LLM stream events live in `src/events.rs` — `emit_llm_token`/`emit_llm_done`
+   push through the rustra event sink; desktop listens on
+   `rustra://llm:stream-token`. Mobile streaming over this path is a follow-up —
+   `subscribeEvent` from `@rustra/react-native` 0.1.2 is the intended API.)
 2. generated TS client (checked in)
    [`packages/bridge-rust/generated/`](/Users/loopy/dev/ll3/Glimpse/packages/bridge-rust/generated/)
 3. JSI native module (iOS `.mm` + C++ HostObject, Android JNI + Kotlin)

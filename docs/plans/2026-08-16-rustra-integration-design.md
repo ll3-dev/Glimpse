@@ -174,3 +174,35 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 4. **Review 큐** — 복습 예정 항목 조회·응답
 5. **기존 데이터 마이그레이션** — 구 버전에서 만든 glimpse.sqlite가 rustra 경로에서 읽히는지
 6. **에러 렌더링** — `RustraCommandError` 표시 확인
+
+## 3주차 결과 (2026-08-17 완료)
+
+계획된 3주차 스코프(푸시 이벤트 전달 + 데스크톱 스트리밍 전환 + 1MB 상한 방침)를 완료했다. rustra 쪽 구현(EventSink, Tauri 배선, RN JSI 콜백)은 rustra 레포 `feat/event-sink` 브랜치에서 선행 완료되어 있었다(커밋 `4fb4b238`~`71eaa221`).
+
+### 출하된 것
+
+- **rustra 0.1.2 준비 (rustra 레포)**: workspace/npm 버전 범프 + CHANGELOG Unreleased 정리 + `@rustra/react-native`·`@rustra/types` changeset. 게시는 하지 않음 — `release.yml`(npm changesets + crates.io 수동)로 사용자가 진행.
+- **Glimpse 로컬 링크**: `packages/bridge-rust`와 `apps/desktop/src-tauri`의 `rustra` Cargo 의존성을 임시 로컬 path(`../../../rustra-bridge/crates/rustra`)로 전환. rustra 레포가 Glimpse 밖에 있어 상대 경로가 위로 올라가는 모양새 — 주석으로 임시성과 원복 조건(0.1.2 게시 시 `=0.1.2` 정확 핀)을 명시. **npm `@rustra/*`는 그대로 0.1.1** — 데스크톱 프론트가 이번 전환에 필요로 한 새 API가 없다(`subscribeEvent`는 RN 전용, 데스크톱은 `@tauri-apps/api/event.listen` 유지).
+- **스트리밍 rustra 이벤트 전환**: `stream_completion`의 손글 `app.emit("llm:stream-token"/"llm:stream-done")` 을 `glimpse_bridge::emit_llm_token/emit_llm_done`(새 `packages/bridge-rust/src/events.rs`)로 교체. `main.rs` setup 이 `tauri_event_sink(app.handle().clone())` 를 `glimpse_package()` 에 설치 — emit 이 즉시 웹뷰로 푸시되고 폴링 버스는 우회된다. LLM 엔진(llama-cpp-2)과 커맨드 진입점은 그대로.
+- **채널명 해석**: `rustra://llm:stream-token` / `rustra://llm:stream-done` — `:`와 `-`가 Tauri 채널 규칙(영숫자/`-`/`/`/`:`/`_`, tauri-2.11.5 `is_event_name_valid` 확인)에 허용되어 rustra sanitize 를 통과해도 이름이 변형되지 않는다. 프론트 변경은 `local-llm-provider.ts` 의 listen 채널명 한 줄. 페이로드는 기존과 동일한 camelCase(`{requestId, token}` / `{requestId, fullText, stopReason}`) JSON 문자열 그대로 — 웹뷰 listen 은 파싱된 객체를 수신하므로 핸들러 로직 변경 없음.
+- **회귀 테스트**: bridge 유닛 2개(채널 sanitize 불변 + camelCase 페이로드/싱크-버스 상호배타) + 데스크톱 headless 통합 1개(`tauri::test::MockRuntime` 앱에 main.rs 와 동일한 싱크를 설치하고 두 채널 도착·페이로드 모양·버스 우회를 실제 Tauri 이벤트 시스템으로 왕복 검증).
+
+### 계획에서 달라진 점
+
+- **`desktop-llm-service.ts` 무변경**: 스트리밍 listen 은 `local-llm-provider.ts`(`completeLocalLLMStream`)에 있었다 — 서비스 파일의 listen 은 모델 다운로드 이벤트(`model:download-progress`/`model:download-done`)용으로 손글 emit 경로가 유지되므로 무관. 계획 문서의 서비스 파일 지목이 잘못된 것이었다.
+- **손글 `StreamTokenEvent`/`StreamDoneEvent` 구조체 삭제**: 페이로드 정의가 `glimpse-bridge/src/events.rs` 의 `json!` 리터럴로 이동하면서 데스크톱 `models.rs` 의 두 구조체는 미사용(dead_code)이 되어 제거. serde `rename_all = "camelCase"` 속성 대신 리터럴에 처음부터 camelCase 키를 적는다 — wire 모양은 동일.
+- **데스크톱 `rustra` Cargo 에 `tauri` feature 유지 필요**: `main.rs` 가 `rustra::tauri_support::tauri_event_sink` 를 직접 호출하므로. bridge 크레이트는 tauri feature 없이(순수하게) 유지 — events 모듈이 tauri 를 모르게, 채널 규칙 검증은 로컬 재현으로.
+
+### 알려진 후속 작업
+
+- **1MB FFI 상한 — 임베딩 실측 결과, 도달 안 함**: `run_embedding` 은 단일 텍스트 입력 → 단일 벡터 응답이다. nomic-embed-text-v1.5(768차원, `Vec<f32>`) 기준 JSON 페이로드 약 15.6KiB — 상한의 약 1/66. 배치 입력 확장 시에도 수백 텍스트를 묶어야 도달하므로 현재 계약(단일 입력)에서는 도달 불가능. **방침: 현행 유지, 청킹/상향 미구현** — 대량 배치 API 를 추가하는 시점에 재측정.
+- **모델 다운로드 이벤트는 손글 emit 유지**: `download.rs` 의 `model:download-progress`/`model:download-done` 은 이번 스코프 밖. rustra 이벤트로 통합하면 채널이 `rustra://model_download-progress` 로 바뀌고 프론트도 함께 옮겨야 한다 — 4주차 정리 시 후보.
+- **모바일 스트리밍 전환 미착수**: 계획대로 "데스크톱 먼저, 모바일 후속". RN 쪽은 `subscribeEvent` + JSI 콜백이 rustra 0.1.2 에 준비되어 있으므로 `llama.rn` 토큰 콜백을 `subscribeEvent('llm:stream-token')` 로 연결하는 작업만 남는다.
+- **로컬 path 링크 원복**: rustra 0.1.2 가 crates.io 에 게시되면 두 Cargo.toml 의 path 를 `=0.1.2` 정확 핀으로 되돌린다. 계약 해시는 크레이트 버전을 포함하지 않으므로(스키마에 버전 필드 없음 확인) 게시 버전과 로컬 빌드가 동일 커밋이면 generated/ 는 바이트 동일.
+
+### 사용자 수동 검증 체크리스트 (3주차 추가)
+
+1. **로컬 채팅 스트리밍** — 모델 로드 후 스트리밍 응답이 토큰 단위로 렌더링되는지(일괄 등장이 아니라)
+2. **스트리밍 완료** — 스트림 종료 시 최종 텍스트가 전체 표시되고 후속 입력 가능한지
+3. **동시 요청 격리** — 다른 탭/화면 전환 중에도 진행 중 스트림이 이어지는지
+
