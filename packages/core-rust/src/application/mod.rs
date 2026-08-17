@@ -97,6 +97,23 @@ mod tests {
     }
 
     #[test]
+    fn shared_core_lists_pending_labeling_items_saved_with_pending_status() {
+        let core = SharedCore::in_memory().unwrap();
+        let mut pending = create_test_item("pending-item", None);
+        pending.label_status = Some(crate::models::KnowledgeItemLabelStatus::Pending);
+        pending.label_requested_at = Some(500);
+        let mut done = create_test_item("done-item", None);
+        done.label_status = Some(crate::models::KnowledgeItemLabelStatus::Final);
+
+        core.save_knowledge_item(&pending).unwrap();
+        core.save_knowledge_item(&done).unwrap();
+
+        let items = core.list_pending_knowledge_items_for_labeling(10).unwrap();
+        let ids: Vec<&str> = items.iter().map(|item| item.id.as_str()).collect();
+        assert_eq!(ids, vec!["pending-item"]);
+    }
+
+    #[test]
     fn shared_core_rejects_messages_for_deleted_conversations() {
         let core = SharedCore::in_memory().unwrap();
         core.create_conversation(&Conversation {

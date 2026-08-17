@@ -28,8 +28,15 @@ fn parse_knowledge_item(row: &rusqlite::Row) -> rusqlite::Result<KnowledgeItem> 
         tags: row.get::<_, Option<String>>(6)?.and_then(|s| serde_json::from_str(&s).ok()),
         labels: row.get::<_, Option<String>>(7)?.and_then(|s| serde_json::from_str(&s).ok()),
         provisional_labels: row.get::<_, Option<String>>(8)?.and_then(|s| serde_json::from_str(&s).ok()),
-        label_status: row.get::<_, Option<String>>(9)?.and_then(|s| serde_json::from_str(&s).ok()),
-        label_source: row.get::<_, Option<String>>(10)?.and_then(|s| serde_json::from_str(&s).ok()),
+        // label_status/label_source: enum 열은 SQL 리터럴과 비교되는 plain
+        // 문자열로 저장한다(serde_json::to_string 이면 `"pending"` 처럼 인용되어
+        // list_pending_knowledge_items_for_labeling 의 WHERE 절과 영원히 불일치).
+        label_status: row
+            .get::<_, Option<String>>(9)?
+            .and_then(|s| serde_json::from_str(&s).ok()),
+        label_source: row
+            .get::<_, Option<String>>(10)?
+            .and_then(|s| serde_json::from_str(&s).ok()),
         label_version: row.get(11)?,
         label_score: row.get(12)?,
         label_requested_at: row.get(13)?,
@@ -69,8 +76,10 @@ impl SqliteStorage {
                 tags,
                 labels,
                 provisional_labels,
-                item.label_status.as_ref().map(serde_json::to_string).transpose()?,
-                item.label_source.as_ref().map(serde_json::to_string).transpose()?,
+                // plain 문자열 저장 — WHERE label_status = 'pending' 비교와
+                // 일치(serde 인용 금지). 읽기 쪽 파서는 인용/비인용 모두 수용.
+                item.label_status.map(|s| serde_json::to_value(s).ok().and_then(|v| v.as_str().map(String::from)).unwrap_or_default()),
+                item.label_source.map(|s| serde_json::to_value(s).ok().and_then(|v| v.as_str().map(String::from)).unwrap_or_default()),
                 item.label_version,
                 item.label_score,
                 item.label_requested_at,

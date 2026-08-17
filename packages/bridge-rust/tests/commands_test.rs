@@ -123,11 +123,6 @@ fn list_and_query_knowledge_commands_roundtrip() {
         .expect("seed should succeed");
 
     // Patch labelStatus through the bridge and verify it round-trips on read.
-    // NOTE: core's `list_pending_knowledge_items_for_labeling` compares the raw
-    // column against the SQL literal 'pending', but core persists enums via
-    // serde_json (yielding "\"pending\"" with quotes), so that filter matches
-    // nothing written through save/update. The bridge passes values through
-    // faithfully; the quirk lives in glimpse-core's storage layer.
     let patched = pkg
         .invoke_json(
             "updateKnowledgeItem",
@@ -172,11 +167,18 @@ fn list_and_query_knowledge_commands_roundtrip() {
     let pending = pkg
         .invoke_json("listPendingKnowledgeItemsForLabeling", json!({ "limit": 10 }))
         .expect("listPendingKnowledgeItemsForLabeling should succeed");
-    assert_eq!(
-        pending["items"].as_array().map(Vec::len),
-        Some(0),
-        "core's pending-labeling SQL filter never matches serde_json-quoted \
-         enum values (pre-existing glimpse-core quirk); bridge passes through"
+    // core 가 label_status enum 을 plain 문자열로 저장하도록 수정됨
+    // (serde 인용 시 WHERE 절과 불일치하던 버그) — k-3 이 pending 으로
+    // 패치되었으므로 이제 쿼리에 잡힌다.
+    let pending_ids: Vec<&str> = pending["items"]
+        .as_array()
+        .expect("items array")
+        .iter()
+        .map(|item| item["id"].as_str().expect("id string"))
+        .collect();
+    assert!(
+        pending_ids.contains(&"k-3"),
+        "expected patched-to-pending k-3 to be listed; got {pending_ids:?}"
     );
 
     let due = pkg
