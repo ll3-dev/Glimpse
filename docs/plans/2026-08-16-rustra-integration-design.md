@@ -206,3 +206,29 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 2. **스트리밍 완료** — 스트림 종료 시 최종 텍스트가 전체 표시되고 후속 입력 가능한지
 3. **동시 요청 격리** — 다른 탭/화면 전환 중에도 진행 중 스트림이 이어지는지
 
+## 4주차 결과 (2026-08-17 완료)
+
+정리 스코프를 완료했다. 브랜치 `fix/week4-core-cleanup`.
+
+### 출하된 것
+
+- **pending-labeling 코어 버그 수정** (`d4fc9f2`): `list_pending_knowledge_items_for_labeling` 의 WHERE 절이 SQL 리터럴 `'pending'` 과 비교하는데 저장 경로가 serde 인용 문자열(`"pending"`)을 기록해 필터가 영원히 빈 결과를 반환하던 버그. recommendation 저장소의 수동 매핑 패턴과 같게 enum 을 plain 문자열로 저장하도록 수정. TDD로 재현 테스트 추가(레드 확인) 후 수정했고, 브릿지 roundtrip 테스트가 이 버그를 '계약'으로 고착하던 단언도 올바른 동작으로 전환.
+- **미사용 C ABI FFI 제거** (`d7bf280`): 2주차 Nitro 브릿지 삭제로 소비자가 없어진 `packages/core-rust/src/ffi/`(2,817줄)와 `cbindgen.toml` 제거. 부수 효과로 glimpse-core 의 clippy unsafe-docs 경고 47건 소멸 — 워크스페이스 clippy 완전 클린.
+- **stale 문서 제거** (`aea5c9b`): `docs/nitro-rust-architecture.md`(912줄, 2026-03-26 기준 권장 아키텍처 문서) 삭제 — 현행 구조와 불일치하는 내용이 다수. 현재 아키텍처는 본 디자인 문서와 `apps/mobile/docs/rustra-bridge-development.md` 가 다룬다.
+
+### 남겨둔 것 (통합 이후 후속)
+
+- **모델 다운로드 이벤트의 rustra 전환**: 3주차 결과에 기록한 대로 후보. 채널명 변경(`rustra://model_download-progress`)과 프론트 동반 수정이 필요해 별도 변경으로.
+- **모바일 스트리밍 전환**: `llama.rn` 토큰 콜백 → `subscribeEvent('llm:stream-token')` 연결. rustra 0.1.2 게시 후 진행 권장.
+- **rustra 레포 `feat/event-sink` 머지 + 0.1.2 게시 + Glimpse path 링크 원복**: 사용자 액션(게시는 release.yml 수동). 원복 시 두 Cargo.toml 의 path 를 `=0.1.2` 핀으로.
+
+### 최종 상태 요약 (4주 마일스톤 전체)
+
+| 지표 | 통합 전 | 통합 후 |
+|---|---|---|
+| 도메인 브릿지 | 손글 Tauri 커맨드 25개 + Nitro C++ 쉼 + cbindgen FFI (이중) | rustra 단일 경로 (bridge-rust 크레이트) |
+| TS↔Rust 타입 동기화 | 수동 (camelCase 변환기 60줄 포함) | 코드젠 자동 (`bridge:generate`) |
+| 이벤트 전달 | 폴링/플랫폼별 손글 emit | rustra EventSink 푸시 (Tauri emit + JSI 콜백) |
+| rustra 기능 성장 | — | EventSink API, register_with_events, FFI 이벤트 싱크, RN JSI 콜백, subscribeEvent |
+| 테스트 | core 46 | core 32 + bridge 15 + desktop 2 (도메인 경로 전면 재검증) |
+
