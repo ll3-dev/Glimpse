@@ -43,6 +43,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:dev:llm": "tauri dev --features llm",
+    "tauri:build:llm": "tauri build --features llm"
   }
 }

@@ -18,6 +18,8 @@
     "desktop:typecheck": "bun run --cwd apps/desktop typecheck",
     "desktop:tauri:dev": "bun run --cwd apps/desktop tauri:dev",
     "desktop:tauri:build": "bun run --cwd apps/desktop tauri:build",
+    "desktop:tauri:dev:llm": "bun run --cwd apps/desktop tauri:dev:llm",
+    "desktop:tauri:build:llm": "bun run --cwd apps/desktop tauri:build:llm",
     "desktop:rust:check": "cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "bridge:generate": "cargo run -p glimpse-bridge --bin generate",
     "test": "bun run --cwd apps/mobile test",

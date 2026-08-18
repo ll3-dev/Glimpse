@@ -108,7 +108,13 @@ bun run start
 - `bun run desktop:typecheck`: 데스크톱 TypeScript 검사
 - `bun run desktop:tauri:dev`: Tauri 데스크톱 앱 실행
 - `bun run desktop:tauri:build`: Tauri 데스크톱 앱 빌드
+- `bun run desktop:tauri:build:llm`: 실추론(llama.cpp) 포함 Tauri 빌드 — cmake/C++ 툴체인 필요
 - `bun run desktop:rust:check`: Tauri Rust 셸 Cargo 검사
+
+### 데스크톱 LLM 빌드 두 가지
+
+- 기본 빌드(`tauri:build`)는 `llm` Cargo feature가 꺼져 있어 스텁 엔진으로 동작합니다. 이 빌드에서 로컬 모델 추론을 요청하면 스텁 텍스트 대신 **명시적 에러**가 반환됩니다(스텁 출력이 실제 데이터로 저장되는 것을 방지).
+- 실추론 빌드는 `bun run desktop:tauri:build:llm`(또는 `bun run desktop:tauri:dev:llm`)을 사용합니다. llama-cpp-2 네이티브 빌드에 cmake과 C++ 툴체인이 필요합니다.
 
 ## 모바일 앱 구조
 

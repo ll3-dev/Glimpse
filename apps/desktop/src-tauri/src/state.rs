@@ -208,17 +208,21 @@ impl DesktopRuntimeStateInner {
     }
 
     pub fn load_model(&self, model_id: String, runtime_id: String) -> Result<LoadResult, String> {
-        // 1. models 락: 경로만 읽고 즉시 해제
-        let model_path = {
+        // 1. models 락: 경로와 컨텍스트 길이만 읽고 즉시 해제
+        let (model_path, context_length) = {
             let models = self
                 .models
                 .lock()
                 .map_err(|_| "models lock poisoned".to_string())?;
-            models
+            let candidate = models
                 .iter()
                 .find(|candidate| candidate.id == model_id)
-                .and_then(|m| m.path.clone())
-                .ok_or_else(|| format!("Model not found or not downloaded: {}", model_id))?
+                .ok_or_else(|| format!("Model not found or not downloaded: {}", model_id))?;
+            let path = candidate
+                .path
+                .clone()
+                .ok_or_else(|| format!("Model not downloaded: {}", model_id))?;
+            (path, candidate.context_length)
         };
 
         // 2. 엔진에 실제 로드 — 실패하면 상태를 건드리지 않고 그대로 Err
@@ -228,7 +232,7 @@ impl DesktopRuntimeStateInner {
                 .llm_engine
                 .lock()
                 .map_err(|_| "llm engine lock poisoned".to_string())?;
-            engine.load_model(&model_path)?;
+            engine.load_model(&model_path, context_length)?;
         }
 
         // 3. 로드 성공 후에만 status 전환
@@ -307,7 +311,9 @@ impl DesktopRuntimeStateInner {
                 .lock()
                 .map_err(|_| "health lock poisoned".to_string())?;
             health.queue_depth = 1;
-            health.loaded_model_id = Some(request.model_id.clone());
+            // loaded_model_id 는 load_model 이 설정한 실제 로드 모델을
+            // 반영해야 한다 — 요청 model_id 로 덮어쓰면 모델 Y 로드 중
+            // 모델 X 로 요청했을 때 health 가 실제와 어긋난다.
         }
 
         let model_family = self
@@ -323,13 +329,14 @@ impl DesktopRuntimeStateInner {
 
         let prompt = format_messages_to_prompt(&request.messages, model_family.as_deref());
         let max_tokens = request.max_tokens.unwrap_or(256);
+        let temperature = request.temperature;
 
         let engine = self
             .llm_engine
             .lock()
             .map_err(|_| "llm engine lock poisoned".to_string())?;
 
-        let completion = engine.completion(&prompt, max_tokens);
+        let completion = engine.completion(&prompt, max_tokens, temperature);
 
         // 엔진 실패 시에도 queue_depth 를 복원한다 — 이전 코드는 조기
         // 반환 경로에서 1이 영구 잔존했다.
@@ -363,7 +370,7 @@ impl DesktopRuntimeStateInner {
                 .lock()
                 .map_err(|_| "health lock poisoned".to_string())?;
             health.queue_depth = 1;
-            health.loaded_model_id = Some(request.model_id.clone());
+            // loaded_model_id 는 load_model 이 설정한 실제 로드 모델을 반영
         }
 
         let model_family = self
@@ -379,13 +386,14 @@ impl DesktopRuntimeStateInner {
 
         let prompt = format_messages_to_prompt(&request.messages, model_family.as_deref());
         let max_tokens = request.max_tokens.unwrap_or(256);
+        let temperature = request.temperature;
 
         let engine = self
             .llm_engine
             .lock()
             .map_err(|_| "llm engine lock poisoned".to_string())?;
 
-        let completion = engine.completion_stream(&prompt, max_tokens, on_token);
+        let completion = engine.completion_stream(&prompt, max_tokens, temperature, on_token);
 
         // 엔진 실패 시에도 queue_depth 를 복원한다.
         {
