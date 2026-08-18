@@ -17,7 +17,7 @@ function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        'flex h-9 flex-row items-center justify-center rounded-lg bg-muted p-[3px]',
+        'flex h-9 flex-row items-center justify-center rounded-md bg-app-border/40 p-[3px]',
         Platform.select({ web: 'inline-flex w-fit', native: 'mr-auto' }),
         className
       )}
@@ -34,17 +34,17 @@ function TabsTrigger({
   return (
     <TextClassContext.Provider
       value={cn(
-        'text-sm font-medium text-foreground dark:text-muted-foreground',
-        value === props.value && 'dark:text-foreground'
+        'text-sm font-medium text-app-muted',
+        value === props.value && 'text-app-text font-semibold'
       )}>
       <TabsPrimitive.Trigger
         className={cn(
-          'flex flex-row items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 shadow-none shadow-black/5',
+          'flex flex-row items-center justify-center gap-1.5 rounded border border-transparent px-2.5 py-1',
           Platform.select({
             web: 'inline-flex cursor-default whitespace-nowrap transition-[color,box-shadow] web:h-[calc(100%-1px)] focus-visible:outline-1 focus-visible:outline-ring focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
           }),
           props.disabled && 'opacity-50',
-          props.value === value && 'bg-background dark:border-foreground/10 dark:bg-input/30',
+          props.value === value && 'bg-app-surface border-app-border shadow-xs',
           className
         )}
         {...props}

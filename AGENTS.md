@@ -49,9 +49,12 @@
 - Prefer extracting reusable UI to `src/components/<feature>` and stateful logic to hooks/utilities when it improves maintainability.
 - Mention the split assessment briefly in the final handoff when a touched file is over this threshold.
 
-## UI architecture (Atomic Design)
+## UI architecture & Design System (DESIGN.md)
 
-- Treat `src/ui` as atomic layer only (atoms/primitives/icons/tokens).
+- Always consult [`DESIGN.md`](/Users/loopy/dev/ll3/Glimpse/DESIGN.md) before creating, modifying, or styling any UI component or screen.
+- Adhere to Glimpse's design archetype: Notion-inspired warm minimalism (warm background `#f7f6f3`, card surface `#ffffff`, charcoal text `#37352f`, hairline border `#edece9`).
+- Always use semantic theme color tokens (`bg-app-bg`, `text-app-text`, `border-app-border`, `text-app-muted`, etc.) instead of arbitrary hardcoded color values.
+- Treat `src/ui` (and `packages/ui`) as atomic layer only (atoms/primitives/icons/tokens).
 - Keep `src/ui` components stateless and reusable; no feature/domain behavior inside.
 - Do not place composed, feature-aware UI in `src/ui` (for example list items, search bars, page headers tied to a screen flow).
 - Put composed UI in `src/components/<feature>` (or screen-local component files when scope is very small).

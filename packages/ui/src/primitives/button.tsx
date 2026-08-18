@@ -13,7 +13,7 @@ const buttonVariants = cva(
         default: "bg-app-text web:hover:opacity-90 active:opacity-90",
         destructive: "bg-destructive web:hover:opacity-90 active:opacity-90",
         outline:
-          "border border-app-border bg-white web:hover:bg-app-bg web:hover:text-app-text active:bg-app-bg",
+          "border border-app-border bg-app-surface web:hover:bg-app-bg web:hover:text-app-text active:bg-app-bg",
         secondary: "bg-app-bg web:hover:opacity-90 active:opacity-90",
         ghost:
           "web:hover:bg-accent web:hover:text-accent-foreground active:bg-accent",

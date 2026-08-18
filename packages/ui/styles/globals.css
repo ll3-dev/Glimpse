@@ -27,4 +27,17 @@
   --color-destructive: var(--color-app-accent);
   --color-destructive-foreground: #ffffff;
   --color-popover-foreground: var(--color-app-text);
+
+  --color-tag-mint-bg: #d9f3e1;
+  --color-tag-mint-text: #1a7f37;
+  --color-tag-peach-bg: #ffe8d4;
+  --color-tag-peach-text: #a04100;
+  --color-tag-sky-bg: #dcecfa;
+  --color-tag-sky-text: #0969da;
+  --color-tag-lavender-bg: #e6e0f5;
+  --color-tag-lavender-text: #6e3ab7;
+  --color-tag-rose-bg: #fde0ec;
+  --color-tag-rose-text: #cf222e;
+  --color-tag-neutral-bg: #f0eeec;
+  --color-tag-neutral-text: #787774;
 }

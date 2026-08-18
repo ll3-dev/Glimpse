@@ -17,7 +17,7 @@ function Input({
         props.editable === false && "opacity-50 web:cursor-not-allowed",
         className
       )}
-      placeholderTextColor={props.placeholderTextColor || "#8b95a1"}
+      placeholderTextColor={props.placeholderTextColor || "#9b9a97"}
       {...props}
     />
   );

@@ -34,7 +34,7 @@ export function Skeleton({ width, height, radius = 4, className }: SkeletonProps
   return (
     <SkeletonInner
       style={style}
-      className={cn('bg-gray-200 overflow-hidden', className)}
+      className={cn('bg-app-border overflow-hidden', className)}
     />
   );
 }
