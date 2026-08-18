@@ -36,12 +36,17 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
 
   // Use ref to persist streaming text across renders for abort saving
   const streamingTextRef = useRef('');
+  // 세대 일련번호 — abort 시 증가시켜 이전 세대의 지연 저장을 무효화한다
+  const generationSeqRef = useRef(0);
 
   const { data: messages } = useMessagesQuery(conversationId);
   const { mutateAsync: addMessage } = useAddMessageMutation();
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isGenerating) return false;
+
+    const generation = ++generationSeqRef.current;
+    const isCurrent = () => generation === generationSeqRef.current;
 
     setError(null);
     setIsGenerating(true);
@@ -70,6 +75,7 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
           onToken: (token) => {
             setStreamingText((prev) => prev + token);
           },
+          isCurrent,
         });
       } else {
         await addMessage({
@@ -104,9 +110,25 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
       const errorMessage = err instanceof Error ? err.message : '응답 생성에 실패했습니다.';
       setError(errorMessage);
       logger.error('Chat generation failed', err);
+
+      // 에러 시에도 부분 응답이 있으면 저장한다(abort 경로와 동일하게).
+      // 이미 abort 가 저장했거나 새 세대가 시작됐으면 건너뛴다.
+      if (isCurrent() && streamingTextRef.current.trim()) {
+        try {
+          await savePartialAssistantReply({
+            conversationId,
+            addMessage,
+            partialText: streamingTextRef.current,
+          });
+        } catch (saveErr) {
+          logger.error('Failed to save partial response after error', saveErr);
+        }
+      }
       return false;
     } finally {
-      setIsGenerating(false);
+      if (isCurrent()) {
+        setIsGenerating(false);
+      }
     }
   }, [conversationId, contextItem, isGenerating, addMessage, messages]);
 
@@ -114,6 +136,11 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
    * Abort current generation and save partial response
    */
   const abortAndSave = useCallback(async () => {
+    // 세대를 무효화 — 진행 중인 generateAssistantReply 가 resolve 돼도
+    // 저장을 건너뛰게 한다(이중 저장 방지).
+    const generation = ++generationSeqRef.current;
+    void generation;
+
     const runtime = getLocalLLMRuntime();
     await runtime.stopGeneration();
     try {

@@ -161,39 +161,42 @@ impl DesktopRuntimeStateInner {
     }
 
     pub fn load_model(&self, model_id: String, runtime_id: String) -> Result<LoadResult, String> {
-        let mut models = self
-            .models
-            .lock()
-            .map_err(|_| "models lock poisoned".to_string())?;
+        // 1. models 락: 경로만 읽고 즉시 해제
+        let model_path = {
+            let models = self
+                .models
+                .lock()
+                .map_err(|_| "models lock poisoned".to_string())?;
+            models
+                .iter()
+                .find(|candidate| candidate.id == model_id)
+                .and_then(|m| m.path.clone())
+                .ok_or_else(|| format!("Model not found or not downloaded: {}", model_id))?
+        };
 
-        let model_path = models
-            .iter()
-            .find(|candidate| candidate.id == model_id)
-            .and_then(|m| m.path.clone())
-            .ok_or_else(|| format!("Model not found or not downloaded: {}", model_id))?;
-
-        // Update status for all models
-        let mut found = false;
-        for model in models.iter_mut() {
-            if model.id == model_id {
-                model.status = "active".into();
-                found = true;
-            } else if model.status == "active" {
-                model.status = "ready".into();
-            }
-        }
-
-        if !found {
-            return Err(format!("Model not found: {}", model_id));
-        }
-
-        // Load into the LLM engine
+        // 2. 엔진에 실제 로드 — 실패하면 상태를 건드리지 않고 그대로 Err
+        //    (이전 구조는 status="active"를 먼저 바꿔 불일치 상태를 남겼다)
         {
             let mut engine = self
                 .llm_engine
                 .lock()
                 .map_err(|_| "llm engine lock poisoned".to_string())?;
             engine.load_model(&model_path)?;
+        }
+
+        // 3. 로드 성공 후에만 status 전환
+        {
+            let mut models = self
+                .models
+                .lock()
+                .map_err(|_| "models lock poisoned".to_string())?;
+            for model in models.iter_mut() {
+                if model.id == model_id {
+                    model.status = "active".into();
+                } else if model.status == "active" {
+                    model.status = "ready".into();
+                }
+            }
         }
 
         let mut health = self
@@ -251,13 +254,14 @@ impl DesktopRuntimeStateInner {
     }
 
     pub fn run_completion(&self, request: CompletionRequest) -> Result<CompletionResponse, String> {
-        let mut health = self
-            .health
-            .lock()
-            .map_err(|_| "health lock poisoned".to_string())?;
-        health.queue_depth = 1;
-        health.loaded_model_id = Some(request.model_id.clone());
-        drop(health);
+        {
+            let mut health = self
+                .health
+                .lock()
+                .map_err(|_| "health lock poisoned".to_string())?;
+            health.queue_depth = 1;
+            health.loaded_model_id = Some(request.model_id.clone());
+        }
 
         let model_family = self
             .models
@@ -278,13 +282,19 @@ impl DesktopRuntimeStateInner {
             .lock()
             .map_err(|_| "llm engine lock poisoned".to_string())?;
 
-        let text = engine.completion(&prompt, max_tokens)?;
+        let completion = engine.completion(&prompt, max_tokens);
 
-        let mut health = self
-            .health
-            .lock()
-            .map_err(|_| "health lock poisoned".to_string())?;
-        health.queue_depth = 0;
+        // 엔진 실패 시에도 queue_depth 를 복원한다 — 이전 코드는 조기
+        // 반환 경로에서 1이 영구 잔존했다.
+        {
+            let mut health = self
+                .health
+                .lock()
+                .map_err(|_| "health lock poisoned".to_string())?;
+            health.queue_depth = 0;
+        }
+
+        let text = completion?;
 
         Ok(CompletionResponse {
             text,
@@ -300,13 +310,14 @@ impl DesktopRuntimeStateInner {
     where
         F: FnMut(&str),
     {
-        let mut health = self
-            .health
-            .lock()
-            .map_err(|_| "health lock poisoned".to_string())?;
-        health.queue_depth = 1;
-        health.loaded_model_id = Some(request.model_id.clone());
-        drop(health);
+        {
+            let mut health = self
+                .health
+                .lock()
+                .map_err(|_| "health lock poisoned".to_string())?;
+            health.queue_depth = 1;
+            health.loaded_model_id = Some(request.model_id.clone());
+        }
 
         let model_family = self
             .models
@@ -327,13 +338,18 @@ impl DesktopRuntimeStateInner {
             .lock()
             .map_err(|_| "llm engine lock poisoned".to_string())?;
 
-        let text = engine.completion_stream(&prompt, max_tokens, on_token)?;
+        let completion = engine.completion_stream(&prompt, max_tokens, on_token);
 
-        let mut health = self
-            .health
-            .lock()
-            .map_err(|_| "health lock poisoned".to_string())?;
-        health.queue_depth = 0;
+        // 엔진 실패 시에도 queue_depth 를 복원한다.
+        {
+            let mut health = self
+                .health
+                .lock()
+                .map_err(|_| "health lock poisoned".to_string())?;
+            health.queue_depth = 0;
+        }
+
+        let text = completion?;
 
         Ok(CompletionResponse {
             text,

@@ -14,9 +14,8 @@ pub fn list_available_runtimes() -> Vec<RuntimeDescriptor> {
 #[tauri::command]
 pub fn list_managed_models(
     state: tauri::State<'_, DesktopRuntimeState>,
-) -> Vec<ManagedModelRecord> {
+) -> Result<Vec<ManagedModelRecord>, String> {
     DesktopRuntimeService::list_managed_models(&state)
-        .expect("models lock poisoned")
 }
 
 #[tauri::command]
@@ -103,9 +102,10 @@ pub fn run_embedding(
 }
 
 #[tauri::command]
-pub fn get_runtime_health(state: tauri::State<'_, DesktopRuntimeState>) -> RuntimeHealth {
+pub fn get_runtime_health(
+    state: tauri::State<'_, DesktopRuntimeState>,
+) -> Result<RuntimeHealth, String> {
     DesktopRuntimeService::get_runtime_health(&state)
-        .expect("health lock poisoned")
 }
 
 #[tauri::command]

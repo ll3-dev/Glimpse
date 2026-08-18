@@ -19,6 +19,13 @@ export async function generateAssistantReply(params: {
   addMessage: ChatMessageWriter;
   streamingTextRef: MutableRefObject<string>;
   onToken: (token: string) => void;
+  /**
+   * 이 세대가 여전히 유효한지 검사 — abort 시 stopCompletion 이
+   * generateStream 을 부분 텍스트로 resolve 시키고 abortAndSave 가
+   * 별도로 저장하므로, 저장 직전 false 면 이쪽 저장을 건너뛴다
+   * (이중 어시스턴트 메시지 방지).
+   */
+  isCurrent?: () => boolean;
 }): Promise<void> {
   const {
     runtime,
@@ -30,6 +37,7 @@ export async function generateAssistantReply(params: {
     addMessage,
     streamingTextRef,
     onToken,
+    isCurrent = () => true,
   } = params;
 
   await addMessage({
@@ -56,6 +64,10 @@ export async function generateAssistantReply(params: {
       onToken(token);
     },
   });
+
+  if (!isCurrent()) {
+    return; // abort 가 부분 저장을 이미 처리함
+  }
 
   await addMessage({
     conversationId,

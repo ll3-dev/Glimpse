@@ -13,26 +13,26 @@ function calculateNextInterval(
 }
 
 function ReviewScreen() {
-  const { data: items = [], isLoading } = useDueItemsQuery();
+  const { data: items = [], isLoading, isError, refetch } = useDueItemsQuery();
   const markAsReviewed = useMarkAsReviewedMutation();
   const postponeReview = usePostponeReviewMutation();
 
-  const handleRemembered = (item: typeof items[number]) => {
+  const handleRemembered = async (item: typeof items[number]) => {
     const currentInterval = item.nextReviewAt && item.lastReviewedAt
       ? item.nextReviewAt - item.lastReviewedAt
       : null;
     const nextInterval = calculateNextInterval(currentInterval, 'remembered');
     const nextReviewAt = Date.now() + nextInterval;
-    markAsReviewed.mutate({ itemId: item.id, nextReviewAt });
+    await markAsReviewed.mutateAsync({ itemId: item.id, nextReviewAt });
   };
 
-  const handlePostponed = (item: typeof items[number]) => {
+  const handlePostponed = async (item: typeof items[number]) => {
     const currentInterval = item.nextReviewAt && item.lastReviewedAt
       ? item.nextReviewAt - item.lastReviewedAt
       : null;
     const nextInterval = calculateNextInterval(currentInterval, 'postponed');
     const nextReviewAt = Date.now() + nextInterval;
-    postponeReview.mutate({ itemId: item.id, nextReviewAt });
+    await postponeReview.mutateAsync({ itemId: item.id, nextReviewAt });
   };
 
   return (
@@ -55,6 +55,17 @@ function ReviewScreen() {
           <div className="flex flex-col items-center gap-4 py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
             <p className="text-sm text-muted-foreground">Loading due items...</p>
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <p className="text-sm text-destructive">Failed to load due items.</p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              다시 시도
+            </button>
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
