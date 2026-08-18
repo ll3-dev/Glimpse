@@ -1,7 +1,7 @@
 # AI Provider SDK Integration (10분 단위 실행 SPEC)
 
 Date: 2026-02-17  
-Status: Draft (Chunked v2)  
+Status: Complete (2026-02 구현 완료, 이후 2026-08 rustra 전환으로 브릿지 계층은 교체됨)  
 Author: Claude (restructured by Codex)
 
 ## 문제

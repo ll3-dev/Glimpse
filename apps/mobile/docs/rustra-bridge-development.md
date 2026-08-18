@@ -38,8 +38,11 @@ Key files:
    `emit_llm_done`, `emit_model_download_progress`, `emit_model_download_done`
    push through the rustra event sink; desktop listens on `rustra://` prefixed channels.
    Mobile streaming aligns the event *contract* (channel names/payloads) via the
-   local `stream-events.ts` hub — the native `subscribeEvent` wiring is a
-   follow-up candidate.)
+   local `stream-events.ts` hub — the native `subscribeEvent` wiring is the
+   remaining follow-up: rustra upstream (main, ≥0.1.2) already ships the JSI
+   `onEvent`/`offEvent` callback contract and FFI event-sink registration, so
+   the Glimpse side only needs `RustraJSIBridge.cpp` C++ wiring + swapping the
+   local hub for `subscribeEvent`.)
 2. generated TS client (checked in)
    [`packages/bridge-rust/generated/`](/Users/loopy/dev/ll3/Glimpse/packages/bridge-rust/generated/)
 3. JSI native module (iOS `.mm` + C++ HostObject, Android JNI + Kotlin)
