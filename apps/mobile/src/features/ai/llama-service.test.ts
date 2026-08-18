@@ -384,6 +384,56 @@ describe('createLlamaService', () => {
       expect(result.text).toBe('안녕!');
       expect(streamedTokens).toEqual(['안녕', '!']);
     });
+
+    test('emits stream-token and stream-done events to event subscribers', async () => {
+      const { subscribeStreamToken, subscribeStreamDone, streamEventHub } = await import('./stream-events');
+      streamEventHub.clear();
+
+      const receivedTokens: { requestId: string; token: string }[] = [];
+      const receivedDones: { requestId: string; fullText: string }[] = [];
+
+      const unToken = subscribeStreamToken((payload) => {
+        receivedTokens.push(payload);
+      });
+      const unDone = subscribeStreamDone((payload) => {
+        receivedDones.push(payload);
+      });
+
+      mock.module('llama.rn', () => ({
+        initLlama: mock(async () => ({
+          completion: mock(async (_options: Record<string, unknown>, onToken?: (data: { token?: string }) => void) => {
+            onToken?.({ token: 'A' });
+            onToken?.({ token: 'B' });
+            return {
+              text: 'AB',
+              tokens_evaluated: 2,
+            };
+          }),
+          stopCompletion: mock(async () => {}),
+          release: mock(async () => {}),
+        })),
+      }));
+
+      const { createLlamaService: createService } = await import('./llama-service');
+      const service = createService();
+
+      await service.loadModel('/path/to/model.gguf');
+      const result = await service.generateStream('test prompt', {
+        requestId: 'req-custom-1',
+      });
+
+      expect(result.text).toBe('AB');
+      expect(receivedTokens).toEqual([
+        { requestId: 'req-custom-1', token: 'A' },
+        { requestId: 'req-custom-1', token: 'B' },
+      ]);
+      expect(receivedDones).toEqual([
+        { requestId: 'req-custom-1', fullText: 'AB', stopReason: 'completed' },
+      ]);
+
+      unToken();
+      unDone();
+    });
   });
 
   describe('unloadModel', () => {

@@ -112,7 +112,7 @@ export function createAppleIntelligenceToggleService(deps: AppleIntelligenceTogg
       return initialAvailability.available ? { available: false } : initialAvailability;
     });
     const [isCheckingAvailability, setIsCheckingAvailability] = useState(
-      checkAppleIntelligenceAvailability().available
+      () => checkAppleIntelligenceAvailability().available
     );
 
     useEffect(() => {

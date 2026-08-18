@@ -60,12 +60,22 @@ Assistant:
 `;
 }
 
-function buildChatMLPrompt(systemPrompt: string, userPrompt: string): string {
+function buildChatMLPrompt(systemPrompt: string, messages: LocalLLMMessage[]): string {
+  let prompt = `<|im_start|>system\n${systemPrompt}\n<|im_end|>\n`;
+  for (const message of messages) {
+    const role = message.role === 'user' ? 'user' : 'assistant';
+    prompt += `<|im_start|>${role}\n${message.content}\n<|im_end|>\n`;
+  }
+  prompt += `<|im_start|>assistant\n`;
+  return prompt;
+}
+
+function buildChatMLInstructionPrompt(systemPrompt: string, instruction: string): string {
   return `<|im_start|>system
 ${systemPrompt}
 <|im_end|>
 <|im_start|>user
-${userPrompt}
+${instruction}
 <|im_end|>
 <|im_start|>assistant
 `;
@@ -123,7 +133,7 @@ const qwenPreset: LocalLLMPreset = {
   family: "qwen-chatml",
   stopTokens: QWEN_STOP_TOKENS,
   defaults: {
-    maxTokens: 32_768,
+    maxTokens: 512,
     temperature: 0.3,
     topP: 0.9,
   },
@@ -137,11 +147,11 @@ const qwenPreset: LocalLLMPreset = {
   buildChatPrompt(messages, contextItem) {
     return buildChatMLPrompt(
       buildContextSystemPrompt(contextItem),
-      buildConversationText(messages),
+      messages,
     );
   },
   buildInstructionPrompt(task, instruction) {
-    return buildChatMLPrompt(buildMetadataSystemPrompt(task), instruction);
+    return buildChatMLInstructionPrompt(buildMetadataSystemPrompt(task), instruction);
   },
   sanitizeOutput(text) {
     return sanitizeWithMarkers(text, [
@@ -168,6 +178,13 @@ const FAMILY_PRESETS: Record<LocalLLMModelFamily, LocalLLMPreset> = {
 
 const MODEL_OVERRIDES: Partial<Record<string, Partial<LocalLLMPreset>>> = {
   'qwen3.5-4b-q4': {
+    defaults: {
+      maxTokens: 384,
+      temperature: 0.2,
+      topP: 0.85,
+    },
+  },
+  'qwen3.5-4b-unsloth-q4': {
     defaults: {
       maxTokens: 384,
       temperature: 0.2,

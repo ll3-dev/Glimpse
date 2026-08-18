@@ -11,6 +11,7 @@ import {
   toGenerateResult,
   validateModelPath,
 } from './llama-service.utils';
+import { emitStreamDone, emitStreamToken } from './stream-events';
 import { logger } from '@/src/utils/logger';
 
 type QueueCompletionContext = LlamaContext & {
@@ -164,6 +165,7 @@ export function createLlamaService(): LlamaService {
       const activeContext = requireContext();
       const streamingContext = activeContext as QueueCompletionContext;
       const startTime = Date.now();
+      const requestId = options?.requestId || Math.random().toString(36).substring(2, 11);
       let fullText = '';
       const completionOptions = buildCompletionOptions(prompt, options);
 
@@ -174,6 +176,7 @@ export function createLlamaService(): LlamaService {
           }
 
           fullText += data.token;
+          emitStreamToken(requestId, data.token);
           options?.onToken?.(data.token);
         };
 
@@ -188,7 +191,9 @@ export function createLlamaService(): LlamaService {
             const result = await promise;
             stopFn = null;
 
-            return toGenerateResult(result, startTime, fullText || result.text);
+            const finalText = fullText || result.text;
+            emitStreamDone(requestId, finalText, 'completed');
+            return toGenerateResult(result, startTime, finalText);
           } catch (error) {
             if (!isParallelModeDisabledError(error)) {
               throw error;
@@ -210,7 +215,9 @@ export function createLlamaService(): LlamaService {
           const result = await promise;
           stopFn = null;
 
-          return toGenerateResult(result, startTime, fullText || result.text);
+          const finalText = fullText || result.text;
+          emitStreamDone(requestId, finalText, 'completed');
+          return toGenerateResult(result, startTime, finalText);
         }
 
         stopFn = async () => {
@@ -222,13 +229,17 @@ export function createLlamaService(): LlamaService {
           }
 
           fullText += data.token;
+          emitStreamToken(requestId, data.token);
           options?.onToken?.(data.token);
         });
         stopFn = null;
 
-        return toGenerateResult(result, startTime, fullText || result.text);
+        const finalText = fullText || result.text;
+        emitStreamDone(requestId, finalText, 'completed');
+        return toGenerateResult(result, startTime, finalText);
       } catch (error) {
         stopFn = null;
+        emitStreamDone(requestId, fullText, 'error');
         logger.error('llama.rn streaming completion failed', error, {
           promptLength: prompt.length,
           tokenCount: fullText.length,

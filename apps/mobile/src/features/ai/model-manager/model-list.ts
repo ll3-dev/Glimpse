@@ -6,7 +6,7 @@
  */
 
 import type { LocalModelDefinition } from '@glimpse/shared';
-import { LOCAL_MODEL_REGISTRY } from '@glimpse/shared';
+import { getChatModels } from '@glimpse/shared';
 import type { LocalLLMModelFamily } from '../local-llm';
 
 /**
@@ -52,9 +52,7 @@ function toModelInfo(def: LocalModelDefinition): ModelInfo {
  * - Good performance/quality ratio
  * - Compatible with llama.rn
  */
-export const RECOMMENDED_MODELS: ModelInfo[] = LOCAL_MODEL_REGISTRY
-  .filter((m) => m.capabilities.includes('chat'))
-  .map(toModelInfo);
+export const RECOMMENDED_MODELS: ModelInfo[] = getChatModels('mobile').map(toModelInfo);
 
 /**
  * Get a model by its ID

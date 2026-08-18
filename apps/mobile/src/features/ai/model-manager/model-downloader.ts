@@ -212,16 +212,8 @@ export class ModelDownloader {
    */
   static async getTotalStorageUsed(): Promise<number> {
     const files = await this.listDownloadedModels();
-    let total = 0;
-
-    for (const file of files) {
-      const size = await this.getModelSize(file);
-      if (size) {
-        total += size;
-      }
-    }
-
-    return total;
+    const sizes = await Promise.all(files.map((file) => this.getModelSize(file)));
+    return sizes.reduce((total, size) => total + (size ?? 0), 0);
   }
 
   /**

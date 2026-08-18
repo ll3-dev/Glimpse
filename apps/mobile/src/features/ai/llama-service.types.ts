@@ -12,6 +12,7 @@ export interface GenerateResult {
 }
 
 export interface StreamOptions extends GenerateOptions {
+  requestId?: string;
   onToken?: (token: string) => void;
 }
 

@@ -25,7 +25,7 @@ function createMockService(): LlamaService {
 
 function createModel(overrides: Partial<LocalModel> = {}): LocalModel {
   return {
-    id: 'qwen3.5-4b-unsloth-q4',
+    id: 'qwen3.5-4b-q4',
     name: 'Qwen',
     family: 'qwen-chatml',
     path: 'file:///tmp/model.gguf',
@@ -51,8 +51,22 @@ describe('createLocalLLMRuntime', () => {
     const prompt = runtime.buildChatPrompt(createModel(), [{ role: 'user', content: '안녕' }]);
 
     expect(prompt).toContain('<|im_start|>system');
+    expect(prompt).toContain('<|im_start|>user\n안녕\n<|im_end|>');
     expect(prompt).toContain('<|im_start|>assistant');
-    expect(prompt).toContain('안녕');
+  });
+
+  test('builds multi-turn qwen prompts with distinct turn boundaries', () => {
+    const runtime = createLocalLLMRuntime(createMockService());
+    const prompt = runtime.buildChatPrompt(createModel(), [
+      { role: 'user', content: '첫 번째 질문' },
+      { role: 'assistant', content: '첫 번째 답변' },
+      { role: 'user', content: '두 번째 질문' },
+    ]);
+
+    expect(prompt).toContain('<|im_start|>user\n첫 번째 질문\n<|im_end|>');
+    expect(prompt).toContain('<|im_start|>assistant\n첫 번째 답변\n<|im_end|>');
+    expect(prompt).toContain('<|im_start|>user\n두 번째 질문\n<|im_end|>');
+    expect(prompt.endsWith('<|im_start|>assistant\n')).toBe(true);
   });
 
   test('merges preset defaults into generation options', async () => {

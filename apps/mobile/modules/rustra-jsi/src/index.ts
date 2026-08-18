@@ -13,6 +13,8 @@ export type RustraNative = {
   invokePostcardFFI(payload: ArrayBuffer): ArrayBuffer;
   getSchema?(): ArrayBuffer;
   getContractHash?(): ArrayBuffer;
+  onEvent?(name: string, callback: (payloadJson: string) => void): void;
+  offEvent?(name: string): void;
 };
 
 declare global {
