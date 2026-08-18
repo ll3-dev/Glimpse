@@ -13,6 +13,7 @@ import {
   useAvailableLocalModels,
   useSelectedLocalModelId,
 } from '@/src/features/settings';
+import { logger } from '@/src/utils/logger';
 import { resolveEffectiveTarget } from '@/src/features/ai/targets';
 import { useLocalLLMStoreConfig } from '@/src/stores/settings/local-llm.store';
 
@@ -98,6 +99,13 @@ export function useChatAISetup({
         const ready = await ensureReady();
         if (!cancelled) {
           setShowDialog(!ready);
+        }
+      } catch (error) {
+        // 준비 확인 실패(모델 동기화 오류 등) — 다이얼로그로 안내 경로
+        // 유지. unhandled rejection 방지.
+        logger.error('useChatAISetup: ensureReady failed', error);
+        if (!cancelled) {
+          setShowDialog(true);
         }
       } finally {
         if (!cancelled) {

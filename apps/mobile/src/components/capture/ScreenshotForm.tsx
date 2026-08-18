@@ -66,9 +66,11 @@ export function ScreenshotForm({
 
   const processImage = async (uri: string) => {
     setIsProcessing(true);
+    // OCR 미구현 — 스텁 텍스트를 실제 노트로 저장하지 않는다.
+    // 추출 텍스트 필드는 비워두고(사용자 직접 입력만 저장됨) 이미지
+    // 자체만 첨부 상태로 둔다.
     const program = Effect.sync(() => {
-      const stubText = `[OCR 스텁]\n\n이미지에서 추출된 텍스트가 여기에 표시됩니다.\n\n현재는 MVP 단계로, 실제 OCR 기능은 추후 구현 예정입니다.\n\n이미지 URI: ${uri.split('/').pop()}`;
-      onChangeExtractedText(stubText);
+      onChangeExtractedText('');
     }).pipe(
       Effect.delay(1000),
       Effect.ensuring(
@@ -79,6 +81,7 @@ export function ScreenshotForm({
     );
 
     await Effect.runPromise(program);
+    void uri;
   };
 
   const clearImage = () => {
@@ -142,7 +145,11 @@ export function ScreenshotForm({
           className="text-base leading-6 text-app-text"
           value={extractedText}
           onChangeText={onChangeExtractedText}
-          placeholder="이미지를 선택하면 텍스트가 추출됩니다..."
+          placeholder={
+            selectedImage
+              ? 'OCR 추출은 준비 중입니다 — 내용을 직접 입력해 주세요.'
+              : '이미지를 선택하면 텍스트가 추출됩니다...'
+          }
           placeholderTextColor="#9b9a97"
           multiline
           textAlignVertical="top"

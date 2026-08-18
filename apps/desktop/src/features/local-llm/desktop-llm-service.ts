@@ -8,6 +8,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getDesktopModels, type LocalModelDefinition } from '@glimpse/shared';
 
 // ============================================================================
 // Types
@@ -139,68 +140,32 @@ const DEFAULT_RUNTIMES: DesktopLLMRuntimeDescriptor[] = [
   },
 ];
 
-const DEFAULT_MODELS: ManagedModelRecord[] = [
-  {
-    id: 'qwen3.5-0.8b-q4',
-    name: 'Qwen 3.5 0.8B (Q4_K_M)',
-    family: 'qwen-chatml',
-    quantization: 'Q4_K_M',
+/**
+ * shared 레지스트리(packages/shared LOCAL_MODEL_REGISTRY)에서 파생 —
+ * 이 파일에 별도 하드코딩 목록을 유지하면 Rust models.rs 와 어긋난다
+ * (과거 4개만 있어 ministral 누락).
+ */
+function toManagedRecord(def: LocalModelDefinition): ManagedModelRecord {
+  return {
+    id: def.id,
+    name: `${def.name} (${def.quantization})`,
+    family: def.family,
+    quantization: def.quantization,
     format: 'gguf',
-    repo: 'unsloth/Qwen3.5-0.8B-GGUF',
-    filename: 'Qwen3.5-0.8B-Q4_K_M.gguf',
+    repo: def.repo,
+    filename: def.filename,
     path: null,
-    size: 536_870_912,
-    contextLength: 262_144,
-    supportsEmbedding: false,
-    supportsTools: true,
+    size: def.sizeBytes,
+    contextLength: def.contextLength,
+    supportsEmbedding: def.capabilities.includes('embedding'),
+    supportsTools: def.capabilities.includes('tools'),
     status: 'not_downloaded',
-  },
-  {
-    id: 'qwen3.5-2b-q4',
-    name: 'Qwen 3.5 2B (Q4_K_M)',
-    family: 'qwen-chatml',
-    quantization: 'Q4_K_M',
-    format: 'gguf',
-    repo: 'unsloth/Qwen3.5-2B-GGUF',
-    filename: 'Qwen3.5-2B-Q4_K_M.gguf',
-    path: null,
-    size: 1_277_802_496,
-    contextLength: 262_144,
-    supportsEmbedding: false,
-    supportsTools: true,
-    status: 'not_downloaded',
-  },
-  {
-    id: 'qwen3.5-4b-q4',
-    name: 'Qwen 3.5 4B (Q4_K_M)',
-    family: 'qwen-chatml',
-    quantization: 'Q4_K_M',
-    format: 'gguf',
-    repo: 'unsloth/Qwen3.5-4B-GGUF',
-    filename: 'Qwen3.5-4B-Q4_K_M.gguf',
-    path: null,
-    size: 2_738_398_208,
-    contextLength: 262_144,
-    supportsEmbedding: false,
-    supportsTools: true,
-    status: 'not_downloaded',
-  },
-  {
-    id: 'nomic-embed-text-v1.5-q8_0',
-    name: 'Nomic Embed v1.5 (Q8_0)',
-    family: 'nomic',
-    quantization: 'Q8_0',
-    format: 'gguf',
-    repo: 'nomic-ai/nomic-embed-text-v1.5-GGUF',
-    filename: 'nomic-embed-text-v1.5.Q8_0.gguf',
-    path: null,
-    size: 327_155_712,
-    contextLength: 8_192,
-    supportsEmbedding: true,
-    supportsTools: false,
-    status: 'not_downloaded',
-  },
-];
+  };
+}
+
+function getDefaultModels(): ManagedModelRecord[] {
+  return getDesktopModels().map(toManagedRecord);
+}
 
 export const defaultDesktopLLMMemoryPolicy: LocalLLMMemoryPolicy = {
   maxActiveModels: 1,
@@ -218,7 +183,7 @@ function isTauriRuntimeAvailable(): boolean {
 }
 
 function createStaticDesktopLLMService(): DesktopLLMService {
-  const models = DEFAULT_MODELS;
+  const models = getDefaultModels();
 
   return {
     listAvailableRuntimes: async () => DEFAULT_RUNTIMES,
@@ -301,7 +266,7 @@ export interface DesktopLLMOverview {
 
 export const DEFAULT_DESKTOP_LLM_OVERVIEW: DesktopLLMOverview = {
   runtimes: DEFAULT_RUNTIMES,
-  models: DEFAULT_MODELS,
+  models: getDefaultModels(),
   health: {
     status: 'healthy',
     loadedModelId: null,

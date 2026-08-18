@@ -55,9 +55,13 @@ export function CaptureModal() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  // 저장 진행 중 닫기 차단 — 진행 중 입력 유실 방지
+  const isBusy = saveMutation.isPending || metadataMutation.isPending;
+
   const handleClose = useCallback(() => {
+    if (isBusy) return;
     router.history.back();
-  }, [router]);
+  }, [router, isBusy]);
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {

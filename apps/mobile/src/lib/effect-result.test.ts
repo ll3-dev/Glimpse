@@ -3,7 +3,7 @@ import { Effect, Exit, Layer } from 'effect';
 import {
   appError,
   unknownError,
-  nitroModuleError,
+  nativeModuleError,
   storageError,
   isAppError,
   toAppError,
@@ -257,17 +257,17 @@ describe('runEffectSuccess', () => {
   });
 });
 
-describe('nitroModuleError', () => {
-  test('creates NITRO_MODULE_UNAVAILABLE error', () => {
-    const error = nitroModuleError('Module not loaded');
-    expect(error.code).toBe('NITRO_MODULE_UNAVAILABLE');
+describe('nativeModuleError', () => {
+  test('creates NATIVE_MODULE_UNAVAILABLE error', () => {
+    const error = nativeModuleError('Module not loaded');
+    expect(error.code).toBe('NATIVE_MODULE_UNAVAILABLE');
     expect(error.message).toBe('Module not loaded');
   });
 
-  test('creates NITRO_MODULE_UNAVAILABLE error with details', () => {
+  test('creates NATIVE_MODULE_UNAVAILABLE error with details', () => {
     const details = { cause: 'test', stack: 'test stack' };
-    const error = nitroModuleError('Module failed', details);
-    expect(error.code).toBe('NITRO_MODULE_UNAVAILABLE');
+    const error = nativeModuleError('Module failed', details);
+    expect(error.code).toBe('NATIVE_MODULE_UNAVAILABLE');
     expect(error.details).toEqual(details);
   });
 });

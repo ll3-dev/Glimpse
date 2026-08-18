@@ -37,7 +37,9 @@ Key files:
    (LLM stream and model download events live in `src/events.rs` — `emit_llm_token`,
    `emit_llm_done`, `emit_model_download_progress`, `emit_model_download_done`
    push through the rustra event sink; desktop listens on `rustra://` prefixed channels.
-   Mobile streaming is connected via `stream-events.ts` and `subscribeEvent`.)
+   Mobile streaming aligns the event *contract* (channel names/payloads) via the
+   local `stream-events.ts` hub — the native `subscribeEvent` wiring is a
+   follow-up candidate.)
 2. generated TS client (checked in)
    [`packages/bridge-rust/generated/`](/Users/loopy/dev/ll3/Glimpse/packages/bridge-rust/generated/)
 3. JSI native module (iOS `.mm` + C++ HostObject, Android JNI + Kotlin)

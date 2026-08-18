@@ -16,8 +16,8 @@
         "@glimpse/hooks": "workspace:*",
         "@glimpse/shared": "workspace:*",
         "@glimpse/ui": "workspace:*",
-        "@rustra/tauri": "0.1.1",
-        "@rustra/types": "0.1.1",
+        "@rustra/tauri": "0.1.2",
+        "@rustra/types": "0.1.2",
         "@tailwindcss/vite": "^4.2.2",
         "@tanstack/react-query": "^5.95.2",
         "@tanstack/react-router": "^1.168.7",
@@ -65,8 +65,8 @@
         "@rn-primitives/switch": "^1.2.0",
         "@rn-primitives/tabs": "^1.2.0",
         "@rn-primitives/tooltip": "~1.2.0",
-        "@rustra/react-native": "0.1.1",
-        "@rustra/types": "0.1.1",
+        "@rustra/react-native": "0.1.2",
+        "@rustra/types": "0.1.2",
         "@shopify/flash-list": "2.0.2",
         "@tanstack/react-query": "^5.83.0",
         "@toss/hangul": "^1.7.1",
@@ -792,9 +792,9 @@
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
 
-    "@rustra/react-native": ["@rustra/react-native@0.1.1", "", { "dependencies": { "@rustra/types": "^0.1.1" } }, "sha512-E00IrC2lltwBJZDWv5uQZPdB/2cc675T9wNMvxaGWNtBQp+KylxzJR8ayjeO6s1ewzLABX2ImGLcV6U4qAmp9A=="],
+    "@rustra/react-native": ["@rustra/react-native@0.1.2", "", { "dependencies": { "@rustra/types": "^0.1.1" } }, "sha512-CdY90jnDCHLgCbFKR/WAMXMAmymBj74PqIIlIOEIsBqHU9lMDEmf/4Ni1M/x6b+xDzg5IdEqBWqFsWbtLXhEmQ=="],
 
-    "@rustra/tauri": ["@rustra/tauri@0.1.1", "", { "dependencies": { "@rustra/types": "^0.1.1" } }, "sha512-TKvAQPjlSHBdn06DWJrLGt7ZnxKf9R8ph/w55JUjrm6s81bPul7poJpGN5k6eQwDrsh9FApc0VJPixesb0EHkw=="],
+    "@rustra/tauri": ["@rustra/tauri@0.1.2", "", { "dependencies": { "@rustra/types": "^0.1.1" } }, "sha512-CiPaCL0wgDfp/FxGQcMALHLmhwQTT6WQEek+85LFFUr/oZEvUi8vs4KstR+gFOiocjJyD3RkNJo+jxYQOraanA=="],
 
     "@rustra/types": ["@rustra/types@0.1.1", "", {}, "sha512-6Vqm/MUnNIPy/xMiQczoEJ490cMGFj6SJlWB/tnb57CH86UbWio4vgbNofcvi1dJZyd4YPm+n2Yxjg7BbyWoGA=="],
 
@@ -2568,6 +2568,10 @@
 
     "@expo/prebuild-config/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
 
+    "@glimpse/desktop/@rustra/types": ["@rustra/types@0.1.2", "", {}, "sha512-jNYG/HEvicdGxp5eyZIiDpkv7loscpSXGiKKMTjOAkjbp7SFJKF4smmJrR2GPirOlaugY7ug7pJIapB8BxRPug=="],
+
+    "@glimpse/mobile/@rustra/types": ["@rustra/types@0.1.2", "", {}, "sha512-jNYG/HEvicdGxp5eyZIiDpkv7loscpSXGiKKMTjOAkjbp7SFJKF4smmJrR2GPirOlaugY7ug7pJIapB8BxRPug=="],
+
     "@inquirer/core/wrap-ansi": ["wrap-ansi@6.2.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA=="],
 
     "@istanbuljs/load-nyc-config/camelcase": ["camelcase@5.3.1", "", {}, "sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg=="],
@@ -2605,6 +2609,10 @@
     "@react-native/dev-middleware/open": ["open@7.4.2", "", { "dependencies": { "is-docker": "^2.0.0", "is-wsl": "^2.1.1" } }, "sha512-MVHddDVweXZF3awtlAS+6pgKLlm/JgxZ90+/NBurBoQctVOOB/zDdVjcyPzQ+0laDGbsWgrRkflI65sQeOgT9Q=="],
 
     "@react-native/dev-middleware/serve-static": ["serve-static@1.16.3", "", { "dependencies": { "encodeurl": "~2.0.0", "escape-html": "~1.0.3", "parseurl": "~1.3.3", "send": "~0.19.1" } }, "sha512-x0RTqQel6g5SY7Lg6ZreMmsOzncHFU7nhnRWkKgWuMTu5NN0DR5oruckMqRvacAN9d5w6ARnRBXl9xhDCgfMeA=="],
+
+    "@rustra/react-native/@rustra/types": ["@rustra/types@0.1.2", "", {}, "sha512-jNYG/HEvicdGxp5eyZIiDpkv7loscpSXGiKKMTjOAkjbp7SFJKF4smmJrR2GPirOlaugY7ug7pJIapB8BxRPug=="],
+
+    "@rustra/tauri/@rustra/types": ["@rustra/types@0.1.2", "", {}, "sha512-jNYG/HEvicdGxp5eyZIiDpkv7loscpSXGiKKMTjOAkjbp7SFJKF4smmJrR2GPirOlaugY7ug7pJIapB8BxRPug=="],
 
     "@tailwindcss/node/lightningcss": ["lightningcss@1.32.0", "", { "dependencies": { "detect-libc": "^2.0.3" }, "optionalDependencies": { "lightningcss-android-arm64": "1.32.0", "lightningcss-darwin-arm64": "1.32.0", "lightningcss-darwin-x64": "1.32.0", "lightningcss-freebsd-x64": "1.32.0", "lightningcss-linux-arm-gnueabihf": "1.32.0", "lightningcss-linux-arm64-gnu": "1.32.0", "lightningcss-linux-arm64-musl": "1.32.0", "lightningcss-linux-x64-gnu": "1.32.0", "lightningcss-linux-x64-musl": "1.32.0", "lightningcss-win32-arm64-msvc": "1.32.0", "lightningcss-win32-x64-msvc": "1.32.0" } }, "sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ=="],
 

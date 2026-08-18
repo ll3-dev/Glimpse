@@ -3,8 +3,6 @@
  *
  * Uses external AI APIs (OpenAI, Anthropic, Google) for metadata generation.
  * Requires user-provided API keys.
- *
- * TODO: Integrate actual API calls for each provider
  */
 
 import { Effect } from 'effect';
