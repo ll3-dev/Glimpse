@@ -18,13 +18,19 @@ import { loadApiKey, loadSettings } from '@/lib/settings-storage';
 
 type BYOKProviderType = 'openai' | 'anthropic' | 'google' | 'deepseek' | 'custom';
 
+/** 요청 파라미터 전달 옵션 — 미지정 시 프로바이더 기본값 사용 */
+interface BodyOpts {
+  maxTokens?: number;
+  temperature?: number;
+}
+
 interface APIConfig {
   resolveEndpoint: (baseUrl: string, model: string, apiKey: string) => string;
   buildHeaders: (apiKey: string) => Record<string, string>;
-  buildBody: (prompt: string, model: string, systemPrompt?: string) => string;
+  buildBody: (prompt: string, model: string, systemPrompt?: string, opts?: BodyOpts) => string;
   parseResponse: (data: unknown) => string;
   /** Build a streaming request body (messages format). */
-  buildStreamBody?: (messages: { role: string; content: string }[], model: string) => string;
+  buildStreamBody?: (messages: { role: string; content: string }[], model: string, opts?: BodyOpts) => string;
   /** Extract token text from an SSE data payload. */
   parseSSEToken?: (data: unknown) => string;
   /** Whether this provider uses streaming-by-default endpoint or query param. */
@@ -38,7 +44,7 @@ const API_CONFIGS: Record<string, APIConfig> = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     }),
-    buildBody: (prompt, model, systemPrompt) =>
+    buildBody: (prompt, model, systemPrompt, opts) =>
       JSON.stringify({
         model,
         messages: systemPrompt
@@ -47,19 +53,19 @@ const API_CONFIGS: Record<string, APIConfig> = {
               { role: 'user', content: prompt },
             ]
           : [{ role: 'user', content: prompt }],
-        max_tokens: 150,
-        temperature: 0.3,
+        max_tokens: opts?.maxTokens ?? 150,
+        temperature: opts?.temperature ?? 0.3,
       }),
     parseResponse: (data) => {
       const r = data as { choices?: { message?: { content?: string } }[] };
       return r.choices?.[0]?.message?.content ?? '';
     },
-    buildStreamBody: (messages, model) =>
+    buildStreamBody: (messages, model, opts) =>
       JSON.stringify({
         model,
         messages,
-        max_tokens: 1024,
-        temperature: 0.7,
+        max_tokens: opts?.maxTokens ?? 1024,
+        temperature: opts?.temperature ?? 0.7,
         stream: true,
       }),
     parseSSEToken: (data) => {
@@ -73,7 +79,7 @@ const API_CONFIGS: Record<string, APIConfig> = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     }),
-    buildBody: (prompt, model, systemPrompt) =>
+    buildBody: (prompt, model, systemPrompt, opts) =>
       JSON.stringify({
         model,
         messages: systemPrompt
@@ -82,19 +88,19 @@ const API_CONFIGS: Record<string, APIConfig> = {
               { role: 'user', content: prompt },
             ]
           : [{ role: 'user', content: prompt }],
-        max_tokens: 150,
-        temperature: 0.3,
+        max_tokens: opts?.maxTokens ?? 150,
+        temperature: opts?.temperature ?? 0.3,
       }),
     parseResponse: (data) => {
       const r = data as { choices?: { message?: { content?: string } }[] };
       return r.choices?.[0]?.message?.content ?? '';
     },
-    buildStreamBody: (messages, model) =>
+    buildStreamBody: (messages, model, opts) =>
       JSON.stringify({
         model,
         messages,
-        max_tokens: 1024,
-        temperature: 0.7,
+        max_tokens: opts?.maxTokens ?? 1024,
+        temperature: opts?.temperature ?? 0.7,
         stream: true,
       }),
     parseSSEToken: (data) => {
@@ -109,7 +115,7 @@ const API_CONFIGS: Record<string, APIConfig> = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     }),
-    buildBody: (prompt, model, systemPrompt) =>
+    buildBody: (prompt, model, systemPrompt, opts) =>
       JSON.stringify({
         model,
         messages: systemPrompt
@@ -118,19 +124,19 @@ const API_CONFIGS: Record<string, APIConfig> = {
               { role: 'user', content: prompt },
             ]
           : [{ role: 'user', content: prompt }],
-        max_tokens: 150,
-        temperature: 0.3,
+        max_tokens: opts?.maxTokens ?? 150,
+        temperature: opts?.temperature ?? 0.3,
       }),
     parseResponse: (data) => {
       const r = data as { choices?: { message?: { content?: string } }[] };
       return r.choices?.[0]?.message?.content ?? '';
     },
-    buildStreamBody: (messages, model) =>
+    buildStreamBody: (messages, model, opts) =>
       JSON.stringify({
         model,
         messages,
-        max_tokens: 1024,
-        temperature: 0.7,
+        max_tokens: opts?.maxTokens ?? 1024,
+        temperature: opts?.temperature ?? 0.7,
         stream: true,
       }),
     parseSSEToken: (data) => {
@@ -145,10 +151,10 @@ const API_CONFIGS: Record<string, APIConfig> = {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     }),
-    buildBody: (prompt, model, systemPrompt) =>
+    buildBody: (prompt, model, systemPrompt, opts) =>
       JSON.stringify({
         model,
-        max_tokens: 150,
+        max_tokens: opts?.maxTokens ?? 150,
         ...(systemPrompt ? { system: systemPrompt } : {}),
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -156,12 +162,12 @@ const API_CONFIGS: Record<string, APIConfig> = {
       const r = data as { content?: { text?: string }[] };
       return r.content?.[0]?.text ?? '';
     },
-    buildStreamBody: (messages, model) => {
+    buildStreamBody: (messages, model, opts) => {
       const systemMsg = messages.find((m) => m.role === 'system');
       const nonSystem = messages.filter((m) => m.role !== 'system');
       return JSON.stringify({
         model,
-        max_tokens: 1024,
+        max_tokens: opts?.maxTokens ?? 1024,
         stream: true,
         ...(systemMsg ? { system: systemMsg.content } : {}),
         messages: nonSystem,
@@ -180,7 +186,7 @@ const API_CONFIGS: Record<string, APIConfig> = {
     resolveEndpoint: (_baseUrl, model, apiKey) =>
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`,
     buildHeaders: () => ({ 'Content-Type': 'application/json' }),
-    buildBody: (prompt, _model, systemPrompt) =>
+    buildBody: (prompt, _model, systemPrompt, opts) =>
       JSON.stringify({
         contents: [
           ...(systemPrompt
@@ -188,6 +194,10 @@ const API_CONFIGS: Record<string, APIConfig> = {
             : []),
           { role: 'user', parts: [{ text: prompt }] },
         ],
+        generationConfig: {
+          maxOutputTokens: opts?.maxTokens ?? 150,
+          temperature: opts?.temperature ?? 0.3,
+        },
       }),
     parseResponse: (data) => {
       const r = data as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
@@ -246,7 +256,10 @@ export function createBYOKProvider(config?: BYOKProviderConfig): AIProvider {
       const response = await fetchFn(endpoint, {
         method: 'POST',
         headers: apiConfig.buildHeaders(apiKey),
-        body: apiConfig.buildBody(request.prompt, model, request.systemPrompt),
+        body: apiConfig.buildBody(request.prompt, model, request.systemPrompt, {
+          maxTokens: request.maxTokens,
+          temperature: request.temperature,
+        }),
       });
 
       if (!response.ok) {
@@ -394,6 +407,23 @@ export async function completeBYOKStream(
     });
 
     if (!response.ok) {
+      // 401/403/429 는 비스트리밍 폴백으로 넘기면 안 된다 — 같은 이유로
+      // 재요청해 레이트 리밋을 2배 소모하고 키 문제를 감춘다. complete 와
+      // 동일하게 매핑해 즉시 실패시킨다.
+      if (response.status === 401 || response.status === 403) {
+        throwProviderError(
+          'AI_PROVIDER_UNAUTHORIZED',
+          `Streaming API request failed with status ${response.status} (invalid key)`,
+          'byok',
+        );
+      }
+      if (response.status === 429) {
+        throwProviderError(
+          'AI_PROVIDER_RATE_LIMITED',
+          'Streaming API request rate limited (429)',
+          'byok',
+        );
+      }
       return null; // Fall back to non-streaming
     }
 
@@ -404,6 +434,17 @@ export async function completeBYOKStream(
     const reader = response.body.getReader();
     return consumeSSEStream(reader, apiConfig.parseSSEToken, callbacks);
   } catch (error) {
+    // 의도적 provider 에러(401/403/429 매핑)는 폴백하지 않고 그대로
+    // 전파한다 — catch 가 삼키면 폴백 재요청이 레이트 리밋을 2배 소모한다.
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof (error as { code?: unknown }).code === 'string' &&
+      String((error as { code: unknown }).code).startsWith('AI_PROVIDER_')
+    ) {
+      throw error;
+    }
     // 실패 원인이 유실되지 않게 기록하고 비스트리밍으로 폴백한다
     console.warn('[byok] streaming failed, falling back to non-streaming:', error);
     return null;

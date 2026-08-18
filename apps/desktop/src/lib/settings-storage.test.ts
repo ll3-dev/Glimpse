@@ -129,4 +129,33 @@ describe('settings-storage 키 분리', () => {
 
     setTauriWindow(false);
   });
+
+  test('구 레거시 키(glimpse-desktop-settings)의 평문 키는 이관 후 삭제된다', async () => {
+    setTauriWindow(true);
+    // 구버전 포맷의 레거시 키 시딩 — V1 키는 없음
+    storage.set(
+      'glimpse-desktop-settings',
+      JSON.stringify({
+        aiProvider: 'byok',
+        byok: { provider: 'openai', apiKey: 'sk-old-plaintext', baseUrl: '', model: '' },
+        localLlm: { enabled: false, selectedModel: null },
+      }),
+    );
+
+    const { loadSettings, loadApiKey } = await import('./settings-storage');
+    loadSettings();
+
+    // 이관(fire-and-forget) 완료 대기
+    await new Promise((r) => setTimeout(r, 20));
+
+    // 키체인으로 이관됐고
+    expect(invokeMock.mock.calls.some((c) => c[0] === 'set_secret')).toBe(true);
+    const key = await loadApiKey('openai');
+    expect(key).toBe('sk-old-plaintext');
+
+    // 레거시 키는 localStorage 에서 완전히 제거 — 평문 잔존 차단
+    expect(storage.has('glimpse-desktop-settings')).toBe(false);
+
+    setTauriWindow(false);
+  });
 });

@@ -103,6 +103,9 @@ async function migrateLegacyApiKey(explicitKey?: string): Promise<void> {
       };
       localStorage.setItem(SETTINGS_KEY_V1, JSON.stringify(sanitized));
     }
+    // 레거시 키 전체 제거 — 이관 후에도 남아 있으면 평문 키가 디스크에
+    // 영구 잔존한다. V1 sanitized 저장 후에 수행해 실패 시 재시도 보존.
+    localStorage.removeItem(LEGACY_SETTINGS_KEY);
   } catch {
     // 키체인 접근 실패 — localStorage 값 유지, 다음 시작에 재시도
   }

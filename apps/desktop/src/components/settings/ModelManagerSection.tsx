@@ -104,6 +104,18 @@ export function ModelManagerSection({
   // Currently loaded model id from health
   const activeModelId = overview?.health?.loadedModelId ?? null;
 
+  // ── Mutation error exposure ──────────────────────────────────────────────
+  // download 실패는 이벤트로 이미 표시되지만 load/unload/delete 실패는
+  // react-query 에러 상태만 있고 UI 노출이 없었다 — 무음 실패 차단.
+  const mutationError =
+    loadMutation.error ??
+    unloadMutation.error ??
+    deleteMutation.error ??
+    cancelDownloadMutation.error ??
+    downloadMutation.error;
+  const mutationErrorText =
+    mutationError instanceof Error ? mutationError.message : mutationError ? String(mutationError) : null;
+
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleDownload = (model: LocalModelDefinition) => {
@@ -150,6 +162,7 @@ export function ModelManagerSection({
 
       {/* Runtime status & scan refresh */}
       {enabled && (
+        <>
         <div className="flex items-center justify-between gap-2 mb-4 text-sm">
           <div className="flex items-center gap-2">
             <span
@@ -191,6 +204,16 @@ export function ModelManagerSection({
             )}
           </div>
         </div>
+
+        {/* 뮤테이션 에러 — load/unload/delete 실패가 무음이 되지 않게 */}
+        {mutationErrorText && (
+          <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2">
+            <p className="text-xs text-destructive" title={mutationErrorText}>
+              작업 실패: {mutationErrorText}
+            </p>
+          </div>
+       )}
+        </>
       )}
 
       {/* Disabled state */}

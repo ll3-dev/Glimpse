@@ -7,6 +7,8 @@ interface ReviewCardProps {
   item: KnowledgeItem;
   onRemembered: (item: KnowledgeItem) => void;
   onPostponed: (item: KnowledgeItem) => void;
+  /** 저장 진행 중 — 버튼 연타로 인한 DB 이중 기록/카드 스킵 방지 */
+  saving?: boolean;
 }
 
 function formatDate(ts: number | null): string {
@@ -32,7 +34,7 @@ const typeBadgeColors: Record<string, string> = {
   share: 'bg-emerald-100 text-emerald-700',
 };
 
-export function ReviewCard({ item, onRemembered, onPostponed }: ReviewCardProps) {
+export function ReviewCard({ item, onRemembered, onPostponed, saving }: ReviewCardProps) {
   const badgeColor = typeBadgeColors[item.type] ?? 'bg-gray-100 text-gray-700';
 
   return (
@@ -93,6 +95,7 @@ export function ReviewCard({ item, onRemembered, onPostponed }: ReviewCardProps)
           variant="default"
           size="lg"
           className="flex-1 gap-2"
+          disabled={saving}
           onClick={() => onRemembered(item)}
         >
           <CheckCircle className="size-4" />
@@ -102,6 +105,7 @@ export function ReviewCard({ item, onRemembered, onPostponed }: ReviewCardProps)
           variant="outline"
           size="lg"
           className="flex-1 gap-2"
+          disabled={saving}
           onClick={() => onPostponed(item)}
         >
           <Pause className="size-4" />

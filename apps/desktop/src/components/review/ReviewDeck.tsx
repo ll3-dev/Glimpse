@@ -99,6 +99,7 @@ export function ReviewDeck({ items, onRemembered, onPostponed }: ReviewDeckProps
           item={currentItem}
           onRemembered={handleRemembered}
           onPostponed={handlePostponed}
+          saving={saving}
         />
       </div>
 
