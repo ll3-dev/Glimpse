@@ -33,19 +33,37 @@ pub async fn download_model(
     let app_clone = app.clone();
     let model_clone = model.clone();
 
+    // 이전 세션의 취소 플래그가 남아 있으면 정리하고 시작
+    state.download_cancels.clear(&model_id);
+    let state_inner: DesktopRuntimeState = state.inner().clone();
+    let is_cancelled = move |id: &str| state_inner.download_cancels.is_cancelled(id);
+
     // Perform the actual download
-    let result = download::download_model(&app_clone, &model_clone).await;
+    let result = download::download_model(&app_clone, &model_clone, &is_cancelled).await;
 
     match result {
         Ok(path) => {
             let path_str = path.to_string_lossy().to_string();
+            state.download_cancels.clear(&model_id);
             state.mark_model_downloaded(&model_id, &path_str)
         }
         Err(e) => {
+            state.download_cancels.clear(&model_id);
             state.mark_model_download_failed(&model_id, &e)?;
             Err(e)
         }
     }
+}
+
+/// Request cancellation of an in-flight download. The download loop
+/// observes the flag between chunks and aborts with a failure event.
+#[tauri::command]
+pub fn cancel_download(
+    model_id: String,
+    state: tauri::State<'_, DesktopRuntimeState>,
+) -> Result<(), String> {
+    state.download_cancels.request(&model_id);
+    Ok(())
 }
 
 #[tauri::command]

@@ -11,7 +11,7 @@ mod state;
 use tauri::Manager;
 
 fn main() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(state::DesktopRuntimeStateInner::from_defaults())
         // rustra bridge: the managed package backing `rustra_dispatch`.
         // `rustra::tauri_support::register` cannot be used here because it
@@ -60,6 +60,7 @@ fn main() {
             commands::list_available_runtimes,
             commands::list_managed_models,
             commands::download_model,
+            commands::cancel_download,
             commands::delete_model,
             commands::load_model,
             commands::unload_model,
@@ -71,6 +72,19 @@ fn main() {
             secrets::set_secret,
             secrets::delete_secret
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running glimpse desktop tauri shell");
+        .build(tauri::generate_context!())
+        .expect("error while building glimpse desktop tauri shell");
+
+    // 종료 핸들러: 진행 중 다운로드에 취소 플래그를 설정해 chunk 루프가
+    // 빠르게 빠져나오게 한다. SQLite 연결은 bridge 전역이 소유하며 프로세스
+    // 종료 시 OS 가 정리한다(WAL 모드라 트랜잭션 커밋 후에는 일관성 유지).
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { .. } = event {
+            if let Some(state) = app_handle.try_state::<state::DesktopRuntimeState>() {
+                for model_id in state.downloading_model_ids() {
+                    state.download_cancels.request(&model_id);
+                }
+            }
+        }
+    });
 }

@@ -56,9 +56,17 @@ fn hf_url(repo: &str, filename: &str) -> String {
 ///
 /// Emits `model:download-progress` / `model:download-done` /
 /// `model:download-failed` via rustra event sink.
+///
+/// - `is_cancelled`: 다운로드 루프가 chunk 사이에 조회하는 취소 플래그.
+/// - tmp 파일이 남아 있으면 `Range` 헤더로 이어받기(서버가 206을
+///   돌려주지 않으면 처음부터 다시 받는다).
+/// - 완료 시 수신 바이트가 기대 크기와 일치(±1KB)하는지 검증한 뒤
+///   rename 한다 — 서버 조기 종료로 인한 부분 파일 완성본 취급 차단.
+#[allow(clippy::too_many_arguments)]
 pub async fn download_model(
     _app: &tauri::AppHandle,
     model: &ManagedModelRecord,
+    is_cancelled: &(dyn Fn(&str) -> bool + Send + Sync),
 ) -> Result<PathBuf, String> {
     let dest_dir = models_dir();
     tokio::fs::create_dir_all(&dest_dir)
@@ -88,7 +96,22 @@ pub async fn download_model(
         Err(e) => return fail(format!("Failed to create HTTP client: {}", e)),
     };
 
-    let response = match client.get(&url).send().await {
+    // --- 재개 판단: 남은 tmp 크기로 Range 시작점 계산 ---
+    let mut resume_offset: u64 = 0;
+    if let Ok(meta) = tokio::fs::metadata(&tmp_path).await {
+        resume_offset = meta.len();
+        if model.size > 0 && resume_offset >= model.size {
+            // tmp 가 이미 기대 크기 이상이면 이어받기 불가 — 처음부터.
+            resume_offset = 0;
+        }
+    }
+
+    let mut request = client.get(&url);
+    if resume_offset > 0 {
+        request = request.header("Range", format!("bytes={}-", resume_offset));
+    }
+
+    let response = match request.send().await {
         Ok(res) => res,
         Err(e) => return fail(format!("Download request failed: {}", e)),
     };
@@ -101,14 +124,35 @@ pub async fn download_model(
         ));
     }
 
-    let total_bytes = response.content_length().unwrap_or(model.size);
-    let mut bytes_received: u64 = 0;
-
-    // Open temp file for writing
-    let mut file = match tokio::fs::File::create(&tmp_path).await {
-        Ok(f) => f,
-        Err(e) => return fail(format!("Failed to create temp file: {}", e)),
+    // 206(Partial Content)이면 이어받기 성공 — 그 외 2xx는 서버가 Range
+    // 를 무시하고 전체를 보낸 것이므로 처음부터 받는다.
+    let resuming = resume_offset > 0 && response.status() == reqwest::StatusCode::PARTIAL_CONTENT;
+    let (file, start_offset): (std::fs::File, u64) = if resuming {
+        let file = tokio::fs::OpenOptions::new()
+            .append(true)
+            .open(&tmp_path)
+            .await;
+        match file {
+            Ok(f) => (f.into_std().await, resume_offset),
+            Err(e) => return fail(format!("Failed to open temp file for resume: {}", e)),
+        }
+    } else {
+        resume_offset = 0;
+        match tokio::fs::File::create(&tmp_path).await {
+            Ok(f) => (f.into_std().await, 0),
+            Err(e) => return fail(format!("Failed to create temp file: {}", e)),
+        }
     };
+    let _ = resume_offset;
+
+    let content_length = response.content_length().unwrap_or(0);
+    let total_bytes = if resuming {
+        start_offset + content_length
+    } else {
+        response.content_length().unwrap_or(model.size)
+    };
+    let mut bytes_received: u64 = start_offset;
+    let mut file = tokio::fs::File::from_std(file);
 
     use tokio::io::AsyncWriteExt;
 
@@ -122,6 +166,11 @@ pub async fn download_model(
     let mut last_percentage = -1.0_f64;
 
     while let Some(chunk_result) = stream.next().await {
+        // 사용자 취소 — chunk 사이에 플래그 조회
+        if is_cancelled(&model_id) {
+            return fail("Download cancelled by user".to_string());
+        }
+
         let chunk = match chunk_result {
             Ok(c) => c,
             Err(e) => return fail(format!("Download stream error: {}", e)),
@@ -161,13 +210,26 @@ pub async fn download_model(
     }
     drop(file);
 
+    // --- 최종 크기 검증: 서버 조기 종료로 짧게 끝난 스트림 차단 ---
+    if total_bytes > 0 && (bytes_received as i64 - total_bytes as i64).abs() > 1024 {
+        return fail(format!(
+            "Size mismatch: received {} of {} bytes",
+            bytes_received, total_bytes
+        ));
+    }
+
     // Rename temp file to final destination
     if let Err(e) = tokio::fs::rename(&tmp_path, &dest_path).await {
         return fail(format!("Failed to rename temp file: {}", e));
     }
 
     // 마지막 진행 상태(100%)와 완료 이벤트를 보장
-    glimpse_bridge::emit_model_download_progress(&model_id, total_bytes, total_bytes, 100.0);
+    glimpse_bridge::emit_model_download_progress(
+        &model_id,
+        bytes_received.max(total_bytes),
+        bytes_received.max(total_bytes),
+        100.0,
+    );
 
     // Emit done via rustra event sink
     glimpse_bridge::emit_model_download_done(&model.id, &dest_path.to_string_lossy());
@@ -257,6 +319,7 @@ pub fn scan_available_model_files() -> HashMap<String, PathBuf> {
 /// Update model records with their on-disk download status across primary and external locations.
 pub fn sync_download_status(models: &mut [ManagedModelRecord]) {
     let available_files = scan_available_model_files();
+    let primary_dir = models_dir();
 
     for model in models.iter_mut() {
         let id_key = model.id.to_lowercase();
@@ -274,6 +337,23 @@ pub fn sync_download_status(models: &mut [ManagedModelRecord]) {
             .or_else(|| available_files.get(&filename_stem));
 
         if let Some(found_path) = matched_path {
+            // 우리 다운로드 산출물(primary dir)은 기대 크기를 알고
+            // 있으므로 크기 검증으로 ready 판정 — 과거 부분 파일이나
+            // 외부 도구의 미완성 파일이 로드 실패로 이어지는 것을 막는다.
+            // 외부 dir(LM Studio 등)은 기대 크기를 특정할 수 없어
+            // 존재만으로 판정한다.
+            let is_primary = found_path.starts_with(&primary_dir);
+            if is_primary && model.size > 0 {
+                if let Ok(meta) = std::fs::metadata(found_path) {
+                    let actual = meta.len();
+                    let expected = model.size;
+                    let tolerance = expected / 100; // 1%
+                    if actual + tolerance < expected {
+                        continue; // 크기 미달 — not_downloaded 유지
+                    }
+                }
+            }
+
             if model.status == "not_downloaded" {
                 model.status = "ready".into();
             }

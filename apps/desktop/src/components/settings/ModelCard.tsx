@@ -27,6 +27,8 @@ export interface ModelCardProps {
   onLoad: (modelId: string) => void;
   onUnload: (modelId: string) => void;
   onDelete?: (modelId: string) => void;
+  /** 진행 중 다운로드 취소 요청 */
+  onCancelDownload?: (modelId: string) => void;
   isDownloading?: boolean;
   downloadProgress?: number;
   /** 다운로드 실패 사유 — 실패 이벤트 수신 시 표시 */
@@ -80,6 +82,7 @@ export function ModelCard({
   onLoad,
   onUnload,
   onDelete,
+  onCancelDownload,
   isDownloading,
   downloadProgress = 0,
   downloadError,
@@ -211,10 +214,23 @@ export function ModelCard({
         )}
 
         {isDownloading && (
-          <Button size="sm" disabled className="gap-1">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            다운로드 중...
-          </Button>
+          <>
+            <Button size="sm" disabled className="gap-1">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              다운로드 중...
+            </Button>
+            {onCancelDownload && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onCancelDownload(model.id)}
+                className="gap-1"
+              >
+                <X className="h-3.5 w-3.5" />
+                취소
+              </Button>
+            )}
+          </>
         )}
 
         {isInstalled && !isActive && (

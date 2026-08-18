@@ -155,6 +155,21 @@ export function useDownloadModel() {
   });
 }
 
+/** Request cancellation of an in-flight download (flag-based, observed between chunks). */
+export function useCancelDownload() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (modelId: string) => {
+      return invoke<void>('cancel_download', { modelId });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: modelKeys.available });
+      void queryClient.invalidateQueries({ queryKey: llmQueryKeys.overview });
+    },
+  });
+}
+
 /** Delete a downloaded model file from disk. */
 export function useDeleteModel() {
   const queryClient = useQueryClient();

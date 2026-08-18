@@ -108,3 +108,80 @@ fn downloading_models_reject_duplicate_mark_and_delete() {
     assert_eq!(model.status, "not_downloaded");
     assert!(model.download_error.is_none(), "error must be cleared on delete");
 }
+
+#[test]
+fn download_cancel_flags_roundtrip() {
+    let state = glimpse_desktop::state::DesktopRuntimeStateInner::from_defaults();
+
+    assert!(
+        !state.download_cancels.is_cancelled("qwen3.5-0.8b-q4"),
+        "no cancel requested initially"
+    );
+
+    state.download_cancels.request("qwen3.5-0.8b-q4");
+    assert!(
+        state.download_cancels.is_cancelled("qwen3.5-0.8b-q4"),
+        "cancel flag must be visible after request"
+    );
+
+    state.download_cancels.clear("qwen3.5-0.8b-q4");
+    assert!(
+        !state.download_cancels.is_cancelled("qwen3.5-0.8b-q4"),
+        "clear must reset the flag"
+    );
+}
+
+#[test]
+fn size_validation_rejects_short_primary_file_for_ready() {
+    use glimpse_desktop::models::ManagedModelRecord;
+
+    fn record(id: &str, size: u64) -> ManagedModelRecord {
+        ManagedModelRecord {
+            id: id.into(),
+            name: format!("{} test", id),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "test/repo".into(),
+            filename: format!("{}.gguf", id),
+            path: None,
+            size,
+            context_length: 8192,
+            supports_embedding: false,
+            supports_tools: false,
+            status: "not_downloaded".into(),
+            download_error: None,
+        }
+    }
+
+    let dir = glimpse_desktop::download::models_dir();
+    let _ = std::fs::create_dir_all(&dir);
+
+    // 기대 크기보다 현저히 짧은 파일 — ready 가 되면 안 된다
+    let short_id = "size-validation-short-test";
+    let short_path = dir.join(format!("{}.gguf", short_id));
+    std::fs::write(&short_path, vec![0u8; 1024]).expect("write short file");
+
+    // 충분히 큰 파일 — ready 가 되어야 한다
+    let full_id = "size-validation-full-test";
+    let full_path = dir.join(format!("{}.gguf", full_id));
+    std::fs::write(&full_path, vec![0u8; 4096]).expect("write full file");
+
+    let mut models = vec![record(short_id, 8192), record(full_id, 4096)];
+    glimpse_desktop::download::sync_download_status(&mut models);
+
+    let short = models.iter().find(|m| m.id == short_id).unwrap();
+    assert_eq!(
+        short.status, "not_downloaded",
+        "primary-dir file far below expected size must not be ready"
+    );
+
+    let full = models.iter().find(|m| m.id == full_id).unwrap();
+    assert_eq!(
+        full.status, "ready",
+        "primary-dir file matching expected size must be ready"
+    );
+
+    let _ = std::fs::remove_file(&short_path);
+    let _ = std::fs::remove_file(&full_path);
+}

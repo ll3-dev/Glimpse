@@ -9,6 +9,36 @@ use crate::models::{
 
 pub type DesktopRuntimeState = Arc<DesktopRuntimeStateInner>;
 
+/// 다운로드 취소 요청 플래그 — `cancel_download` 커맨드가 삽입하고
+/// 다운로드 루프가 chunk 사이에 조회한다. 플래그 방식인 이유는 현재
+/// 다운로드가 `reqwest` 스트림 await 블록 안에서 돌기 때문에 future 를
+/// 직접 abort 하는 구조보다 상태 조회가 간단하고 교착이 없다.
+#[derive(Default)]
+pub struct DownloadCancelFlags {
+    inner: Mutex<std::collections::HashSet<String>>,
+}
+
+impl DownloadCancelFlags {
+    pub fn request(&self, model_id: &str) {
+        if let Ok(mut set) = self.inner.lock() {
+            set.insert(model_id.to_string());
+        }
+    }
+
+    pub fn is_cancelled(&self, model_id: &str) -> bool {
+        self.inner
+            .lock()
+            .map(|set| set.contains(model_id))
+            .unwrap_or(false)
+    }
+
+    pub fn clear(&self, model_id: &str) {
+        if let Ok(mut set) = self.inner.lock() {
+            set.remove(model_id);
+        }
+    }
+}
+
 fn format_messages_to_prompt(
     messages: &[crate::models::CompletionMessage],
     model_family: Option<&str>,
@@ -50,6 +80,7 @@ pub struct DesktopRuntimeStateInner {
     pub models: Mutex<Vec<ManagedModelRecord>>,
     pub health: Mutex<RuntimeHealth>,
     pub llm_engine: Mutex<LlmEngine>,
+    pub download_cancels: DownloadCancelFlags,
 }
 
 impl DesktopRuntimeStateInner {
@@ -64,7 +95,23 @@ impl DesktopRuntimeStateInner {
             models: Mutex::new(models),
             health: Mutex::new(default_health()),
             llm_engine: Mutex::new(LlmEngine::new()),
+            download_cancels: DownloadCancelFlags::default(),
         })
+    }
+
+    /// 진행 중(downloading) 다운로드의 model id 목록 — 종료 시 취소
+    /// 플래그 설정에 사용한다.
+    pub fn downloading_model_ids(&self) -> Vec<String> {
+        self.models
+            .lock()
+            .map(|models| {
+                models
+                    .iter()
+                    .filter(|m| m.status == "downloading")
+                    .map(|m| m.id.clone())
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     pub fn list_models(&self) -> Result<Vec<ManagedModelRecord>, String> {

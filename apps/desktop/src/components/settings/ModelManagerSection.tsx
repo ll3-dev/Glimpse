@@ -62,6 +62,7 @@ const CATEGORIES: ModelCategory[] = [
 
 import {
   useDownloadModel,
+  useCancelDownload,
   useDownloadProgress,
   useLoadModel,
   useUnloadModel,
@@ -82,6 +83,7 @@ export function ModelManagerSection({
   const { progress: downloadProgressMap, failures: downloadFailures } = useDownloadProgress();
 
   const downloadMutation = useDownloadModel();
+  const cancelDownloadMutation = useCancelDownload();
   const loadMutation = useLoadModel();
   const unloadMutation = useUnloadModel();
   const deleteMutation = useDeleteModel();
@@ -118,6 +120,10 @@ export function ModelManagerSection({
 
   const handleDelete = (modelId: string) => {
     deleteMutation.mutate(modelId);
+  };
+
+  const handleCancelDownload = (modelId: string) => {
+    cancelDownloadMutation.mutate(modelId);
   };
 
   return (
@@ -243,6 +249,7 @@ export function ModelManagerSection({
                           onLoad={handleLoad}
                           onUnload={handleUnload}
                           onDelete={handleDelete}
+                          onCancelDownload={handleCancelDownload}
                           isDownloading={dlState != null}
                           downloadProgress={dlState ? Math.round(dlState.percentage) : undefined}
                           downloadError={dlFailure?.error}
