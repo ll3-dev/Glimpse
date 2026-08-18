@@ -26,6 +26,9 @@ pub struct ManagedModelRecord {
     pub supports_embedding: bool,
     pub supports_tools: bool,
     pub status: String,
+    /// 다운로드 실패 사유 — `download_failed` 상태일 때 설정된다
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download_error: Option<String>,
 }
 
 #[derive(Clone, Serialize)]
@@ -133,6 +136,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "qwen3.5-2b-q4".into(),
@@ -148,6 +152,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "ministral-3-3b-instruct-q4".into(),
@@ -163,6 +168,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "qwen3.5-4b-q4".into(),
@@ -178,6 +184,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "ministral-3-3b-reasoning-q4".into(),
@@ -193,6 +200,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: false,
             status: "not_downloaded".into(),
+            download_error: None,
         },
 
         // Desktop medium
@@ -210,6 +218,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "ministral-3-8b-instruct-q4".into(),
@@ -225,6 +234,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "ministral-3-14b-reasoning-q4".into(),
@@ -240,6 +250,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: false,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "phi-4-reasoning-vision-15b-q4".into(),
@@ -255,6 +266,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: false,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "magistral-small-2509-q4".into(),
@@ -270,6 +282,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: false,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "devstral-small-2-24b-q4".into(),
@@ -285,6 +298,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
 
         // Desktop large
@@ -302,6 +316,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "glm-4.7-flash-q4".into(),
@@ -317,6 +332,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "qwen3.5-35b-a3b-q4".into(),
@@ -332,6 +348,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: false,
             supports_tools: true,
             status: "not_downloaded".into(),
+            download_error: None,
         },
 
         // Embedding
@@ -349,6 +366,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: true,
             supports_tools: false,
             status: "not_downloaded".into(),
+            download_error: None,
         },
         ManagedModelRecord {
             id: "nomic-embed-text-v2-moe-q8_0".into(),
@@ -364,6 +382,7 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             supports_embedding: true,
             supports_tools: false,
             status: "not_downloaded".into(),
+            download_error: None,
         },
     ]
 }

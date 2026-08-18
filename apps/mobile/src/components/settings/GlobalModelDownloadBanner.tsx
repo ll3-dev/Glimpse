@@ -15,6 +15,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Progress } from '@glimpse/ui/primitives/progress';
 import {
   cancelLocalModelDownload,
+  downloadLocalModel,
   markDownloadCompletionHandled,
   useLocalLLMConfig,
   setLocalLLMBannerDismissed,
@@ -132,8 +133,26 @@ export function GlobalModelDownloadBanner() {
       markDownloadCompletionHandled();
       router.push('/settings');
     } else if (downloadStatus === 'error') {
-      // Retry logic could be added here
-      router.push('/settings');
+      // 실패한 모델을 찾아 재다운로드 — per-model downloadError 가
+      // 설정된 모델(실패 스냅샷이 기록한 모델)을 우선하고, 없으면
+      // 설정 화면으로 보낸다.
+      const failedModel = availableModels.find(
+        (model) => model.downloadError && model.repo && model.filename,
+      );
+      if (failedModel) {
+        void downloadLocalModel(
+          {
+            id: failedModel.id,
+            name: failedModel.name,
+            repo: failedModel.repo!,
+            filename: failedModel.filename!,
+            family: failedModel.family,
+          },
+          { sourceRoute: pathname },
+        );
+      } else {
+        router.push('/settings');
+      }
     }
   };
 

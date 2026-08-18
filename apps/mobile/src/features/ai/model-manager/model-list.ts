@@ -25,6 +25,8 @@ export interface ModelInfo {
   family: LocalLLMModelFamily;
   /** Display size (e.g., "~1GB") */
   size?: string;
+  /** Exact size in bytes from the registry — download verification uses this */
+  sizeBytes?: number;
   /** Model description */
   description?: string;
 }
@@ -40,6 +42,7 @@ function toModelInfo(def: LocalModelDefinition): ModelInfo {
     filename: def.filename,
     family: def.family as LocalLLMModelFamily,
     size: def.displaySize,
+    sizeBytes: def.sizeBytes,
     description: def.description,
   };
 }

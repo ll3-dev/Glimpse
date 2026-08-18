@@ -54,7 +54,8 @@ fn hf_url(repo: &str, filename: &str) -> String {
 
 /// Download a GGUF model from HuggingFace with progress events.
 ///
-/// Emits `model:download-progress` and `model:download-done` via rustra event sink.
+/// Emits `model:download-progress` / `model:download-done` /
+/// `model:download-failed` via rustra event sink.
 pub async fn download_model(
     _app: &tauri::AppHandle,
     model: &ManagedModelRecord,
@@ -68,26 +69,32 @@ pub async fn download_model(
     let tmp_path = dest_path.with_extension("gguf.tmp");
 
     let url = hf_url(&model.repo, &model.filename);
+    let model_id = model.id.clone();
 
-    let client = reqwest::Client::builder()
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+    // 실패 경로 정규화: tmp 정리 + 실패 이벤트 발행을 한 곳에서.
+    let fail = |msg: String| -> Result<PathBuf, String> {
+        if tmp_path.exists() {
+            let tmp = tmp_path.clone();
+            tokio::spawn(async move {
+                let _ = tokio::fs::remove_file(&tmp).await;
+            });
+        }
+        glimpse_bridge::emit_model_download_failed(&model_id, &msg);
+        Err(msg)
+    };
+
+    let client = match reqwest::Client::builder().build() {
+        Ok(c) => c,
+        Err(e) => return fail(format!("Failed to create HTTP client: {}", e)),
+    };
 
     let response = match client.get(&url).send().await {
         Ok(res) => res,
-        Err(e) => {
-            if tmp_path.exists() {
-                let _ = tokio::fs::remove_file(&tmp_path).await;
-            }
-            return Err(format!("Download request failed: {}", e));
-        }
+        Err(e) => return fail(format!("Download request failed: {}", e)),
     };
 
     if !response.status().is_success() {
-        if tmp_path.exists() {
-            let _ = tokio::fs::remove_file(&tmp_path).await;
-        }
-        return Err(format!(
+        return fail(format!(
             "HuggingFace returned status {} for {}",
             response.status(),
             url
@@ -100,28 +107,30 @@ pub async fn download_model(
     // Open temp file for writing
     let mut file = match tokio::fs::File::create(&tmp_path).await {
         Ok(f) => f,
-        Err(e) => return Err(format!("Failed to create temp file: {}", e)),
+        Err(e) => return fail(format!("Failed to create temp file: {}", e)),
     };
 
     use tokio::io::AsyncWriteExt;
 
     let mut stream = response.bytes_stream();
-    let model_id = model.id.clone();
+
+    // 진행 이벤트 쓰로틀: 청크마다 emit하면 수 GB GGUF에서 웹뷰 이벤트가
+    // 폭주한다. 100ms 미만이면서 1% 미만 변화는 건너뛴다.
+    let mut last_emit = std::time::Instant::now()
+        .checked_sub(std::time::Duration::from_millis(1000))
+        .unwrap_or_else(std::time::Instant::now);
+    let mut last_percentage = -1.0_f64;
 
     while let Some(chunk_result) = stream.next().await {
         let chunk = match chunk_result {
             Ok(c) => c,
-            Err(e) => {
-                let _ = tokio::fs::remove_file(&tmp_path).await;
-                return Err(format!("Download stream error: {}", e));
-            }
+            Err(e) => return fail(format!("Download stream error: {}", e)),
         };
 
         let chunk_len = chunk.len() as u64;
 
         if let Err(e) = file.write_all(&chunk).await {
-            let _ = tokio::fs::remove_file(&tmp_path).await;
-            return Err(format!("File write error: {}", e));
+            return fail(format!("File write error: {}", e));
         }
 
         bytes_received += chunk_len;
@@ -132,31 +141,61 @@ pub async fn download_model(
             0.0
         };
 
-        // Emit progress via rustra event sink
-        glimpse_bridge::emit_model_download_progress(
-            &model_id,
-            bytes_received,
-            total_bytes,
-            percentage,
-        );
+        let now = std::time::Instant::now();
+        let elapsed_ok = now.duration_since(last_emit).as_millis() >= 100;
+        let delta_ok = percentage - last_percentage >= 1.0;
+        if elapsed_ok && delta_ok {
+            glimpse_bridge::emit_model_download_progress(
+                &model_id,
+                bytes_received,
+                total_bytes,
+                percentage,
+            );
+            last_emit = now;
+            last_percentage = percentage;
+        }
     }
 
     if let Err(e) = file.flush().await {
-        let _ = tokio::fs::remove_file(&tmp_path).await;
-        return Err(format!("File flush error: {}", e));
+        return fail(format!("File flush error: {}", e));
     }
     drop(file);
 
     // Rename temp file to final destination
     if let Err(e) = tokio::fs::rename(&tmp_path, &dest_path).await {
-        let _ = tokio::fs::remove_file(&tmp_path).await;
-        return Err(format!("Failed to rename temp file: {}", e));
+        return fail(format!("Failed to rename temp file: {}", e));
     }
+
+    // 마지막 진행 상태(100%)와 완료 이벤트를 보장
+    glimpse_bridge::emit_model_download_progress(&model_id, total_bytes, total_bytes, 100.0);
 
     // Emit done via rustra event sink
     glimpse_bridge::emit_model_download_done(&model.id, &dest_path.to_string_lossy());
 
     Ok(dest_path)
+}
+
+/// 부팅 시 models_dir 에 남은 stale `*.gguf.tmp` 를 정리한다.
+///
+/// 다운로드 중 앱이 강제 종료되면 tmp 파일이 남는다 — 이를 완성본으로
+/// 오인하는 일은 없지만(최종 .gguf 가 아니므로) 디스크 공간을 잡아
+/// 두고 다음 다운로드의 overwrite 대상이 되므로 시작 시 제거한다.
+pub fn cleanup_stale_tmp_files() {
+    let dir = models_dir();
+    if !dir.is_dir() {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("tmp"))
+            {
+                let _ = std::fs::remove_file(&path);
+            }
+        }
+    }
 }
 
 /// Delete a downloaded model file from disk.
@@ -216,7 +255,7 @@ pub fn scan_available_model_files() -> HashMap<String, PathBuf> {
 }
 
 /// Update model records with their on-disk download status across primary and external locations.
-pub fn sync_download_status(models: &mut Vec<ManagedModelRecord>) {
+pub fn sync_download_status(models: &mut [ManagedModelRecord]) {
     let available_files = scan_available_model_files();
 
     for model in models.iter_mut() {

@@ -42,6 +42,8 @@ export type ProgressCallback = (progress: DownloadProgress) => void;
  */
 export class ModelDownloader {
   private static MODELS_DIR = `${RNBlobUtil.fs.dirs.DocumentDir}/models/`;
+  /** 다운로드 중 임시 확장자 — 최종 파일과 구분해 부분 파일이 완성본으로 취급되지 않게 한다 */
+  private static readonly PART_SUFFIX = '.part';
   private activeTask: { cancel?: () => Promise<unknown> | unknown } | null = null;
   private activeFilename: string | null = null;
   private cancelledFilenames = new Set<string>();
@@ -64,13 +66,29 @@ export class ModelDownloader {
   }
 
   /**
-   * Check if a model is already downloaded
+   * Check if a model is already downloaded.
+   *
+   * 존재만 확인하지 않는다 — 앱 강제 종료 등으로 남은 부분 파일이
+   * 완성본으로 취급되면 모델 로드 단계에서 깨지는 문제가 생긴다.
+   * 크기 검증에 필요한 expectedSize를 받아, 불일치 파일은 삭제 후
+   * false를 반환한다.
    */
-  static async isModelDownloaded(filename: string): Promise<boolean> {
+  static async isModelDownloaded(filename: string, expectedSize?: number): Promise<boolean> {
     const path = this.getModelPath(filename);
     try {
       const exists = await RNBlobUtil.fs.exists(path);
-      return exists;
+      if (!exists) {
+        return false;
+      }
+      if (typeof expectedSize === 'number' && expectedSize > 0) {
+        const stat = await RNBlobUtil.fs.stat(path);
+        // content-encoding 등으로 ±1KB 오차를 허용한다
+        if (Math.abs(stat.size - expectedSize) > 1024) {
+          await RNBlobUtil.fs.unlink(path).catch(() => {});
+          return false;
+        }
+      }
+      return true;
     } catch {
       return false;
     }
@@ -122,19 +140,27 @@ export class ModelDownloader {
 
     const downloadUrl = HuggingFaceAPI.getModelDownloadUrl(model.repo, model.filename);
     const localPath = ModelDownloader.getModelPath(model.filename);
+    const partPath = `${localPath}${ModelDownloader.PART_SUFFIX}`;
 
-    // Check if already downloaded
-    const alreadyDownloaded = await ModelDownloader.isModelDownloaded(model.filename);
+    // Get expected file size for progress calculation & final verification
+    const expectedSize = await HuggingFaceAPI.getFileSize(model.repo, model.filename);
+
+    // Check if already downloaded (with size verification when known)
+    const alreadyDownloaded = await ModelDownloader.isModelDownloaded(
+      model.filename,
+      expectedSize ?? undefined,
+    );
     if (alreadyDownloaded) {
       return localPath;
     }
 
-    // Get expected file size for progress calculation
-    const expectedSize = await HuggingFaceAPI.getFileSize(model.repo, model.filename);
+    // 이전 시도의 고아 .part 파일 정리
+    await RNBlobUtil.fs.unlink(partPath).catch(() => {});
 
     return new Promise((resolve, reject) => {
+      // .part 에 기록해 완료 검증 전까지 최종 경로를 오염시키지 않는다
       const task = RNBlobUtil.config({
-        path: localPath,
+        path: partPath,
         indicator: true,
         overwrite: true,
       }).fetch('GET', downloadUrl, {
@@ -156,12 +182,36 @@ export class ModelDownloader {
           onProgress?.(progress);
         })
         .then(async (res) => {
-          const path = res.path();
-          resolve(path);
+          const writtenPath = res.path();
+
+          // 크기 검증: 알려진 expectedSize 와 다르면 부분 다운로드다
+          if (typeof expectedSize === 'number' && expectedSize > 0) {
+            const stat = await RNBlobUtil.fs.stat(writtenPath).catch(() => null);
+            if (!stat || Math.abs(stat.size - expectedSize) > 1024) {
+              await RNBlobUtil.fs.unlink(writtenPath).catch(() => {});
+              reject(
+                new Error(
+                  `다운로드 검증 실패: 예상 ${expectedSize}바이트, 실제 ${stat?.size ?? 'unknown'}바이트`,
+                ),
+              );
+              return;
+            }
+          }
+
+          // 검증 통과 — 최종 경로로 이동
+          const moved = await RNBlobUtil.fs
+            .mv(writtenPath, localPath)
+            .catch(() => false);
+          if (!moved) {
+            await RNBlobUtil.fs.unlink(writtenPath).catch(() => {});
+            reject(new Error('다운로드 완료 처리 실패: 최종 파일 이동 불가'));
+            return;
+          }
+          resolve(localPath);
         })
         .catch((error) => {
           // Clean up partial download
-          RNBlobUtil.fs.unlink(localPath).catch(() => {});
+          RNBlobUtil.fs.unlink(partPath).catch(() => {});
           if (this.cancelledFilenames.has(model.filename)) {
             reject(new Error('다운로드가 취소되었습니다.'));
             return;

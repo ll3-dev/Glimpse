@@ -29,6 +29,8 @@ export interface ModelCardProps {
   onDelete?: (modelId: string) => void;
   isDownloading?: boolean;
   downloadProgress?: number;
+  /** 다운로드 실패 사유 — 실패 이벤트 수신 시 표시 */
+  downloadError?: string;
 }
 
 // ── Family badge colors ──────────────────────────────────────────────────────
@@ -80,6 +82,7 @@ export function ModelCard({
   onDelete,
   isDownloading,
   downloadProgress = 0,
+  downloadError,
 }: ModelCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isInstalled = installedModel?.status === 'ready' || installedModel?.status === 'active';
@@ -158,6 +161,15 @@ export function ModelCard({
             <span className="font-medium text-primary">{downloadProgress}%</span>
           </div>
           <Progress value={downloadProgress} />
+        </div>
+      )}
+
+      {/* Download failure */}
+      {downloadError && !isDownloading && (
+        <div className="mb-3 rounded-md bg-destructive/10 px-2.5 py-1.5">
+          <p className="text-xs text-destructive truncate" title={downloadError}>
+            다운로드 실패: {downloadError}
+          </p>
         </div>
       )}
 

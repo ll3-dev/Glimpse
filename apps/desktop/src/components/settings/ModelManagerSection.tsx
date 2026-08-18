@@ -79,7 +79,7 @@ export function ModelManagerSection({
 }: ModelManagerSectionProps) {
   const { data: overview, isLoading } = useDesktopLLMOverview();
   const invalidateOverview = useInvalidateLLMOverview();
-  const downloadProgressMap = useDownloadProgress();
+  const { progress: downloadProgressMap, failures: downloadFailures } = useDownloadProgress();
 
   const downloadMutation = useDownloadModel();
   const loadMutation = useLoadModel();
@@ -230,6 +230,7 @@ export function ModelManagerSection({
                     {filtered.map((model) => {
                       const installed = installedMap.get(model.id);
                       const dlState = downloadProgressMap[model.id];
+                      const dlFailure = downloadFailures[model.id];
                       const isActive = activeModelId === model.id;
 
                       return (
@@ -244,6 +245,7 @@ export function ModelManagerSection({
                           onDelete={handleDelete}
                           isDownloading={dlState != null}
                           downloadProgress={dlState ? Math.round(dlState.percentage) : undefined}
+                          downloadError={dlFailure?.error}
                         />
                       );
                     })}

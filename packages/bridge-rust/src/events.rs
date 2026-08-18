@@ -30,6 +30,8 @@ pub const STREAM_DONE_EVENT: &str = "llm:stream-done";
 pub const DOWNLOAD_PROGRESS_EVENT: &str = "model:download-progress";
 /// 모델 다운로드 완료 이벤트 이름 — 웹뷰 채널 `rustra://model:download-done`.
 pub const DOWNLOAD_DONE_EVENT: &str = "model:download-done";
+/// 모델 다운로드 실패 이벤트 이름 — 웹뷰 채널 `rustra://model:download-failed`.
+pub const DOWNLOAD_FAILED_EVENT: &str = "model:download-failed";
 
 /// 스트리밍 토큰 1개를 발행한다.
 ///
@@ -84,6 +86,20 @@ pub fn emit_model_download_done(model_id: &str, path: &str) {
     );
 }
 
+/// 모델 다운로드 실패 이벤트를 발행한다.
+///
+/// 실패 원인 문자열을 페이로드로 전달해 프론트가 invoke 거부 외에
+/// 이벤트 경로로도 실패를 수신하고 진행 UI를 수렴시킬 수 있게 한다.
+pub fn emit_model_download_failed(model_id: &str, error: &str) {
+    super::glimpse_package().emit(
+        DOWNLOAD_FAILED_EVENT,
+        json!({
+            "modelId": model_id,
+            "error": error,
+        }),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,6 +128,7 @@ mod tests {
         assert_eq!(sanitize(STREAM_DONE_EVENT), "llm:stream-done");
         assert_eq!(sanitize(DOWNLOAD_PROGRESS_EVENT), "model:download-progress");
         assert_eq!(sanitize(DOWNLOAD_DONE_EVENT), "model:download-done");
+        assert_eq!(sanitize(DOWNLOAD_FAILED_EVENT), "model:download-failed");
         // 즉, 채널은 rustra://model:download-progress / rustra://model:download-done.
     }
 

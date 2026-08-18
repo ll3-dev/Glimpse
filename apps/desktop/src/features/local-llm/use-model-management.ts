@@ -38,6 +38,11 @@ export interface DownloadProgress {
   percentage: number;
 }
 
+export interface DownloadFailure {
+  modelId: string;
+  error: string;
+}
+
 // ---------------------------------------------------------------------------
 // Query keys
 // ---------------------------------------------------------------------------
@@ -70,28 +75,69 @@ export function useInstalledModels() {
   });
 }
 
-/** Track download progress for all active downloads. */
+/**
+ * Track download progress for all active downloads.
+ *
+ * 완료/실패 이벤트에서 해당 모델의 진행 항목을 제거해 진행바가
+ * 마지막 퍼센트에 갇히지 않게 한다. 실패는 별도 맵으로 노출한다.
+ */
 export function useDownloadProgress() {
   const [progress, setProgress] = useState<Record<string, DownloadProgress>>({});
+  const [failures, setFailures] = useState<Record<string, DownloadFailure>>({});
 
   useEffect(() => {
-    let unlisten: (() => void) | null = null;
+    // listen 프라미스가 클린업보다 늦게 resolve되면 unlisten이 null인
+    // 채로 유출된다 — disposed 플래그로 즉시 해제한다.
+    let disposed = false;
+    const unlistens: Array<() => void> = [];
+
+    const track = (fn: () => void) => {
+      if (disposed) fn();
+      else unlistens.push(fn);
+    };
 
     listen<DownloadProgress>('rustra://model:download-progress', (event) => {
       setProgress((prev) => ({
         ...prev,
         [event.payload.modelId]: event.payload,
       }));
-    }).then((fn) => {
-      unlisten = fn;
-    });
+      setFailures((prev) => {
+        if (!(event.payload.modelId in prev)) return prev;
+        const next = { ...prev };
+        delete next[event.payload.modelId];
+        return next;
+      });
+    }).then((fn) => track(fn));
+
+    listen<{ modelId: string; path: string }>('rustra://model:download-done', (event) => {
+      setProgress((prev) => {
+        if (!(event.payload.modelId in prev)) return prev;
+        const next = { ...prev };
+        delete next[event.payload.modelId];
+        return next;
+      });
+    }).then((fn) => track(fn));
+
+    listen<DownloadFailure>('rustra://model:download-failed', (event) => {
+      setProgress((prev) => {
+        if (!(event.payload.modelId in prev)) return prev;
+        const next = { ...prev };
+        delete next[event.payload.modelId];
+        return next;
+      });
+      setFailures((prev) => ({
+        ...prev,
+        [event.payload.modelId]: event.payload,
+      }));
+    }).then((fn) => track(fn));
 
     return () => {
-      unlisten?.();
+      disposed = true;
+      unlistens.forEach((fn) => fn());
     };
   }, []);
 
-  return progress;
+  return { progress, failures };
 }
 
 /** Download a GGUF model from HuggingFace. */

@@ -22,7 +22,8 @@ export async function syncRecommendedLocalModels(): Promise<LocalModel[]> {
       const existing = existingById.get(model.id);
       const isDownloaded = await ModelDownloader.isModelDownloaded(
         model.filename,
-      );
+        model.sizeBytes,
+      ).catch(() => ModelDownloader.isModelDownloaded(model.filename));
       const size = isDownloaded
         ? ((await ModelDownloader.getModelSize(model.filename)) ??
           existing?.size)
@@ -84,7 +85,11 @@ export function syncRecommendedLocalModelsEffect(): Effect.Effect<
             // Check if model is downloaded
             const isDownloaded = yield* _(
               Effect.tryPromise({
-                try: () => ModelDownloader.isModelDownloaded(model.filename),
+                try: () =>
+                  ModelDownloader.isModelDownloaded(
+                    model.filename,
+                    model.sizeBytes,
+                  ).catch(() => ModelDownloader.isModelDownloaded(model.filename)),
                 catch: (e) =>
                   appError(
                     "DATABASE_ERROR",

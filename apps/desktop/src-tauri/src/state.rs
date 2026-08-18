@@ -54,6 +54,9 @@ pub struct DesktopRuntimeStateInner {
 
 impl DesktopRuntimeStateInner {
     pub fn from_defaults() -> DesktopRuntimeState {
+        // 다운로드 중 강제 종료로 남은 tmp 파일 정리
+        download::cleanup_stale_tmp_files();
+
         let mut models = default_models();
         download::sync_download_status(&mut models);
 
@@ -107,7 +110,16 @@ impl DesktopRuntimeStateInner {
             .iter_mut()
             .find(|m| m.id == model_id)
             .ok_or_else(|| format!("Model not found: {}", model_id))?;
+
+        // 중복 다운로드 가드 — 이미 진행 중이면 상태를 덮어쓰지 않는다
+        if model.status == "downloading" {
+            return Err(format!(
+                "Model {} is already downloading",
+                model_id
+            ));
+        }
         model.status = "downloading".into();
+        model.download_error = None;
         Ok(model.clone())
     }
 
@@ -118,8 +130,8 @@ impl DesktopRuntimeStateInner {
             .map_err(|_| "models lock poisoned".to_string())?;
         if let Some(model) = models.iter_mut().find(|m| m.id == model_id) {
             model.status = "download_failed".into();
+            model.download_error = Some(error.to_string());
         }
-        let _ = error; // TODO: store error in model record
         Ok(())
     }
 
@@ -136,9 +148,15 @@ impl DesktopRuntimeStateInner {
         if model.status == "active" {
             return Err("Cannot delete an active model. Unload it first.".into());
         }
+        // 다운로드 중 레코드 삭제 금지 — 백그라운드 다운로드가 계속되어
+        // 상태와 디스크가 어긋난다
+        if model.status == "downloading" {
+            return Err("Cannot delete a model while it is downloading.".into());
+        }
 
         model.status = "not_downloaded".into();
         model.path = None;
+        model.download_error = None;
         Ok(())
     }
 

@@ -257,6 +257,12 @@ mod imp {
         model_path: Option<PathBuf>,
     }
 
+    impl Default for LlmEngine {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl LlmEngine {
         pub fn new() -> Self {
             Self { model_path: None }
