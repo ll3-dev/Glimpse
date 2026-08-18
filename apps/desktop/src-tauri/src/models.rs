@@ -83,26 +83,11 @@ pub struct LoadResult {
     pub runtime_id: String,
 }
 
-// LLM stream events (`llm:stream-token` / `llm:stream-done`) moved to the
-// rustra push path — payloads now live in `glimpse-bridge` `src/events.rs`
-// (`emit_llm_token` / `emit_llm_done`). The former `StreamTokenEvent` /
-// `StreamDoneEvent` structs were removed with that switch.
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DownloadProgressEvent {
-    pub model_id: String,
-    pub bytes_received: u64,
-    pub total_bytes: u64,
-    pub percentage: f64,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DownloadDoneEvent {
-    pub model_id: String,
-    pub path: String,
-}
+// LLM stream and model download events moved to the rustra push path —
+// payloads now live in `glimpse-bridge` `src/events.rs`
+// (`emit_llm_token`, `emit_llm_done`, `emit_model_download_progress`,
+// `emit_model_download_done`). The former handwritten event structs were
+// removed with that switch.
 
 pub fn default_runtimes() -> Vec<RuntimeDescriptor> {
     vec![
@@ -133,6 +118,7 @@ pub fn default_runtimes() -> Vec<RuntimeDescriptor> {
 pub fn default_models() -> Vec<ManagedModelRecord> {
     // -- Synced with packages/shared LOCAL_MODEL_REGISTRY --
     vec![
+        // Mobile + Desktop
         ManagedModelRecord {
             id: "qwen3.5-0.8b-q4".into(),
             name: "Qwen 3.5 0.8B (Q4_K_M)".into(),
@@ -164,6 +150,21 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             status: "not_downloaded".into(),
         },
         ManagedModelRecord {
+            id: "ministral-3-3b-instruct-q4".into(),
+            name: "Ministral-3 3B Instruct".into(),
+            family: "mistral".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Ministral-3-3B-Instruct-2512-GGUF".into(),
+            filename: "Ministral-3-3B-Instruct-2512-Q4_K_M.gguf".into(),
+            path: None,
+            size: 2_147_483_648,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
             id: "qwen3.5-4b-q4".into(),
             name: "Qwen 3.5 4B (Q4_K_M)".into(),
             family: "qwen-chatml".into(),
@@ -179,6 +180,162 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             status: "not_downloaded".into(),
         },
         ManagedModelRecord {
+            id: "ministral-3-3b-reasoning-q4".into(),
+            name: "Ministral-3 3B Reasoning".into(),
+            family: "mistral".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "MaziyarPanahi/Ministral-3-3B-Reasoning-2512-GGUF".into(),
+            filename: "Ministral-3-3B-Reasoning-2512-Q4_K_M.gguf".into(),
+            path: None,
+            size: 2_147_483_648,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: false,
+            status: "not_downloaded".into(),
+        },
+
+        // Desktop medium
+        ManagedModelRecord {
+            id: "qwen3.5-9b-q4".into(),
+            name: "Qwen 3.5 9B (Q4_K_M)".into(),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Qwen3.5-9B-GGUF".into(),
+            filename: "Qwen3.5-9B-Q4_K_M.gguf".into(),
+            path: None,
+            size: 5_683_793_920,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "ministral-3-8b-instruct-q4".into(),
+            name: "Ministral-3 8B Instruct".into(),
+            family: "mistral".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Ministral-3-8B-Instruct-2512-GGUF".into(),
+            filename: "Ministral-3-8B-Instruct-2512-Q4_K_M.gguf".into(),
+            path: None,
+            size: 5_197_434_880,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "ministral-3-14b-reasoning-q4".into(),
+            name: "Ministral-3 14B Reasoning".into(),
+            family: "mistral".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Ministral-3-14B-Reasoning-2512-GGUF".into(),
+            filename: "Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf".into(),
+            path: None,
+            size: 8_230_502_400,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: false,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "phi-4-reasoning-vision-15b-q4".into(),
+            name: "Phi-4 Reasoning Vision 15B".into(),
+            family: "phi".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "jamesburton/Phi-4-reasoning-vision-15B-GGUF".into(),
+            filename: "Phi-4-reasoning-vision-15B-Q4_K_M.gguf".into(),
+            path: None,
+            size: 9_059_696_640,
+            context_length: 16_384,
+            supports_embedding: false,
+            supports_tools: false,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "magistral-small-2509-q4".into(),
+            name: "Magistral Small 24B".into(),
+            family: "mistral".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Magistral-Small-2509-GGUF".into(),
+            filename: "Magistral-Small-2509-Q4_K_M.gguf".into(),
+            path: None,
+            size: 14_324_375_552,
+            context_length: 131_072,
+            supports_embedding: false,
+            supports_tools: false,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "devstral-small-2-24b-q4".into(),
+            name: "Devstral Small 2 24B".into(),
+            family: "mistral".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF".into(),
+            filename: "Devstral-Small-2-24B-Instruct-2512-Q4_K_M.gguf".into(),
+            path: None,
+            size: 14_324_375_552,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+
+        // Desktop large
+        ManagedModelRecord {
+            id: "qwen3.5-27b-q4".into(),
+            name: "Qwen 3.5 27B".into(),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Qwen3.5-27B-GGUF".into(),
+            filename: "Qwen3.5-27B-Q4_K_M.gguf".into(),
+            path: None,
+            size: 16_744_440_832,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "glm-4.7-flash-q4".into(),
+            name: "GLM-4.7 Flash".into(),
+            family: "glm".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/GLM-4.7-Flash-GGUF".into(),
+            filename: "GLM-4.7-Flash-Q4_K_M.gguf".into(),
+            path: None,
+            size: 18_307_849_216,
+            context_length: 131_072,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "qwen3.5-35b-a3b-q4".into(),
+            name: "Qwen 3.5 35B MoE".into(),
+            family: "qwen-chatml".into(),
+            quantization: "Q4_K_M".into(),
+            format: "gguf".into(),
+            repo: "unsloth/Qwen3.5-35B-A3B-GGUF".into(),
+            filename: "Qwen3.5-35B-A3B-Q4_K_M.gguf".into(),
+            path: None,
+            size: 22_011_733_504,
+            context_length: 262_144,
+            supports_embedding: false,
+            supports_tools: true,
+            status: "not_downloaded".into(),
+        },
+
+        // Embedding
+        ManagedModelRecord {
             id: "nomic-embed-text-v1.5-q8_0".into(),
             name: "Nomic Embed v1.5 (Q8_0)".into(),
             family: "nomic".into(),
@@ -188,6 +345,21 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             filename: "nomic-embed-text-v1.5.Q8_0.gguf".into(),
             path: None,
             size: 327_155_712,
+            context_length: 8192,
+            supports_embedding: true,
+            supports_tools: false,
+            status: "not_downloaded".into(),
+        },
+        ManagedModelRecord {
+            id: "nomic-embed-text-v2-moe-q8_0".into(),
+            name: "Nomic Embed v2 MoE (Q8_0)".into(),
+            family: "nomic".into(),
+            quantization: "Q8_0".into(),
+            format: "gguf".into(),
+            repo: "nomic-ai/nomic-embed-text-v2-moe-GGUF".into(),
+            filename: "nomic-embed-text-v2-moe.Q8_0.gguf".into(),
+            path: None,
+            size: 293_601_280,
             context_length: 8192,
             supports_embedding: true,
             supports_tools: false,

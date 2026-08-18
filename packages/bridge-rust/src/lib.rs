@@ -18,7 +18,10 @@ pub mod state;
 
 pub use conversation::conversation_package;
 pub use error::to_rustra_err;
-pub use events::{emit_llm_done, emit_llm_token, STREAM_DONE_EVENT, STREAM_TOKEN_EVENT};
+pub use events::{
+    emit_llm_done, emit_llm_token, emit_model_download_done, emit_model_download_progress,
+    DOWNLOAD_DONE_EVENT, DOWNLOAD_PROGRESS_EVENT, STREAM_DONE_EVENT, STREAM_TOKEN_EVENT,
+};
 pub use feedback::feedback_package;
 pub use knowledge::knowledge_package;
 pub use message::message_package;

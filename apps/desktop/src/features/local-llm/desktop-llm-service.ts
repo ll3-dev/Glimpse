@@ -274,9 +274,9 @@ function createTauriBridge(): DesktopLLMService {
     runEmbedding: (request) => invoke<EmbeddingResponse>('run_embedding', { request }),
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
     onDownloadProgress: (callback) =>
-      listen<DownloadProgressEvent>('model:download-progress', (e) => callback(e.payload)),
+      listen<DownloadProgressEvent>('rustra://model:download-progress', (e) => callback(e.payload)),
     onDownloadDone: (callback) =>
-      listen<DownloadDoneEvent>('model:download-done', (e) => callback(e.payload)),
+      listen<DownloadDoneEvent>('rustra://model:download-done', (e) => callback(e.payload)),
   };
 }
 

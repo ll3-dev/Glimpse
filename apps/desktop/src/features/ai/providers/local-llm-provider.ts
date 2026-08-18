@@ -61,6 +61,9 @@ export function createLocalLLMProvider(
     },
 
     async complete(request: CompletionRequest): Promise<CompletionResponse> {
+      const health = await invoke<TauriRuntimeHealth>('get_runtime_health').catch(() => null);
+      const effectiveModelId = health?.loadedModelId || modelId;
+
       const messages: TauriCompletionMessage[] = [];
       if (request.systemPrompt) {
         messages.push({ role: 'system', content: request.systemPrompt });
@@ -69,7 +72,7 @@ export function createLocalLLMProvider(
 
       const tauriRequest: TauriCompletionRequest = {
         runtimeId,
-        modelId,
+        modelId: effectiveModelId,
         messages,
         maxTokens: request.maxTokens,
         temperature: request.temperature,
@@ -86,17 +89,18 @@ export function createLocalLLMProvider(
     },
 
     async generateMetadata(content: string, title?: string | null): Promise<MetadataOutput> {
-      const summaryResponse = await this.complete({
-        prompt: buildSummaryPrompt(content, title),
-        maxTokens: 150,
-        temperature: 0.3,
-      });
-
-      const tagsResponse = await this.complete({
-        prompt: buildTagsPrompt(content, title),
-        maxTokens: 100,
-        temperature: 0.2,
-      });
+      const [summaryResponse, tagsResponse] = await Promise.all([
+        this.complete({
+          prompt: buildSummaryPrompt(content, title),
+          maxTokens: 150,
+          temperature: 0.3,
+        }),
+        this.complete({
+          prompt: buildTagsPrompt(content, title),
+          maxTokens: 100,
+          temperature: 0.2,
+        }),
+      ]);
 
       return {
         summary: summaryResponse.text.trim(),
@@ -123,11 +127,13 @@ export async function completeLocalLLMStream(
   runtimeId = 'managed-local',
   modelId = 'qwen3.5-2b-q4',
 ): Promise<string | null> {
+  let effectiveModelId = modelId;
   try {
     const health = await invoke<TauriRuntimeHealth>('get_runtime_health');
     if (health.status !== 'healthy' || health.loadedModelId === null) {
       return null;
     }
+    effectiveModelId = health.loadedModelId;
   } catch {
     return null;
   }
@@ -141,7 +147,7 @@ export async function completeLocalLLMStream(
 
   const tauriRequest: TauriCompletionRequest = {
     runtimeId,
-    modelId,
+    modelId: effectiveModelId,
     messages: tauriMessages,
     maxTokens: 512,
     temperature: 0.7,

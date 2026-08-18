@@ -9,6 +9,43 @@ use crate::models::{
 
 pub type DesktopRuntimeState = Arc<DesktopRuntimeStateInner>;
 
+fn format_messages_to_prompt(
+    messages: &[crate::models::CompletionMessage],
+    model_family: Option<&str>,
+) -> String {
+    if messages.is_empty() {
+        return String::new();
+    }
+
+    let family = model_family.unwrap_or("qwen-chatml");
+    if family == "qwen-chatml" || family == "qwen" {
+        let mut prompt = String::new();
+        for msg in messages {
+            let role = match msg.role.as_str() {
+                "system" => "system",
+                "assistant" => "assistant",
+                _ => "user",
+            };
+            prompt.push_str(&format!("<|im_start|>{}\n{}\n<|im_end|>\n", role, msg.content));
+        }
+        prompt.push_str("<|im_start|>assistant\n");
+        prompt
+    } else {
+        // Generic format
+        let mut prompt = String::new();
+        for msg in messages {
+            let role_label = match msg.role.as_str() {
+                "system" => "System",
+                "assistant" => "Assistant",
+                _ => "User",
+            };
+            prompt.push_str(&format!("{}:\n{}\n\n", role_label, msg.content));
+        }
+        prompt.push_str("Assistant:\n");
+        prompt
+    }
+}
+
 pub struct DesktopRuntimeStateInner {
     pub models: Mutex<Vec<ManagedModelRecord>>,
     pub health: Mutex<RuntimeHealth>,
@@ -204,12 +241,18 @@ impl DesktopRuntimeStateInner {
         health.loaded_model_id = Some(request.model_id.clone());
         drop(health);
 
-        let prompt = request
-            .messages
-            .last()
-            .map(|message| message.content.clone())
-            .unwrap_or_default();
+        let model_family = self
+            .models
+            .lock()
+            .ok()
+            .and_then(|models| {
+                models
+                    .iter()
+                    .find(|m| m.id == request.model_id)
+                    .map(|m| m.family.clone())
+            });
 
+        let prompt = format_messages_to_prompt(&request.messages, model_family.as_deref());
         let max_tokens = request.max_tokens.unwrap_or(256);
 
         let engine = self
@@ -247,12 +290,18 @@ impl DesktopRuntimeStateInner {
         health.loaded_model_id = Some(request.model_id.clone());
         drop(health);
 
-        let prompt = request
-            .messages
-            .last()
-            .map(|message| message.content.clone())
-            .unwrap_or_default();
+        let model_family = self
+            .models
+            .lock()
+            .ok()
+            .and_then(|models| {
+                models
+                    .iter()
+                    .find(|m| m.id == request.model_id)
+                    .map(|m| m.family.clone())
+            });
 
+        let prompt = format_messages_to_prompt(&request.messages, model_family.as_deref());
         let max_tokens = request.max_tokens.unwrap_or(256);
 
         let engine = self

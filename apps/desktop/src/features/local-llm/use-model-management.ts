@@ -77,7 +77,7 @@ export function useDownloadProgress() {
   useEffect(() => {
     let unlisten: (() => void) | null = null;
 
-    listen<DownloadProgress>('model:download-progress', (event) => {
+    listen<DownloadProgress>('rustra://model:download-progress', (event) => {
       setProgress((prev) => ({
         ...prev,
         [event.payload.modelId]: event.payload,
