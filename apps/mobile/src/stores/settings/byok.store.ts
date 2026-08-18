@@ -11,19 +11,27 @@ import {
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { storage, StorageKeys } from '@/src/lib/storage';
+import {
+  SecureStorageKeys,
+  getSecureItem,
+  setSecureItem,
+  deleteSecureItem,
+  migrateLegacyPlaintextKey,
+} from '@/src/lib/secure-storage';
 
 function loadPersistedSettings(): BYOKConfig {
   const enabled = storage.getBoolean(StorageKeys.BYOK_ENABLED) ?? false;
   const providerValue = storage.getString(StorageKeys.BYOK_PROVIDER) ?? null;
   const provider = isBYOKProvider(providerValue) ? providerValue : null;
-  const apiKey = storage.getString(StorageKeys.BYOK_API_KEY) ?? null;
+  // Check for any legacy unencrypted MMKV key (will be migrated asynchronously)
+  const legacyApiKey = storage.getString(StorageKeys.BYOK_API_KEY) ?? null;
   const baseUrl = storage.getString(StorageKeys.BYOK_BASE_URL) ?? null;
   const model = storage.getString(StorageKeys.BYOK_MODEL) ?? null;
 
   return {
-    enabled: provider !== null && apiKey !== null ? enabled : false,
+    enabled: provider !== null && legacyApiKey !== null ? enabled : false,
     provider,
-    apiKey,
+    apiKey: legacyApiKey,
     baseUrl,
     model,
   };
@@ -40,6 +48,31 @@ const byokStore = createStore<BYOKStoreState>((set) => ({
     },
   },
 }));
+
+/**
+ * Hydrate encrypted API key from Keychain / Keystore and clean up legacy storage
+ */
+export async function hydrateBYOKSecureKey(): Promise<void> {
+  try {
+    const key = await migrateLegacyPlaintextKey(
+      StorageKeys.BYOK_API_KEY,
+      SecureStorageKeys.BYOK_API_KEY
+    ) ?? await getSecureItem(SecureStorageKeys.BYOK_API_KEY);
+
+    if (key) {
+      updateBYOKStoreConfig((config) => ({
+        ...config,
+        apiKey: key,
+        enabled: config.provider !== null ? (storage.getBoolean(StorageKeys.BYOK_ENABLED) ?? true) : false,
+      }));
+    }
+  } catch {
+    // Ignore hydration error silently
+  }
+}
+
+// Automatically trigger secure hydration on store import
+void hydrateBYOKSecureKey();
 
 export function getBYOKStoreConfig(): BYOKConfig {
   return byokStore.getState().config;
@@ -73,8 +106,11 @@ export function setBYOKProvider(provider: BYOKProviderType | null): void {
 
 export function setBYOKApiKey(apiKey: string | null): void {
   if (apiKey) {
-    storage.set(StorageKeys.BYOK_API_KEY, apiKey);
+    void setSecureItem(SecureStorageKeys.BYOK_API_KEY, apiKey);
+    // Remove legacy unencrypted key from MMKV if present
+    storage.remove(StorageKeys.BYOK_API_KEY);
   } else {
+    void deleteSecureItem(SecureStorageKeys.BYOK_API_KEY);
     storage.remove(StorageKeys.BYOK_API_KEY);
   }
   updateBYOKStoreConfig((config) => ({ ...config, apiKey }));
@@ -104,6 +140,7 @@ export function clearBYOKStoredSettings(): void {
   storage.remove(StorageKeys.BYOK_API_KEY);
   storage.remove(StorageKeys.BYOK_BASE_URL);
   storage.remove(StorageKeys.BYOK_MODEL);
+  void deleteSecureItem(SecureStorageKeys.BYOK_API_KEY);
   resetBYOKStoreConfig();
 }
 

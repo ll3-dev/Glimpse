@@ -14,6 +14,7 @@ export async function generateAssistantReply(params: {
   model: LocalModel;
   conversationId: string;
   userText: string;
+  previousMessages?: { role: 'user' | 'assistant'; content: string }[];
   contextItem?: KnowledgeItem | null;
   addMessage: ChatMessageWriter;
   streamingTextRef: MutableRefObject<string>;
@@ -24,6 +25,7 @@ export async function generateAssistantReply(params: {
     model,
     conversationId,
     userText,
+    previousMessages = [],
     contextItem,
     addMessage,
     streamingTextRef,
@@ -36,9 +38,14 @@ export async function generateAssistantReply(params: {
     content: userText,
   });
 
+  const fullMessages: { role: 'user' | 'assistant'; content: string }[] = [
+    ...previousMessages.map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user', content: userText },
+  ];
+
   const prompt = runtime.buildChatPrompt(
     model,
-    [{ role: 'user', content: userText }],
+    fullMessages,
     contextItem
   );
 
@@ -87,6 +94,7 @@ export function generateAssistantReplyEffect(params: {
   model: LocalModel;
   conversationId: string;
   userText: string;
+  previousMessages?: { role: 'user' | 'assistant'; content: string }[];
   contextItem?: KnowledgeItem | null;
   addMessage: ChatMessageWriter;
   streamingTextRef: MutableRefObject<string>;
@@ -97,6 +105,7 @@ export function generateAssistantReplyEffect(params: {
     model,
     conversationId,
     userText,
+    previousMessages = [],
     contextItem,
     addMessage,
     streamingTextRef,
@@ -114,10 +123,15 @@ export function generateAssistantReplyEffect(params: {
       catch: (e) => appError('DATABASE_ERROR', 'Failed to save user message', { cause: e }),
     }));
 
+    const fullMessages: { role: 'user' | 'assistant'; content: string }[] = [
+      ...previousMessages.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: userText },
+    ];
+
     // Build prompt
     const prompt = runtime.buildChatPrompt(
       model,
-      [{ role: 'user', content: userText }],
+      fullMessages,
       contextItem
     );
 

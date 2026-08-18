@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useAddMessageMutation } from '@/src/hooks/mutations';
+import { useMessagesQuery } from '@/src/hooks/queries';
 import { executeChatTarget, resolveEffectiveTarget } from '@/src/features/ai/targets';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { isFailure } from '@/src/lib/effect-result';
@@ -36,6 +37,7 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
   // Use ref to persist streaming text across renders for abort saving
   const streamingTextRef = useRef('');
 
+  const { data: messages } = useMessagesQuery(conversationId);
   const { mutateAsync: addMessage } = useAddMessageMutation();
 
   const sendMessage = useCallback(async (text: string) => {
@@ -61,6 +63,7 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
           model,
           conversationId,
           userText: text.trim(),
+          previousMessages: messages?.map((m) => ({ role: m.role, content: m.content })) ?? [],
           contextItem,
           addMessage,
           streamingTextRef,
@@ -105,7 +108,7 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
     } finally {
       setIsGenerating(false);
     }
-  }, [conversationId, contextItem, isGenerating, addMessage]);
+  }, [conversationId, contextItem, isGenerating, addMessage, messages]);
 
   /**
    * Abort current generation and save partial response

@@ -13,6 +13,7 @@ import {
   useAvailableLocalModels,
   useSelectedLocalModelId,
 } from '@/src/features/settings';
+import { resolveEffectiveTarget } from '@/src/features/ai/targets';
 import { useLocalLLMStoreConfig } from '@/src/stores/settings/local-llm.store';
 
 interface UseChatAISetupOptions {
@@ -48,6 +49,13 @@ export function useChatAISetup({
   const downloadProgress = useLocalLLMStoreConfig((config) => config.downloadProgress);
 
   const ensureReady = useCallback(async () => {
+    // If chat target is remote BYOK or Apple Intelligence, local LLM model setup is not required
+    const target = resolveEffectiveTarget('chat');
+    if (target.kind !== 'local') {
+      setShowDialog(false);
+      return true;
+    }
+
     if (isLocalLLMReady()) {
       setShowDialog(false);
       return true;

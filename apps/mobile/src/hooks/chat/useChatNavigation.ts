@@ -36,9 +36,10 @@ export function useChatNavigation({
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messages && messages.length > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages]);
 

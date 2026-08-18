@@ -92,6 +92,27 @@ mock.module("react-native-mmkv", () => ({
   }),
 }));
 
+const secureStorageMap = new Map<string, string>();
+
+// Mock expo-secure-store for tests
+mock.module("expo-secure-store", () => ({
+  getItemAsync: mock(async (key: string) => secureStorageMap.get(key) ?? null),
+  setItemAsync: mock(async (key: string, value: string) => {
+    secureStorageMap.set(key, value);
+  }),
+  deleteItemAsync: mock(async (key: string) => {
+    secureStorageMap.delete(key);
+  }),
+  isAvailableAsync: mock(async () => true),
+  WHEN_UNLOCKED: 'WHEN_UNLOCKED',
+  AFTER_FIRST_UNLOCK: 'AFTER_FIRST_UNLOCK',
+  ALWAYS: 'ALWAYS',
+  WHEN_PASSCODE_SET_THIS_DEVICE_ONLY: 'WHEN_PASSCODE_SET_THIS_DEVICE_ONLY',
+  WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+  AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 'AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY',
+  ALWAYS_THIS_DEVICE_ONLY: 'ALWAYS_THIS_DEVICE_ONLY',
+}));
+
 mock.module("expo-task-manager", () => {
   const definedTasks = new Map<string, unknown>();
   const registeredTasks = new Set<string>();
