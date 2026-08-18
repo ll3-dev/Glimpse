@@ -11,6 +11,11 @@ last_updated: 2026-03-28
 last_updated_by: loopy
 ---
 
+> ⚠️ **역사 문서** — Nitro/cbindgen 아키텍처(2026-03) 기준으로 작성됨.
+> 2026-08 rustra 통합으로 무효된 내용을 포함한다. 현재 아키텍처는
+> `docs/plans/2026-08-16-rustra-integration-design.md` 참조.
+
+
 # 리서치: iOS/Android 공유하기 미동작 원인과 앱 미진입 직접 저장 가능성 조사
 
 **날짜**: 2026-03-28T15:56:09+0900

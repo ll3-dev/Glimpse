@@ -1,3 +1,7 @@
+> ⚠️ **역사 문서** — Nitro/cbindgen 아키텍처(2026-03) 기준으로 작성됨.
+> 2026-08 rustra 통합으로 무효된 내용을 포함한다. 현재 아키텍처는
+> `docs/plans/2026-08-16-rustra-integration-design.md` 참조.
+
 # Nitro Mobile Bridge Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

@@ -1,5 +1,9 @@
 # UI Style Guide
 
+> **우선 순위**: 상세 시각 규격(컬러 팔레트 전체, 타입 스케일, 컴포넌트
+> 패턴, 에이전트 코드 컨벤션)은 [`DESIGN.md`](/DESIGN.md)가 우선한다.
+> 이 문서는 빠른 참조용 요약이며 충돌 시 DESIGN.md 를 따른다.
+
 This document outlines the design system and UI patterns for the Glimpse application.
 
 ## 1. Design Principles
@@ -8,7 +12,7 @@ This document outlines the design system and UI patterns for the Glimpse applica
 - **Platform Native Feel:** Respect safe areas and platform interactions while maintaining a consistent brand look.
 
 ## 2. Colors
-Defined in `global.css` via CSS variables and Tailwind classes.
+Defined in `packages/ui/styles/globals.css` via CSS variables and Tailwind classes.
 
 | Token | Class | Hex | Usage |
 |-------|-------|-----|-------|
@@ -25,7 +29,7 @@ Defined in `global.css` via CSS variables and Tailwind classes.
 Use standard Tailwind text utilities.
 
 - **Screen Title:** `text-xl font-bold tracking-tight text-app-text` (e.g., "보관함", "설정")
-- **Section Header:** `text-sm font-bold text-app-muted uppercase tracking-tight`
+- **Section Header:** DESIGN.md 기준 — `text-lg font-semibold text-app-text` (18-20px)
 - **Body:** `text-base text-app-text`
 - **Caption:** `text-xs text-app-muted`
 

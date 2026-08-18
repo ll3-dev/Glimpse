@@ -220,7 +220,9 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 
 ### 남겨둔 것 (통합 이후 후속)
 
-- **rustra 레포 `feat/event-sink` 머지 + 0.1.2 게시 + Glimpse path 링크 원복**: 사용자 액션(게시는 release.yml 수동). 원복 시 두 Cargo.toml 의 path 를 `=0.1.2` 핀으로.
+- ~~rustra 레포 `feat/event-sink` 머지 + 0.1.2 게시 + Glimpse path 링크 원복~~ — **완료**: crates.io 0.1.2 게시 확인, 두 Cargo.toml `=0.1.2` 정확 핀 원복(`c58254c`). npm `@rustra/*`도 2026-08-18에 0.1.2로 범프(모바일 네이티브 `subscribeEvent` 전환의 선행 조건 해소).
+- **모바일 네이티브 이벤트 배선(후보)**: 모바일 스트리밍은 현재 `stream-events.ts` 로컬 허브로 *계약만* 정렬된 상태. JSI 네이티브(iOS `.mm`/Android JNI)에 rustra FFI 이벤트 싱크→JS 콜백 배선 후 공식 `subscribeEvent`로 교체하는 것이 후속 후보.
+- **뮤텍스 오염 트레이드오프 재평가 (1주차 이월)**: rustra 글로벌이 panic으로 오염되면 이후 dispatch가 panic하는 리스크는 여전하다. 2026-08-18 안정화 라운드에서 Tauri 커맨드 레이어의 `.expect` panic 지점을 `Result` 전파로 제거했으나, rustra 엔진 자체의 오염 회복(poison unwind 후 재초기화)은 rustra 측 기능이 필요해 미해결로 남긴다.
 
 ### 최종 상태 요약 (4주 마일스톤 전체)
 

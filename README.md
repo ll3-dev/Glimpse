@@ -1,6 +1,6 @@
 # Glimpse
 
-Glimpse는 Bun 워크스페이스 위에서 운영되는 앱 프로젝트입니다. 중심은 Expo 기반 React Native 모바일 앱이며, `expo-router`를 사용해 화면 흐름을 구성하고, 일부 네이티브 핵심 기능은 Rust 코어를 typed Nitro bridge로 연결합니다.
+Glimpse는 Bun 워크스페이스 위에서 운영되는 앱 프로젝트입니다. 중심은 Expo 기반 React Native 모바일 앱이며, `expo-router`를 사용해 화면 흐름을 구성하고, 도메인 커맨드는 공유 rustra 브리지(packages/bridge-rust)로 Rust 코어와 연결합니다.
 
 ## 왜 만드는가
 
@@ -32,7 +32,8 @@ Glimpse는 단순한 화면 데모가 아니라, 로컬 앱 경험과 네이티�
 
 - `apps/mobile`: 주요 Expo / React Native 앱
 - `apps/desktop`: Vite + React + Tauri 기반 데스크톱 앱
-- `packages/core-rust`: Rust 코어와 FFI 레이어
+- `packages/bridge-rust`: rustra 도메인 커맨드 브리지(glimpse-bridge)와 생성된 TS 클라이언트
+- `packages/core-rust`: Rust 도메인 로직
 - `packages/shared`: 공통 타입과 유틸리티
 - `packages/ui`: 공유 UI 패키지
 
@@ -49,13 +50,16 @@ graph TB
     SHARED["packages/shared<br/>Types &amp; utilities"]
     UI["packages/ui<br/>Shared UI components"]
     CORE["packages/core-rust<br/>Rust domain logic"]
+    BRIDGE["packages/bridge-rust<br/>rustra bridge (glimpse-bridge)"]
   end
 
   MOBILE --> SHARED
   MOBILE --> UI
-  MOBILE -->|"FFI (Nitro)"| CORE
+  MOBILE -->|"rustra bridge (JSI)"| BRIDGE
   DESKTOP --> SHARED
   DESKTOP --> UI
+  DESKTOP -->|"rustra bridge (Tauri)"| BRIDGE
+  BRIDGE --> CORE
 ```
 
 ## 주요 기술 스택
@@ -67,7 +71,7 @@ graph TB
 - TanStack Query
 - Zustand
 - MMKV
-- Rust + C ABI + Nitro bridge
+- Rust + rustra bridge (`packages/bridge-rust`)
 - Tauri
 
 ## 사전 준비
@@ -116,8 +120,7 @@ bun run start
 - `src/stores`: Zustand 기반 클라이언트 상태
 - `src/lib`: 저장소, 초기화, 공통 유틸리티
 - `src/features`: 기능별 도메인 로직
-- `cpp/`: handwritten C++ 브리지 코드
-- `nitrogen/generated/`: Nitro 생성 결과물
+- `modules/rustra-jsi`: rustra JSI 네이티브 모듈
 - `ios/`, `android/`: 네이티브 플랫폼 프로젝트
 
 레이어 의존 관계:
@@ -257,4 +260,4 @@ cargo check -p glimpse-core
 
 ## English Summary
 
-Glimpse is a Bun workspace built around an Expo-based React Native app, with shared packages for UI and types, plus a Rust core connected to mobile through a typed Nitro bridge. The current structure exists to keep mobile iteration fast, share contracts across surfaces, and isolate performance-sensitive native logic behind a stable boundary.
+Glimpse is a Bun workspace built around an Expo-based React Native app, with shared packages for UI and types, plus a Rust core connected to both apps through the shared rustra bridge (`packages/bridge-rust`). The current structure exists to keep mobile iteration fast, share contracts across surfaces, and isolate performance-sensitive native logic behind a stable boundary.
