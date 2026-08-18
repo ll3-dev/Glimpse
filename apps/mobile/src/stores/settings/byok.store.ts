@@ -18,6 +18,7 @@ import {
   deleteSecureItem,
   migrateLegacyPlaintextKey,
 } from '@/src/lib/secure-storage';
+import { logger } from '@/src/utils/logger';
 
 function loadPersistedSettings(): BYOKConfig {
   const enabled = storage.getBoolean(StorageKeys.BYOK_ENABLED) ?? false;
@@ -66,13 +67,31 @@ export async function hydrateBYOKSecureKey(): Promise<void> {
         enabled: config.provider !== null ? (storage.getBoolean(StorageKeys.BYOK_ENABLED) ?? true) : false,
       }));
     }
-  } catch {
-    // Ignore hydration error silently
+  } catch (error) {
+    // 복원 실패를 삼키지 않는다 — 진단 가능해야 하며 스토어는 초기 상태 유지
+    logger.error('byok hydration failed', error);
   }
 }
 
+let hydrationPromise: Promise<void> | null = null;
+
+/**
+ * SecureStore 키 복원이 완료될 때까지 기다린다(실패해도 resolve —
+ * 스토어는 초기 상태를 유지하고 소비자가 안내 경로로 처리한다).
+ * 콜드스타트 직후 BYOK 실행이 키 null로 거부되는 레이스를 막는 게이트.
+ */
+export function ensureBYOKHydrated(): Promise<void> {
+  hydrationPromise ??= hydrateBYOKSecureKey();
+  return hydrationPromise;
+}
+
 // Automatically trigger secure hydration on store import
-void hydrateBYOKSecureKey();
+void ensureBYOKHydrated();
+
+/** @internal 테스트 전용 — 메모이제이션 상태를 초기화해 재하이드레이션을 유발한다. */
+export function __resetBYOKHydrationForTests(): void {
+  hydrationPromise = null;
+}
 
 export function getBYOKStoreConfig(): BYOKConfig {
   return byokStore.getState().config;

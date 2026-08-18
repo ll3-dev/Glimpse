@@ -16,6 +16,7 @@ import { ShareIntentProvider } from "expo-share-intent";
 import { ShareIntentNavigator } from "@/src/components/share-intent";
 import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
 import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
+import { ensureBYOKHydrated } from "@/src/stores/settings/byok.store";
 import { useProcessPendingShares } from "@/src/features/share/pending-share-processor";
 import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
@@ -89,7 +90,11 @@ export default function RootLayout() {
   const initCore = useCallback(async () => {
     try {
       setCoreInitError(null);
-      await initializeCoreClient();
+      // BYOK 키 복원을 부트스트랩 게이트에 병렬 편입 — 코어 초기화와
+      // 함께 기다려 콜드스타트 직후 BYOK 실행이 키 null로 거부되거나
+      // 스텁 타깃으로 폴백하는 레이스를 제거한다. 복원 실패는 게이트를
+      // 깨지 않는다(ensureBYOKHydrated가 내부에서 처리).
+      await Promise.all([initializeCoreClient(), ensureBYOKHydrated()]);
     } catch (error) {
       logger.error('Failed to initialize mobile core client', error);
       setCoreInitError(error instanceof Error ? error : new Error(String(error)));

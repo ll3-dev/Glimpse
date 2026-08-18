@@ -16,6 +16,7 @@ import { LABEL_TAXONOMY, type LabelingResult } from '@/src/features/labeling/typ
 import { getSelectedLocalModel } from '@/src/features/settings/local-llm.selectors';
 import { getLocalLLMRuntime } from '@/src/hooks/chat/chatRuntime';
 import { getApiKey, getBaseUrl, getModel, getProvider } from '@/src/features/settings/byok.selectors';
+import { ensureBYOKHydrated } from '@/src/stores/settings/byok.store';
 import type { AITarget } from './types';
 
 export interface MetadataExecutionInput {
@@ -311,6 +312,9 @@ async function executeLocalChatTarget(input: ChatExecutionInput): Promise<Result
 }
 
 async function executeBYOKChatTarget(input: ChatExecutionInput): Promise<Result<string>> {
+  // 콜드스타트 직후 SecureStore 복원이 끝나지 않은 경우 키 null로
+  // 거부되는 레이스 방지 — BYOK 경로 진입 시 복원 완료를 보장한다.
+  await ensureBYOKHydrated();
   const byokConfig = resolveBYOKChatConfig();
   if (!byokConfig.success) {
     return isFailure(byokConfig)
@@ -465,6 +469,11 @@ function executeLocalChatTargetEffect(input: ChatExecutionInput): Effect.Effect<
 
 function executeBYOKChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
   return Effect.gen(function* (_) {
+    // BYOK 경로 진입 시 SecureStore 복원 완료 보장 — 콜드스타트 레이스 방지
+    yield* _(Effect.tryPromise({
+      try: () => ensureBYOKHydrated(),
+      catch: () => appError('GENERATION_ERROR', 'BYOK 설정을 복원하는 데 실패했습니다.'),
+    }));
     const byokConfig = resolveBYOKChatConfig();
     if (!byokConfig.success) {
       return yield* _(Effect.fail(
