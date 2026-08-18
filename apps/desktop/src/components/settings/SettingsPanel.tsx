@@ -17,7 +17,7 @@ export function SettingsPanel() {
 
   const handleSettingsChange = useCallback((next: DesktopSettings) => {
     setSettings(next);
-    saveSettings(next);
+    void saveSettings(next);
   }, []);
 
   return (

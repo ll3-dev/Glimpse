@@ -8,5 +8,6 @@ pub mod commands;
 pub mod download;
 pub mod llm;
 pub mod models;
+pub mod secrets;
 pub mod services;
 pub mod state;

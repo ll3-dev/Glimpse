@@ -11,6 +11,8 @@ interface BYOKSectionProps {
 const PROVIDER_OPTIONS = [
   { value: 'openai', label: 'OpenAI', baseUrl: 'https://api.openai.com/v1' },
   { value: 'deepseek', label: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1' },
+  { value: 'anthropic', label: 'Anthropic', baseUrl: '' },
+  { value: 'google', label: 'Google', baseUrl: '' },
   { value: 'custom', label: 'Custom', baseUrl: '' },
 ] as const;
 
@@ -49,10 +51,26 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
     setTimeout(() => setToast(null), 2000);
   }, [settings, onSettingsChange]);
 
-  const handleTestConnection = useCallback(() => {
-    setToast('Not implemented');
-    setTimeout(() => setToast(null), 2000);
-  }, []);
+  const handleTestConnection = useCallback(async () => {
+    setToast('연결 테스트 중...');
+    try {
+      // 현재 폼 값으로 프로바이더를 만들어 최소 완성 요청을 시도
+      const { createBYOKProvider } = await import('@/features/ai/providers/byok-provider');
+      const provider = createBYOKProvider({
+        provider: byok.provider,
+        apiKey: byok.apiKey,
+        baseUrl: byok.baseUrl,
+        model: byok.model,
+      });
+      await provider.complete({ prompt: 'ping', maxTokens: 1 });
+      setToast('연결 성공');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setToast(`연결 실패: ${message.slice(0, 120)}`);
+    } finally {
+      setTimeout(() => setToast(null), 4000);
+    }
+  }, [byok.provider, byok.apiKey, byok.baseUrl, byok.model]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
@@ -144,7 +162,7 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
             <Save className="h-4 w-4" />
             Save
           </Button>
-          <Button variant="outline" onClick={handleTestConnection}>
+          <Button variant="outline" onClick={() => void handleTestConnection()}>
             Test Connection
           </Button>
           {toast && (

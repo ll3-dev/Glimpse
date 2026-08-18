@@ -10,7 +10,7 @@
 
 import type { AIProvider, AIProviderError, CompletionRequest, CompletionResponse, MetadataOutput, AIProviderKind, StreamingCallbacks } from '../types';
 import { buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from '../metadata-text';
-import { loadSettings } from '@/lib/settings-storage';
+import { loadApiKey, loadSettings } from '@/lib/settings-storage';
 
 // ---------------------------------------------------------------------------
 // Per-provider API configuration
@@ -222,13 +222,16 @@ export function createBYOKProvider(config?: BYOKProviderConfig): AIProvider {
       if (config) {
         return !!(config.apiKey && config.provider);
       }
-      return settings.aiProvider === 'byok' && settings.byok.apiKey.length > 0;
+      if (settings.aiProvider !== 'byok') return false;
+      // 키는 키체인에 있다 — 설정에 키가 없어도 저장된 키로 판정한다
+      const apiKey = await loadApiKey(settings.byok.provider);
+      return apiKey.length > 0;
     },
 
     async complete(request: CompletionRequest): Promise<CompletionResponse> {
       const settings = loadSettings();
       const providerType = (config?.provider ?? settings.byok.provider) as BYOKProviderType;
-      const apiKey = config?.apiKey ?? settings.byok.apiKey;
+      const apiKey = config?.apiKey ?? (await loadApiKey(settings.byok.provider));
       const baseUrl = config?.baseUrl ?? settings.byok.baseUrl;
       const model = config?.model ?? settings.byok.model;
       const fetchFn = config?.fetchFn ?? fetch;
@@ -247,9 +250,18 @@ export function createBYOKProvider(config?: BYOKProviderConfig): AIProvider {
       });
 
       if (!response.ok) {
+        // 상태별 에러 매핑 — 401/403(키 문제)와 429(레이트 제한)를
+        // 구분해 사용자가 원인을 알 수 있게 한다.
+        const code =
+          response.status === 401 || response.status === 403
+            ? 'AI_PROVIDER_UNAUTHORIZED'
+            : response.status === 429
+              ? 'AI_PROVIDER_RATE_LIMITED'
+              : 'AI_PROVIDER_INVALID_RESPONSE';
+        const body = await response.text().catch(() => '');
         throwProviderError(
-          'AI_PROVIDER_INVALID_RESPONSE',
-          `API request failed with status ${response.status}`,
+          code,
+          `API request failed with status ${response.status}${body ? `: ${body.slice(0, 200)}` : ''}`,
           'byok',
         );
       }
@@ -360,7 +372,7 @@ export async function completeBYOKStream(
 ): Promise<string | null> {
   const settings = loadSettings();
   const providerType = (config?.provider ?? settings.byok.provider) as BYOKProviderType;
-  const apiKey = config?.apiKey ?? settings.byok.apiKey;
+  const apiKey = config?.apiKey ?? (await loadApiKey(settings.byok.provider));
   const baseUrl = config?.baseUrl ?? settings.byok.baseUrl;
   const model = config?.model ?? settings.byok.model;
   const fetchFn = config?.fetchFn ?? fetch;
@@ -391,8 +403,10 @@ export async function completeBYOKStream(
 
     const reader = response.body.getReader();
     return consumeSSEStream(reader, apiConfig.parseSSEToken, callbacks);
-  } catch {
-    return null; // Fall back to non-streaming on any error
+  } catch (error) {
+    // 실패 원인이 유실되지 않게 기록하고 비스트리밍으로 폴백한다
+    console.warn('[byok] streaming failed, falling back to non-streaming:', error);
+    return null;
   }
 }
 

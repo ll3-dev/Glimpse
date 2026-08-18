@@ -33,18 +33,6 @@
         <data android:mimeType="image/*"/>
         <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>
-      <intent-filter>
-        <action android:name="android.intent.action.SEND"/>
-        <data android:mimeType="text/*"/>
-        <data android:mimeType="image/*"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
-      <intent-filter>
-        <action android:name="android.intent.action.SEND"/>
-        <data android:mimeType="text/*"/>
-        <data android:mimeType="image/*"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
     </activity>
     <uses-native-library android:name="libOpenCL.so" android:required="false"/>
     <uses-native-library android:name="libcdsprpc.so" android:required="false"/>

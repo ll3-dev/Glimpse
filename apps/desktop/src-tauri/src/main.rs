@@ -4,6 +4,7 @@ mod commands;
 mod download;
 mod llm;
 mod models;
+mod secrets;
 mod services;
 mod state;
 
@@ -65,7 +66,10 @@ fn main() {
             commands::run_completion,
             commands::stream_completion,
             commands::run_embedding,
-            commands::get_runtime_health
+            commands::get_runtime_health,
+            secrets::get_secret,
+            secrets::set_secret,
+            secrets::delete_secret
         ])
         .run(tauri::generate_context!())
         .expect("error while running glimpse desktop tauri shell");
