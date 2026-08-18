@@ -1,5 +1,10 @@
 # Glimpse 안정화 프로그램 구현 계획
 
+> **Status: COMPLETE (2026-08-19)** — Phase 0~F 전부 완료.
+> 커밋: Phase 0(7커밋) `322b3e6..c9517e3` / A `37ce5c9,b0185a0` / B `0cbae3b` /
+> C `6b76ffc` / D `ff2946e` / E `55a8ab9` / F `9b4d953`.
+> 최종 게이트: lint ✅ typecheck ✅ bun test 501 pass ✅ cargo test 12 suites ✅ clippy -D warnings ✅ 트리 클린 ✅
+
 ## 개요
 
 2026-08-18 전수 조사에서 확인된 P0~P3 결함(크래시 요인, 다운로드 무결성, 상태 오염, 보안, 문서 드리프트)을 6개 Phase(A~F)로 수정하고, 기존 106파일 WIP를 관심사별 커밋으로 정리한다. 각 Phase는 독립적으로 검증 가능하며 Phase 0에서 WIP를 먼저 확정 커밋해 베이스를 고정한다.
