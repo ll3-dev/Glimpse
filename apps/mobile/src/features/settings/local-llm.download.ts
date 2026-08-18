@@ -1,5 +1,9 @@
 import type { ModelInfo, DownloadProgress as ModelDownloaderProgress } from '@/src/features/ai/model-manager';
 import { ModelDownloader, modelDownloader } from '@/src/features/ai/model-manager';
+// 주의: downloadLocalModel과 cancelLocalModelDownload는 반드시 같은
+// 인스턴스(modelDownloader 싱글턴)를 사용해야 한다 — 인스턴스별
+// activeTask/activeFilename 상태가 다르면 취소가 실제 fetch에
+// 도달하지 않는다.
 import {
   clearLocalLLMDownloadSession,
   clearLocalLLMDownloadError,
@@ -48,10 +52,8 @@ export async function downloadLocalModel(
   clearLocalLLMDownloadError();
   startLocalLLMDownload(model.id, options.sourceRoute ?? null);
 
-  const downloader = new ModelDownloader();
-
   try {
-    const path = await downloader.downloadModel(model, (progress) => {
+    const path = await modelDownloader.downloadModel(model, (progress) => {
       updateLocalLLMDownloadProgress(convertProgress(progress));
     });
 

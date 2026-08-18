@@ -74,14 +74,23 @@ export function initializeCoreClient(): Promise<string> {
     return initializationPromise;
   }
 
-  initializationPromise = (async () => {
+  const promise = (async () => {
     const dbPath = await getDbPath();
     await mobileCoreClient.initialize(dbPath);
     logger.info(`Core client initialized with DB at: ${dbPath}`);
     return dbPath;
   })();
 
-  return initializationPromise;
+  // 실패한 초기화는 캐시하지 않는다 — 루트 폴백의 "다시 시도"가
+  // 실제 재초기화를 수행해야 한다. (거부 재발생은 반환값이 담당)
+  initializationPromise = promise;
+  promise.catch(() => {
+    if (initializationPromise === promise) {
+      initializationPromise = null;
+    }
+  });
+
+  return promise;
 }
 
 /**
