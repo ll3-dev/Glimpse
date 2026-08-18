@@ -11,6 +11,7 @@ import { mobileCoreClient } from "@/src/features/core/mobile-core-client";
 import { logger } from "@/src/utils/logger";
 import type { KnowledgeItem, KnowledgeItemType } from "@glimpse/shared";
 import { getPendingShareData, clearPendingShareData } from "@/src/utils/app-group-path";
+import { generateId } from "@/src/lib/id";
 
 interface PendingShareData {
   text?: string[];
@@ -30,7 +31,7 @@ async function processShareData(data: PendingShareData): Promise<boolean> {
     if (data.text && data.text.length > 0) {
       const combinedText = data.text.join("\n");
       const item: KnowledgeItem = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: "share" as KnowledgeItemType,
         title: null,
         body: combinedText,
@@ -60,34 +61,36 @@ async function processShareData(data: PendingShareData): Promise<boolean> {
 
     // Process URL share
     if (data.webUrl && data.webUrl.length > 0) {
-      for (const webUrl of data.webUrl) {
-        const item: KnowledgeItem = {
-          id: crypto.randomUUID(),
-          type: "share" as KnowledgeItemType,
-          title: webUrl.url,
-          body: webUrl.meta || null,
-          url: webUrl.url,
-          summary: null,
-          tags: null,
-          labels: null,
-          provisionalLabels: null,
-          labelStatus: null,
-          labelSource: null,
-          labelVersion: null,
-          labelScore: null,
-          labelRequestedAt: null,
-          labelCompletedAt: null,
-          labelError: null,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          stability: null,
-          difficulty: null,
-          lastReviewedAt: null,
-          nextReviewAt: null,
-        };
-        await mobileCoreClient.saveKnowledgeItem(item);
-        logger.info("[PendingShareProcessor] Saved URL share:", { url: webUrl.url });
-      }
+      await Promise.all(
+        data.webUrl.map(async (webUrl) => {
+          const item: KnowledgeItem = {
+            id: generateId(),
+            type: "share" as KnowledgeItemType,
+            title: webUrl.url,
+            body: webUrl.meta || null,
+            url: webUrl.url,
+            summary: null,
+            tags: null,
+            labels: null,
+            provisionalLabels: null,
+            labelStatus: null,
+            labelSource: null,
+            labelVersion: null,
+            labelScore: null,
+            labelRequestedAt: null,
+            labelCompletedAt: null,
+            labelError: null,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            stability: null,
+            difficulty: null,
+            lastReviewedAt: null,
+            nextReviewAt: null,
+          };
+          await mobileCoreClient.saveKnowledgeItem(item);
+          logger.info("[PendingShareProcessor] Saved URL share:", { url: webUrl.url });
+        })
+      );
       saved = true;
     }
 

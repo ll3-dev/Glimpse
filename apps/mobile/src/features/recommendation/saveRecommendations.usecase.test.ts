@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createSaveRecommendations,
+  type GeneratedRecommendation,
   type SaveRecommendationsDeps,
 } from '@/src/features/core/application/recommendation';
-import type { GeneratedRecommendation } from '@/src/features/core/application/recommendation';
 
 describe('createSaveRecommendations', () => {
   const coreClient = {

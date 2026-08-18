@@ -30,13 +30,16 @@ export function SearchBar({ onSearch }: SearchBarProps) {
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         placeholder="Search knowledge items..."
+        aria-label="Search knowledge items"
         value={value}
         onChange={handleChange}
         className="pl-9 pr-9"
       />
       {value && (
         <button
+          type="button"
           onClick={handleClear}
+          aria-label="Clear search"
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         >
           <X className="h-4 w-4" />

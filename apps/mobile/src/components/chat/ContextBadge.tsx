@@ -27,16 +27,16 @@ export function ContextBadge({ item, onRemove }: ContextBadgeProps) {
   const displayTitle = item.title || item.body?.slice(0, 30) || '항목';
 
   return (
-    <View className="flex-row items-center bg-gray-100 mx-4 mb-2 px-3 py-2 rounded-lg">
-      <View className="w-6 h-6 rounded bg-gray-200 items-center justify-center mr-2">
-        <Icon size={14} color="#6b7280" />
+    <View className="flex-row items-center bg-app-surface border border-app-border mx-6 mb-2 px-3 py-2 rounded-md">
+      <View className="w-6 h-6 rounded bg-app-border/40 items-center justify-center mr-2">
+        <Icon size={14} color="#787774" />
       </View>
-      <Text className="flex-1 text-sm text-gray-700" numberOfLines={1}>
+      <Text className="flex-1 text-sm font-medium text-app-text" numberOfLines={1}>
         {displayTitle}
       </Text>
       {onRemove && (
         <TouchableOpacity onPress={onRemove} className="ml-2 p-1">
-          <X size={16} color="#9ca3af" />
+          <X size={16} color="#787774" />
         </TouchableOpacity>
       )}
     </View>

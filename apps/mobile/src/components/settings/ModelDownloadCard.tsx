@@ -125,20 +125,20 @@ export function ModelDownloadCard({
         {!isCompleted && !isDownloading && (
           <TouchableOpacity
             onPress={onDownload}
-            className="bg-app-text flex-row items-center gap-1.5 rounded-md px-3 py-1.5"
+            className="bg-app-text flex-row items-center gap-1.5 rounded-md px-3 py-1.5 active:opacity-80"
           >
             <Download size={14} color="#fff" />
-            <Text className="text-xs font-medium text-white">다운로드</Text>
+            <Text className="text-xs font-semibold text-white">다운로드</Text>
           </TouchableOpacity>
         )}
 
         {isDownloading && onCancelDownload && (
           <TouchableOpacity
             onPress={onCancelDownload}
-            className="flex-row items-center gap-1.5 rounded-md border border-app-border bg-white px-3 py-1.5"
+            className="flex-row items-center gap-1.5 rounded-md border border-app-border bg-app-surface px-3 py-1.5 active:opacity-80"
           >
             <X size={14} color="#37352f" />
-            <Text className="text-app-text text-xs font-medium">중단</Text>
+            <Text className="text-app-text text-xs font-semibold">중단</Text>
           </TouchableOpacity>
         )}
 
@@ -147,11 +147,11 @@ export function ModelDownloadCard({
           <TouchableOpacity
             onPress={onSelect}
             disabled={!canSelect}
-            className={`flex-row items-center gap-1.5 rounded-md border px-3 py-1.5 ${canSelect ? "border-app-text bg-white" : "border-app-border bg-gray-50"} `}
+            className={`flex-row items-center gap-1.5 rounded-md border px-3 py-1.5 active:opacity-80 ${canSelect ? "border-app-text bg-app-surface" : "border-app-border bg-app-bg"} `}
           >
-            <Check size={14} color={canSelect ? "#37352f" : "#9ca3af"} />
+            <Check size={14} color={canSelect ? "#37352f" : "#9b9a97"} />
             <Text
-              className={`text-xs font-medium ${canSelect ? "text-app-text" : "text-app-subtle"}`}
+              className={`text-xs font-semibold ${canSelect ? "text-app-text" : "text-app-subtle"}`}
             >
               선택
             </Text>

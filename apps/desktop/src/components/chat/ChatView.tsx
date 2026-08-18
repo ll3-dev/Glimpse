@@ -66,12 +66,24 @@ export function ChatView({ conversationId }: ChatViewProps) {
           id: crypto.randomUUID(),
           conversationId,
           role: 'assistant',
-          content: response,
+          content: response || '응답을 생성하지 못했습니다.',
           createdAt: Date.now(),
           updatedAt: null,
           deletedAt: null,
         };
         await addMessage.mutateAsync(assistantMessage);
+      } catch (err) {
+        console.error('Chat response generation failed:', err);
+        const errorMessage: Message = {
+          id: crypto.randomUUID(),
+          conversationId,
+          role: 'assistant',
+          content: `응답 생성 중 오류가 발생했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`,
+          createdAt: Date.now(),
+          updatedAt: null,
+          deletedAt: null,
+        };
+        await addMessage.mutateAsync(errorMessage);
       } finally {
         setStreamingContent('');
         setIsGenerating(false);

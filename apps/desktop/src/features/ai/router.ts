@@ -109,19 +109,26 @@ export async function generateChatResponse(
   // Local LLM and BYOK providers handle multi-turn differently, but the
   // CompletionRequest interface accepts a single prompt. For chat we join
   // the conversation into a structured prompt.
-  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-  const systemPrompt = messages
-    .filter((m) => m.role === 'system')
-    .map((m) => m.content)
-    .join('\n') || undefined;
+  let lastUserMsg: { role: string; content: string } | undefined;
+  const systemLines: string[] = [];
+  const nonSystemMessages: { role: string; content: string }[] = [];
 
-  const contextMessages = messages
-    .filter((m) => m.role !== 'system')
-    .slice(-10) // keep last 10 messages for context window
+  for (const m of messages) {
+    if (m.role === 'user') {
+      lastUserMsg = m;
+    }
+    if (m.role === 'system') {
+      systemLines.push(m.content);
+    } else {
+      nonSystemMessages.push(m);
+    }
+  }
+
+  const systemPrompt = systemLines.join('\n') || undefined;
+  const prompt = nonSystemMessages
+    .slice(-10)
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n');
-
-  const prompt = contextMessages;
 
   const response = await provider.complete({
     prompt,
@@ -132,7 +139,11 @@ export async function generateChatResponse(
 
   // Strip any "Assistant: " prefix the model might echo
   const text = response.text.replace(/^Assistant:\s*/i, '').trim();
-  return text || lastUserMsg?.content
+  if (text) {
+    return text;
+  }
+
+  return lastUserMsg?.content
     ? `I received your message about "${(lastUserMsg?.content ?? '').slice(0, 50)}..."`
     : '[No response]';
 }

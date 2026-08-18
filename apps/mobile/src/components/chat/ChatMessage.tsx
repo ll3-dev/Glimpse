@@ -5,12 +5,13 @@
  */
 
 import { useState } from 'react';
-import { Clipboard, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Check, ChevronDown, ChevronUp, Copy } from 'lucide-react-native';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@glimpse/ui/primitives/alert-dialog';
-import { Button, Text } from '@glimpse/ui/primitives';
+import { Text } from '@glimpse/ui/primitives';
 import type { Message } from '@glimpse/shared';
 import { ChatMarkdown } from './ChatMarkdown';
+import { MessageActionDialogs } from './MessageActionDialogs';
 import { parseChatMessageContent } from '@/src/features/chat';
 
 interface ChatMessageProps {
@@ -24,7 +25,6 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
   const isUser = message.role === 'user';
   const isEdited = message.updatedAt !== null;
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [actionType, setActionType] = useState<'edit' | 'delete' | null>(null);
   const [showReasoning, setShowReasoning] = useState(false);
   const [copied, setCopied] = useState(false);
   const parsedContent = parseChatMessageContent(message.content);
@@ -40,34 +40,25 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
     }
   };
 
-  const handleDelete = () => {
-    setActionType('delete');
-  };
-
-  const handleConfirmAction = () => {
-    if (actionType === 'delete' && onDelete) {
+  const handleDeleteRequest = () => {
+    setDialogOpen(false);
+    if (onDelete) {
       onDelete(message);
     }
-    setActionType(null);
-    setDialogOpen(false);
   };
 
-  const handleCancelAction = () => {
-    setActionType(null);
-  };
-
-  const handleCopy = () => {
-    Clipboard.setString(parsedContent.answer || message.content);
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(parsedContent.answer || message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
 
   const bubbleTextClassName = isUser
     ? 'text-white text-base leading-6'
-    : 'text-gray-900 text-base leading-6';
+    : 'text-app-text text-base leading-6';
   const mutedTextClassName = isUser
-    ? 'text-gray-200 text-sm leading-5'
-    : 'text-gray-700 text-sm leading-5';
+    ? 'text-white/80 text-sm leading-5'
+    : 'text-app-muted text-sm leading-5';
 
   return (
     <>
@@ -78,23 +69,25 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
           onLongPress={handleLongPress}
           activeOpacity={0.8}
           className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-            isUser ? "rounded-br-md bg-black" : "rounded-bl-md bg-gray-100"
+            isUser
+              ? "rounded-br-md bg-app-text"
+              : "rounded-bl-md bg-app-surface border border-app-border shadow-xs"
           }`}
         >
           {!isUser && parsedContent.reasoning && (
-            <View className="mb-3 rounded-xl bg-white/70 px-3 py-2">
+            <View className="mb-3 rounded-md bg-app-bg border border-app-border px-3 py-2">
               <TouchableOpacity
                 onPress={() => setShowReasoning((prev) => !prev)}
                 className="flex-row items-center justify-between"
               >
                 <View className="flex-1 pr-3">
-                  <Text className="text-xs font-semibold tracking-tight text-gray-500 uppercase">
+                  <Text className="text-xs font-semibold tracking-tight text-app-muted uppercase">
                     {parsedContent.isReasoningInProgress
                       ? "사고 중"
                       : "사고 요약"}
                   </Text>
                   <Text
-                    className="mt-1 text-sm text-gray-700"
+                    className="mt-1 text-sm text-app-text"
                     numberOfLines={showReasoning ? undefined : 2}
                   >
                     {parsedContent.reasoningSummary ??
@@ -102,17 +95,17 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
                   </Text>
                 </View>
                 {showReasoning ? (
-                  <ChevronUp size={16} color="#6b7280" />
+                  <ChevronUp size={16} color="#787774" />
                 ) : (
-                  <ChevronDown size={16} color="#6b7280" />
+                  <ChevronDown size={16} color="#787774" />
                 )}
               </TouchableOpacity>
               {showReasoning && (
-                <View className="mt-2">
+                <View className="mt-2 pt-2 border-t border-app-border">
                   <ChatMarkdown
                     content={parsedContent.reasoning}
-                    textClassName="text-gray-700 text-sm leading-5"
-                    mutedTextClassName="text-gray-700 text-sm leading-5"
+                    textClassName="text-app-text text-sm leading-5"
+                    mutedTextClassName="text-app-muted text-sm leading-5"
                   />
                 </View>
               )}
@@ -129,14 +122,15 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
             <View className="mt-3 flex-row items-center justify-end">
               <TouchableOpacity
                 onPress={handleCopy}
-                className="flex-row items-center rounded-full bg-white/80 px-2.5 py-1.5"
+                className="flex-row items-center rounded-md bg-app-bg border border-app-border px-2.5 py-1"
+                activeOpacity={0.7}
               >
                 {copied ? (
-                  <Check size={14} color="#4b5563" />
+                  <Check size={13} color="#1a7f37" />
                 ) : (
-                  <Copy size={14} color="#4b5563" />
+                  <Copy size={13} color="#787774" />
                 )}
-                <Text className="ml-1.5 text-xs font-medium text-gray-600">
+                <Text className="ml-1.5 text-xs font-medium text-app-muted">
                   {copied ? "복사됨" : "복사"}
                 </Text>
               </TouchableOpacity>
@@ -146,7 +140,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
           {isEdited && (
             <Text
               className={`mt-1 text-xs ${
-                isUser ? "text-gray-400" : "text-gray-500"
+                isUser ? "text-white/60" : "text-app-subtle"
               }`}
             >
               (수정됨)
@@ -155,71 +149,13 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
         </TouchableOpacity>
       </View>
 
-      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <Text>메시지 옵션</Text>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <Text>이 메시지에 대해 수행할 작업을 선택하세요.</Text>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col gap-2">
-            {isUser && (
-              <Button
-                variant="outline"
-                onPress={handleEdit}
-                className="w-full rounded-2xl"
-              >
-                <Text>수정</Text>
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onPress={handleDelete}
-              className="border-destructive/20 active:bg-destructive/10 w-full rounded-2xl"
-            >
-              <Text className="text-destructive">삭제</Text>
-            </Button>
-            <AlertDialogCancel asChild>
-              <Button variant="ghost" className="w-full rounded-2xl">
-                <Text>취소</Text>
-              </Button>
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={actionType === "delete"}
-        onOpenChange={(open) => !open && handleCancelAction()}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <Text>메시지 삭제</Text>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <Text>
-                이 메시지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-              </Text>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button variant="outline">
-                <Text>취소</Text>
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onPress={handleConfirmAction}>
-                <Text>삭제</Text>
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <MessageActionDialogs
+        dialogOpen={dialogOpen}
+        onOpenChange={setDialogOpen}
+        isUser={isUser}
+        onEdit={handleEdit}
+        onDelete={handleDeleteRequest}
+      />
     </>
   );
 }

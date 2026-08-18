@@ -15,6 +15,15 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
+const CHAT_INPUT_THEME = {
+  bg: '#ffffff',
+  inputBg: '#f7f6f3',
+  text: '#37352f',
+  muted: '#787774',
+  border: '#edece9',
+  primary: '#37352f',
+};
+
 export function ChatInput({
   onSend,
   isLoading = false,
@@ -23,15 +32,7 @@ export function ChatInput({
   const [text, setText] = useState('');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const insets = useSafeAreaInsets();
-
-  const theme = {
-    bg: '#ffffff',
-    inputBg: '#f7f6f3',
-    text: '#37352f',
-    muted: '#787774',
-    border: '#edece9',
-    primary: '#37352f',
-  };
+  const theme = CHAT_INPUT_THEME;
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener(
@@ -63,17 +64,16 @@ export function ChatInput({
 
   return (
     <View 
-      className="bg-white border-t"
+      className="bg-app-surface border-t border-app-border"
       style={{ 
-        borderColor: theme.border,
         paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 12),
-        paddingHorizontal: 16,
+        paddingHorizontal: 24,
         paddingTop: 12,
       }}
     >
       <View className="flex-row items-end">
         <View 
-          className="flex-1 rounded-xl border px-3 mr-3"
+          className="flex-1 rounded-md border px-3 mr-3"
           style={{ 
             backgroundColor: theme.inputBg,
             borderColor: theme.border,

@@ -205,6 +205,7 @@ export function CaptureModal() {
           <button
             type="button"
             onClick={handleClose}
+            aria-label="Close capture modal"
             className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-5 w-5" />
@@ -236,10 +237,11 @@ export function CaptureModal() {
         <div className="space-y-4">
           {/* Title - shown for all types */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="capture-title" className="block text-sm font-medium text-foreground mb-1.5">
               Title <span className="text-muted-foreground">(optional)</span>
             </label>
             <input
+              id="capture-title"
               type="text"
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
@@ -251,10 +253,11 @@ export function CaptureModal() {
           {/* Note: body */}
           {activeType === 'note' && (
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="capture-note-body" className="block text-sm font-medium text-foreground mb-1.5">
                 Body <span className="text-destructive">*</span>
               </label>
               <textarea
+                id="capture-note-body"
                 value={form.body}
                 onChange={(e) => updateField('body', e.target.value)}
                 placeholder="Write your note..."
@@ -270,10 +273,11 @@ export function CaptureModal() {
           {/* Link: URL */}
           {activeType === 'link' && (
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="capture-link-url" className="block text-sm font-medium text-foreground mb-1.5">
                 URL <span className="text-destructive">*</span>
               </label>
               <input
+                id="capture-link-url"
                 type="url"
                 value={form.url}
                 onChange={(e) => updateField('url', e.target.value)}
@@ -289,10 +293,11 @@ export function CaptureModal() {
           {/* Link: body */}
           {activeType === 'link' && (
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="capture-link-body" className="block text-sm font-medium text-foreground mb-1.5">
                 Body <span className="text-muted-foreground">(optional)</span>
               </label>
               <textarea
+                id="capture-link-body"
                 value={form.body}
                 onChange={(e) => updateField('body', e.target.value)}
                 placeholder="Add a description..."
@@ -305,10 +310,11 @@ export function CaptureModal() {
           {/* Highlight: text */}
           {activeType === 'highlight' && (
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="capture-highlight-text" className="block text-sm font-medium text-foreground mb-1.5">
                 Text <span className="text-destructive">*</span>
               </label>
               <textarea
+                id="capture-highlight-text"
                 value={form.text}
                 onChange={(e) => updateField('text', e.target.value)}
                 placeholder="Paste or type the highlighted text..."
@@ -324,10 +330,11 @@ export function CaptureModal() {
           {/* Highlight: source URL */}
           {activeType === 'highlight' && (
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="capture-highlight-source" className="block text-sm font-medium text-foreground mb-1.5">
                 Source URL <span className="text-muted-foreground">(optional)</span>
               </label>
               <input
+                id="capture-highlight-source"
                 type="url"
                 value={form.sourceUrl}
                 onChange={(e) => updateField('sourceUrl', e.target.value)}
@@ -339,10 +346,11 @@ export function CaptureModal() {
 
           {/* Tags - shown for all types */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="capture-tags" className="block text-sm font-medium text-foreground mb-1.5">
               Tags <span className="text-muted-foreground">(optional, comma-separated)</span>
             </label>
             <input
+              id="capture-tags"
               type="text"
               value={form.tags}
               onChange={(e) => updateField('tags', e.target.value)}

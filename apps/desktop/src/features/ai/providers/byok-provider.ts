@@ -265,17 +265,18 @@ export function createBYOKProvider(config?: BYOKProviderConfig): AIProvider {
     },
 
     async generateMetadata(content: string, title?: string | null): Promise<MetadataOutput> {
-      const summaryResponse = await this.complete({
-        prompt: buildSummaryPrompt(content, title),
-        maxTokens: 150,
-        temperature: 0.3,
-      });
-
-      const tagsResponse = await this.complete({
-        prompt: buildTagsPrompt(content, title),
-        maxTokens: 100,
-        temperature: 0.2,
-      });
+      const [summaryResponse, tagsResponse] = await Promise.all([
+        this.complete({
+          prompt: buildSummaryPrompt(content, title),
+          maxTokens: 150,
+          temperature: 0.3,
+        }),
+        this.complete({
+          prompt: buildTagsPrompt(content, title),
+          maxTokens: 100,
+          temperature: 0.2,
+        }),
+      ]);
 
       return {
         summary: summaryResponse.text.trim(),

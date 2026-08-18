@@ -54,7 +54,7 @@ export function ChatAISetupDialog({
         {isCheckingOptions ? (
           <View className="py-6 items-center">
             <ActivityIndicator size="small" color="#37352f" />
-            <Text className="mt-3 text-sm text-gray-600">사용 가능한 모델을 확인하는 중...</Text>
+            <Text className="mt-3 text-sm text-app-muted">사용 가능한 모델을 확인하는 중...</Text>
           </View>
         ) : readyModels.length > 0 ? (
           <View className="gap-2">
@@ -64,15 +64,15 @@ export function ChatAISetupDialog({
               return (
                 <TouchableOpacity
                   key={model.id}
-                  className={`rounded-2xl border px-4 py-3 ${
-                    isSelected ? 'border-black bg-black' : 'border-gray-200 bg-white'
+                  className={`rounded-md border px-4 py-3 active:opacity-80 ${
+                    isSelected ? 'border-app-text bg-app-text' : 'border-app-border bg-app-surface'
                   }`}
                   onPress={() => onSelectModel(model.id)}
                 >
-                  <Text className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                  <Text className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-app-text'}`}>
                     {model.name}
                   </Text>
-                  <Text className={`mt-1 text-xs ${isSelected ? 'text-gray-200' : 'text-gray-500'}`}>
+                  <Text className={`mt-1 text-xs ${isSelected ? 'text-white/80' : 'text-app-muted'}`}>
                     {isSelected ? '현재 선택된 모델' : '이 모델로 채팅 시작'}
                   </Text>
                 </TouchableOpacity>
@@ -80,16 +80,16 @@ export function ChatAISetupDialog({
             })}
           </View>
         ) : isDownloading ? (
-          <View className="rounded-2xl bg-gray-50 px-4 py-3">
-            <Text className="text-sm text-gray-700">
+          <View className="rounded-md bg-app-bg border border-app-border px-4 py-3">
+            <Text className="text-sm text-app-muted leading-5">
               모델 다운로드가 진행 중입니다.
               {typeof downloadProgress === 'number' ? ` ${downloadProgress}%` : ''} 앱은 계속 사용할 수 있고,
               완료되면 바로 채팅에 사용할 수 있습니다.
             </Text>
           </View>
         ) : (
-          <View className="rounded-2xl bg-gray-50 px-4 py-3">
-            <Text className="text-sm text-gray-700">
+          <View className="rounded-md bg-app-bg border border-app-border px-4 py-3">
+            <Text className="text-sm text-app-muted leading-5">
               사용할 수 있는 로컬 모델이 없습니다. 설정에서 모델을 다운로드한 뒤 다시 선택하세요.
             </Text>
           </View>

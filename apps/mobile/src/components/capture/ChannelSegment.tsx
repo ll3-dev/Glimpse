@@ -17,19 +17,19 @@ type ChannelSegmentProps = {
 export function ChannelSegment({ value, onChange }: ChannelSegmentProps) {
   return (
     <View className="px-6 pb-4">
-      <View className="bg-app-border/20 p-1 rounded-lg flex-row">
+      <View className="bg-app-border/40 p-1 rounded-md flex-row">
         {CHANNELS.map((channel) => {
           const isActive = value === channel.type;
           return (
             <Pressable
               key={channel.type}
               onPress={() => onChange(channel.type)}
-              className={`flex-1 rounded-md py-1.5 items-center justify-center ${
-                isActive ? 'bg-white shadow-sm' : ''
+              className={`flex-1 rounded py-1.5 items-center justify-center ${
+                isActive ? 'bg-app-surface border border-app-border shadow-xs' : ''
               }`}
             >
               <Text
-                className={`text-[11px] font-bold ${
+                className={`text-[11px] font-semibold tracking-tight ${
                   isActive ? 'text-app-text' : 'text-app-muted'
                 }`}
               >

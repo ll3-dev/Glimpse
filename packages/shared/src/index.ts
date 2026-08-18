@@ -507,3 +507,7 @@ export function getEmbeddingModels(platform?: ModelPlatform): LocalModelDefiniti
 export function getDesktopModels(): LocalModelDefinition[] {
   return LOCAL_MODEL_REGISTRY.filter((m) => m.platform === 'desktop' || m.platform === 'both');
 }
+
+export function getMobileModels(): LocalModelDefinition[] {
+  return LOCAL_MODEL_REGISTRY.filter((m) => m.platform === 'mobile' || m.platform === 'both');
+}

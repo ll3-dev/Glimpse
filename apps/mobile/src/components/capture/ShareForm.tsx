@@ -1,8 +1,9 @@
-import { ScrollView, TextInput, View, Text, Image as RNImage, Linking, Pressable } from 'react-native';
+import { ScrollView, TextInput, View, Text, Linking, Pressable } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Effect } from 'effect';
 import { appError, tryPromise } from '@/src/lib/effect-result';
 import { logger } from '@/src/utils/logger';
-import { Link, FileText, Image } from '@glimpse/ui/icons';
+import { Link, FileText, Image as ImageIcon } from '@glimpse/ui/icons';
 import { type SharedContent } from '@/src/features/capture';
 
 type ShareFormProps = {
@@ -56,7 +57,7 @@ export function ShareForm({
   };
 
   const getContentTypeIcon = () => {
-    if (sharedContent.imageUri) return <Image size={16} className="text-muted-foreground" />;
+    if (sharedContent.imageUri) return <ImageIcon size={16} className="text-muted-foreground" />;
     if (sharedContent.url) return <Link size={16} className="text-muted-foreground" />;
     return <FileText size={16} className="text-muted-foreground" />;
   };
@@ -86,21 +87,21 @@ export function ShareForm({
       ) : (
         <>
           {/* 수신된 콘텐츠 미리보기 */}
-          <View className="mb-6 rounded-md border border-app-border bg-white p-4">
+          <View className="mb-6 rounded-md border border-app-border bg-app-surface p-4">
             <View className="mb-3 flex-row items-center gap-2">
-              <View className="rounded bg-app-border/30 p-1">
+              <View className="rounded bg-app-border/40 p-1">
                 {getContentTypeIcon()}
               </View>
-              <Text className="text-xs font-bold text-app-muted uppercase tracking-tight">
+              <Text className="text-xs font-semibold text-app-muted uppercase tracking-tight">
                 {getContentTypeLabel()} 수신됨
               </Text>
             </View>
 
             {sharedContent.imageUri && (
-              <RNImage
+              <ExpoImage
                 source={{ uri: sharedContent.imageUri }}
                 className="mb-3 h-45 w-full rounded-md"
-                resizeMode="cover"
+                contentFit="cover"
               />
             )}
 
@@ -126,31 +127,31 @@ export function ShareForm({
           </View>
 
           {/* 제목 입력 */}
-          <Text className="mb-2 text-sm font-semibold text-app-muted">
+          <Text className="mb-2 text-xs font-semibold uppercase tracking-tight text-app-muted">
             제목 (선택)
           </Text>
-          <View className="mb-4 flex-row items-center rounded-md border border-app-border bg-white px-4">
+          <View className="mb-4 flex-row items-center rounded-md border border-app-border bg-app-surface px-4">
             <TextInput
               className="flex-1 py-3 text-base text-app-text"
               value={editedTitle}
               onChangeText={onChangeTitle}
               placeholder="제목을 입력하세요..."
-              placeholderTextColor="#d3d2d1"
+              placeholderTextColor="#9b9a97"
               multiline={false}
             />
           </View>
 
           {/* 본문 편집 */}
-          <Text className="mb-2 text-sm font-semibold text-app-muted">
+          <Text className="mb-2 text-xs font-semibold uppercase tracking-tight text-app-muted">
             본문
           </Text>
-          <View className="min-h-37.5 rounded-md border border-app-border bg-white p-4">
+          <View className="min-h-37.5 rounded-md border border-app-border bg-app-surface p-4">
             <TextInput
               className="text-base leading-6 text-app-text"
               value={editedBody}
               onChangeText={onChangeBody}
               placeholder="내용을 편집하세요..."
-              placeholderTextColor="#d3d2d1"
+              placeholderTextColor="#9b9a97"
               multiline
               textAlignVertical="top"
               scrollEnabled={false}

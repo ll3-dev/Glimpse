@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createMarkAsReviewed,
   createPostponeReview,
-  DEFAULT_POSTPONE_INTERVAL_MS,
   type ReviewActionsDeps,
 } from '@/src/features/core/application/review';
 import type { KnowledgeItem } from '@glimpse/shared';

@@ -103,15 +103,15 @@ export function BYOKSection({
               {providers.map((provider) => (
                 <TouchableOpacity
                   key={provider}
-                  className={`px-3 py-1.5 rounded-md border ${
+                  className={`px-3 py-1.5 rounded-md border active:opacity-80 ${
                     selectedProvider === provider
                       ? 'bg-app-text border-app-text'
-                      : 'bg-white border-app-border'
+                      : 'bg-app-surface border-app-border'
                   }`}
                   onPress={() => onProviderSelect(provider)}
                 >
                   <Text
-                    className={`text-xs font-bold uppercase ${
+                    className={`text-xs font-semibold uppercase ${
                       selectedProvider === provider ? 'text-white' : 'text-app-text'
                     }`}
                   >
@@ -152,7 +152,7 @@ export function BYOKSection({
               API 키
             </Text>
             {hasStoredApiKey && !isEditingApiKey ? (
-              <View className="rounded-md border border-app-border bg-white px-3 py-3">
+              <View className="rounded-md border border-app-border bg-app-surface px-3 py-3">
                 <Text className="text-xs text-app-subtle font-medium mb-3">
                   저장된 키: {maskedStoredApiKey}
                 </Text>

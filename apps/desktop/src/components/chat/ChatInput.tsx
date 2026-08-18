@@ -48,6 +48,7 @@ export function ChatInput({ onSend, isPending }: ChatInputProps) {
         onKeyDown={handleKeyDown}
         onInput={handleInput}
         placeholder="Type a message..."
+        aria-label="Message input"
         disabled={isPending}
         rows={1}
         className="flex-1 resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-50"

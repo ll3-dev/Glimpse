@@ -21,25 +21,23 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps) {
         };
       }
 
-      const completedItems: KnowledgeItem[] = [];
+      const completedItems = await Promise.all(
+        pendingItems.map(async (item) => {
+          const result = deriveRuleBasedLabels(item);
+          const completedAt = now();
 
-      for (const item of pendingItems) {
-        const result = deriveRuleBasedLabels(item);
-        const completedAt = now();
-
-        const updatedItem = await deps.coreClient.updateKnowledgeItem(item.id, {
-          provisionalLabels: result.labels,
-          labelStatus: 'provisional',
-          labelSource: result.source,
-          labelVersion: result.version,
-          labelScore: result.score,
-          labelCompletedAt: completedAt,
-          labelError: null,
-          updatedAt: completedAt,
-        });
-
-        completedItems.push(updatedItem);
-      }
+          return deps.coreClient.updateKnowledgeItem(item.id, {
+            provisionalLabels: result.labels,
+            labelStatus: 'provisional',
+            labelSource: result.source,
+            labelVersion: result.version,
+            labelScore: result.score,
+            labelCompletedAt: completedAt,
+            labelError: null,
+            updatedAt: completedAt,
+          });
+        })
+      );
 
       return {
         success: true,

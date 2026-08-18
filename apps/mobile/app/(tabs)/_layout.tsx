@@ -7,13 +7,13 @@ export default function TabsLayout() {
     <View className="flex-1">
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#000000",
-          tabBarInactiveTintColor: "#9ca3af",
+          tabBarActiveTintColor: "#37352f",
+          tabBarInactiveTintColor: "#787774",
           freezeOnBlur: true,
           lazy: false,
           tabBarStyle: {
             borderTopWidth: 1,
-            borderTopColor: "#f1f1f1",
+            borderTopColor: "#edece9",
             elevation: 0,
             shadowOpacity: 0,
             backgroundColor: "#ffffff",

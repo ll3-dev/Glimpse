@@ -198,10 +198,10 @@ export function LocalLLMSection({
         <View className="mt-4">
           {/* Loading progress */}
           {isLoading && (
-            <View className="bg-app-bg mb-4 rounded-lg p-3">
+            <View className="bg-app-bg border border-app-border mb-4 rounded-md p-3">
               <View className="flex-row items-center gap-2">
                 <ActivityIndicator size="small" color="#37352f" />
-                <Text className="text-app-text text-sm">
+                <Text className="text-app-text text-sm font-medium">
                   모델 로딩 중... {loadProgress?.percentage ?? 0}%
                 </Text>
               </View>
@@ -210,15 +210,15 @@ export function LocalLLMSection({
 
           {/* Load error */}
           {loadError && (
-            <View className="bg-app-bg mb-4 rounded-lg p-3">
-              <Text className="text-app-accent text-sm">{loadError}</Text>
+            <View className="bg-tag-rose-bg/60 border border-tag-rose-text/20 mb-4 rounded-md p-3">
+              <Text className="text-tag-rose-text text-sm font-medium">{loadError}</Text>
             </View>
           )}
 
           {/* Download error */}
           {downloadError && (
-            <View className="bg-app-bg mb-4 rounded-lg p-3">
-              <Text className="text-app-accent text-sm">{downloadError}</Text>
+            <View className="bg-tag-rose-bg/60 border border-tag-rose-text/20 mb-4 rounded-md p-3">
+              <Text className="text-tag-rose-text text-sm font-medium">{downloadError}</Text>
             </View>
           )}
 
@@ -251,9 +251,9 @@ export function LocalLLMSection({
                           }
                         : undefined
                     }
-                  errorMessage={
-                    status === "idle" ? (downloadError ?? undefined) : undefined
-                  }
+                    errorMessage={
+                      downloadingModelId === model.id ? (downloadError ?? undefined) : undefined
+                    }
                   onDownload={() => handleDownload(model)}
                   onCancelDownload={
                     status === 'downloading' ? handleCancelDownload : undefined

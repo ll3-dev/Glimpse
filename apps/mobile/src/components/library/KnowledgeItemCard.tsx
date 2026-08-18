@@ -73,7 +73,7 @@ export function KnowledgeItemCard({ item, onPress }: KnowledgeItemCardProps) {
   return (
     <Card className="mb-2 overflow-hidden">
       <Pressable
-        className="flex-row items-center p-4"
+        className="flex-row items-center p-4 active:opacity-80"
         onPress={onPress}
         disabled={!onPress}
       >

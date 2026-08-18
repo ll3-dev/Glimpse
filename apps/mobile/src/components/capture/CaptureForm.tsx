@@ -32,7 +32,7 @@ export function CaptureForm({
         value={title}
         onChangeText={onChangeTitle}
         placeholder="제목 없음"
-        placeholderTextColor="#d3d2d1"
+        placeholderTextColor="#9b9a97"
         multiline={false}
       />
 
@@ -42,7 +42,7 @@ export function CaptureForm({
           value={body}
           onChangeText={onChangeBody}
           placeholder={placeholder}
-          placeholderTextColor="#d3d2d1"
+          placeholderTextColor="#9b9a97"
           multiline
           textAlignVertical="top"
           scrollEnabled={false}

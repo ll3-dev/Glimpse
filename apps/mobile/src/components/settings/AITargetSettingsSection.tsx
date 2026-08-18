@@ -29,12 +29,12 @@ function TargetPicker({
       <View className="flex-row flex-wrap gap-2">
         {allowUseDefault ? (
           <TouchableOpacity
-            className={`rounded-md border px-3 py-1.5 ${
-              inheritsDefault ? 'border-app-text bg-app-text' : 'border-app-border bg-white'
+            className={`rounded-md border px-3 py-1.5 active:opacity-80 ${
+              inheritsDefault ? 'border-app-text bg-app-text' : 'border-app-border bg-app-surface'
             }`}
             onPress={() => onSelect(null)}
           >
-            <Text className={`text-xs font-bold ${inheritsDefault ? 'text-white' : 'text-app-text'}`}>
+            <Text className={`text-xs font-semibold ${inheritsDefault ? 'text-white' : 'text-app-text'}`}>
               기본값 사용
             </Text>
           </TouchableOpacity>
@@ -44,12 +44,12 @@ function TargetPicker({
           return (
             <TouchableOpacity
               key={option.id}
-              className={`rounded-md border px-3 py-1.5 ${
-                selected ? 'border-app-text bg-app-text' : 'border-app-border bg-white'
+              className={`rounded-md border px-3 py-1.5 active:opacity-80 ${
+                selected ? 'border-app-text bg-app-text' : 'border-app-border bg-app-surface'
               }`}
               onPress={() => onSelect(option.id)}
             >
-              <Text className={`text-xs font-bold ${selected ? 'text-white' : 'text-app-text'}`}>
+              <Text className={`text-xs font-semibold ${selected ? 'text-white' : 'text-app-text'}`}>
                 {option.label}
               </Text>
             </TouchableOpacity>

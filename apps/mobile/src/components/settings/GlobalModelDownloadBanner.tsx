@@ -45,7 +45,9 @@ export function GlobalModelDownloadBanner() {
   // Mini status chip animation
   const chipOpacity = useSharedValue(0);
   const chipScale = useSharedValue(0.8);
-  const [isRendered, setIsRendered] = useState(shouldRenderContent(downloadStatus, downloadCompletionHandled));
+  const [isRendered, setIsRendered] = useState(() =>
+    shouldRenderContent(downloadStatus, downloadCompletionHandled)
+  );
 
   const activeModelName = useMemo(() => {
     const targetId =
@@ -125,10 +127,6 @@ export function GlobalModelDownloadBanner() {
     }
   }, [downloadStatus]);
 
-  const setLocalDismissed = (val: boolean) => {
-    setLocalLLMBannerDismissed(val);
-  };
-
   const handlePress = () => {
     if (downloadStatus === 'completed') {
       markDownloadCompletionHandled();
@@ -158,7 +156,7 @@ export function GlobalModelDownloadBanner() {
         
         translateX.value = withTiming(destX, { duration: 200 });
         translateY.value = withTiming(destY, { duration: 200 }, () => {
-          runOnJS(setLocalDismissed)(true);
+          runOnJS(setLocalLLMBannerDismissed)(true);
         });
       } else {
         translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
@@ -208,7 +206,7 @@ export function GlobalModelDownloadBanner() {
         <TouchableOpacity 
           onPress={() => setLocalLLMBannerDismissed(false)}
           activeOpacity={0.8}
-          className="flex-row items-center bg-white border border-app-border rounded-full px-3 py-2 shadow-md"
+          className="flex-row items-center bg-app-surface border border-app-border rounded-full px-3 py-2 shadow-md"
         >
           <ActivityIndicator size="small" color="#37352f" className="mr-2" />
           <Text className="text-[12px] font-bold text-app-text">
@@ -221,13 +219,13 @@ export function GlobalModelDownloadBanner() {
       <GestureDetector gesture={gesture}>
         <Animated.View 
           style={animatedStyle}
-          className="rounded-3xl border border-app-border bg-white shadow-xl overflow-hidden"
+          className="rounded-2xl border border-app-border bg-app-surface shadow-xl overflow-hidden"
         >
           <Pressable 
             onPress={handlePress}
-            className="flex-row items-center p-4 gap-4 active:bg-gray-50"
+            className="flex-row items-center p-4 gap-4 active:bg-app-bg"
           >
-            <View className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center">
+            <View className="w-10 h-10 rounded-full bg-app-border/40 items-center justify-center">
               {downloadStatus === 'downloading' ? (
                 <ActivityIndicator size="small" color="#37352f" />
               ) : downloadStatus === 'completed' ? (
@@ -272,7 +270,7 @@ export function GlobalModelDownloadBanner() {
           </Pressable>
           
           <View className="absolute top-1.5 left-0 right-0 items-center pointer-events-none">
-            <View className="w-10 h-1 rounded-full bg-gray-100" />
+            <View className="w-10 h-1 rounded-full bg-app-border" />
           </View>
         </Animated.View>
       </GestureDetector>

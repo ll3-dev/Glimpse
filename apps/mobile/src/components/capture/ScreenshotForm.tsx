@@ -4,11 +4,11 @@ import {
   View,
   Text,
   Pressable,
-  Image,
   ScrollView,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { appError, tryPromise } from '@/src/lib/effect-result';
 import { logger } from '@/src/utils/logger';
@@ -99,10 +99,10 @@ export function ScreenshotForm({
       {!selectedImage ? (
         <Pressable
           onPress={pickImage}
-          className="min-h-40 items-center justify-center rounded-md border-2 border-dashed border-app-border bg-white"
+          className="min-h-40 items-center justify-center rounded-md border-2 border-dashed border-app-border bg-app-surface active:opacity-80"
         >
           <View className="items-center">
-            <ImagePlus size={32} className="mb-2 text-app-muted" />
+            <ImagePlus size={32} color="#787774" className="mb-2" />
             <Text className="text-sm font-semibold text-app-muted">
               스크린샷 선택
             </Text>
@@ -114,13 +114,13 @@ export function ScreenshotForm({
             <Image
               source={{ uri: selectedImage }}
               className="h-50 w-full rounded-md"
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Pressable
               onPress={clearImage}
               className="absolute right-2 top-2 rounded-full bg-black/60 p-1"
             >
-              <X size={14} className="text-white" />
+              <X size={14} color="white" />
             </Pressable>
             {isProcessing && (
               <View className="absolute inset-0 items-center justify-center rounded-md bg-black/40">
@@ -134,16 +134,16 @@ export function ScreenshotForm({
         </View>
       )}
 
-      <Text className="mb-2 mt-4 text-sm font-semibold text-app-muted">
+      <Text className="mb-2 mt-4 text-xs font-semibold uppercase tracking-tight text-app-muted">
         추출된 텍스트
       </Text>
-      <View className="min-h-37.5 rounded-md border border-app-border bg-white p-4">
+      <View className="min-h-37.5 rounded-md border border-app-border bg-app-surface p-4">
         <TextInput
           className="text-base leading-6 text-app-text"
           value={extractedText}
           onChangeText={onChangeExtractedText}
           placeholder="이미지를 선택하면 텍스트가 추출됩니다..."
-          placeholderTextColor="#d3d2d1"
+          placeholderTextColor="#9b9a97"
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
@@ -154,7 +154,7 @@ export function ScreenshotForm({
       {selectedImage && !isProcessing && (
         <Pressable
           onPress={pickImage}
-          className="mt-4 items-center justify-center rounded-md border border-app-border bg-white py-3"
+          className="mt-4 items-center justify-center rounded-md border border-app-border bg-app-surface py-3 active:opacity-80"
         >
           <Text className="text-sm font-semibold text-app-muted">
             다른 이미지 선택

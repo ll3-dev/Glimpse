@@ -4,7 +4,6 @@
  * Displays list of conversations and allows creating new ones.
  */
 
-import { Activity } from "react";
 import { View, TouchableOpacity, Text } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -63,12 +62,12 @@ export default function ChatScreen() {
       />
 
       {/* Loading skeleton */}
-      <Activity mode={showLoading ? "visible" : "hidden"}>
-        <View className="flex-1 px-4">
+      {showLoading && (
+        <View className="flex-1 px-6">
           {[1, 2, 3, 4, 5].map((i) => (
             <View
               key={i}
-              className="flex-row items-center p-4 bg-white rounded-xl mb-2"
+              className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-md mb-2"
             >
               <Skeleton width={40} height={40} radius={20} />
               <View className="flex-1 ml-3">
@@ -78,11 +77,11 @@ export default function ChatScreen() {
             </View>
           ))}
         </View>
-      </Activity>
+      )}
 
       {/* Conversation list */}
-      <Activity mode={showData ? "visible" : "hidden"}>
-        <View className="flex-1 px-4">
+      {showData && (
+        <View className="flex-1 px-6">
           <FlashList
             data={conversations}
             renderItem={({ item }) => (
@@ -95,32 +94,33 @@ export default function ChatScreen() {
             contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
           />
         </View>
-      </Activity>
+      )}
 
       {/* Empty state */}
-      <Activity mode={showEmpty ? "visible" : "hidden"}>
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-            <MessageCircle size={32} color="#9ca3af" />
+      {showEmpty && (
+        <View className="flex-1 items-center justify-center py-24 px-6">
+          <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-app-border/40">
+            <MessageCircle size={24} color="#787774" />
           </View>
-          <Text className="mb-2 text-lg font-medium text-gray-900">
+          <Text className="mb-2 text-base font-semibold text-app-text tracking-tight text-center">
             새 대화를 시작하세요
           </Text>
-          <Text className="mb-6 text-center text-sm text-gray-500">
+          <Text className="mb-6 text-center text-sm text-app-muted leading-relaxed">
             AI와 자유롭게 대화하거나{"\n"}보관함 항목에 대해 질문해 보세요
           </Text>
           <TouchableOpacity
-            className="flex-row items-center rounded-full bg-black px-6 py-3"
+            className="flex-row items-center rounded-md bg-app-text px-5 py-2.5 active:opacity-90"
             onPress={handleCreateConversation}
             disabled={isCreating}
           >
-            <Plus size={20} color="white" />
-            <Text className="ml-2 font-medium text-white">
-              {isCreating ? "생성 중..." : "새 대화"}
+            <Plus size={16} color="white" />
+            <Text className="ml-2 font-medium text-sm text-white">
+              {isCreating ? "생성 중..." : "새 대화 시작"}
             </Text>
           </TouchableOpacity>
         </View>
-      </Activity>
+      )}
     </View>
   );
 }
+

@@ -42,23 +42,23 @@ export function ReviewItemCard({ item, onComplete, onPostpone }: ReviewItemCardP
       {/* Action Buttons */}
       <View className="flex-row border-t border-app-border">
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center py-2.5 bg-white active:bg-green-50"
+          className="flex-1 flex-row items-center justify-center py-2.5 bg-app-surface active:bg-tag-mint-bg/40"
           onPress={onComplete}
           activeOpacity={0.7}
         >
-          <Check size={14} color="#16a34a" />
-          <Text className="ml-2 text-xs font-bold text-green-700">완료</Text>
+          <Check size={14} color="#1a7f37" />
+          <Text className="ml-2 text-xs font-semibold text-tag-mint-text">완료</Text>
         </TouchableOpacity>
 
         <View className="w-px bg-app-border" />
 
         <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center py-2.5 bg-white active:bg-gray-50"
+          className="flex-1 flex-row items-center justify-center py-2.5 bg-app-surface active:bg-app-bg"
           onPress={onPostpone}
           activeOpacity={0.7}
         >
-          <Clock size={14} color="#6b7280" />
-          <Text className="ml-2 text-xs font-bold text-app-muted">나중에</Text>
+          <Clock size={14} color="#787774" />
+          <Text className="ml-2 text-xs font-semibold text-app-muted">나중에</Text>
         </TouchableOpacity>
       </View>
     </Card>

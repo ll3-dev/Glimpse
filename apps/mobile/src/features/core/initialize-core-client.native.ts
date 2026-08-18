@@ -16,8 +16,10 @@ let initializationPromise: Promise<string> | null = null;
  */
 async function migrateToAppGroup(appGroupPath: string): Promise<void> {
   const newDbPath = `${appGroupPath}/glimpse.sqlite`;
-  const legacyDbExists = await RNBlobUtil.fs.exists(LEGACY_DB_PATH);
-  const newDbExists = await RNBlobUtil.fs.exists(newDbPath);
+  const [legacyDbExists, newDbExists] = await Promise.all([
+    RNBlobUtil.fs.exists(LEGACY_DB_PATH),
+    RNBlobUtil.fs.exists(newDbPath),
+  ]);
 
   if (legacyDbExists && !newDbExists) {
     logger.info("Migrating database from DocumentDir to App Group container...");

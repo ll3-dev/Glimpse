@@ -1,4 +1,5 @@
-const SETTINGS_KEY = 'glimpse-desktop-settings';
+const SETTINGS_KEY_V1 = 'glimpse_desktop_settings_v1';
+const LEGACY_SETTINGS_KEY = 'glimpse-desktop-settings';
 
 export interface DesktopSettings {
   aiProvider: 'local-llm' | 'byok' | 'rules';
@@ -30,7 +31,7 @@ const DEFAULT_SETTINGS: DesktopSettings = {
 
 export function loadSettings(): DesktopSettings {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
+    const raw = localStorage.getItem(SETTINGS_KEY_V1) ?? localStorage.getItem(LEGACY_SETTINGS_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw) as Partial<DesktopSettings>;
     return {
@@ -44,5 +45,5 @@ export function loadSettings(): DesktopSettings {
 }
 
 export function saveSettings(settings: DesktopSettings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  localStorage.setItem(SETTINGS_KEY_V1, JSON.stringify(settings));
 }

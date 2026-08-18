@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { View } from 'react-native';
 import { Text } from '@glimpse/ui/primitives';
 
@@ -46,7 +45,7 @@ function renderInline(text: string, textClassName: string) {
   return parseInlineSegments(text).map((segment, index) => {
     if (segment.type === 'bold') {
       return (
-        <Text key={`bold-${index}`} className={`${textClassName} font-semibold`}>
+        <Text key={`bold-${index}-${segment.value.slice(0, 10)}`} className={`${textClassName} font-semibold`}>
           {segment.value}
         </Text>
       );
@@ -55,7 +54,7 @@ function renderInline(text: string, textClassName: string) {
     if (segment.type === 'code') {
       return (
         <Text
-          key={`code-${index}`}
+          key={`code-${index}-${segment.value.slice(0, 10)}`}
           className={`${textClassName} rounded bg-black/10 px-1 font-mono text-[13px]`}
         >
           {segment.value}
@@ -64,7 +63,7 @@ function renderInline(text: string, textClassName: string) {
     }
 
     return (
-      <Text key={`text-${index}`} className={textClassName}>
+      <Text key={`text-${index}-${segment.value.slice(0, 10)}`} className={textClassName}>
         {segment.value}
       </Text>
     );
@@ -192,9 +191,7 @@ export function ChatMarkdown({
 
         return (
           <Text key={`paragraph-${blockIndex}`} className={textClassName}>
-            {renderInline(block.content, textClassName).map((node, inlineIndex) => (
-              <Fragment key={`inline-${inlineIndex}`}>{node}</Fragment>
-            ))}
+            {renderInline(block.content, textClassName)}
           </Text>
         );
       })}

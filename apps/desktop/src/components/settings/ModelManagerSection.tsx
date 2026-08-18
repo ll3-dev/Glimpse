@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Cpu, Download, Loader2 } from 'lucide-react';
+import { Cpu, Download, Loader2, RefreshCw } from 'lucide-react';
 import { ModelCard } from './ModelCard';
 
 // ── Categories ───────────────────────────────────────────────────────────────
@@ -28,8 +28,9 @@ const CATEGORIES: ModelCategory[] = [
       // Curated recommendation set: best quality/speed ratio for general use
       const recommendedIds = new Set([
         'qwen3.5-35b-a3b-q4',   // MoE: best quality at low cost
-        'qwen3.5-2b-unsloth-q4', // Balanced mobile+desktop
-        'phi-4-mini-instruct-q4', // Reasoning/tools
+        'qwen3.5-9b-q4',        // High performance medium model
+        'qwen3.5-2b-q4',        // Fast & balanced
+        'ministral-3-8b-instruct-q4', // Tools & agent instruct
       ]);
       return recommendedIds.has(m.id);
     },
@@ -59,28 +60,31 @@ const CATEGORIES: ModelCategory[] = [
   },
 ];
 
-// ── Download tracking (placeholder until hooks are connected) ────────────────
-
-// This type will come from use-model-management hooks when they are created.
-// For now we define a minimal shape to support the UI.
-interface DownloadState {
-  modelId: string;
-  progress: number;
-}
+import {
+  useDownloadModel,
+  useDownloadProgress,
+  useLoadModel,
+  useUnloadModel,
+  useDeleteModel,
+} from '@/features/local-llm/use-model-management';
 
 interface ModelManagerSectionProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
-  downloadingModels?: DownloadState[];
 }
 
 export function ModelManagerSection({
   enabled,
   onToggle,
-  downloadingModels = [],
 }: ModelManagerSectionProps) {
   const { data: overview, isLoading } = useDesktopLLMOverview();
   const invalidateOverview = useInvalidateLLMOverview();
+  const downloadProgressMap = useDownloadProgress();
+
+  const downloadMutation = useDownloadModel();
+  const loadMutation = useLoadModel();
+  const unloadMutation = useUnloadModel();
+  const deleteMutation = useDeleteModel();
 
   const desktopModels = useMemo(() => getDesktopModels(), []);
 
@@ -98,34 +102,23 @@ export function ModelManagerSection({
   // Currently loaded model id from health
   const activeModelId = overview?.health?.loadedModelId ?? null;
 
-  // ── Handlers (placeholder wiring until mutation hooks arrive) ────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleDownload = (model: LocalModelDefinition) => {
-    // Will be replaced by useDownloadModel mutation
-    void invalidateOverview();
-    console.log('[ModelManager] Download requested:', model.id);
+    downloadMutation.mutate(model);
   };
 
   const handleLoad = (modelId: string) => {
-    // Will be replaced by useLoadModel mutation
-    void invalidateOverview();
-    console.log('[ModelManager] Load requested:', modelId);
+    loadMutation.mutate({ modelId, runtimeId: 'managed-local' });
   };
 
   const handleUnload = (modelId: string) => {
-    // Will be replaced by useUnloadModel mutation
-    void invalidateOverview();
-    console.log('[ModelManager] Unload requested:', modelId);
+    unloadMutation.mutate(modelId);
   };
 
   const handleDelete = (modelId: string) => {
-    void invalidateOverview();
-    console.log('[ModelManager] Delete requested:', modelId);
+    deleteMutation.mutate(modelId);
   };
-
-  // ── Rendering ────────────────────────────────────────────────────────────
-
-  const downloadMap = new Map(downloadingModels.map((d) => [d.modelId, d]));
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
@@ -149,33 +142,48 @@ export function ModelManagerSection({
         </div>
       </div>
 
-      {/* Runtime status */}
+      {/* Runtime status & scan refresh */}
       {enabled && (
-        <div className="flex items-center gap-2 mb-4 text-sm">
-          <span
-            className={`h-2 w-2 rounded-full shrink-0 ${
-              overview?.health?.status === 'healthy'
-                ? 'bg-green-500'
-                : overview?.health?.status === 'degraded'
-                  ? 'bg-yellow-500'
-                  : 'bg-muted-foreground/40'
-            }`}
-          />
-          <span className="text-muted-foreground">
-            {isLoading
-              ? '상태 확인 중...'
-              : overview?.health?.status === 'healthy'
-                ? '런타임 정상'
-                : overview?.health?.status === 'degraded'
-                  ? '런타임 일부 제한'
-                  : '런타임 상태 불명'}
-          </span>
-          {activeModelId && (
-            <Badge variant="secondary" className="ml-auto gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              {installedMap.get(activeModelId)?.name ?? activeModelId}
-            </Badge>
-          )}
+        <div className="flex items-center justify-between gap-2 mb-4 text-sm">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full shrink-0 ${
+                overview?.health?.status === 'healthy'
+                  ? 'bg-green-500'
+                  : overview?.health?.status === 'degraded'
+                    ? 'bg-yellow-500'
+                    : 'bg-muted-foreground/40'
+              }`}
+            />
+            <span className="text-muted-foreground">
+              {isLoading
+                ? '상태 확인 중...'
+                : overview?.health?.status === 'healthy'
+                  ? '런타임 정상'
+                  : overview?.health?.status === 'degraded'
+                    ? '런타임 일부 제한'
+                    : '런타임 상태 불명'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => invalidateOverview()}
+              className="h-7 text-xs gap-1.5 px-2.5"
+              title="LM Studio, oMLX, HuggingFace 등 로컬 모델 폴더 재스캔"
+            >
+              <RefreshCw className="h-3 w-3" />
+              로컬 / LM Studio 스캔
+            </Button>
+            {activeModelId && (
+              <Badge variant="secondary" className="gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                {installedMap.get(activeModelId)?.name ?? activeModelId}
+              </Badge>
+            )}
+          </div>
         </div>
       )}
 
@@ -221,7 +229,7 @@ export function ModelManagerSection({
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     {filtered.map((model) => {
                       const installed = installedMap.get(model.id);
-                      const dlState = downloadMap.get(model.id);
+                      const dlState = downloadProgressMap[model.id];
                       const isActive = activeModelId === model.id;
 
                       return (
@@ -235,7 +243,7 @@ export function ModelManagerSection({
                           onUnload={handleUnload}
                           onDelete={handleDelete}
                           isDownloading={dlState != null}
-                          downloadProgress={dlState?.progress}
+                          downloadProgress={dlState ? Math.round(dlState.percentage) : undefined}
                         />
                       );
                     })}

@@ -48,7 +48,7 @@ export function ReviewDeck({ items, onRemembered, onPostponed }: ReviewDeckProps
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
         <div className="h-1.5 w-40 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
+            className="h-full rounded-full bg-primary transition-[width] duration-300"
             style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
           />
         </div>

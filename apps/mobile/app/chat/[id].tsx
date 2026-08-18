@@ -1,10 +1,3 @@
-/**
- * Chat Detail Screen
- *
- * Individual conversation view with AI chat.
- */
-
-import { Activity } from "react";
 import {
   View,
   Text,
@@ -24,21 +17,15 @@ import {
 import {
   ChatMessage,
   ChatInput,
-  ConversationEditModal,
   ContextBadge,
-  MessageEditModal,
   ChatStreamingMessage,
-  BackConfirmationDialog,
-  DeleteMessageDialog,
-  DeleteConversationDialog,
+  ChatDetailDialogs,
 } from "@/src/components/chat";
-import { ChatAISetupDialog } from "@/src/components/chat/ChatAISetupDialog";
 import { useChat } from '@/src/hooks/chat/useChat';
 import { useChatAISetup } from "@/src/hooks/chat/useChatAISetup";
 import { useMessageActions } from "@/src/hooks/chat/useMessageActions";
 import { useConversationActions } from "@/src/hooks/chat/useConversationActions";
 import { useChatNavigation } from "@/src/hooks/chat/useChatNavigation";
-import { isLocalLLMReady } from "@/src/features/settings";
 import { ScreenHeader } from "@glimpse/ui/primitives/screen-header";
 
 export default function ChatDetailScreen() {
@@ -91,10 +78,8 @@ export default function ChatDetailScreen() {
   });
 
   const handleSend = async (text: string) => {
-    if (!isLocalLLMReady()) {
-      const ready = await aiSetup.ensureReady();
-      if (!ready) return false;
-    }
+    const ready = await aiSetup.ensureReady();
+    if (!ready) return false;
 
     const didSend = await sendMessage(text);
     if (didSend) {
@@ -124,14 +109,14 @@ export default function ChatDetailScreen() {
           </TouchableOpacity>
         }
         rightElement={
-          <Activity mode={conversation ? "visible" : "hidden"}>
+          conversation ? (
             <TouchableOpacity
               onPress={conversationActions.handleOpenEditModal}
-              className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
+              className="h-10 w-10 items-center justify-center rounded-full bg-app-border/40 active:opacity-70"
             >
               <SquarePen size={18} color="#37352f" />
             </TouchableOpacity>
-          </Activity>
+          ) : undefined
         }
       />
 
@@ -141,132 +126,83 @@ export default function ChatDetailScreen() {
         keyboardVerticalOffset={0}
       >
         {/* Context badge */}
-        <Activity mode={contextItem ? "visible" : "hidden"}>
-          <View className="px-4 pb-2">
+        {contextItem && (
+          <View className="pb-2">
             <ContextBadge item={contextItem} />
           </View>
-        </Activity>
+        )}
 
         {/* Messages */}
         <ScrollView
           ref={navigation.scrollViewRef}
           className="flex-1"
           contentContainerStyle={{
-            paddingHorizontal: 16,
+            paddingHorizontal: 24,
             paddingTop: 8,
             paddingBottom: 20,
             flexGrow: 1,
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <Activity mode={isLoadingMessages ? "visible" : "hidden"}>
+          {isLoadingMessages && (
             <View className="flex-1 items-center justify-center py-8">
-              <Text className="text-gray-500">로딩 중...</Text>
+              <Text className="text-app-muted text-sm">로딩 중...</Text>
             </View>
-          </Activity>
+          )}
 
-          <Activity
-            mode={
-              !isLoadingMessages && messages && messages.length > 0
-                ? "visible"
-                : "hidden"
-            }
-          >
-            {messages?.map((message, index) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                onEdit={messageActions.handleEdit}
-                onDelete={messageActions.handleDelete}
-                isPending={
-                  isGenerating &&
-                  index === messages.length - 1 &&
-                  message.role === "user"
-                }
-              />
-            ))}
-          </Activity>
+          {!isLoadingMessages && messages && messages.length > 0 && (
+            <>
+              {messages.map((message, index) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  onEdit={messageActions.handleEdit}
+                  onDelete={messageActions.handleDelete}
+                  isPending={
+                    isGenerating &&
+                    index === messages.length - 1 &&
+                    message.role === "user"
+                  }
+                />
+              ))}
+            </>
+          )}
 
-          <Activity
-            mode={
-              !isLoadingMessages && (!messages || messages.length === 0)
-                ? "visible"
-                : "hidden"
-            }
-          >
+          {!isLoadingMessages && (!messages || messages.length === 0) && (
             <View className="flex-1 items-center justify-center py-8">
-              <Text className="text-center text-gray-400">
+              <Text className="text-center text-app-subtle text-sm">
                 {contextItem
                   ? "이 항목에 대해 질문해 보세요"
                   : "메시지를 입력해 대화를 시작하세요"}
               </Text>
             </View>
-          </Activity>
+          )}
 
           {/* Streaming response */}
-          <Activity mode={isGenerating ? "visible" : "hidden"}>
+          {isGenerating && (
             <ChatStreamingMessage content={streamingText} />
-          </Activity>
+          )}
         </ScrollView>
 
         {/* Error */}
-        <Activity mode={error ? "visible" : "hidden"}>
-          <View className="px-4 pb-2">
-            <View className="rounded-2xl bg-red-50 px-3 py-2">
-              <Text className="text-sm text-red-700">{error}</Text>
+        {error && (
+          <View className="px-6 pb-2">
+            <View className="rounded-md bg-tag-rose-bg/60 border border-tag-rose-text/20 px-3 py-2">
+              <Text className="text-sm text-tag-rose-text">{error}</Text>
             </View>
           </View>
-        </Activity>
+        )}
 
         {/* Input */}
         <ChatInput onSend={handleSend} isLoading={isGenerating} />
 
-        {/* Dialogs */}
-        <ChatAISetupDialog
-          open={aiSetup.showDialog}
-          isCheckingOptions={aiSetup.isChecking}
-          models={aiSetup.models}
-          selectedModelId={aiSetup.selectedModelId}
-          isDownloading={aiSetup.isDownloading}
-          downloadProgress={aiSetup.downloadProgress}
-          onSelectModel={aiSetup.handleSelectModel}
-          onOpenSettings={aiSetup.handleOpenSettings}
-          onBack={aiSetup.handleBack}
-        />
-
-        <ConversationEditModal
-          visible={conversationActions.showEditModal}
+        {/* Modals & Dialogs */}
+        <ChatDetailDialogs
+          aiSetup={aiSetup}
           conversation={conversation}
-          onSave={conversationActions.handleSaveDetails}
-          onCancel={conversationActions.handleCloseEditModal}
-          onDelete={conversationActions.handleRequestDelete}
-        />
-
-        <MessageEditModal
-          visible={messageActions.editingMessage !== null}
-          message={messageActions.editingMessage}
-          onSave={messageActions.handleSaveEdit}
-          onCancel={messageActions.handleCancelEdit}
-        />
-
-        <BackConfirmationDialog
-          open={navigation.showBackDialog}
-          onOpenChange={(open) => !open && navigation.handleCancelBack()}
-          onConfirm={navigation.handleConfirmBack}
-        />
-
-        <DeleteMessageDialog
-          open={messageActions.showDeleteDialog}
-          onOpenChange={(open) => !open && messageActions.handleCancelDelete()}
-          onConfirm={messageActions.handleConfirmDelete}
-        />
-
-        <DeleteConversationDialog
-          open={conversationActions.showDeleteDialog}
-          onOpenChange={(open) =>
-            !open && conversationActions.handleCancelDelete()
-          }
-          onConfirm={conversationActions.handleConfirmDelete}
+          conversationActions={conversationActions}
+          messageActions={messageActions}
+          navigation={navigation}
         />
       </KeyboardAvoidingView>
     </View>

@@ -36,20 +36,23 @@ function truncate(text: string | null, maxLength: number): string {
   return text.slice(0, maxLength) + '...';
 }
 
+const STATUS_CONFIG: Record<
+  Exclude<RecommendationStatus, 'pending'>,
+  { label: string; backgroundClassName: string; textClassName: string }
+> = {
+  accepted: { label: '수락함', backgroundClassName: 'bg-tag-mint-bg', textClassName: 'text-tag-mint-text' },
+  ignored: { label: '무시함', backgroundClassName: 'bg-tag-rose-bg', textClassName: 'text-tag-rose-text' },
+  dismissed: { label: '닫음', backgroundClassName: 'bg-app-border/40', textClassName: 'text-app-muted' },
+};
+
 function StatusBadge({ status }: { status: RecommendationStatus }) {
   if (status === 'pending') return null;
 
-  const statusConfig = {
-    accepted: { label: '수락함', backgroundClassName: 'bg-green-100', textClassName: 'text-green-700' },
-    ignored: { label: '무시함', backgroundClassName: 'bg-red-100', textClassName: 'text-red-700' },
-    dismissed: { label: '닫음', backgroundClassName: 'bg-app-border/40', textClassName: 'text-app-muted' },
-  };
-
-  const config = statusConfig[status];
+  const config = STATUS_CONFIG[status];
 
   return (
     <View className={cn('rounded px-2 py-0.5', config.backgroundClassName)}>
-      <Text className={cn('text-[10px] font-bold uppercase', config.textClassName)}>
+      <Text className={cn('text-[10px] font-medium tracking-tight', config.textClassName)}>
         {config.label}
       </Text>
     </View>
@@ -79,7 +82,7 @@ export function RecommendationCard({
       <View className="mb-2 flex-row items-start gap-3">
         <Text className="text-base">{getTypeEmoji(itemA.type)}</Text>
         <View className="flex-1">
-          <Text className="text-[10px] font-bold text-app-muted uppercase tracking-tight">항목 1</Text>
+          <Text className="text-[10px] font-semibold text-app-muted uppercase tracking-tight">항목 1</Text>
           <Text className="text-sm font-semibold text-app-text" numberOfLines={2}>
             {truncate(itemA.title || itemA.body, 50)}
           </Text>
@@ -89,7 +92,7 @@ export function RecommendationCard({
       {/* Connector */}
       <View className="flex-row items-center gap-2 py-1.5 pl-2">
         <View className="h-px flex-1 bg-app-border" />
-        <Text className="text-[10px] font-bold text-app-subtle uppercase">연결</Text>
+        <Text className="text-[10px] font-semibold text-app-subtle uppercase">연결</Text>
         <View className="h-px flex-1 bg-app-border" />
       </View>
 
@@ -97,7 +100,7 @@ export function RecommendationCard({
       <View className="mb-3 flex-row items-start gap-3">
         <Text className="text-base">{getTypeEmoji(itemB.type)}</Text>
         <View className="flex-1">
-          <Text className="text-[10px] font-bold text-app-muted uppercase tracking-tight">항목 2</Text>
+          <Text className="text-[10px] font-semibold text-app-muted uppercase tracking-tight">항목 2</Text>
           <Text className="text-sm font-semibold text-app-text" numberOfLines={2}>
             {truncate(itemB.title || itemB.body, 50)}
           </Text>
@@ -116,26 +119,26 @@ export function RecommendationCard({
         <View className="flex-row gap-2">
           <Pressable
             onPress={onAccept}
-            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-app-primary py-2 active:opacity-80"
+            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-app-text py-2 active:opacity-80"
           >
             <Check size={14} color="white" />
-            <Text className="text-xs font-bold text-white">수락</Text>
+            <Text className="text-xs font-semibold text-white">수락</Text>
           </Pressable>
 
           <Pressable
             onPress={onIgnore}
-            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-app-accent py-2 active:opacity-80"
+            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-tag-rose-bg border border-tag-rose-text/20 py-2 active:opacity-80"
           >
-            <X size={14} color="white" />
-            <Text className="text-xs font-bold text-white">무시</Text>
+            <X size={14} color="#cf222e" />
+            <Text className="text-xs font-semibold text-tag-rose-text">무시</Text>
           </Pressable>
 
           <Pressable
             onPress={onDismiss}
-            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-app-border/40 py-2 active:opacity-80"
+            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-app-bg border border-app-border py-2 active:opacity-80"
           >
             <Minus size={14} color="#787774" />
-            <Text className="text-xs font-bold text-app-muted">닫기</Text>
+            <Text className="text-xs font-semibold text-app-muted">닫기</Text>
           </Pressable>
         </View>
       )}

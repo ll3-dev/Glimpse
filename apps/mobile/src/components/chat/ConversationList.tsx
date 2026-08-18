@@ -36,25 +36,25 @@ export function ConversationList({ conversation, onPress }: ConversationListProp
 
   return (
     <TouchableOpacity
-      className="flex-row items-center p-4 bg-white rounded-xl mb-2"
+      className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-md mb-2 active:opacity-80"
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-3">
+      <View className="w-10 h-10 rounded-full bg-app-border/40 items-center justify-center mr-3">
         {hasCustomIcon ? (
           <Text className="text-xl">{conversation.icon}</Text>
         ) : (
-          <MessageCircle size={20} color="#6b7280" />
+          <MessageCircle size={20} color="#787774" />
         )}
       </View>
       <View className="flex-1">
         <Text
-          className="text-base font-medium text-gray-900"
+          className="text-base font-semibold text-app-text tracking-tight"
           numberOfLines={1}
         >
           {displayTitle}
         </Text>
-        <Text className="text-sm text-gray-500 mt-0.5">
+        <Text className="text-xs text-app-muted mt-0.5 font-medium">
           {relativeTime}
         </Text>
       </View>

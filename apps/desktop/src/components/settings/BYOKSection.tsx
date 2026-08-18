@@ -66,10 +66,11 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
       <div className="space-y-4">
         {/* Provider Selector */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor="byok-provider" className="block text-sm font-medium text-foreground mb-1.5">
             Provider
           </label>
           <select
+            id="byok-provider"
             value={byok.provider}
             onChange={(e) => handleProviderChange(e.target.value as ProviderValue)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
@@ -84,11 +85,12 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
 
         {/* API Key */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor="byok-api-key" className="block text-sm font-medium text-foreground mb-1.5">
             API Key
           </label>
           <div className="relative">
             <input
+              id="byok-api-key"
               type={showApiKey ? 'text' : 'password'}
               value={byok.apiKey}
               onChange={(e) => updateByok({ apiKey: e.target.value })}
@@ -97,6 +99,7 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
             />
             <button
               type="button"
+              aria-label={showApiKey ? "Hide API key" : "Show API key"}
               onClick={() => setShowApiKey((prev) => !prev)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
             >
@@ -107,10 +110,11 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
 
         {/* Base URL */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor="byok-base-url" className="block text-sm font-medium text-foreground mb-1.5">
             Base URL
           </label>
           <input
+            id="byok-base-url"
             type="url"
             value={byok.baseUrl}
             onChange={(e) => updateByok({ baseUrl: e.target.value })}
@@ -121,10 +125,11 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
 
         {/* Model Name */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label htmlFor="byok-model-name" className="block text-sm font-medium text-foreground mb-1.5">
             Model Name
           </label>
           <input
+            id="byok-model-name"
             type="text"
             value={byok.model}
             onChange={(e) => updateByok({ model: e.target.value })}

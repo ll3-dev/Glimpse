@@ -1,4 +1,3 @@
-import { Activity } from "react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -62,80 +61,80 @@ export default function LibraryDetailScreen() {
         }
       />
 
-      <Activity mode={showLoading ? "visible" : "hidden"}>
+      {showLoading && (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-app-muted text-base">불러오는 중...</Text>
         </View>
-      </Activity>
+      )}
 
-      <Activity mode={showMissing ? "visible" : "hidden"}>
+      {showMissing && (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-app-muted text-base">
             항목을 찾을 수 없습니다.
           </Text>
         </View>
-      </Activity>
+      )}
 
-      <Activity mode={showItem ? "visible" : "hidden"}>
+      {showItem && item && (
         <ScrollView
           className="flex-1 px-6"
           contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         >
           <Card className="mb-3 p-4">
             <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
-              {item ? getTypeLabel(item.type) : ""}
+              {getTypeLabel(item.type)}
             </Text>
             <Text className="text-app-text mt-2 text-lg font-bold">
-              {item ? item.title || item.body || item.url || "제목 없음" : ""}
+              {item.title || item.body || item.url || "제목 없음"}
             </Text>
             <Text className="text-app-muted mt-2 text-xs">
-              {item ? format(item.createdAt, "yyyy.MM.dd HH:mm", { locale: ko }) : ""}
+              {format(item.createdAt, "yyyy.MM.dd HH:mm", { locale: ko })}
             </Text>
           </Card>
 
-          <Activity mode={item?.body ? "visible" : "hidden"}>
+          {item.body && (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 내용
               </Text>
               <Text className="text-app-text mt-2 text-sm leading-6">
-                {item?.body}
+                {item.body}
               </Text>
             </Card>
-          </Activity>
+          )}
 
-          <Activity mode={item?.url ? "visible" : "hidden"}>
+          {item.url && (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 링크
               </Text>
               <TouchableOpacity
                 className="mt-2 flex-row items-center"
-                onPress={() => item?.url && Linking.openURL(item.url)}
+                onPress={() => item.url && Linking.openURL(item.url)}
               >
                 <Text
-                  className="flex-1 text-sm text-blue-600"
+                  className="flex-1 text-sm text-app-primary font-medium"
                   numberOfLines={2}
                 >
-                  {item?.url}
+                  {item.url}
                 </Text>
-                <ExternalLink size={16} color="#2563eb" />
+                <ExternalLink size={16} color="#2383e2" />
               </TouchableOpacity>
             </Card>
-          </Activity>
+          )}
 
-          <Activity mode={item?.summary ? "visible" : "hidden"}>
+          {item.summary && (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 요약
               </Text>
               <Text className="text-app-text mt-2 text-sm leading-6">
-                {item?.summary}
+                {item.summary}
               </Text>
             </Card>
-          </Activity>
+          )}
 
-          <Activity mode={displayLabels.length > 0 ? "visible" : "hidden"}>
+          {displayLabels.length > 0 && (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 라벨
@@ -153,15 +152,15 @@ export default function LibraryDetailScreen() {
                 ))}
               </View>
             </Card>
-          </Activity>
+          )}
 
-          <Activity mode={item?.tags && item.tags.length > 0 ? "visible" : "hidden"}>
+          {item.tags && item.tags.length > 0 && (
             <Card className="mb-3 p-4">
               <Text className="text-app-muted text-[11px] font-semibold tracking-tight">
                 태그
               </Text>
               <View className="mt-2 flex-row flex-wrap">
-                {item?.tags?.map((tag) => (
+                {item.tags.map((tag) => (
                   <View
                     key={tag}
                     className="bg-app-border/40 mr-2 mb-2 rounded px-2 py-1"
@@ -171,9 +170,10 @@ export default function LibraryDetailScreen() {
                 ))}
               </View>
             </Card>
-          </Activity>
+          )}
         </ScrollView>
-      </Activity>
+      )}
     </View>
   );
 }
+

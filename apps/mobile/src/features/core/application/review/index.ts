@@ -220,13 +220,15 @@ export function createBatchInitializeReviewSchedules(deps: BatchInitializeReview
       const items = await deps.coreClient.listKnowledgeItems();
       const itemsNeedingSchedule = items.filter((item) => item.nextReviewAt === null);
 
-      for (const item of itemsNeedingSchedule) {
-        const nextReviewAt = calculateInitialReviewAt(item.createdAt, intervalMs);
-        await deps.coreClient.updateKnowledgeItem(item.id, {
-          nextReviewAt,
-          updatedAt: Date.now(),
-        });
-      }
+      await Promise.all(
+        itemsNeedingSchedule.map((item) => {
+          const nextReviewAt = calculateInitialReviewAt(item.createdAt, intervalMs);
+          return deps.coreClient.updateKnowledgeItem(item.id, {
+            nextReviewAt,
+            updatedAt: Date.now(),
+          });
+        })
+      );
 
       return { count: itemsNeedingSchedule.length };
     } catch (error) {

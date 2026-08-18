@@ -1,4 +1,3 @@
-import { Activity } from 'react';
 import { type KnowledgeItemType } from '@glimpse/shared';
 import { type CaptureFormActions, type CaptureFormState } from '@/src/features/capture';
 import { CaptureForm } from './CaptureForm';
@@ -19,47 +18,54 @@ export function CaptureChannelForm({
   state,
   actions,
 }: CaptureChannelFormProps) {
-  return (
-    <>
-      <Activity mode={channel === 'note' || channel === 'link' ? 'visible' : 'hidden'}>
-        <CaptureForm
-          title={state.title}
-          body={state.body}
-          bottomInset={bottomInset}
-          onChangeTitle={actions.setTitle}
-          onChangeBody={actions.setBody}
-          placeholder={channel === 'link' ? 'URL을 입력하세요...' : '자유롭게 기록하세요...'}
-        />
-      </Activity>
+  if (channel === 'note' || channel === 'link') {
+    return (
+      <CaptureForm
+        title={state.title}
+        body={state.body}
+        bottomInset={bottomInset}
+        onChangeTitle={actions.setTitle}
+        onChangeBody={actions.setBody}
+        placeholder={channel === 'link' ? 'URL을 입력하세요...' : '자유롭게 기록하세요...'}
+      />
+    );
+  }
 
-      <Activity mode={channel === 'highlight' ? 'visible' : 'hidden'}>
-        <HighlightForm
-          text={state.highlightText}
-          source={state.highlightSource}
-          bottomInset={bottomInset}
-          onChangeText={actions.setHighlightText}
-          onChangeSource={actions.setHighlightSource}
-        />
-      </Activity>
+  if (channel === 'highlight') {
+    return (
+      <HighlightForm
+        text={state.highlightText}
+        source={state.highlightSource}
+        bottomInset={bottomInset}
+        onChangeText={actions.setHighlightText}
+        onChangeSource={actions.setHighlightSource}
+      />
+    );
+  }
 
-      <Activity mode={channel === 'screenshot' ? 'visible' : 'hidden'}>
-        <ScreenshotForm
-          extractedText={state.screenshotText}
-          onChangeExtractedText={actions.setScreenshotText}
-          bottomInset={bottomInset}
-        />
-      </Activity>
+  if (channel === 'screenshot') {
+    return (
+      <ScreenshotForm
+        extractedText={state.screenshotText}
+        onChangeExtractedText={actions.setScreenshotText}
+        bottomInset={bottomInset}
+      />
+    );
+  }
 
-      <Activity mode={channel === 'share' ? 'visible' : 'hidden'}>
-        <ShareForm
-          sharedContent={state.sharedContent}
-          editedTitle={state.shareTitle}
-          editedBody={state.shareBody}
-          bottomInset={bottomInset}
-          onChangeTitle={actions.setShareTitle}
-          onChangeBody={actions.setShareBody}
-        />
-      </Activity>
-    </>
-  );
+  if (channel === 'share') {
+    return (
+      <ShareForm
+        sharedContent={state.sharedContent}
+        editedTitle={state.shareTitle}
+        editedBody={state.shareBody}
+        bottomInset={bottomInset}
+        onChangeTitle={actions.setShareTitle}
+        onChangeBody={actions.setShareBody}
+      />
+    );
+  }
+
+  return null;
 }
+

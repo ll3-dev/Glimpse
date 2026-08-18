@@ -3,7 +3,6 @@ import {
   createRespondToRecommendation,
   type RespondToRecommendationDeps,
 } from '@/src/features/core/application/recommendation';
-import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 
 const createMockDeps = () => {
   const coreClient = {

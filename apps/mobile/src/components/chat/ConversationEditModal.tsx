@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Alert,
   Animated,
   KeyboardAvoidingView,
   Modal,
@@ -35,7 +34,7 @@ export function ConversationEditModal({
 }: ConversationEditModalProps) {
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
-  const slideAnim = useRef(new Animated.Value(400)).current;
+  const [slideAnim] = useState(() => new Animated.Value(400));
 
   useEffect(() => {
     if (!conversation) return;
@@ -79,18 +78,9 @@ export function ConversationEditModal({
   };
 
   const handleDeletePress = () => {
-    Alert.alert(
-      "대화를 삭제할까요?",
-      "이 대화의 모든 메시지가 영구적으로 삭제되며 복구할 수 없습니다.",
-      [
-        { text: "취소", style: "cancel" },
-        { 
-          text: "삭제하기", 
-          style: "destructive", 
-          onPress: () => onDelete() 
-        }
-      ]
-    );
+    animateClose(() => {
+      onDelete();
+    });
   };
 
   if (!conversation) return null;
@@ -113,49 +103,49 @@ export function ConversationEditModal({
         >
           <Animated.View
             style={{ transform: [{ translateY: slideAnim }] }}
-            className="rounded-t-[32px] bg-app-surface p-6 pb-10 shadow-2xl"
+            className="rounded-t-2xl bg-app-surface p-6 pb-10 shadow-xl border-t border-app-border"
             onStartShouldSetResponder={() => true}
           >
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">대화 설정</Text>
               <TouchableOpacity onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
-                <X size={16} color="#9b9a97" />
+                <X size={16} color="#787774" />
               </TouchableOpacity>
             </View>
 
             <View className="mb-5">
-              <Text className="mb-1.5 ml-1 text-[10px] font-bold uppercase tracking-wider text-app-subtle">제목</Text>
+              <Text className="mb-1.5 ml-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">제목</Text>
               <Input
                 value={title}
                 onChangeText={setTitle}
                 placeholder="새 대화"
-                className="h-11 rounded-2xl border-app-border bg-app-bg px-4 py-0 text-sm font-medium"
+                className="h-11 rounded-md border-app-border bg-app-bg px-4 py-0 text-sm font-medium"
                 textAlignVertical="center"
               />
             </View>
 
             <View className="mb-8">
-              <Text className="mb-2 ml-1 text-[10px] font-bold uppercase tracking-wider text-app-subtle">아이콘</Text>
+              <Text className="mb-2 ml-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">아이콘</Text>
               <View className="flex-row flex-wrap gap-2">
                 <TouchableOpacity
                   className={cn(
-                    "h-11 w-11 items-center justify-center rounded-2xl border",
-                    icon === null ? "border-app-primary bg-app-primary" : "border-app-border bg-app-bg"
+                    "h-10 w-10 items-center justify-center rounded-md border",
+                    icon === null ? "border-app-text bg-app-text" : "border-app-border bg-app-bg"
                   )}
                   onPress={() => setIcon(null)}
                 >
-                  <Text className={cn("text-[8px] font-black uppercase", icon === null ? "text-white" : "text-app-subtle")}>기본</Text>
+                  <Text className={cn("text-[10px] font-semibold uppercase", icon === null ? "text-white" : "text-app-muted")}>기본</Text>
                 </TouchableOpacity>
                 {CHAT_CONVERSATION_ICONS.map((candidate) => (
                   <TouchableOpacity
                     key={candidate}
                     className={cn(
-                      "h-11 w-11 items-center justify-center rounded-2xl border",
-                      icon === candidate ? "border-app-primary bg-app-surface shadow-sm" : "border-app-border bg-app-bg"
+                      "h-10 w-10 items-center justify-center rounded-md border",
+                      icon === candidate ? "border-app-text bg-app-surface shadow-xs" : "border-app-border bg-app-bg"
                     )}
                     onPress={() => setIcon(candidate)}
                   >
-                    <Text className="text-lg">{candidate}</Text>
+                    <Text className="text-base">{candidate}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -164,13 +154,13 @@ export function ConversationEditModal({
             <View className="flex-row gap-2.5">
               <Button 
                 variant="ghost" 
-                className="flex-1 h-11 rounded-2xl active:bg-app-accent/5" 
+                className="flex-1 h-11 rounded-md active:bg-app-accent/10" 
                 onPress={handleDeletePress}
               >
-                <Trash2 size={14} className="text-app-accent/50 mr-1" />
-                <Text className="text-xs font-bold text-app-accent/50">삭제</Text>
+                <Trash2 size={14} color="#eb5757" className="mr-1" />
+                <Text className="text-xs font-semibold text-app-accent">삭제</Text>
               </Button>
-              <Button variant="default" className="flex-[3] h-11 rounded-2xl" onPress={handleSave} disabled={!title.trim()}>
+              <Button variant="default" className="flex-[3] h-11 rounded-md" onPress={handleSave} disabled={!title.trim()}>
                 <Text className="text-sm font-bold text-white">저장하기</Text>
               </Button>
             </View>

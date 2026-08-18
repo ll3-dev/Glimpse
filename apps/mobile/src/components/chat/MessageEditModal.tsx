@@ -27,7 +27,7 @@ export function MessageEditModal({
 }: MessageEditModalProps) {
   const [content, setContent] = useState(message?.content ?? '');
   const textareaRef = useRef<TextInput>(null);
-  const slideAnim = useRef(new Animated.Value(400)).current;
+  const [slideAnim] = useState(() => new Animated.Value(400));
 
   useEffect(() => {
     if (visible && message) {
@@ -84,20 +84,20 @@ export function MessageEditModal({
         >
           <Animated.View
             style={{ transform: [{ translateY: slideAnim }] }}
-            className="rounded-t-[32px] bg-app-surface p-6 pb-10"
+            className="rounded-t-2xl bg-app-surface p-6 pb-10 shadow-xl border-t border-app-border"
             onStartShouldSetResponder={() => true}
           >
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">메시지 수정</Text>
               <TouchableOpacity onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
-                <X size={16} color="#9b9a97" />
+                <X size={16} color="#787774" />
               </TouchableOpacity>
             </View>
 
             <View className="mb-6 h-40">
               <Textarea
                 ref={textareaRef}
-                className="flex-1 rounded-2xl border-app-border bg-app-bg px-4 py-3 text-sm leading-6 text-app-text"
+                className="flex-1 rounded-md border-app-border bg-app-bg px-4 py-3 text-sm leading-6 text-app-text"
                 value={content}
                 onChangeText={setContent}
                 placeholder="내용을 입력하세요..."
@@ -106,12 +106,12 @@ export function MessageEditModal({
             </View>
 
             <View className="flex-row gap-3">
-              <Button variant="outline" className="flex-1 h-11 rounded-2xl border-app-border" onPress={handleClose}>
-                <Text className="text-xs font-bold text-app-muted">취소</Text>
+              <Button variant="outline" className="flex-1 h-11 rounded-md border-app-border" onPress={handleClose}>
+                <Text className="text-xs font-semibold text-app-muted">취소</Text>
               </Button>
               <Button 
                 variant="default" 
-                className="flex-[2] h-11 rounded-2xl" 
+                className="flex-[2] h-11 rounded-md" 
                 onPress={handleSave} 
                 disabled={!content.trim() || content.trim() === message.content}
               >
