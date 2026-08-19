@@ -39,6 +39,17 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - run: bun install --frozen-lockfile
+      # generate_context!가 frontendDist(../dist)를 임베드한다 — 사전 웹 빌드 필요
+      - run: bun run desktop:build
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
