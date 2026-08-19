@@ -40,7 +40,7 @@ rustra (github.com/loopy-lim/rustra, 로컬 `~/dev/ll3/rustra-bridge`, v0.1.1)�
 ### 1주차 — 데스크톱 전환 (리스크 최소 시작)
 
 - `glimpse-core` 도메인 로직(SharedCore facade — knowledge, conversation, message, feedback, recommendation, review)을 rustra `#[command]`로 정의한 `glimpse-bridge` 크레이트 신설 (또는 core-rust 내 모듈).
-- 데스크톱 `src-tauri`는 rustra `tauri_support::register` 사용. 프론트는 `desktop-core-client.ts`가 생성된 TS 클라이언트 호출.
+- 데스크톱 `src-tauri`는 rustra `tauri_support::register` 사용. 프론트는 생성된 TS 클라이언트(`@glimpse/bridge-generated`)를 직접 호출 (`desktop-core-client.ts`는 1주차 마지막에 이중 브릿지 해소로 삭제됨).
 - 기준: 데스크톱 기존 기능 회귀 없음. 손글 커맨드 ~25개(도메인 CRUD) 삭제.
 - LLM 관련 커맨드(다운로드/로드/스트리밍)는 이 단계에서 그대로 유지.
 
@@ -201,6 +201,10 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 - **로컬 path 링크 원복**: rustra 0.1.2 가 crates.io 에 게시되면 두 Cargo.toml 의 path 를 `=0.1.2` 정확 핀으로 되돌린다. 계약 해시는 크레이트 버전을 포함하지 않으므로(스키마에 버전 필드 없음 확인) 게시 버전과 로컬 빌드가 동일 커밋이면 generated/ 는 바이트 동일.
 
 ### 사용자 수동 검증 체크리스트 (3주차 추가)
+
+> **진실 소스**: 모든 GUI 검증 체크리스트(데스크톱 7 / 모바일 6 / 스트리밍 3 / OCR 3)의
+> 진실 소스는 `2026-08-16-rustra-integration-plan.md`이다. 이 문서와 integration-plan의
+> 이중 기록을 2026-08-19 정합하면서 이 항목들은 참조용 요약으로 남긴다.
 
 1. **로컬 채팅 스트리밍** — 모델 로드 후 스트리밍 응답이 토큰 단위로 렌더링되는지(일괄 등장이 아니라)
 2. **스트리밍 완료** — 스트림 종료 시 최종 텍스트가 전체 표시되고 후속 입력 가능한지

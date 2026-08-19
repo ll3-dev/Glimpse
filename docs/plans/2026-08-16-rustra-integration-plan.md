@@ -469,3 +469,39 @@ git commit -m "refactor(desktop): remove hand-written domain bridge, rustra is t
 1. 잔여 정리: 구 스크립트/문서(`typed-bridge-development.md` 갱신), 네이밍(레포가 hostra로 개명됨 — 문서에 명시).
 2. rustra에 실전 검증 피드백 (벤치마크, 이슈).
 3. 최종 회고.
+
+## GUI 검증 체크리스트 (진실 소스 — 2026-08-19 정합)
+
+> 이 섹션이 모든 GUI 수동 검증 체크리스트의 진실 소스다. 2026-08-16-rustra-integration-design.md의
+> 체크리스트는 참조용 요약으로 전환했다.
+
+### 데스크톱 (7)
+
+- [ ] Library 화면 로드 (listKnowledgeItems)
+- [ ] 새 아이템 저장 (capture → saveKnowledgeItem)
+- [ ] 아이템 상세 (getKnowledgeItemById)
+- [ ] Chat: 대화 생성 + 메시지 추가 (createConversation, addMessage)
+- [ ] Review: due 아이템 조회 (getDueKnowledgeItems)
+- [ ] Digest: 추천 조회 (listPendingRecommendations)
+- [ ] 기존 DB 데이터가 그대로 보이는지 (같은 glimpse-core.db를 rustra 경로가 사용)
+
+### 모바일 (6)
+
+- [ ] Library 로드 — 기존 DB(app group container)의 지식 아이템 목록 표시
+- [ ] Capture 저장 — 새 항목 저장 후 목록 반영, 앱 재시작 시에도 유지
+- [ ] Chat CRUD — 대화 생성/수정/삭제, 메시지 추가
+- [ ] Review 큐 — 복습 예정 항목 조회·응답
+- [ ] 기존 데이터 마이그레이션 — 구 버전 glimpse.sqlite가 rustra 경로에서 읽히는지
+- [ ] 에러 렌더링 — RustraCommandError 표시 확인
+
+### 스트리밍 (3)
+
+- [ ] 로컬 채팅 스트리밍 — 토큰 단위 렌더링 (일괄 등장 아님)
+- [ ] 스트리밍 완료 — 종료 시 최종 텍스트 전체 표시 + 후속 입력 가능
+- [ ] 동시 요청 격리 — 화면 전환 중에도 진행 스트림 유지
+
+### OCR (3) — 2026-08-19 라운드 3 추가
+
+- [ ] 캡처 화면 → 사진 첨부 → 한국어 스크린샷 선택 → "텍스트 인식 중..." 인디케이터 → 본문에 추출 텍스트 자동 삽입
+- [ ] 텍스트 없는 이미지 선택 → 본문이 비어 있어도 저장 가능 (조용한 저하, 에러 toast 없음)
+- [ ] 저장 후 라이브러리에서 스크린샷 항목에 추출 텍스트가 본문으로 보존되는지
