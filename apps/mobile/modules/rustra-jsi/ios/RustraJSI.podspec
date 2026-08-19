@@ -13,6 +13,9 @@ Pod::Spec.new do |s|
 
   s.dependency "React-jsi"
   s.dependency "React-Core"
+  # jsCallInvoker 접근자(RCTBridge (RCTTurboModule) 카테고리) — 이벤트 푸시
+  # drain을 JS 스레드로 마샬링하는 CallInvoker를 얻는다.
+  s.dependency "React-NativeModulesApple"
 
   s.static_framework = true
 

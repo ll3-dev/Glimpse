@@ -21,8 +21,64 @@ export interface StreamDonePayload {
 
 type EventListener<T = unknown> = (payload: T) => void;
 
+type RustraEventNativeSurface = {
+  onEvent?(name: string, callback: (payloadJson: string) => void): void;
+  offEvent?(name: string): void;
+};
+
+/**
+ * Native event push wiring — JSI `onEvent`/`offEvent` over the rustra FFI
+ * event sink (CallInvoker-marshalled to the JS thread).
+ *
+ * When the JSI bridge exposes `onEvent`, the first subscriber of an event
+ * name registers a native listener that parses the JSON payload once and
+ * re-emits into this hub, so Rust-side emitters and local JS emitters
+ * (llama.rn token callbacks) share one subscription surface. The last
+ * unsubscribe releases the native listener (push → polling path revert on
+ * the Rust side). Without the native surface (Expo Go, tests), the hub
+ * stays local-only — behavior is unchanged.
+ */
+function registerNativeListener(
+  eventName: string,
+  emit: (payload: unknown) => void,
+): (() => void) | null {
+  let native: RustraEventNativeSurface | undefined;
+  try {
+    native = (globalThis as { __rustraNative?: RustraEventNativeSurface })
+      .__rustraNative;
+  } catch {
+    native = undefined;
+  }
+  if (!native?.onEvent || !native?.offEvent) {
+    return null;
+  }
+
+  try {
+    native.onEvent(eventName, (payloadJson) => {
+      let payload: unknown;
+      try {
+        payload = JSON.parse(payloadJson);
+      } catch {
+        payload = payloadJson;
+      }
+      emit(payload);
+    });
+  } catch {
+    return null;
+  }
+
+  return () => {
+    try {
+      native?.offEvent?.(eventName);
+    } catch {
+      // Native surface vanished mid-flight (reload) — nothing to release.
+    }
+  };
+}
+
 class StreamEventHub {
   private listeners = new Map<string, Set<EventListener<any>>>();
+  private nativeUnsubscribers = new Map<string, () => void>();
 
   subscribe<T>(eventName: string, listener: EventListener<T>): () => void {
     let set = this.listeners.get(eventName);
@@ -30,7 +86,17 @@ class StreamEventHub {
       set = new Set();
       this.listeners.set(eventName, set);
     }
+    const isFirstForName = set.size === 0;
     set.add(listener as EventListener<any>);
+
+    if (isFirstForName && !this.nativeUnsubscribers.has(eventName)) {
+      const release = registerNativeListener(eventName, (payload) => {
+        this.emit(eventName, payload);
+      });
+      if (release) {
+        this.nativeUnsubscribers.set(eventName, release);
+      }
+    }
 
     return () => {
       const currentSet = this.listeners.get(eventName);
@@ -38,6 +104,11 @@ class StreamEventHub {
         currentSet.delete(listener as EventListener<any>);
         if (currentSet.size === 0) {
           this.listeners.delete(eventName);
+          const release = this.nativeUnsubscribers.get(eventName);
+          if (release) {
+            this.nativeUnsubscribers.delete(eventName);
+            release();
+          }
         }
       }
     };
@@ -59,6 +130,14 @@ class StreamEventHub {
 
   clear(): void {
     this.listeners.clear();
+    for (const release of this.nativeUnsubscribers.values()) {
+      try {
+        release();
+      } catch {
+        // ignore — clearing is teardown-only
+      }
+    }
+    this.nativeUnsubscribers.clear();
   }
 }
 

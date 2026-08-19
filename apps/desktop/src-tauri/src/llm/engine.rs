@@ -5,10 +5,13 @@
 mod imp {
     use std::path::PathBuf;
 
+    use llama_cpp_2::context::params::LlamaContextParams;
     use llama_cpp_2::llama_backend::LlamaBackend;
     use llama_cpp_2::llama_batch::LlamaBatch;
-    use llama_cpp_2::model::{AddBos, LlamaModel, LlamaModelLoadError, LlamaModelParams};
+    use llama_cpp_2::model::params::LlamaModelParams;
+    use llama_cpp_2::model::{AddBos, LlamaModel};
     use llama_cpp_2::sampling::LlamaSampler;
+    use llama_cpp_2::LlamaModelLoadError;
 
     /// temperature 반영 샘플러 체인 — None 이면 기본값(0.8)을 쓴다.
     /// 이전 구조는 `dist_default_seed` 로 고정돼 요청의 temperature 가
@@ -64,8 +67,8 @@ mod imp {
         }
 
         /// 레지스트리 context_length 를 반영한 컨텍스트 파라미터.
-        fn context_params(&self) -> llama_cpp_2::context::LlamaContextParams {
-            llama_cpp_2::context::LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(
+        fn context_params(&self) -> LlamaContextParams {
+            LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(
                 self.context_length,
             ))
         }
@@ -81,7 +84,7 @@ mod imp {
             // Create a context for this completion request
             let ctx_params = self.context_params();
             let mut ctx = model
-                .create_context(&ctx_params)
+                .new_context(&self.backend, ctx_params)
                 .map_err(|e| format!("Failed to create context: {}", e))?;
 
             // Tokenize the prompt
@@ -96,7 +99,7 @@ mod imp {
 
             // Create a batch and evaluate the prompt
             let n_tokens = tokens.len().min(n_ctx - 1);
-            let mut batch = LlamaBatch::new(n_tokens as i32, 1);
+            let mut batch = LlamaBatch::new(n_tokens, 1);
 
             for (i, &token) in tokens.iter().take(n_tokens).enumerate() {
                 // logits = true only for the last token
@@ -168,7 +171,7 @@ mod imp {
             // Create a context for this completion request
             let ctx_params = self.context_params();
             let mut ctx = model
-                .create_context(&ctx_params)
+                .new_context(&self.backend, ctx_params)
                 .map_err(|e| format!("Failed to create context: {}", e))?;
 
             // Tokenize the prompt
@@ -183,7 +186,7 @@ mod imp {
 
             // Create a batch and evaluate the prompt
             let n_tokens = tokens.len().min(n_ctx - 1);
-            let mut batch = LlamaBatch::new(n_tokens as i32, 1);
+            let mut batch = LlamaBatch::new(n_tokens, 1);
 
             for (i, &token) in tokens.iter().take(n_tokens).enumerate() {
                 let is_last = i == n_tokens - 1;
@@ -247,11 +250,11 @@ mod imp {
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
             // Create context with embeddings enabled
-            let ctx_params = llama_cpp_2::context::LlamaContextParams::default()
+            let ctx_params = LlamaContextParams::default()
                 .with_embeddings(true)
                 .with_n_ctx(std::num::NonZeroU32::new(self.context_length));
             let mut ctx = model
-                .create_context(&ctx_params)
+                .new_context(&self.backend, ctx_params)
                 .map_err(|e| format!("Failed to create context: {}", e))?;
 
             // Tokenize
@@ -261,7 +264,7 @@ mod imp {
 
             // Create and evaluate batch
             let n_tokens = tokens.len();
-            let mut batch = LlamaBatch::new(n_tokens as i32, 1);
+            let mut batch = LlamaBatch::new(n_tokens, 1);
             for (i, &token) in tokens.iter().enumerate() {
                 batch
                     .add(token, i as i32, &[0], false)

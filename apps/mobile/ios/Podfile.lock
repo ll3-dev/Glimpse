@@ -2359,6 +2359,7 @@ PODS:
   - RustraJSI (1.0.0):
     - React-Core
     - React-jsi
+    - React-NativeModulesApple
   - SDWebImage (5.21.7):
     - SDWebImage/Core (= 5.21.7)
   - SDWebImage/Core (5.21.7)
@@ -2848,7 +2849,7 @@ SPEC CHECKSUMS:
   RNScreens: 02e62f995ceb94ea465864b3bf4d4767b87f0362
   RNSVG: 0bd149b873018bc6e0e3321e2f6435bdba294460
   RNWorklets: 29fba88bb8be097d8dc233a3fae4093c7d11e24b
-  RustraJSI: c0f4e8534b5b8cd2a029de6562b0cf15bef71dc4
+  RustraJSI: 8c28245097cc6167ca0b7c0383fb82a42eaed4c0
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c

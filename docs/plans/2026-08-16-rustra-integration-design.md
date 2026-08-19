@@ -221,7 +221,7 @@ LLM 엔진 (플랫폼별 유지, 인터페이스만 추후 rustra화)
 ### 남겨둔 것 (통합 이후 후속)
 
 - ~~rustra 레포 `feat/event-sink` 머지 + 0.1.2 게시 + Glimpse path 링크 원복~~ — **완료**: crates.io 0.1.2 게시 확인, 두 Cargo.toml `=0.1.2` 정확 핀 원복(`c58254c`). npm `@rustra/*`도 2026-08-18에 0.1.2로 범프(모바일 네이티브 `subscribeEvent` 전환의 선행 조건 해소).
-- **모바일 네이티브 이벤트 배선(후보)**: 모바일 스트리밍은 현재 `stream-events.ts` 로컬 허브로 *계약만* 정렬된 상태. JSI 네이티브(iOS `.mm`/Android JNI)에 rustra FFI 이벤트 싱크→JS 콜백 배선 후 공식 `subscribeEvent`로 교체하는 것이 후속 후보.
+- ~~모바일 네이티브 이벤트 배선(후보)~~ — **완료**(2026-08-19): `RustraJSIBridge`에 `EventDispatcher`(고정 용량 1024 drop-oldest 큐 + CallInvoker JS 스레드 마샬링)와 `onEvent`/`offEvent`/`drainEvents` 호스트 함수를 추가하고, iOS `.mm`(RCTCxxBridge `jsCallInvoker`)와 Android JNI/Kotlin(`CallInvokerHolder`) 글루가 invoker를 주입한다. 첫 리스너 등록 시 `rustra_ffi_event_sink_register`로 푸시 전환, 마지막 해제 시 unregister(폴링 복귀). `stream-events.ts` 허브는 첫 구독 시 네이티브 `onEvent`를 붙여 Rust 발생 이벤트와 로컬(llama.rn) emit을 한 표면으로 합친다 — 네이티브 미설치(Expo Go/테스트)에서는 로컬 전용으로 동작. 프리빌트 Rust `.a`도 event sink 심볼 포함 버전으로 재빌드(`build:bridge:ios` / `build:bridge:android`).
 - **뮤텍스 오염 트레이드오프 재평가 (1주차 이월)**: rustra 글로벌이 panic으로 오염되면 이후 dispatch가 panic하는 리스크는 여전하다. 2026-08-18 안정화 라운드에서 Tauri 커맨드 레이어의 `.expect` panic 지점을 `Result` 전파로 제거했으나, rustra 엔진 자체의 오염 회복(poison unwind 후 재초기화)은 rustra 측 기능이 필요해 미해결로 남긴다.
 
 ### 최종 상태 요약 (4주 마일스톤 전체)

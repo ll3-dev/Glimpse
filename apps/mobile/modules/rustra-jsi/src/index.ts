@@ -15,6 +15,8 @@ export type RustraNative = {
   getContractHash?(): ArrayBuffer;
   onEvent?(name: string, callback: (payloadJson: string) => void): void;
   offEvent?(name: string): void;
+  /** CallInvoker 없는 호스트의 수동 drain 폴백. */
+  drainEvents?(): number;
 };
 
 declare global {

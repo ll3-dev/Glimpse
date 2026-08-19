@@ -10,8 +10,8 @@ find_package(fbjni REQUIRED)
 find_package(ReactAndroid REQUIRED)
 
 # Import compiled Rust static library (glimpse-bridge: rustra_ffi_* +
-# glimpse_ffi_init) for the current ABI. Lives beside the glimpse-core .so
-# artifacts so both Rust builds share one libs root.
+# rustra_ffi_event_sink_* + glimpse_ffi_init) for the current ABI. Lives beside
+# the glimpse-core .so artifacts so both Rust builds share one libs root.
 add_library(glimpse_bridge_static STATIC IMPORTED)
 set_target_properties(glimpse_bridge_static PROPERTIES
     IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../../../android/glimpse-core/libs/${ANDROID_ABI}/libglimpse_bridge.a
