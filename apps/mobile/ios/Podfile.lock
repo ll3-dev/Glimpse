@@ -206,6 +206,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - OcrModule (1.0.0):
+    - ExpoModulesCore
   - RCTDeprecation (0.83.10)
   - RCTRequired (0.83.10)
   - RCTSwiftUI (0.83.10)
@@ -2453,6 +2455,7 @@ DEPENDENCIES:
   - llama-rn (from `../../../node_modules/llama.rn`)
   - NitroMmkv (from `../../../node_modules/react-native-mmkv`)
   - NitroModules (from `../../../node_modules/react-native-nitro-modules`)
+  - OcrModule (from `../modules/ocr/ios`)
   - RCTDeprecation (from `../../../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
   - RCTRequired (from `../../../node_modules/react-native/Libraries/Required`)
   - RCTSwiftUI (from `../../../node_modules/react-native/ReactApple/RCTSwiftUI`)
@@ -2618,6 +2621,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native-mmkv"
   NitroModules:
     :path: "../../../node_modules/react-native-nitro-modules"
+  OcrModule:
+    :path: "../modules/ocr/ios"
   RCTDeprecation:
     :path: "../../../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation"
   RCTRequired:
@@ -2825,6 +2830,7 @@ SPEC CHECKSUMS:
   MMKVCore: 3d16ce9f7d411e135020915fde98a056859a1efa
   NitroMmkv: b94a2c63a98d5bdf6bb697eb876e2af039d1874b
   NitroModules: 2eeca4b43c7432c1b4aac71c033e08c05079bf8f
+  OcrModule: 2486d8eea5edec47eea121c2e3fb4afdc9a85e2e
   RCTDeprecation: 86774ca0048c2293d01cc7dfb71811fd32ebbd46
   RCTRequired: c7f2bc9661a7c341d33f411fc161f057c97cc731
   RCTSwiftUI: 3b36c814293f91f5179c0f113a885ce47853035c
