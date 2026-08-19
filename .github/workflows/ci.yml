@@ -34,6 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Tauri 데스크톱 크레이트가 pkg-config로 시스템 glib/gtk를 찾는다.
+      # macOS 러너에는 기본 있지만 ubuntu-latest에는 없어 설치가 필요하다.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
