@@ -90,25 +90,6 @@
       "expo-web-browser"
     ],
     "extra": {
-      "eas": {
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "ShareExtension",
-                  "bundleIdentifier": "kr.ll3.glimpse.share-extension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.kr.ll3.glimpse"
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
     }
   }
 }
