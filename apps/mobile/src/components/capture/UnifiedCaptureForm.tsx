@@ -15,6 +15,7 @@ import { ImagePlus, X, Clipboard as ClipboardIcon, Globe } from 'lucide-react-na
 import { fetchWebMetadata } from '@/src/features/capture/webMetadata';
 import { toast } from '@/src/stores/toast.store';
 import { logger } from '@/src/utils/logger';
+import { useOcrExtraction } from '@/src/hooks/useOcrExtraction';
 
 export type UnifiedCaptureFormState = {
   title: string;
@@ -40,6 +41,7 @@ export function UnifiedCaptureForm({
   const { title, body, imageUri } = state;
   const [clipboardText, setClipboardText] = useState<string | null>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
+  const { ocrState, extract, reset: resetOcr } = useOcrExtraction();
 
   useEffect(() => {
     async function checkClipboard() {
@@ -70,12 +72,29 @@ export function UnifiedCaptureForm({
       });
 
       if (!result.canceled && result.assets[0]) {
-        onChangeImageUri(result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        onChangeImageUri(uri);
+        await runOcrForImage(uri);
       }
     } catch (error) {
       logger.error('Failed to pick image', error);
       toast.error('이미지를 불러오지 못했습니다');
     }
+  };
+
+  const runOcrForImage = async (uri: string) => {
+    const text = await extract(uri);
+    if (text) {
+      // OCR 텍스트를 본문에 자동 삽입 — 사용자가 이어서 편집할 수 있다.
+      if (!body) {
+        onChangeBody(text);
+      } else {
+        onChangeBody(`${body}\n${text}`);
+      }
+      toast.success('스크린샷에서 텍스트를 추출했습니다');
+    }
+    // no_text/error는 조용히 넘긴다 — 텍스트 없는 스크린샷도 유효한 저장이고
+    // 에러 toast는 매 선택마다 과도하다. 사용자는 본문이 비었음을 바로 본다.
   };
 
   const handlePasteClipboard = () => {
@@ -166,6 +185,15 @@ export function UnifiedCaptureForm({
             </Text>
           </TouchableOpacity>
         )}
+
+        {ocrState === 'running' && (
+          <View className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5">
+            <ActivityIndicator size="small" color="#787774" className="mr-1.5" />
+            <Text className="text-xs font-medium text-app-muted">
+              텍스트 인식 중...
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Image Preview if Attached */}
@@ -177,7 +205,10 @@ export function UnifiedCaptureForm({
             contentFit="contain"
           />
           <Pressable
-            onPress={() => onChangeImageUri(null)}
+            onPress={() => {
+              onChangeImageUri(null);
+              resetOcr();
+            }}
             className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 active:bg-black/80"
           >
             <X size={14} color="white" />

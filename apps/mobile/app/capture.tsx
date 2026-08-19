@@ -49,7 +49,7 @@ export default function CaptureScreen() {
       {
         type,
         title: trimmedTitle || (type === 'link' ? url : undefined),
-        body: trimmedBody || (formState.imageUri ? '스크린샷 기록' : ''),
+        body: trimmedBody,
         url,
       },
       {
