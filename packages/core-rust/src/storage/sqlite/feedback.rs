@@ -1,11 +1,11 @@
 //! FeedbackEvent storage operations.
 
-use rusqlite::{params};
+use rusqlite::params;
 
 use crate::error::Result;
 use crate::models::FeedbackEvent;
 
-use super::SqliteStorage;
+use super::{parse_json_column, SqliteStorage};
 
 impl SqliteStorage {
     // ========================================================================
@@ -39,14 +39,16 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let events = stmt.query_map(params![limit as i64], |row| {
-            Ok(FeedbackEvent {
-                id: row.get(0)?,
-                recommendation_id: row.get(1)?,
-                action: serde_json::from_str(&row.get::<_, String>(2)?).unwrap(),
-                created_at: row.get(3)?,
-            })
-        })?.collect::<std::result::Result<Vec<_>, _>>()?;
+        let events = stmt
+            .query_map(params![limit as i64], |row| {
+                Ok(FeedbackEvent {
+                    id: row.get(0)?,
+                    recommendation_id: row.get(1)?,
+                    action: parse_json_column(row, 2)?,
+                    created_at: row.get(3)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(events)
     }

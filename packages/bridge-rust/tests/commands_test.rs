@@ -502,10 +502,10 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 26 commands (25 domain + initializeCore)
+    // schema exposes all 27 commands (26 domain + initializeCore)
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
-    assert_eq!(commands.len(), 26, "unified package must expose 26 commands");
+    assert_eq!(commands.len(), 27, "unified package must expose 27 commands");
 }
 
 // ============================================================================

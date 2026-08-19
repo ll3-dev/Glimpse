@@ -126,6 +126,10 @@ export function createFallbackCoreClient(
       );
     },
 
+    async deleteKnowledgeItem(itemId: string): Promise<void> {
+      storage.deleteKnowledgeItem(itemId);
+    },
+
     async createConversation(conversation: Conversation): Promise<Conversation> {
       storage.addConversation(conversation);
       return conversation;

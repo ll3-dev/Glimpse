@@ -19,6 +19,7 @@ export const mobileCoreClient: MobileCoreClient = {
   listKnowledgeItems: () => nativeCoreClient.listKnowledgeItems(),
   getKnowledgeItemById: (itemId) => nativeCoreClient.getKnowledgeItemById(itemId),
   updateKnowledgeItem: (itemId, patch) => nativeCoreClient.updateKnowledgeItem(itemId, patch),
+  deleteKnowledgeItem: (itemId) => nativeCoreClient.deleteKnowledgeItem(itemId),
   listKnowledgeItemsByIds: (itemIds) => listKnowledgeItemsByIdsWithCore(nativeCoreClient, itemIds),
   listWeeklyKnowledgeItems: (since) => listWeeklyKnowledgeItemsWithCore(nativeCoreClient, since),
   listPendingKnowledgeItemsForLabeling: (limit) =>

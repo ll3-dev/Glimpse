@@ -5,7 +5,7 @@ use rusqlite::{params, OptionalExtension};
 use crate::error::{Error, Result};
 use crate::models::{Message, MessagePatch, NullablePatch};
 
-use super::SqliteStorage;
+use super::{parse_json_column, SqliteStorage};
 
 impl SqliteStorage {
     // ========================================================================
@@ -40,17 +40,19 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
-            Ok(Message {
-                id: row.get(0)?,
-                conversation_id: row.get(1)?,
-                role: serde_json::from_str(&row.get::<_, String>(2)?).unwrap(),
-                content: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
-                deleted_at: row.get(6)?,
+        let result = stmt
+            .query_row(params![id], |row| {
+                Ok(Message {
+                    id: row.get(0)?,
+                    conversation_id: row.get(1)?,
+                    role: parse_json_column(row, 2)?,
+                    content: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    deleted_at: row.get(6)?,
+                })
             })
-        }).optional()?;
+            .optional()?;
 
         Ok(result)
     }
@@ -65,23 +67,26 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let messages = stmt.query_map(params![conversation_id], |row| {
-            Ok(Message {
-                id: row.get(0)?,
-                conversation_id: row.get(1)?,
-                role: serde_json::from_str(&row.get::<_, String>(2)?).unwrap(),
-                content: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
-                deleted_at: row.get(6)?,
-            })
-        })?.collect::<std::result::Result<Vec<_>, _>>()?;
+        let messages = stmt
+            .query_map(params![conversation_id], |row| {
+                Ok(Message {
+                    id: row.get(0)?,
+                    conversation_id: row.get(1)?,
+                    role: parse_json_column(row, 2)?,
+                    content: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    deleted_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(messages)
     }
 
     pub fn update_message(&self, id: &str, patch: &MessagePatch) -> Result<Message> {
-        let existing = self.get_message(id)?
+        let existing = self
+            .get_message(id)?
             .ok_or_else(|| Error::NotFound("message".to_string(), id.to_string()))?;
 
         let updated = Message {
@@ -90,7 +95,11 @@ impl SqliteStorage {
             role: existing.role,
             content: patch.content.clone().unwrap_or(existing.content),
             created_at: existing.created_at,
-            updated_at: Some(patch.updated_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis())),
+            updated_at: Some(
+                patch
+                    .updated_at
+                    .unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
+            ),
             deleted_at: apply_nullable_patch(&patch.deleted_at, existing.deleted_at),
         };
 
@@ -99,7 +108,8 @@ impl SqliteStorage {
     }
 
     pub fn soft_delete_message(&self, id: &str, deleted_at: i64) -> Result<()> {
-        let existing = self.get_message(id)?
+        let existing = self
+            .get_message(id)?
             .ok_or_else(|| Error::NotFound("message".to_string(), id.to_string()))?;
 
         let updated = Message {

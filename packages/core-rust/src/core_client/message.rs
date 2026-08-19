@@ -12,15 +12,22 @@ impl CoreClientImpl {
 
     pub fn add_message(&self, message: &Message) -> Result<Message> {
         // Verify conversation exists
-        let conversation = self.storage.get_conversation(&message.conversation_id)?
-            .ok_or_else(|| Error::NotFound("conversation".to_string(), message.conversation_id.clone()))?;
+        let conversation = self
+            .storage
+            .get_conversation(&message.conversation_id)?
+            .ok_or_else(|| {
+                Error::NotFound("conversation".to_string(), message.conversation_id.clone())
+            })?;
 
         if conversation.deleted_at.is_some() {
-            return Err(Error::InvalidInput("Cannot add message to deleted conversation".to_string()));
+            return Err(Error::InvalidInput(
+                "Cannot add message to deleted conversation".to_string(),
+            ));
         }
 
         self.storage.insert_message(message)?;
-        self.storage.update_conversation_updated_at(&message.conversation_id, message.created_at)?;
+        self.storage
+            .update_conversation_updated_at(&message.conversation_id, message.created_at)?;
 
         Ok(message.clone())
     }

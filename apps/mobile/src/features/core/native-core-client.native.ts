@@ -14,12 +14,22 @@ import { logger } from '@/src/utils/logger';
  * Exactly one core path is ever live:
  * - rustra install succeeds → the bridge global owns the single SQLite
  *   connection (opened by the `initializeCore` command);
- * - install fails (Expo Go, unbundled JS) → the existing in-memory fallback
- *   client is constructed instead, and no rustra command is dispatched —
- *   so a second SQLite connection is never opened.
+ * - install fails in development (Expo Go, unbundled JS) → the existing
+ *   in-memory fallback client is constructed instead;
+ * - install fails in release → initialization fails closed so a user cannot
+ *   unknowingly save data into a temporary in-memory store.
  */
 
 let delegate: CoreClient | null = null;
+
+function allowInMemoryFallback(): boolean {
+  if (process.env.NODE_ENV === 'test') {
+    return true;
+  }
+  return typeof __DEV__ !== 'undefined'
+    ? __DEV__
+    : process.env.NODE_ENV !== 'production';
+}
 
 async function selectDelegate(): Promise<CoreClient> {
   if (delegate) {
@@ -29,10 +39,14 @@ async function selectDelegate(): Promise<CoreClient> {
   const rustraReady = await bootstrapRustraEngine();
   if (rustraReady) {
     delegate = createRustraCoreClient();
-  } else {
+  } else if (allowInMemoryFallback()) {
     logger.warn('RustraJSI unavailable, falling back to in-memory core client');
     const { createFallbackCoreClient } = await import('./native-core-fallback-client');
     delegate = createFallbackCoreClient();
+  } else {
+    throw new Error(
+      'RustraJSI 초기화에 실패했습니다. 데이터 유실을 막기 위해 인메모리 저장소로 전환하지 않습니다.',
+    );
   }
   return delegate;
 }
@@ -54,6 +68,8 @@ export const nativeCoreClient: CoreClient = {
     selectDelegate().then((c) => c.getKnowledgeItemById(itemId)),
   updateKnowledgeItem: (itemId, patch) =>
     selectDelegate().then((c) => c.updateKnowledgeItem(itemId, patch)),
+  deleteKnowledgeItem: (itemId) =>
+    selectDelegate().then((c) => c.deleteKnowledgeItem(itemId)),
   listKnowledgeItemsByIds: (itemIds) =>
     selectDelegate().then((c) => c.listKnowledgeItemsByIds(itemIds)),
   listWeeklyKnowledgeItems: (since) =>

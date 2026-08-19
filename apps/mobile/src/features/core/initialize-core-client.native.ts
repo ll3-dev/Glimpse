@@ -27,10 +27,21 @@ async function migrateToAppGroup(appGroupPath: string): Promise<void> {
     // Copy the database file
     await RNBlobUtil.fs.cp(LEGACY_DB_PATH, newDbPath);
 
-    // Verify the copy succeeded
+    // Verify both existence and byte size before removing the only known-good copy.
     const newDbExistsAfterCopy = await RNBlobUtil.fs.exists(newDbPath);
     if (!newDbExistsAfterCopy) {
       throw new Error("Database migration failed: copy did not succeed");
+    }
+
+    const [legacyStat, copiedStat] = await Promise.all([
+      RNBlobUtil.fs.stat(LEGACY_DB_PATH),
+      RNBlobUtil.fs.stat(newDbPath),
+    ]);
+    if (legacyStat.size <= 0 || copiedStat.size !== legacyStat.size) {
+      await RNBlobUtil.fs.unlink(newDbPath);
+      throw new Error(
+        `Database migration failed: expected ${legacyStat.size} bytes, copied ${copiedStat.size} bytes`
+      );
     }
 
     // Remove the old database (keep the directory for other files)

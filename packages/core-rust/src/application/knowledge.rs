@@ -24,6 +24,10 @@ impl SharedCore {
         self.client().update_knowledge_item(item_id, patch)
     }
 
+    pub fn delete_knowledge_item(&self, item_id: &str) -> Result<()> {
+        self.client().delete_knowledge_item(item_id)
+    }
+
     pub fn list_knowledge_items_by_ids(&self, item_ids: &[String]) -> Result<Vec<KnowledgeItem>> {
         self.client().list_knowledge_items_by_ids(item_ids)
     }
@@ -36,7 +40,8 @@ impl SharedCore {
         &self,
         limit: usize,
     ) -> Result<Vec<KnowledgeItem>> {
-        self.client().list_pending_knowledge_items_for_labeling(limit)
+        self.client()
+            .list_pending_knowledge_items_for_labeling(limit)
     }
 
     pub fn get_due_knowledge_items(

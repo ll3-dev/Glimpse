@@ -39,6 +39,10 @@ export class InMemoryStorage {
     return updated;
   }
 
+  deleteKnowledgeItem(id: string): boolean {
+    return this.knowledgeItems.delete(id);
+  }
+
   addConversation(conversation: Conversation): void {
     this.conversations.set(conversation.id, conversation);
     this.messages.set(conversation.id, []);

@@ -24,11 +24,8 @@ impl CoreClientImpl {
         status: RecommendationStatus,
         event: &crate::models::FeedbackEvent,
     ) -> Result<()> {
-        self.storage.update_recommendation_status(
-            recommendation_id,
-            status,
-            event.created_at,
-        )?;
+        self.storage
+            .update_recommendation_status(recommendation_id, status, event.created_at)?;
         self.storage.insert_feedback_event(event)?;
         Ok(())
     }

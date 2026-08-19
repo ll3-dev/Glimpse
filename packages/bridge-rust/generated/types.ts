@@ -151,6 +151,12 @@ export type DeleteConversationInput = {
 
 export type DeleteConversationOutput = Record<string, unknown>;
 
+export type DeleteKnowledgeItemInput = {
+  itemId: string;
+};
+
+export type DeleteKnowledgeItemOutput = Record<string, unknown>;
+
 export type DeleteMessageInput = {
   messageId: string;
   deletedAt: number;

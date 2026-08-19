@@ -40,17 +40,19 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let result = stmt.query_row(params![id], |row| {
-            Ok(Conversation {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                icon: row.get(2)?,
-                context_item_id: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
-                deleted_at: row.get(6)?,
+        let result = stmt
+            .query_row(params![id], |row| {
+                Ok(Conversation {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    icon: row.get(2)?,
+                    context_item_id: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    deleted_at: row.get(6)?,
+                })
             })
-        }).optional()?;
+            .optional()?;
 
         Ok(result)
     }
@@ -65,23 +67,26 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let conversations = stmt.query_map([], |row| {
-            Ok(Conversation {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                icon: row.get(2)?,
-                context_item_id: row.get(3)?,
-                created_at: row.get(4)?,
-                updated_at: row.get(5)?,
-                deleted_at: row.get(6)?,
-            })
-        })?.collect::<std::result::Result<Vec<_>, _>>()?;
+        let conversations = stmt
+            .query_map([], |row| {
+                Ok(Conversation {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    icon: row.get(2)?,
+                    context_item_id: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    deleted_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(conversations)
     }
 
     pub fn update_conversation(&self, id: &str, patch: &ConversationPatch) -> Result<Conversation> {
-        let existing = self.get_conversation(id)?
+        let existing = self
+            .get_conversation(id)?
             .ok_or_else(|| Error::NotFound("conversation".to_string(), id.to_string()))?;
 
         let updated = Conversation {
@@ -90,7 +95,9 @@ impl SqliteStorage {
             icon: apply_nullable_patch(&patch.icon, existing.icon),
             context_item_id: apply_nullable_patch(&patch.context_item_id, existing.context_item_id),
             created_at: existing.created_at,
-            updated_at: patch.updated_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
+            updated_at: patch
+                .updated_at
+                .unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
             deleted_at: apply_nullable_patch(&patch.deleted_at, existing.deleted_at),
         };
 
@@ -99,7 +106,8 @@ impl SqliteStorage {
     }
 
     pub fn soft_delete_conversation(&self, id: &str, deleted_at: i64) -> Result<()> {
-        let existing = self.get_conversation(id)?
+        let existing = self
+            .get_conversation(id)?
             .ok_or_else(|| Error::NotFound("conversation".to_string(), id.to_string()))?;
 
         let updated = Conversation {
@@ -123,7 +131,11 @@ impl SqliteStorage {
         Ok(())
     }
 
-    pub fn update_conversation_updated_at(&self, conversation_id: &str, updated_at: i64) -> Result<()> {
+    pub fn update_conversation_updated_at(
+        &self,
+        conversation_id: &str,
+        updated_at: i64,
+    ) -> Result<()> {
         self.conn.execute(
             "UPDATE conversations SET updated_at = ?1 WHERE id = ?2",
             params![updated_at, conversation_id],

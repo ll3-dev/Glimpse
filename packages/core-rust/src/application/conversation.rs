@@ -21,6 +21,7 @@ impl SharedCore {
     }
 
     pub fn delete_conversation(&self, conversation_id: &str, deleted_at: i64) -> Result<()> {
-        self.client().delete_conversation(conversation_id, deleted_at)
+        self.client()
+            .delete_conversation(conversation_id, deleted_at)
     }
 }

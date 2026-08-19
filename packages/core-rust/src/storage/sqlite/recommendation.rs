@@ -1,11 +1,11 @@
 //! Recommendation storage operations.
 
-use rusqlite::{params};
+use rusqlite::params;
 
 use crate::error::Result;
 use crate::models::{Recommendation, RecommendationStatus};
 
-use super::SqliteStorage;
+use super::{parse_json_column, SqliteStorage};
 
 impl SqliteStorage {
     // ========================================================================
@@ -50,18 +50,19 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let recommendations = stmt.query_map([], |row| {
-            let status_str: String = row.get(4)?;
-            Ok(Recommendation {
-                id: row.get(0)?,
-                item_a_id: row.get(1)?,
-                item_b_id: row.get(2)?,
-                reason: row.get(3)?,
-                status: Self::str_to_recommendation_status(&status_str),
-                created_at: row.get(5)?,
-                responded_at: row.get(6)?,
-            })
-        })?.collect::<std::result::Result<Vec<_>, _>>()?;
+        let recommendations = stmt
+            .query_map([], |row| {
+                Ok(Recommendation {
+                    id: row.get(0)?,
+                    item_a_id: row.get(1)?,
+                    item_b_id: row.get(2)?,
+                    reason: row.get(3)?,
+                    status: parse_json_column(row, 4)?,
+                    created_at: row.get(5)?,
+                    responded_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(recommendations)
     }
@@ -76,18 +77,19 @@ impl SqliteStorage {
             "#,
         )?;
 
-        let recommendations = stmt.query_map([], |row| {
-            let status_str: String = row.get(4)?;
-            Ok(Recommendation {
-                id: row.get(0)?,
-                item_a_id: row.get(1)?,
-                item_b_id: row.get(2)?,
-                reason: row.get(3)?,
-                status: Self::str_to_recommendation_status(&status_str),
-                created_at: row.get(5)?,
-                responded_at: row.get(6)?,
-            })
-        })?.collect::<std::result::Result<Vec<_>, _>>()?;
+        let recommendations = stmt
+            .query_map([], |row| {
+                Ok(Recommendation {
+                    id: row.get(0)?,
+                    item_a_id: row.get(1)?,
+                    item_b_id: row.get(2)?,
+                    reason: row.get(3)?,
+                    status: parse_json_column(row, 4)?,
+                    created_at: row.get(5)?,
+                    responded_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(recommendations)
     }
@@ -114,16 +116,6 @@ impl SqliteStorage {
             RecommendationStatus::Accepted => "accepted",
             RecommendationStatus::Ignored => "ignored",
             RecommendationStatus::Dismissed => "dismissed",
-        }
-    }
-
-    fn str_to_recommendation_status(s: &str) -> RecommendationStatus {
-        match s {
-            "pending" => RecommendationStatus::Pending,
-            "accepted" => RecommendationStatus::Accepted,
-            "ignored" => RecommendationStatus::Ignored,
-            "dismissed" => RecommendationStatus::Dismissed,
-            _ => RecommendationStatus::Pending,
         }
     }
 }

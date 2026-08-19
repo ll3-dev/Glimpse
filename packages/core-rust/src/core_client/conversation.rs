@@ -15,11 +15,16 @@ impl CoreClientImpl {
         self.storage.list_conversations()
     }
 
-    pub fn update_conversation(&self, conversation_id: &str, patch: &ConversationPatch) -> Result<Conversation> {
+    pub fn update_conversation(
+        &self,
+        conversation_id: &str,
+        patch: &ConversationPatch,
+    ) -> Result<Conversation> {
         self.storage.update_conversation(conversation_id, patch)
     }
 
     pub fn delete_conversation(&self, conversation_id: &str, deleted_at: i64) -> Result<()> {
-        self.storage.soft_delete_conversation(conversation_id, deleted_at)
+        self.storage
+            .soft_delete_conversation(conversation_id, deleted_at)
     }
 }

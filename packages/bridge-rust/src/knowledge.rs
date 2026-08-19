@@ -99,6 +99,26 @@ pub fn update_knowledge_item(
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct DeleteKnowledgeItemInput {
+    pub item_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteKnowledgeItemOutput {}
+
+#[command]
+pub fn delete_knowledge_item(
+    input: DeleteKnowledgeItemInput,
+) -> Result<DeleteKnowledgeItemOutput> {
+    let core = crate::state::core_state();
+    core.delete_knowledge_item(&input.item_id)
+        .map_err(crate::error::to_rustra_err)?;
+    Ok(DeleteKnowledgeItemOutput {})
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ListKnowledgeItemsByIdsInput {
     pub item_ids: Vec<String>,
 }
@@ -226,6 +246,7 @@ pub(crate) fn register_commands(
         list_knowledge_items,
         get_knowledge_item_by_id,
         update_knowledge_item,
+        delete_knowledge_item,
         list_knowledge_items_by_ids,
         list_weekly_knowledge_items,
         list_pending_knowledge_items_for_labeling,

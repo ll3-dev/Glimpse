@@ -41,8 +41,8 @@ impl SharedCore {
 
 #[cfg(test)]
 mod tests {
-    use crate::error::Error;
     use super::SharedCore;
+    use crate::error::Error;
     use crate::models::{
         Conversation, GetDueKnowledgeItemsInput, KnowledgeItem, KnowledgeItemType, Message,
         MessageRole,
@@ -111,6 +111,10 @@ mod tests {
         let items = core.list_pending_knowledge_items_for_labeling(10).unwrap();
         let ids: Vec<&str> = items.iter().map(|item| item.id.as_str()).collect();
         assert_eq!(ids, vec!["pending-item"]);
+        assert_eq!(
+            items[0].label_status,
+            Some(crate::models::KnowledgeItemLabelStatus::Pending)
+        );
     }
 
     #[test]

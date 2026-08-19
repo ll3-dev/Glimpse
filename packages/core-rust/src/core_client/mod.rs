@@ -12,8 +12,7 @@ use crate::storage::sqlite::SqliteStorage;
 
 // Re-export types for tests and external use
 pub use crate::models::{
-    GetDueKnowledgeItemsInput, InitializeReviewScheduleInput,
-    InitializeReviewScheduleOutput,
+    GetDueKnowledgeItemsInput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput,
 };
 
 /// CoreClient implementation backed by SQLite storage.
@@ -41,15 +40,14 @@ impl CoreClientImpl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::NullablePatch;
     use crate::error::Error;
+    use crate::models::NullablePatch;
     use crate::models::{
-        CalculateNextReviewInput, CalculateTagOverlapInput, Conversation,
-        CoreKnowledgeItemLike, FeedbackActionType, FeedbackEvent,
-        GetDueKnowledgeItemsInput, InitializeReviewScheduleInput,
-        KnowledgeItem, KnowledgeItemType, Message, MessageRole,
-        KnowledgeItemPatch, Recommendation, ConversationPatch, MessagePatch,
-        RecommendationStatus, ReviewFeedbackType,
+        CalculateNextReviewInput, CalculateTagOverlapInput, Conversation, ConversationPatch,
+        CoreKnowledgeItemLike, FeedbackActionType, FeedbackEvent, GetDueKnowledgeItemsInput,
+        InitializeReviewScheduleInput, KnowledgeItem, KnowledgeItemPatch, KnowledgeItemType,
+        Message, MessagePatch, MessageRole, Recommendation, RecommendationStatus,
+        ReviewFeedbackType,
     };
 
     fn create_test_client() -> CoreClientImpl {
@@ -217,7 +215,10 @@ mod tests {
         };
 
         let output = client.calculate_next_review(&input);
-        assert_eq!(output.interval_ms, review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS * 2);
+        assert_eq!(
+            output.interval_ms,
+            review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS * 2
+        );
     }
 
     #[test]
@@ -249,7 +250,10 @@ mod tests {
         };
 
         let output = client.initialize_review_schedule(&input);
-        assert_eq!(output.next_review_at, created_at + review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS);
+        assert_eq!(
+            output.next_review_at,
+            created_at + review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS
+        );
         assert!(output.stability.is_none());
         assert!(output.difficulty.is_none());
         assert!(output.last_reviewed_at.is_none());
@@ -382,7 +386,10 @@ mod tests {
 
         let conversations = client.list_conversations().unwrap();
         assert_eq!(conversations.len(), 1);
-        assert_eq!(conversations[0].title, Some("Test Conversation".to_string()));
+        assert_eq!(
+            conversations[0].title,
+            Some("Test Conversation".to_string())
+        );
     }
 
     #[test]
@@ -616,9 +623,13 @@ mod tests {
         };
         client.add_message(&message).unwrap();
 
-        client.delete_conversation("conv-soft-delete", 2000).unwrap();
+        client
+            .delete_conversation("conv-soft-delete", 2000)
+            .unwrap();
 
-        let messages = client.list_conversation_messages("conv-soft-delete").unwrap();
+        let messages = client
+            .list_conversation_messages("conv-soft-delete")
+            .unwrap();
         assert!(messages.is_empty());
     }
 
@@ -640,7 +651,9 @@ mod tests {
             responded_at: None,
         };
 
-        client.save_recommendations(&[recommendation.clone()]).unwrap();
+        client
+            .save_recommendations(std::slice::from_ref(&recommendation))
+            .unwrap();
 
         let recommendations = client.list_recommendations().unwrap();
         assert_eq!(recommendations.len(), 1);
@@ -670,7 +683,9 @@ mod tests {
             action: FeedbackActionType::Accept,
             created_at: 2000,
         };
-        client.respond_to_recommendation("rec-respond", RecommendationStatus::Accepted, &event).unwrap();
+        client
+            .respond_to_recommendation("rec-respond", RecommendationStatus::Accepted, &event)
+            .unwrap();
 
         let pending = client.list_pending_recommendations().unwrap();
         assert_eq!(pending.len(), 0);

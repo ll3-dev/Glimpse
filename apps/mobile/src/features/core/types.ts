@@ -36,6 +36,7 @@ export interface MobileCoreClient {
   listKnowledgeItems(): Promise<KnowledgeItem[]>;
   getKnowledgeItemById(itemId: string): Promise<KnowledgeItem | null>;
   updateKnowledgeItem(itemId: string, patch: Partial<Omit<KnowledgeItem, 'id' | 'createdAt'>>): Promise<KnowledgeItem>;
+  deleteKnowledgeItem(itemId: string): Promise<void>;
 
   // App-level knowledge queries built on top of the shared core bridge
   listKnowledgeItemsByIds(itemIds: string[]): Promise<KnowledgeItem[]>;

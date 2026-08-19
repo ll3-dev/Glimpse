@@ -5,7 +5,7 @@ use rusqlite::{params, OptionalExtension};
 use crate::error::{Error, Result};
 use crate::models::{KnowledgeItem, KnowledgeItemPatch, NullablePatch};
 
-use super::SqliteStorage;
+use super::{parse_json_column, parse_optional_json_column, SqliteStorage};
 
 // SQL fragments for KnowledgeItem queries
 const KNOWLEDGE_ITEM_COLUMNS: &str = r#"
@@ -20,23 +20,19 @@ const KNOWLEDGE_ITEM_COLUMNS: &str = r#"
 fn parse_knowledge_item(row: &rusqlite::Row) -> rusqlite::Result<KnowledgeItem> {
     Ok(KnowledgeItem {
         id: row.get(0)?,
-        item_type: serde_json::from_str(&row.get::<_, String>(1)?).unwrap(),
+        item_type: parse_json_column(row, 1)?,
         title: row.get(2)?,
         body: row.get(3)?,
         url: row.get(4)?,
         summary: row.get(5)?,
-        tags: row.get::<_, Option<String>>(6)?.and_then(|s| serde_json::from_str(&s).ok()),
-        labels: row.get::<_, Option<String>>(7)?.and_then(|s| serde_json::from_str(&s).ok()),
-        provisional_labels: row.get::<_, Option<String>>(8)?.and_then(|s| serde_json::from_str(&s).ok()),
+        tags: parse_optional_json_column(row, 6)?,
+        labels: parse_optional_json_column(row, 7)?,
+        provisional_labels: parse_optional_json_column(row, 8)?,
         // label_status/label_source: enum 열은 SQL 리터럴과 비교되는 plain
         // 문자열로 저장한다(serde_json::to_string 이면 `"pending"` 처럼 인용되어
         // list_pending_knowledge_items_for_labeling 의 WHERE 절과 영원히 불일치).
-        label_status: row
-            .get::<_, Option<String>>(9)?
-            .and_then(|s| serde_json::from_str(&s).ok()),
-        label_source: row
-            .get::<_, Option<String>>(10)?
-            .and_then(|s| serde_json::from_str(&s).ok()),
+        label_status: parse_optional_json_column(row, 9)?,
+        label_source: parse_optional_json_column(row, 10)?,
         label_version: row.get(11)?,
         label_score: row.get(12)?,
         label_requested_at: row.get(13)?,
@@ -58,8 +54,16 @@ impl SqliteStorage {
 
     pub fn insert_knowledge_item(&self, item: &KnowledgeItem) -> Result<()> {
         let tags = item.tags.as_ref().map(serde_json::to_string).transpose()?;
-        let labels = item.labels.as_ref().map(serde_json::to_string).transpose()?;
-        let provisional_labels = item.provisional_labels.as_ref().map(serde_json::to_string).transpose()?;
+        let labels = item
+            .labels
+            .as_ref()
+            .map(serde_json::to_string)
+            .transpose()?;
+        let provisional_labels = item
+            .provisional_labels
+            .as_ref()
+            .map(serde_json::to_string)
+            .transpose()?;
 
         self.conn.execute(
             &format!(
@@ -102,7 +106,9 @@ impl SqliteStorage {
             KNOWLEDGE_ITEM_COLUMNS.trim()
         ))?;
 
-        let result = stmt.query_row(params![id], parse_knowledge_item).optional()?;
+        let result = stmt
+            .query_row(params![id], parse_knowledge_item)
+            .optional()?;
         Ok(result)
     }
 
@@ -112,7 +118,8 @@ impl SqliteStorage {
             KNOWLEDGE_ITEM_COLUMNS.trim()
         ))?;
 
-        let items = stmt.query_map([], parse_knowledge_item)?
+        let items = stmt
+            .query_map([], parse_knowledge_item)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(items)
     }
@@ -130,9 +137,11 @@ impl SqliteStorage {
         );
 
         let mut stmt = self.conn.prepare(&sql)?;
-        let params: Vec<&dyn rusqlite::ToSql> = ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
+        let params: Vec<&dyn rusqlite::ToSql> =
+            ids.iter().map(|id| id as &dyn rusqlite::ToSql).collect();
 
-        let items = stmt.query_map(params.as_slice(), parse_knowledge_item)?
+        let items = stmt
+            .query_map(params.as_slice(), parse_knowledge_item)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(items)
     }
@@ -143,23 +152,32 @@ impl SqliteStorage {
             KNOWLEDGE_ITEM_COLUMNS.trim()
         ))?;
 
-        let items = stmt.query_map(params![since], parse_knowledge_item)?
+        let items = stmt
+            .query_map(params![since], parse_knowledge_item)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(items)
     }
 
-    pub fn list_pending_knowledge_items_for_labeling(&self, limit: usize) -> Result<Vec<KnowledgeItem>> {
+    pub fn list_pending_knowledge_items_for_labeling(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<KnowledgeItem>> {
         let mut stmt = self.conn.prepare(&format!(
             "SELECT {} FROM knowledge_items WHERE label_status = 'pending' ORDER BY label_requested_at ASC LIMIT ?1",
             KNOWLEDGE_ITEM_COLUMNS.trim()
         ))?;
 
-        let items = stmt.query_map(params![limit as i64], parse_knowledge_item)?
+        let items = stmt
+            .query_map(params![limit as i64], parse_knowledge_item)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(items)
     }
 
-    pub fn get_due_knowledge_items(&self, now: i64, limit: Option<usize>) -> Result<Vec<KnowledgeItem>> {
+    pub fn get_due_knowledge_items(
+        &self,
+        now: i64,
+        limit: Option<usize>,
+    ) -> Result<Vec<KnowledgeItem>> {
         let sql = match limit {
             Some(lim) => format!(
                 "SELECT {} FROM knowledge_items WHERE next_review_at IS NULL OR next_review_at <= {} ORDER BY next_review_at ASC LIMIT {}",
@@ -172,13 +190,19 @@ impl SqliteStorage {
         };
 
         let mut stmt = self.conn.prepare(&sql)?;
-        let items = stmt.query_map([], parse_knowledge_item)?
+        let items = stmt
+            .query_map([], parse_knowledge_item)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(items)
     }
 
-    pub fn update_knowledge_item(&self, id: &str, patch: &KnowledgeItemPatch) -> Result<KnowledgeItem> {
-        let existing = self.get_knowledge_item(id)?
+    pub fn update_knowledge_item(
+        &self,
+        id: &str,
+        patch: &KnowledgeItemPatch,
+    ) -> Result<KnowledgeItem> {
+        let existing = self
+            .get_knowledge_item(id)?
             .ok_or_else(|| Error::NotFound("knowledge_item".to_string(), id.to_string()))?;
 
         let updated = KnowledgeItem {
@@ -190,24 +214,44 @@ impl SqliteStorage {
             summary: apply_nullable_patch(&patch.summary, existing.summary),
             tags: apply_nullable_patch(&patch.tags, existing.tags),
             labels: apply_nullable_patch(&patch.labels, existing.labels),
-            provisional_labels: apply_nullable_patch(&patch.provisional_labels, existing.provisional_labels),
+            provisional_labels: apply_nullable_patch(
+                &patch.provisional_labels,
+                existing.provisional_labels,
+            ),
             label_status: apply_nullable_patch(&patch.label_status, existing.label_status),
             label_source: apply_nullable_patch(&patch.label_source, existing.label_source),
             label_version: apply_nullable_patch(&patch.label_version, existing.label_version),
             label_score: apply_nullable_patch(&patch.label_score, existing.label_score),
-            label_requested_at: apply_nullable_patch(&patch.label_requested_at, existing.label_requested_at),
-            label_completed_at: apply_nullable_patch(&patch.label_completed_at, existing.label_completed_at),
+            label_requested_at: apply_nullable_patch(
+                &patch.label_requested_at,
+                existing.label_requested_at,
+            ),
+            label_completed_at: apply_nullable_patch(
+                &patch.label_completed_at,
+                existing.label_completed_at,
+            ),
             label_error: apply_nullable_patch(&patch.label_error, existing.label_error),
             created_at: existing.created_at,
-            updated_at: patch.updated_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
+            updated_at: patch
+                .updated_at
+                .unwrap_or_else(|| chrono::Utc::now().timestamp_millis()),
             stability: apply_nullable_patch(&patch.stability, existing.stability),
             difficulty: apply_nullable_patch(&patch.difficulty, existing.difficulty),
-            last_reviewed_at: apply_nullable_patch(&patch.last_reviewed_at, existing.last_reviewed_at),
+            last_reviewed_at: apply_nullable_patch(
+                &patch.last_reviewed_at,
+                existing.last_reviewed_at,
+            ),
             next_review_at: apply_nullable_patch(&patch.next_review_at, existing.next_review_at),
         };
 
         self.insert_knowledge_item(&updated)?;
         Ok(updated)
+    }
+
+    pub fn delete_knowledge_item(&self, id: &str) -> Result<()> {
+        self.conn
+            .execute("DELETE FROM knowledge_items WHERE id = ?1", params![id])?;
+        Ok(())
     }
 }
 

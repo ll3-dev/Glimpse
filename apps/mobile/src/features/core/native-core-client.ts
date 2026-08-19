@@ -26,6 +26,7 @@ export const nativeCoreClient: CoreClient = {
   listKnowledgeItems: () => getDelegate().listKnowledgeItems(),
   getKnowledgeItemById: (itemId) => getDelegate().getKnowledgeItemById(itemId),
   updateKnowledgeItem: (itemId, patch) => getDelegate().updateKnowledgeItem(itemId, patch),
+  deleteKnowledgeItem: (itemId) => getDelegate().deleteKnowledgeItem(itemId),
   listKnowledgeItemsByIds: (itemIds) => getDelegate().listKnowledgeItemsByIds(itemIds),
   listWeeklyKnowledgeItems: (since) => getDelegate().listWeeklyKnowledgeItems(since),
   listPendingKnowledgeItemsForLabeling: (limit) =>

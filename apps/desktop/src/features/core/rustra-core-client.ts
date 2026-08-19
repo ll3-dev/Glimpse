@@ -30,6 +30,7 @@ import {
   listKnowledgeItems,
   getKnowledgeItemById,
   updateKnowledgeItem,
+  deleteKnowledgeItem,
   listKnowledgeItemsByIds,
   listWeeklyKnowledgeItems,
   listPendingKnowledgeItemsForLabeling,
@@ -77,6 +78,9 @@ export function createRustraCoreClient(): CoreClient {
       (await getDueKnowledgeItems(input)).items as KnowledgeItem[],
     updateKnowledgeItem: async (itemId, patch) =>
       (await updateKnowledgeItem({ itemId, patch })).item as KnowledgeItem,
+    deleteKnowledgeItem: async (itemId) => {
+      await deleteKnowledgeItem({ itemId });
+    },
 
     // -- Conversations --
     createConversation: async (conversation) =>

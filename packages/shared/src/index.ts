@@ -182,6 +182,7 @@ export interface CoreClient {
     itemId: string,
     patch: Partial<Omit<KnowledgeItem, 'id' | 'createdAt'>>
   ): Promise<KnowledgeItem>;
+  deleteKnowledgeItem(itemId: string): Promise<void>;
   createConversation(conversation: Conversation): Promise<Conversation>;
   listConversations(): Promise<Conversation[]>;
   updateConversation(

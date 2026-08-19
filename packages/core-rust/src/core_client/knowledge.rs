@@ -23,19 +23,34 @@ impl CoreClientImpl {
         self.storage.list_weekly_knowledge_items(since)
     }
 
-    pub fn list_pending_knowledge_items_for_labeling(&self, limit: usize) -> Result<Vec<KnowledgeItem>> {
-        self.storage.list_pending_knowledge_items_for_labeling(limit)
+    pub fn list_pending_knowledge_items_for_labeling(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<KnowledgeItem>> {
+        self.storage
+            .list_pending_knowledge_items_for_labeling(limit)
     }
 
     pub fn get_knowledge_item_by_id(&self, item_id: &str) -> Result<Option<KnowledgeItem>> {
         self.storage.get_knowledge_item(item_id)
     }
 
-    pub fn get_due_knowledge_items(&self, input: &GetDueKnowledgeItemsInput) -> Result<Vec<KnowledgeItem>> {
+    pub fn get_due_knowledge_items(
+        &self,
+        input: &GetDueKnowledgeItemsInput,
+    ) -> Result<Vec<KnowledgeItem>> {
         self.storage.get_due_knowledge_items(input.now, input.limit)
     }
 
-    pub fn update_knowledge_item(&self, item_id: &str, patch: &KnowledgeItemPatch) -> Result<KnowledgeItem> {
+    pub fn update_knowledge_item(
+        &self,
+        item_id: &str,
+        patch: &KnowledgeItemPatch,
+    ) -> Result<KnowledgeItem> {
         self.storage.update_knowledge_item(item_id, patch)
+    }
+
+    pub fn delete_knowledge_item(&self, item_id: &str) -> Result<()> {
+        self.storage.delete_knowledge_item(item_id)
     }
 }

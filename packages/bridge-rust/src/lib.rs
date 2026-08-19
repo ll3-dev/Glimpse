@@ -30,7 +30,7 @@ pub use recommendation::recommendation_package;
 pub use review::review_package;
 pub use state::{core_state, init_core, initialize_core, reset_core};
 
-/// Assembles the flat `glimpse.core` package with ALL 26 commands (25 domain
+/// Assembles the flat `glimpse.core` package with ALL 27 commands (26 domain
 /// + `initializeCore`).
 ///
 /// Hosts that want a single registration surface (Tauri dispatch, mobile FFI)
