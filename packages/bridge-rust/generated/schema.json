@@ -1,5 +1,6 @@
 {
   "packageId": "glimpse.core",
+  "schemaVersion": 1,
   "commands": [
     {
       "name": "addMessage",

@@ -3141,9 +3141,9 @@ dependencies = [
 
 [[package]]
 name = "rustra"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36bd86f3980f72864befc358888a357da727e02b546e2bfa1cb4f789640a0e01"
+checksum = "954f249c83968ed930baf06bf8c6440301773d799daef925105d2e1407e2a621"
 dependencies = [
  "hex",
  "postcard",
@@ -3157,9 +3157,9 @@ dependencies = [
 
 [[package]]
 name = "rustra-macros"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "892e711cf09407b6421fde80de4df90968fe5b2fd7acb679362766e80ef2cf2a"
+checksum = "8cf904c6e2845baf97ebf554bd4286dcd621ce3cfa94bbb4fa8a5ad24d6fcf76"
 dependencies = [
  "proc-macro2",
  "quote",

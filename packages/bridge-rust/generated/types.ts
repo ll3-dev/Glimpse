@@ -182,10 +182,12 @@ export type GetKnowledgeItemByIdOutput = {
 };
 
 export type InitializeCoreInput = {
+  /** Absolute path of the SQLite database file to open. Ignored when the core is already initialized (the first path wins). */
   dbPath: string;
 };
 
 export type InitializeCoreOutput = {
+  /** True when this call opened the database; false when a previous call (or the desktop Tauri setup hook) had already initialized the core. */
   initialized: boolean;
 };
 

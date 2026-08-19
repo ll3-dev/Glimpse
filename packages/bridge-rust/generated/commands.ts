@@ -1,112 +1,113 @@
 import type { AddMessageInput, AddMessageOutput, CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
 import { invoke } from '@rustra/types';
+import type { InvokeOptions } from '@rustra/types';
 
-export function addMessage(input: AddMessageInput): Promise<AddMessageOutput> {
-  return invoke<AddMessageOutput>('addMessage', input);
+export function addMessage(input: AddMessageInput, options?: InvokeOptions): Promise<AddMessageOutput> {
+  return invoke<AddMessageOutput>('addMessage', input, options);
 }
 
-export function calculateNextReview(input: CalculateNextReviewInput): Promise<CalculateNextReviewOutput> {
-  return invoke<CalculateNextReviewOutput>('calculateNextReview', input);
+export function calculateNextReview(input: CalculateNextReviewInput, options?: InvokeOptions): Promise<CalculateNextReviewOutput> {
+  return invoke<CalculateNextReviewOutput>('calculateNextReview', input, options);
 }
 
-export function calculateTagOverlap(input: CalculateTagOverlapInput): Promise<CalculateTagOverlapOutput> {
-  return invoke<CalculateTagOverlapOutput>('calculateTagOverlap', input);
+export function calculateTagOverlap(input: CalculateTagOverlapInput, options?: InvokeOptions): Promise<CalculateTagOverlapOutput> {
+  return invoke<CalculateTagOverlapOutput>('calculateTagOverlap', input, options);
 }
 
-export function createConversation(input: CreateConversationInput): Promise<CreateConversationOutput> {
-  return invoke<CreateConversationOutput>('createConversation', input);
+export function createConversation(input: CreateConversationInput, options?: InvokeOptions): Promise<CreateConversationOutput> {
+  return invoke<CreateConversationOutput>('createConversation', input, options);
 }
 
-export function deleteConversation(input: DeleteConversationInput): Promise<DeleteConversationOutput> {
-  return invoke<DeleteConversationOutput>('deleteConversation', input);
+export function deleteConversation(input: DeleteConversationInput, options?: InvokeOptions): Promise<DeleteConversationOutput> {
+  return invoke<DeleteConversationOutput>('deleteConversation', input, options);
 }
 
-export function deleteKnowledgeItem(input: DeleteKnowledgeItemInput): Promise<DeleteKnowledgeItemOutput> {
-  return invoke<DeleteKnowledgeItemOutput>('deleteKnowledgeItem', input);
+export function deleteKnowledgeItem(input: DeleteKnowledgeItemInput, options?: InvokeOptions): Promise<DeleteKnowledgeItemOutput> {
+  return invoke<DeleteKnowledgeItemOutput>('deleteKnowledgeItem', input, options);
 }
 
-export function deleteMessage(input: DeleteMessageInput): Promise<DeleteMessageOutput> {
-  return invoke<DeleteMessageOutput>('deleteMessage', input);
+export function deleteMessage(input: DeleteMessageInput, options?: InvokeOptions): Promise<DeleteMessageOutput> {
+  return invoke<DeleteMessageOutput>('deleteMessage', input, options);
 }
 
-export function getDueKnowledgeItems(input: GetDueKnowledgeItemsInput): Promise<GetDueKnowledgeItemsOutput> {
-  return invoke<GetDueKnowledgeItemsOutput>('getDueKnowledgeItems', input);
+export function getDueKnowledgeItems(input: GetDueKnowledgeItemsInput, options?: InvokeOptions): Promise<GetDueKnowledgeItemsOutput> {
+  return invoke<GetDueKnowledgeItemsOutput>('getDueKnowledgeItems', input, options);
 }
 
-export function getKnowledgeItemById(input: GetKnowledgeItemByIdInput): Promise<GetKnowledgeItemByIdOutput> {
-  return invoke<GetKnowledgeItemByIdOutput>('getKnowledgeItemById', input);
+export function getKnowledgeItemById(input: GetKnowledgeItemByIdInput, options?: InvokeOptions): Promise<GetKnowledgeItemByIdOutput> {
+  return invoke<GetKnowledgeItemByIdOutput>('getKnowledgeItemById', input, options);
 }
 
-export function initializeCore(input: InitializeCoreInput): Promise<InitializeCoreOutput> {
-  return invoke<InitializeCoreOutput>('initializeCore', input);
+export function initializeCore(input: InitializeCoreInput, options?: InvokeOptions): Promise<InitializeCoreOutput> {
+  return invoke<InitializeCoreOutput>('initializeCore', input, options);
 }
 
-export function initializeReviewSchedule(input: InitializeReviewScheduleInput): Promise<InitializeReviewScheduleOutput> {
-  return invoke<InitializeReviewScheduleOutput>('initializeReviewSchedule', input);
+export function initializeReviewSchedule(input: InitializeReviewScheduleInput, options?: InvokeOptions): Promise<InitializeReviewScheduleOutput> {
+  return invoke<InitializeReviewScheduleOutput>('initializeReviewSchedule', input, options);
 }
 
-export function listConversationMessages(input: ListConversationMessagesInput): Promise<ListConversationMessagesOutput> {
-  return invoke<ListConversationMessagesOutput>('listConversationMessages', input);
+export function listConversationMessages(input: ListConversationMessagesInput, options?: InvokeOptions): Promise<ListConversationMessagesOutput> {
+  return invoke<ListConversationMessagesOutput>('listConversationMessages', input, options);
 }
 
-export function listConversations(input: ListConversationsInput): Promise<ListConversationsOutput> {
-  return invoke<ListConversationsOutput>('listConversations', input);
+export function listConversations(input: ListConversationsInput, options?: InvokeOptions): Promise<ListConversationsOutput> {
+  return invoke<ListConversationsOutput>('listConversations', input, options);
 }
 
-export function listKnowledgeItems(input: ListKnowledgeItemsInput): Promise<ListKnowledgeItemsOutput> {
-  return invoke<ListKnowledgeItemsOutput>('listKnowledgeItems', input);
+export function listKnowledgeItems(input: ListKnowledgeItemsInput, options?: InvokeOptions): Promise<ListKnowledgeItemsOutput> {
+  return invoke<ListKnowledgeItemsOutput>('listKnowledgeItems', input, options);
 }
 
-export function listKnowledgeItemsByIds(input: ListKnowledgeItemsByIdsInput): Promise<ListKnowledgeItemsOutputByIds> {
-  return invoke<ListKnowledgeItemsOutputByIds>('listKnowledgeItemsByIds', input);
+export function listKnowledgeItemsByIds(input: ListKnowledgeItemsByIdsInput, options?: InvokeOptions): Promise<ListKnowledgeItemsOutputByIds> {
+  return invoke<ListKnowledgeItemsOutputByIds>('listKnowledgeItemsByIds', input, options);
 }
 
-export function listPendingKnowledgeItemsForLabeling(input: ListPendingKnowledgeItemsForLabelingInput): Promise<ListPendingKnowledgeItemsForLabelingOutput> {
-  return invoke<ListPendingKnowledgeItemsForLabelingOutput>('listPendingKnowledgeItemsForLabeling', input);
+export function listPendingKnowledgeItemsForLabeling(input: ListPendingKnowledgeItemsForLabelingInput, options?: InvokeOptions): Promise<ListPendingKnowledgeItemsForLabelingOutput> {
+  return invoke<ListPendingKnowledgeItemsForLabelingOutput>('listPendingKnowledgeItemsForLabeling', input, options);
 }
 
-export function listPendingRecommendations(input: ListPendingRecommendationsInput): Promise<ListPendingRecommendationsOutput> {
-  return invoke<ListPendingRecommendationsOutput>('listPendingRecommendations', input);
+export function listPendingRecommendations(input: ListPendingRecommendationsInput, options?: InvokeOptions): Promise<ListPendingRecommendationsOutput> {
+  return invoke<ListPendingRecommendationsOutput>('listPendingRecommendations', input, options);
 }
 
-export function listRecentFeedbackEvents(input: ListRecentFeedbackEventsInput): Promise<ListRecentFeedbackEventsOutput> {
-  return invoke<ListRecentFeedbackEventsOutput>('listRecentFeedbackEvents', input);
+export function listRecentFeedbackEvents(input: ListRecentFeedbackEventsInput, options?: InvokeOptions): Promise<ListRecentFeedbackEventsOutput> {
+  return invoke<ListRecentFeedbackEventsOutput>('listRecentFeedbackEvents', input, options);
 }
 
-export function listRecommendations(input: ListRecommendationsInput): Promise<ListRecommendationsOutput> {
-  return invoke<ListRecommendationsOutput>('listRecommendations', input);
+export function listRecommendations(input: ListRecommendationsInput, options?: InvokeOptions): Promise<ListRecommendationsOutput> {
+  return invoke<ListRecommendationsOutput>('listRecommendations', input, options);
 }
 
-export function listWeeklyKnowledgeItems(input: ListWeeklyKnowledgeItemsInput): Promise<ListWeeklyKnowledgeItemsOutput> {
-  return invoke<ListWeeklyKnowledgeItemsOutput>('listWeeklyKnowledgeItems', input);
+export function listWeeklyKnowledgeItems(input: ListWeeklyKnowledgeItemsInput, options?: InvokeOptions): Promise<ListWeeklyKnowledgeItemsOutput> {
+  return invoke<ListWeeklyKnowledgeItemsOutput>('listWeeklyKnowledgeItems', input, options);
 }
 
-export function logRecommendationFeedback(input: LogRecommendationFeedbackInput): Promise<LogRecommendationFeedbackOutput> {
-  return invoke<LogRecommendationFeedbackOutput>('logRecommendationFeedback', input);
+export function logRecommendationFeedback(input: LogRecommendationFeedbackInput, options?: InvokeOptions): Promise<LogRecommendationFeedbackOutput> {
+  return invoke<LogRecommendationFeedbackOutput>('logRecommendationFeedback', input, options);
 }
 
-export function respondToRecommendation(input: RespondToRecommendationInput): Promise<RespondToRecommendationOutput> {
-  return invoke<RespondToRecommendationOutput>('respondToRecommendation', input);
+export function respondToRecommendation(input: RespondToRecommendationInput, options?: InvokeOptions): Promise<RespondToRecommendationOutput> {
+  return invoke<RespondToRecommendationOutput>('respondToRecommendation', input, options);
 }
 
-export function saveKnowledgeItem(input: SaveKnowledgeItemInput): Promise<SaveKnowledgeItemOutput> {
-  return invoke<SaveKnowledgeItemOutput>('saveKnowledgeItem', input);
+export function saveKnowledgeItem(input: SaveKnowledgeItemInput, options?: InvokeOptions): Promise<SaveKnowledgeItemOutput> {
+  return invoke<SaveKnowledgeItemOutput>('saveKnowledgeItem', input, options);
 }
 
-export function saveRecommendations(input: SaveRecommendationsInput): Promise<SaveRecommendationsOutput> {
-  return invoke<SaveRecommendationsOutput>('saveRecommendations', input);
+export function saveRecommendations(input: SaveRecommendationsInput, options?: InvokeOptions): Promise<SaveRecommendationsOutput> {
+  return invoke<SaveRecommendationsOutput>('saveRecommendations', input, options);
 }
 
-export function updateConversation(input: UpdateConversationInput): Promise<UpdateConversationOutput> {
-  return invoke<UpdateConversationOutput>('updateConversation', input);
+export function updateConversation(input: UpdateConversationInput, options?: InvokeOptions): Promise<UpdateConversationOutput> {
+  return invoke<UpdateConversationOutput>('updateConversation', input, options);
 }
 
-export function updateKnowledgeItem(input: UpdateKnowledgeItemInput): Promise<UpdateKnowledgeItemOutput> {
-  return invoke<UpdateKnowledgeItemOutput>('updateKnowledgeItem', input);
+export function updateKnowledgeItem(input: UpdateKnowledgeItemInput, options?: InvokeOptions): Promise<UpdateKnowledgeItemOutput> {
+  return invoke<UpdateKnowledgeItemOutput>('updateKnowledgeItem', input, options);
 }
 
-export function updateMessage(input: UpdateMessageInput): Promise<UpdateMessageOutput> {
-  return invoke<UpdateMessageOutput>('updateMessage', input);
+export function updateMessage(input: UpdateMessageInput, options?: InvokeOptions): Promise<UpdateMessageOutput> {
+  return invoke<UpdateMessageOutput>('updateMessage', input, options);
 }
 
 export { configure as configureRustraEngine } from '@rustra/types';

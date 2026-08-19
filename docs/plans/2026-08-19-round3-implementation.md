@@ -1,6 +1,14 @@
 # 라운드 3 구현 계획 — OCR 완성 + CI + rustra 흡수 + 문서 정합
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+>
+> **상태 (2026-08-19 실행 중 갱신):** Task 1(CI 13022ab) ✅ · Task 3(OCR 스캐폴딩 0063a77) ✅ ·
+> Task 4(iOS fbebd67) ✅ · Task 5(Android b00ad37 + 산출물 정리 f0b635e) ✅ ·
+> Task 6(캡처 연결 444f749) ✅ · Task 7 일부(문서 정합 4671eb0) — rustra 릴리스 PR #15 머지 완료,
+> main CI 통과 후 release.yml 자동 발행 대기 중. rustra 0.1.3 (0.2.0이 아니라 patch로 컷됨).
+> 실행 중 발견: OCR 모듈은 Podfile 수동 등록 불필요 — expo autolinking이 modules/의
+> expo-module.config.json을 자동 스캔함. iOS glimpse.debug.dylib 링크 실패는 OcrModule
+> 제외 시에도 재현되는 ExpoModulesCore Yoga 심볼 선재결함 (Swift 컴파일은 통과).
 
 **Goal:** 마지막 스텁 기능인 스크린샷 OCR을 네이티브로 완성하고, CI 게이트를 자동화하며, rustra 0.2.0을 흡수하고 문서를 코드에 정합한다.
 
