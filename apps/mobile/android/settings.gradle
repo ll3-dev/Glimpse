@@ -38,4 +38,6 @@ expoAutolinking.useExpoVersionCatalog()
 include ':app'
 include ':rustra-jsi'
 project(':rustra-jsi').projectDir = new File(rootDir, '../modules/rustra-jsi/android')
+include ':glimpse-ocr'
+project(':glimpse-ocr').projectDir = new File(rootDir, '../modules/ocr/android')
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
