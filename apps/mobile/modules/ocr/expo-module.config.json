@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["OcrModule"]
+  },
+  "android": {
+    "modules": ["dev.ll3.glimpse.ocr.OcrModule"]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "glimpse-ocr",
+  "version": "1.0.0",
+  "description": "On-device OCR for Glimpse mobile (iOS Vision / Android ML Kit)",
+  "main": "src/index.ts",
+  "license": "UNLICENSED",
+  "private": true,
+  "react-native": "src/index.ts"
+}
