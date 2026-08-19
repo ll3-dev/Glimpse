@@ -23,11 +23,11 @@ export function listAvailableAITargets(): AITargetDescriptor[] {
   const descriptors: AITargetDescriptor[] = [
     {
       id: STUB_TARGET_ID,
-      label: 'Stub',
-      description: '기본 스텁 응답',
+      label: '기본 자동 정리',
+      description: '온디바이스 미리보기와 규칙 기반 태그',
       kind: 'stub',
       available: true,
-      featureSupport: ['metadata', 'labeling', 'chat'],
+      featureSupport: ['metadata', 'labeling'],
     },
     {
       id: RULES_TARGET_ID,
@@ -89,8 +89,9 @@ export function isTargetSupportedForFeature(target: AITarget, feature: AIFeature
       return feature === 'metadata' || feature === 'labeling';
     case 'local':
     case 'byok':
-    case 'stub':
       return true;
+    case 'stub':
+      return feature !== 'chat';
     case 'rules':
       return feature === 'labeling';
   }

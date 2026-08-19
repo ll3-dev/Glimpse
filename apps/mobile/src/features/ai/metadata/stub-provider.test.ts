@@ -16,7 +16,8 @@ describe('stub provider', () => {
 
     expect(Exit.isSuccess(exit)).toBe(true);
     if (Exit.isSuccess(exit)) {
-      expect(exit.value.summary).toContain('[Stub Summary]');
+      expect(exit.value.summary).not.toContain('[Stub Summary]');
+      expect(exit.value.summary).toContain('This is a test content');
       expect(exit.value.summary.length).toBeGreaterThan(0);
     }
   });

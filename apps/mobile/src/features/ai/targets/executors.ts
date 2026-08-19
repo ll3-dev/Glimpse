@@ -288,13 +288,6 @@ export async function executeLabelingTarget(
   };
 }
 
-function buildStubChatReply(input: ChatExecutionInput): string {
-  const contextHint = input.contextItem?.title
-    ? `"${input.contextItem.title}"를 참고해서 `
-    : '';
-  return `${contextHint}아직 연결된 채팅 모델이 없어 간단한 스텁 응답을 반환합니다.\n\n질문: ${input.userText}`;
-}
-
 async function executeLocalChatTarget(input: ChatExecutionInput): Promise<Result<string>> {
   const localChat = resolveLocalChatContext(input);
   if (!localChat.success) {
@@ -360,7 +353,7 @@ export async function executeChatTarget(
     case 'byok':
       return executeBYOKChatTarget(input);
     case 'stub':
-      return { success: true, data: buildStubChatReply(input) };
+      return executionError('채팅 모델이 설정되지 않았습니다. 설정에서 로컬 모델 또는 BYOK를 연결해 주세요.', target);
     case 'apple':
       return executionError('Apple target does not support chat generation in this release', target);
     case 'rules':
@@ -431,7 +424,7 @@ export function executeChatTargetEffect(
 ): Effect.Effect<string, AppError> {
   switch (target.kind) {
     case 'stub':
-      return Effect.succeed(buildStubChatReply(input));
+      return executionEffectError('채팅 모델이 설정되지 않았습니다. 설정에서 로컬 모델 또는 BYOK를 연결해 주세요.', target);
     case 'apple':
       return executionEffectError('Apple target does not support chat generation in this release', target);
     case 'rules':

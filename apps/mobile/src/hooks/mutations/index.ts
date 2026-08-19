@@ -17,6 +17,8 @@ export {
 
 export {
   useSaveKnowledgeItemMutation,
+  useUpdateKnowledgeItemMutation,
+  useDeleteKnowledgeItemMutation,
   useCaptureActionsMutation,
 } from './useCaptureActions';
 

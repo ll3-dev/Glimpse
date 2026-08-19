@@ -9,6 +9,7 @@ import { Card } from '@glimpse/ui/primitives';
 type KnowledgeItemCardProps = {
   item: KnowledgeItem;
   onPress?: () => void;
+  onSelectTag?: (tag: string) => void;
 };
 
 const TYPE_CONFIG = {
@@ -25,15 +26,18 @@ function getTypeConfig(type: KnowledgeItem['type']) {
 
 function ItemContent({
   item,
-  showLabels,
+  showBadges,
+  onSelectTag,
 }: {
   item: KnowledgeItem;
-  showLabels: boolean;
+  showBadges: boolean;
+  onSelectTag?: (tag: string) => void;
 }) {
   const displayTitle = item.title || item.body || item.url || '제목 없음';
   const timeAgo = formatDistanceToNow(item.createdAt, { locale: ko, addSuffix: true });
   const typeConfig = getTypeConfig(item.type);
   const labels = getDisplayLabels(item);
+  const tags = item.tags ?? [];
 
   return (
     <>
@@ -47,17 +51,29 @@ function ItemContent({
         <Text className="mt-0.5 text-[10px] text-app-muted font-medium tracking-tight">
           {typeConfig.label} · {timeAgo}
         </Text>
-        {showLabels && labels.length > 0 ? (
-          <View className="mt-2 flex-row flex-wrap">
+        {showBadges ? (
+          <View className="mt-2 flex-row flex-wrap gap-1.5">
             {labels.map((label) => (
-              <View
+              <Pressable
                 key={label}
-                className="mr-2 mb-1 rounded bg-app-border/40 px-2 py-1"
+                onPress={() => onSelectTag?.(label)}
+                className="rounded bg-tag-mint-bg/60 px-2 py-0.5"
               >
-                <Text className="text-[10px] font-medium text-app-muted">
+                <Text className="text-[10px] font-medium text-tag-mint-text">
                   {formatKnowledgeLabel(label)}
                 </Text>
-              </View>
+              </Pressable>
+            ))}
+            {tags.map((tag) => (
+              <Pressable
+                key={tag}
+                onPress={() => onSelectTag?.(tag)}
+                className="rounded bg-app-border/40 px-2 py-0.5"
+              >
+                <Text className="text-[10px] font-medium text-app-muted">
+                  #{tag}
+                </Text>
+              </Pressable>
             ))}
           </View>
         ) : null}
@@ -66,9 +82,10 @@ function ItemContent({
   );
 }
 
-export function KnowledgeItemCard({ item, onPress }: KnowledgeItemCardProps) {
+export function KnowledgeItemCard({ item, onPress, onSelectTag }: KnowledgeItemCardProps) {
   const labels = getDisplayLabels(item);
-  const showLabels = labels.length > 0;
+  const tags = item.tags ?? [];
+  const showBadges = labels.length > 0 || tags.length > 0;
 
   return (
     <Card className="mb-2 overflow-hidden">
@@ -77,7 +94,7 @@ export function KnowledgeItemCard({ item, onPress }: KnowledgeItemCardProps) {
         onPress={onPress}
         disabled={!onPress}
       >
-        <ItemContent item={item} showLabels={showLabels} />
+        <ItemContent item={item} showBadges={showBadges} onSelectTag={onSelectTag} />
       </Pressable>
     </Card>
   );

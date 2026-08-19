@@ -47,17 +47,19 @@ export default function ChatScreen() {
               : undefined
         }
         rightElement={
-          <TouchableOpacity
-            className="flex-row items-center bg-black px-3 py-1.5 rounded-full"
-            onPress={handleCreateConversation}
-            disabled={isCreating}
-            activeOpacity={0.7}
-          >
-            <Plus size={14} color="white" strokeWidth={3} />
-            <Text className="ml-1.5 text-xs font-bold text-white">
-              {isCreating ? "생성 중" : "새 대화"}
-            </Text>
-          </TouchableOpacity>
+          showData ? (
+            <TouchableOpacity
+              className="flex-row items-center bg-black px-3 py-1.5 rounded-full"
+              onPress={handleCreateConversation}
+              disabled={isCreating}
+              activeOpacity={0.7}
+            >
+              <Plus size={14} color="white" strokeWidth={3} />
+              <Text className="ml-1.5 text-xs font-bold text-white">
+                {isCreating ? "생성 중" : "새 대화"}
+              </Text>
+            </TouchableOpacity>
+          ) : undefined
         }
       />
 

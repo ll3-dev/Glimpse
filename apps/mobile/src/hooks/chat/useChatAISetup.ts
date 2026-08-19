@@ -50,11 +50,17 @@ export function useChatAISetup({
   const downloadProgress = useLocalLLMStoreConfig((config) => config.downloadProgress);
 
   const ensureReady = useCallback(async () => {
-    // If chat target is remote BYOK or Apple Intelligence, local LLM model setup is not required
+    // A configured BYOK target is immediately usable without a local model.
     const target = resolveEffectiveTarget('chat');
-    if (target.kind !== 'local') {
+    if (target.kind === 'byok') {
       setShowDialog(false);
       return true;
+    }
+
+    // Stub, rules, and Apple targets cannot generate chat replies in this release.
+    if (target.kind !== 'local') {
+      setShowDialog(true);
+      return false;
     }
 
     if (isLocalLLMReady()) {

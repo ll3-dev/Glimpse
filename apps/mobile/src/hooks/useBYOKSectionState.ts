@@ -159,6 +159,7 @@ export function useBYOKSectionState() {
       baseUrlInput,
       modelInput,
       showKey,
+      storedApiKey,
       hasStoredApiKey,
       maskedStoredApiKey,
       isEditingApiKey,

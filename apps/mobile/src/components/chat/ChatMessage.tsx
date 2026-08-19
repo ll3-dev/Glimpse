@@ -7,12 +7,14 @@
 import { useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Check, ChevronDown, ChevronUp, Copy } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, Copy, BookmarkPlus, BookmarkCheck } from 'lucide-react-native';
 import { Text } from '@glimpse/ui/primitives';
 import type { Message } from '@glimpse/shared';
 import { ChatMarkdown } from './ChatMarkdown';
 import { MessageActionDialogs } from './MessageActionDialogs';
 import { parseChatMessageContent } from '@/src/features/chat';
+import { useSaveKnowledgeItemMutation } from '@/src/hooks';
+import { toast } from '@/src/stores/toast.store';
 
 interface ChatMessageProps {
   message: Message;
@@ -27,7 +29,37 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const { mutate: saveItem, isPending: isSaving } = useSaveKnowledgeItemMutation();
   const parsedContent = parseChatMessageContent(message.content);
+
+  const handleSaveToKnowledge = () => {
+    if (isSaving || saved) return;
+    const content = parsedContent.answer || message.content;
+    const firstLine = content
+      .split('\n')[0]
+      .replace(/^[#*-\s]+/, '')
+      .trim()
+      .slice(0, 40);
+
+    saveItem(
+      {
+        type: 'note',
+        title: firstLine || 'AI 답변 요약',
+        body: content,
+        tags: ['AI대화'],
+      },
+      {
+        onSuccess: () => {
+          setSaved(true);
+          toast.success('보관함에 새 메모로 저장되었습니다');
+        },
+        onError: (error) => {
+          toast.error(`저장 실패: ${error.message}`);
+        },
+      }
+    );
+  };
 
   const handleLongPress = () => {
     setDialogOpen(true);
@@ -119,7 +151,27 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
           />
 
           {!isUser && (
-            <View className="mt-3 flex-row items-center justify-end">
+            <View className="mt-3 flex-row items-center justify-end gap-2">
+              <TouchableOpacity
+                onPress={handleSaveToKnowledge}
+                disabled={isSaving}
+                className="flex-row items-center rounded-md bg-app-bg border border-app-border px-2.5 py-1"
+                activeOpacity={0.7}
+              >
+                {saved ? (
+                  <BookmarkCheck size={13} color="#1a7f37" />
+                ) : (
+                  <BookmarkPlus size={13} color="#787774" />
+                )}
+                <Text
+                  className={`ml-1.5 text-xs font-medium ${
+                    saved ? 'text-tag-mint-text' : 'text-app-muted'
+                  }`}
+                >
+                  {saved ? "저장됨" : isSaving ? "저장 중..." : "보관함에 저장"}
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={handleCopy}
                 className="flex-row items-center rounded-md bg-app-bg border border-app-border px-2.5 py-1"

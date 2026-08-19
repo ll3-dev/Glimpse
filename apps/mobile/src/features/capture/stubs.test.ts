@@ -6,10 +6,11 @@ describe('capture stubs', () => {
     expect(generateSummaryStub('   ')).toBe('');
   });
 
-  test('generateSummaryStub prefixes preview and truncates long content', () => {
+  test('generateSummaryStub returns a preview and truncates long content', () => {
     const long = 'a'.repeat(120);
     const summary = generateSummaryStub(long);
-    expect(summary.startsWith('[Stub Summary]')).toBe(true);
+    expect(summary.startsWith('a'.repeat(100))).toBe(true);
+    expect(summary).not.toContain('Stub');
     expect(summary.endsWith('...')).toBe(true);
   });
 

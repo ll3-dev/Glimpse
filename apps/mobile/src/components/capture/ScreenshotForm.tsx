@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   TextInput,
-  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,7 +25,6 @@ export function ScreenshotForm({
   bottomInset,
 }: ScreenshotFormProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const pickImage = async () => {
     const program = Effect.gen(function* () {
@@ -52,36 +50,12 @@ export function ScreenshotForm({
       if (!result.canceled && result.assets[0]) {
         const uri = result.assets[0].uri;
         setSelectedImage(uri);
-        yield* tryPromise(
-          () => processImage(uri),
-          (error) => appError('UNKNOWN_ERROR', 'Failed to process image', error)
-        );
       }
     });
 
     await Effect.runPromise(program).catch((error) => {
       logger.error('Failed to pick screenshot image', error);
     });
-  };
-
-  const processImage = async (uri: string) => {
-    setIsProcessing(true);
-    // OCR 미구현 — 스텁 텍스트를 실제 노트로 저장하지 않는다.
-    // 추출 텍스트 필드는 비워두고(사용자 직접 입력만 저장됨) 이미지
-    // 자체만 첨부 상태로 둔다.
-    const program = Effect.sync(() => {
-      onChangeExtractedText('');
-    }).pipe(
-      Effect.delay(1000),
-      Effect.ensuring(
-        Effect.sync(() => {
-          setIsProcessing(false);
-        })
-      )
-    );
-
-    await Effect.runPromise(program);
-    void uri;
   };
 
   const clearImage = () => {
@@ -125,20 +99,12 @@ export function ScreenshotForm({
             >
               <X size={14} color="white" />
             </Pressable>
-            {isProcessing && (
-              <View className="absolute inset-0 items-center justify-center rounded-md bg-black/40">
-                <ActivityIndicator size="small" color="#ffffff" />
-                <Text className="mt-2 text-xs text-white">
-                  텍스트 추출 중...
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       )}
 
       <Text className="mb-2 mt-4 text-xs font-semibold uppercase tracking-tight text-app-muted">
-        추출된 텍스트
+        추출된 텍스트 / 메모
       </Text>
       <View className="min-h-37.5 rounded-md border border-app-border bg-app-surface p-4">
         <TextInput
@@ -147,18 +113,17 @@ export function ScreenshotForm({
           onChangeText={onChangeExtractedText}
           placeholder={
             selectedImage
-              ? 'OCR 추출은 준비 중입니다 — 내용을 직접 입력해 주세요.'
-              : '이미지를 선택하면 텍스트가 추출됩니다...'
+              ? '스크린샷에 관한 메모나 텍스트를 입력하세요.'
+              : '이미지를 선택하거나 메모를 입력하세요...'
           }
           placeholderTextColor="#9b9a97"
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
-          editable={!isProcessing}
         />
       </View>
 
-      {selectedImage && !isProcessing && (
+      {selectedImage && (
         <Pressable
           onPress={pickImage}
           className="mt-4 items-center justify-center rounded-md border border-app-border bg-app-surface py-3 active:opacity-80"

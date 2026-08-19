@@ -9,7 +9,7 @@ import type { KnowledgeItem } from '@glimpse/shared';
 
 describe('Effect-based Executors', () => {
   describe('executeMetadataTargetEffect', () => {
-    test('returns Effect that succeeds with stub target', async () => {
+    test('returns Effect that succeeds with local fallback metadata', async () => {
       const effect = executeMetadataTargetEffect(
         { kind: 'stub' },
         { content: 'Test content for metadata generation.' }
@@ -74,18 +74,14 @@ describe('Effect-based Executors', () => {
   });
 
   describe('executeChatTargetEffect', () => {
-    test('returns Effect that succeeds with stub target', async () => {
+    test('fails honestly when no chat model is configured', async () => {
       const effect = executeChatTargetEffect(
         { kind: 'stub' },
         { userText: 'Hello, this is a test message.' }
       );
       const exit = await Effect.runPromiseExit(effect);
 
-      expect(Exit.isSuccess(exit)).toBe(true);
-      if (Exit.isSuccess(exit)) {
-        expect(typeof exit.value).toBe('string');
-        expect(exit.value.length).toBeGreaterThan(0);
-      }
+      expect(Exit.isFailure(exit)).toBe(true);
     });
 
     test('returns Effect that fails with apple target', async () => {

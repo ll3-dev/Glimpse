@@ -81,7 +81,7 @@ export default function SettingsScreen() {
 
         <Card variant="muted" className="p-4 border-0">
           <Text className="text-[10px] leading-4 text-app-muted font-medium">
-            ⓘ API 키와 BYOK 설정은 로컬 스토리지(MMKV)에 저장됩니다.{"\n"}
+            ⓘ API 키는 기기의 보안 저장소에, 나머지 BYOK 설정은 로컬 저장소에 저장됩니다.{"\n"}
             화면에는 마스킹된 키만 표시되며, Base URL override는 현재 OpenAI provider에서만 적용됩니다.
           </Text>
         </Card>

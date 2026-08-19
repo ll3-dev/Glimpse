@@ -1,21 +1,15 @@
 /**
- * Stub functions for AI-generated metadata
+ * Deterministic fallback functions for AI-generated metadata.
  *
- * These are placeholder implementations that return mock data.
- * They will be replaced with actual Local LLM inference in future versions.
+ * These keep capture usable without a configured model while clearly returning
+ * only a local preview and heuristic tags.
  */
 
 /**
- * Generates a placeholder summary for the given content.
- *
- * This is a stub implementation that returns a fixed placeholder text.
- * In the future, this will:
- * - Use Local LLM to generate actual summaries
- * - Handle different content types (notes vs links)
- * - Support configurable summary lengths
+ * Generates a local preview for the given content.
  *
  * @param content - The content to summarize
- * @returns A placeholder summary string
+ * @returns A truncated content preview
  */
 export function generateSummaryStub(content: string): string {
   // Return empty string for empty content
@@ -26,21 +20,14 @@ export function generateSummaryStub(content: string): string {
   // Extract first 100 characters as a preview (simple stub behavior)
   const preview = content.trim().substring(0, 100);
 
-  // Return placeholder with content preview
-  return `[Stub Summary] ${preview}${content.length > 100 ? '...' : ''}`;
+  return `${preview}${content.trim().length > 100 ? '...' : ''}`;
 }
 
 /**
- * Generates placeholder tags for the given content.
- *
- * This is a stub implementation that returns heuristic tags.
- * In the future, this will:
- * - Use Local LLM to extract relevant tags
- * - Support tag normalization and deduplication
- * - Integrate with existing tag vocabulary
+ * Generates heuristic tags for the given content.
  *
  * @param content - The content to tag
- * @returns An array of placeholder tag strings
+ * @returns An array of local heuristic tag strings
  */
 export function generateTagsStub(content: string): string[] {
   // Return empty array for empty content

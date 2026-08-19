@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { saveKnowledgeItem, type KnowledgeItemInput } from '@/src/features/capture';
+import { mobileCoreClient } from '@/src/features/core';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 
@@ -42,6 +43,48 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
 }
 
 /**
+ * Hook to update an existing knowledge item.
+ */
+export function useUpdateKnowledgeItemMutation(): UseMutationResult<
+  KnowledgeItem,
+  Error,
+  { itemId: string; patch: Partial<Omit<KnowledgeItem, 'id' | 'createdAt'>> }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemId, patch }) => {
+      return await mobileCoreClient.updateKnowledgeItem(itemId, patch);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+    },
+  });
+}
+
+/**
+ * Hook to delete a knowledge item.
+ */
+export function useDeleteKnowledgeItemMutation(): UseMutationResult<
+  void,
+  Error,
+  { itemId: string }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemId }) => {
+      await mobileCoreClient.deleteKnowledgeItem(itemId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
+    },
+  });
+}
+
+/**
  * Combined hook that provides capture actions.
  *
  * @returns Object with save mutation and convenience methods
@@ -52,11 +95,19 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
  */
 export function useCaptureActionsMutation() {
   const saveMutation = useSaveKnowledgeItemMutation();
+  const updateMutation = useUpdateKnowledgeItemMutation();
+  const deleteMutation = useDeleteKnowledgeItemMutation();
 
   return {
     save: saveMutation.mutate,
     saveAsync: saveMutation.mutateAsync,
-    isPending: saveMutation.isPending,
+    update: updateMutation.mutate,
+    updateAsync: updateMutation.mutateAsync,
+    delete: deleteMutation.mutate,
+    deleteAsync: deleteMutation.mutateAsync,
+    isPending: saveMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
     saveMutation,
+    updateMutation,
+    deleteMutation,
   };
 }

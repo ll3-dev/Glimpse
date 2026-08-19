@@ -7,12 +7,14 @@
 
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useRecommendationsQuery, useRecommendationActionsMutation } from '@/src/hooks';
 import { RecommendationCard } from '@/src/components/digest';
 import { QueryStateScrollView } from '@glimpse/ui/common';
 import { ScreenHeader } from '@glimpse/ui/primitives';
 
 export default function DigestScreen() {
+  const router = useRouter();
   const {
     data: recommendations,
     isLoading,
@@ -45,6 +47,8 @@ export default function DigestScreen() {
             itemA={rec.itemA}
             itemB={rec.itemB}
             recommendation={rec.recommendation}
+            onPressItemA={() => router.push(`/library/${rec.itemA.id}`)}
+            onPressItemB={() => router.push(`/library/${rec.itemB.id}`)}
             onAccept={() => accept(rec.recommendation.id)}
             onIgnore={() => ignore(rec.recommendation.id)}
             onDismiss={() => dismiss(rec.recommendation.id)}

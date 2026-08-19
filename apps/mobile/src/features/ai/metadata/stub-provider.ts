@@ -1,7 +1,7 @@
 /**
- * Stub Metadata Provider
+ * Local Fallback Metadata Provider
  *
- * Default provider using heuristic-based stub functions.
+ * Default provider using deterministic preview and tag functions.
  * Used when the app stays in the default inference mode.
  */
 
@@ -18,14 +18,14 @@ import {
 } from "@/src/features/capture/stubs";
 
 /**
- * Stub provider that wraps existing stub functions.
+ * Fallback provider that wraps the local preview and tag functions.
  * Always available in default mode.
  */
 export const stubProvider: MetadataProvider = {
   name: "stub",
 
   async isAvailable(): Promise<boolean> {
-    // Stub is always available
+    // The deterministic local fallback is always available.
     return true;
   },
 

@@ -21,12 +21,13 @@ export function CaptureChannelForm({
   if (channel === 'note' || channel === 'link') {
     return (
       <CaptureForm
+        channel={channel}
         title={state.title}
         body={state.body}
         bottomInset={bottomInset}
         onChangeTitle={actions.setTitle}
         onChangeBody={actions.setBody}
-        placeholder={channel === 'link' ? 'URL을 입력하세요...' : '자유롭게 기록하세요...'}
+        placeholder={channel === 'link' ? 'https://... URL을 입력하세요' : '자유롭게 기록하세요...'}
       />
     );
   }

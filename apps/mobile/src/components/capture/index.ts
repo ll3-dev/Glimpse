@@ -16,3 +16,4 @@ export * from './ChannelSegment';
 export * from './HighlightForm';
 export * from './ScreenshotForm';
 export * from './ShareForm';
+export * from './UnifiedCaptureForm';

@@ -1,5 +1,5 @@
-import { Alert, View, TouchableOpacity } from 'react-native';
-import { Eye, EyeOff, Key } from 'lucide-react-native';
+import { Alert, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Eye, EyeOff, Key, Radio } from 'lucide-react-native';
 import { Input, Button, Text, Switch } from '@glimpse/ui/primitives';
 import { SettingsSection } from './SettingsSection';
 import { type BYOKProviderType } from '@/src/features/settings';
@@ -17,6 +17,7 @@ type BYOKSectionProps = {
   byokConfigured: boolean;
   byokEnabled: boolean;
   byokReady: boolean;
+  isTestingConnection?: boolean;
   onProviderSelect: (provider: BYOKProviderType) => void;
   onApiKeyChange: (value: string) => void;
   onBaseUrlChange: (value: string) => void;
@@ -27,6 +28,7 @@ type BYOKSectionProps = {
   onSaveConnectionConfig: () => void;
   onSaveKey: () => void;
   onToggleBYOK: () => void;
+  onTestConnection?: () => void;
 };
 
 export function BYOKSection({
@@ -42,6 +44,7 @@ export function BYOKSection({
   byokConfigured,
   byokEnabled,
   byokReady,
+  isTestingConnection = false,
   onProviderSelect,
   onApiKeyChange,
   onBaseUrlChange,
@@ -52,6 +55,7 @@ export function BYOKSection({
   onSaveConnectionConfig,
   onSaveKey,
   onToggleBYOK,
+  onTestConnection,
 }: BYOKSectionProps) {
   const disabled = !byokConfigured && !byokEnabled;
   const disabledReason = selectedProvider
@@ -66,6 +70,8 @@ export function BYOKSection({
 
     onToggleBYOK();
   };
+
+  const hasAnyKey = Boolean(apiKeyInput.trim() || hasStoredApiKey);
 
   return (
     <SettingsSection
@@ -192,13 +198,32 @@ export function BYOKSection({
             )}
           </View>
 
-          {(!hasStoredApiKey || isEditingApiKey) && (
-            <Button onPress={onSaveKey}>
-              <Text>
-                {hasStoredApiKey ? '새 API 키 저장' : 'API 키 저장'}
-              </Text>
-            </Button>
-          )}
+          <View className="gap-2">
+            {(!hasStoredApiKey || isEditingApiKey) && (
+              <Button onPress={onSaveKey}>
+                <Text>
+                  {hasStoredApiKey ? '새 API 키 저장' : 'API 키 저장'}
+                </Text>
+              </Button>
+            )}
+
+            {onTestConnection && hasAnyKey && (
+              <TouchableOpacity
+                onPress={onTestConnection}
+                disabled={isTestingConnection}
+                className="flex-row items-center justify-center rounded-md border border-app-border bg-app-bg py-2.5 active:bg-app-border/40"
+              >
+                {isTestingConnection ? (
+                  <ActivityIndicator size="small" color="#37352f" className="mr-2" />
+                ) : (
+                  <Radio size={14} color="#787774" className="mr-2" />
+                )}
+                <Text className="text-xs font-semibold text-app-text">
+                  {isTestingConnection ? '연결 확인 중...' : 'API 연결 테스트'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
     </SettingsSection>

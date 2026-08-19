@@ -20,6 +20,7 @@ import { ensureBYOKHydrated } from "@/src/stores/settings/byok.store";
 import { useProcessPendingShares } from "@/src/features/share/pending-share-processor";
 import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
+import { Toast } from "@/src/components/common/Toast";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
@@ -153,6 +154,7 @@ export default function RootLayout() {
               </RootProviders>
             </QueryClientProvider>
           </ShareIntentProvider>
+          <Toast />
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
