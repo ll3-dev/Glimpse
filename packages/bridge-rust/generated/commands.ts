@@ -109,3 +109,4 @@ export function updateMessage(input: UpdateMessageInput): Promise<UpdateMessageO
   return invoke<UpdateMessageOutput>('updateMessage', input);
 }
 
+export { configure as configureRustraEngine } from '@rustra/types';

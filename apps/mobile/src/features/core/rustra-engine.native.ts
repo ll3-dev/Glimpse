@@ -8,7 +8,7 @@
  * SQLite connection is ever opened (see rustra-core-client.native.ts).
  */
 
-import { configure } from '@rustra/react-native';
+import { configureRustraEngine } from '@glimpse/bridge-generated';
 import { getRustraNative, installRustraJSI } from '../../../modules/rustra-jsi/src';
 import { createRustraJsonEngine } from './rustra-json-engine';
 
@@ -22,7 +22,7 @@ export function bootstrapRustraEngine(): Promise<boolean> {
   bootstrapPromise = (async () => {
     try {
       await installRustraJSI();
-      configure(createRustraJsonEngine(getRustraNative()));
+      configureRustraEngine(createRustraJsonEngine(getRustraNative()));
       return true;
     } catch {
       // Expo Go / unbundled JS / broken native link — the caller falls back
