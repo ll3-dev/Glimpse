@@ -5,6 +5,11 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "@expo/metro-runtime": "55.0.12",
+    "react-native-nitro-buffer": "0.2.2",
+    "react-native-nitro-modules": "0.35.10"
+  },
   "scripts": {
     "start": "bun run --cwd apps/mobile start",
     "android": "bun run --cwd apps/mobile android",

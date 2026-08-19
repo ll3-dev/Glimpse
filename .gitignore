@@ -43,7 +43,6 @@ packages/mobile-core-module/target/
 apps/mobile/rust-output/
 .craby/
 **/*.rs.bk
-Cargo.lock
 
 .env
 .logs/

@@ -646,7 +646,7 @@
 					"$(inherited)",
 					"-std=gnu++20",
 				);
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
@@ -705,7 +705,7 @@
 					"$(inherited)",
 					"-std=gnu++20",
 				);
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/.bun/react-native@0.83.2+069b4c9d3e085d94/node_modules/react-native";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;

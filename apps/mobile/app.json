@@ -7,7 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "ll3.kr",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "experiments": {
+      "autolinkingModuleResolution": false
+    },
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
