@@ -16,6 +16,10 @@ import {
   type DownloadProgress,
 } from '@/src/stores/settings/local-llm.store';
 import { enableLocalLLM, selectModel } from './local-llm.commands';
+import {
+  clearPersistedModelDownloadSession,
+  persistModelDownloadSession,
+} from './local-model-download-session';
 
 type DownloadLocalModelResult =
   | { success: true; path: string }
@@ -51,6 +55,12 @@ export async function downloadLocalModel(
 
   clearLocalLLMDownloadError();
   startLocalLLMDownload(model.id, options.sourceRoute ?? null);
+  persistModelDownloadSession({
+    modelId: model.id,
+    filename: model.filename,
+    sourceRoute: options.sourceRoute ?? null,
+    startedAt: Date.now(),
+  });
 
   try {
     const path = await modelDownloader.downloadModel(model, (progress) => {
@@ -69,15 +79,18 @@ export async function downloadLocalModel(
 
     selectModel(model.id);
     enableLocalLLM();
+    clearPersistedModelDownloadSession();
 
     return { success: true, path };
   } catch (error) {
     const message = error instanceof Error ? error.message : '다운로드 실패';
     if (message === '다운로드가 취소되었습니다.') {
+      clearPersistedModelDownloadSession();
       clearLocalLLMDownloadSession();
       return { success: false, cancelled: true };
     }
 
+    clearPersistedModelDownloadSession();
     failLocalLLMDownload(message);
     return { success: false, error: message };
   }
@@ -97,6 +110,7 @@ export async function cancelLocalModelDownload(): Promise<void> {
   try {
     await modelDownloader.cancelDownload(downloadingModel.filename);
   } finally {
+    clearPersistedModelDownloadSession();
     clearLocalLLMDownloadSession();
   }
 }

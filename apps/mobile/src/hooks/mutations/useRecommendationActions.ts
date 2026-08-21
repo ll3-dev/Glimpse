@@ -5,7 +5,10 @@
  */
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
-import { respondToRecommendation } from '@/src/features/recommendation';
+import {
+  respondToRecommendation,
+  updateRecommendationCadence,
+} from '@/src/features/recommendation';
 import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 
@@ -55,6 +58,7 @@ export function useRespondToRecommendationMutation(): UseMutationResult<
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      void updateRecommendationCadence();
     },
   });
 }

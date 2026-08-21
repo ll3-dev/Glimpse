@@ -8,7 +8,7 @@ import { Effect } from 'effect';
 import type { MetadataInput, MetadataOutput, AIProviderError, AiMetadataService } from './types';
 import { aiProviderError, isAIProviderError } from './types';
 import { executeMetadataTargetEffect } from '../targets/executors';
-import { resolveEffectiveTarget } from '../targets';
+import { resolveEffectiveTarget } from '../targets/registry';
 import { isAppError } from '@/src/lib/effect-result';
 
 export interface RouterConfig {

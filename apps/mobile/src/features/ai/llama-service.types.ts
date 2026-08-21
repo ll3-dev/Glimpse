@@ -5,6 +5,19 @@ export interface GenerateOptions {
   stopTokens?: string[];
 }
 
+export interface LlamaChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export type LlamaPromptInput =
+  | string
+  | {
+      messages: LlamaChatMessage[];
+      /** Passed to the GGUF's embedded Jinja chat template. */
+      enableThinking?: boolean;
+    };
+
 export interface GenerateResult {
   text: string;
   tokensGenerated: number;
@@ -29,8 +42,8 @@ export interface LoadModelOptions {
 export interface LlamaService {
   loadModel(modelPath: string, options?: LoadModelOptions): Promise<void>;
   isModelLoaded(): boolean;
-  generate(prompt: string, options?: GenerateOptions): Promise<GenerateResult>;
-  generateStream(prompt: string, options?: StreamOptions): Promise<GenerateResult>;
+  generate(prompt: LlamaPromptInput, options?: GenerateOptions): Promise<GenerateResult>;
+  generateStream(prompt: LlamaPromptInput, options?: StreamOptions): Promise<GenerateResult>;
   stopGeneration(): Promise<void>;
   unloadModel(): Promise<void>;
 }

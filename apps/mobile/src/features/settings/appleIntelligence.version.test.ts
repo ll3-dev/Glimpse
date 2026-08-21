@@ -46,10 +46,10 @@ describe('compareVersions', () => {
 });
 
 describe('checkAppleIntelligenceAvailability', () => {
-  test('returns available for iOS 18.1', () => {
+  test('returns available for iOS 26.0', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'ios',
-      Version: '18.1',
+      Version: '26.0',
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(true);
@@ -59,7 +59,7 @@ describe('checkAppleIntelligenceAvailability', () => {
   test('returns available for iOS version above minimum', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'ios',
-      Version: '18.5',
+      Version: '26.2',
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(true);
@@ -68,18 +68,18 @@ describe('checkAppleIntelligenceAvailability', () => {
   test('returns unavailable for iOS version below minimum', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'ios',
-      Version: '18.0',
+      Version: '25.9',
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(false);
     expect(result.reason).toContain('iOS');
-    expect(result.reason).toContain('18.1');
+    expect(result.reason).toContain('26.0');
   });
 
-  test('returns available for macOS 15.1', () => {
+  test('returns available for macOS 26.0', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'macos',
-      Version: '15.1',
+      Version: '26.0',
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(true);
@@ -89,7 +89,7 @@ describe('checkAppleIntelligenceAvailability', () => {
   test('returns available for macOS version above minimum', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'macos',
-      Version: '16.0',
+      Version: '27.0',
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(true);
@@ -98,12 +98,12 @@ describe('checkAppleIntelligenceAvailability', () => {
   test('returns unavailable for macOS version below minimum', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'macos',
-      Version: '15.0',
+      Version: '25.9',
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(false);
     expect(result.reason).toContain('macOS');
-    expect(result.reason).toContain('15.1');
+    expect(result.reason).toContain('26.0');
   });
 
   test('returns unavailable for non-Apple platforms', () => {
@@ -120,7 +120,7 @@ describe('checkAppleIntelligenceAvailability', () => {
   test('handles numeric version', () => {
     const platform: AppleIntelligencePlatform = {
       OS: 'ios',
-      Version: 18.1,
+      Version: 26,
     };
     const result = checkAppleIntelligenceAvailability(platform);
     expect(result.available).toBe(true);

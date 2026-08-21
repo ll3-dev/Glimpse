@@ -16,8 +16,8 @@ import {
 } from './byokSettings';
 
 describe('byokSettings', () => {
-  beforeEach(() => {
-    clearApiKey();
+  beforeEach(async () => {
+    await clearApiKey();
     disableBYOK();
   });
 
@@ -34,16 +34,16 @@ describe('byokSettings', () => {
     expect(validateApiKey('sk-12345678901234567890', 'openai').valid).toBe(true);
   });
 
-  test('setApiKey persists trimmed key and provider', () => {
-    setProvider('anthropic');
-    const result = setApiKey('anthropic', '  sk-ant-12345678901234567890  ');
+  test('setApiKey persists trimmed key and provider', async () => {
+    await setProvider('anthropic');
+    const result = await setApiKey('anthropic', '  sk-ant-12345678901234567890  ');
     expect(result.valid).toBe(true);
     expect(getApiKey()).toBe('sk-ant-12345678901234567890');
     expect(getProvider()).toBe('anthropic');
   });
 
-  test('supports storing base URL and model', () => {
-    setProvider('openai');
+  test('supports storing base URL and model', async () => {
+    await setProvider('openai');
     expect(setBaseUrl(' https://example.com/v1/ ')).toEqual({ valid: true });
     expect(setModel('gpt-4.1-mini')).toEqual({ valid: true });
 
@@ -52,18 +52,18 @@ describe('byokSettings', () => {
     expect(config.model).toBe('gpt-4.1-mini');
   });
 
-  test('allows preview model ids', () => {
-    setProvider('google');
+  test('allows preview model ids', async () => {
+    await setProvider('google');
     expect(setModel('gemini-3-flash-preview')).toEqual({ valid: true });
     expect(getBYOKConfig().model).toBe('gemini-3-flash-preview');
   });
 
-  test('changing provider clears existing key', () => {
-    setProvider('openai');
-    setApiKey('openai', 'sk-12345678901234567890');
+  test('changing provider clears existing key', async () => {
+    await setProvider('openai');
+    await setApiKey('openai', 'sk-12345678901234567890');
     expect(getApiKey()).toBe('sk-12345678901234567890');
 
-    setProvider('anthropic');
+    await setProvider('anthropic');
     expect(getApiKey()).toBeNull();
   });
 
@@ -72,8 +72,8 @@ describe('byokSettings', () => {
     expect(isBYOKReady()).toBe(false);
   });
 
-  test('enableBYOK succeeds after valid key setup', () => {
-    setApiKey('openai', 'sk-12345678901234567890');
+  test('enableBYOK succeeds after valid key setup', async () => {
+    await setApiKey('openai', 'sk-12345678901234567890');
     expect(enableBYOK()).toEqual({ valid: true });
     expect(isBYOKReady()).toBe(true);
     expect(getBYOKConfig().enabled).toBe(true);

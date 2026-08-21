@@ -2,7 +2,7 @@
  * Apple Intelligence Bridge
  *
  * Native bridge for Apple's on-device Foundation Models.
- * Available on iOS 18.1+ and macOS 15.1+.
+ * Available through Apple's Foundation Models framework on iOS 26+.
  *
  * @module apple-intelligence-bridge
  */
@@ -44,10 +44,8 @@ interface AppleIntelligenceNativeModule {
   isAvailable(): Promise<number>;
   generate(
     prompt: string,
-    options: { maxTokens?: number; temperature?: number },
-    resolve: (result: { text: string }) => void,
-    reject: (code: string, message: string, error?: Error) => void
-  ): void;
+    options: { maxTokens?: number; temperature?: number }
+  ): Promise<{ text: string }>;
 }
 
 /**
@@ -139,20 +137,9 @@ export function createAppleIntelligenceBridge(): AppleIntelligenceBridge {
         throw new Error('Apple Intelligence is not available on this platform');
       }
 
-      return new Promise((resolve, reject) => {
-        nativeModule.generate(
-          prompt,
-          {
-            maxTokens: options?.maxTokens ?? 256,
-            temperature: options?.temperature ?? 0.7,
-          },
-          (result) => {
-            resolve({ text: result.text });
-          },
-          (code, message) => {
-            reject(new Error(`${code}: ${message}`));
-          }
-        );
+      return nativeModule.generate(prompt, {
+        maxTokens: options?.maxTokens ?? 256,
+        temperature: options?.temperature ?? 0.7,
       });
     },
   };

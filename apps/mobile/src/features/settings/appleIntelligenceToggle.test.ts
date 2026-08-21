@@ -4,7 +4,7 @@ import type { AppleIntelligenceBridge } from '@/src/features/ai/apple-intelligen
 
 const platform = {
   OS: 'ios',
-  Version: '18.2',
+  Version: '26.2',
 };
 
 function createBridge(
@@ -23,7 +23,7 @@ const toggle = createAppleIntelligenceToggle({ platform, bridge });
 describe('appleIntelligenceToggle', () => {
   beforeEach(() => {
     platform.OS = 'ios';
-    platform.Version = '18.2';
+    platform.Version = '26.2';
     toggle.disableAppleIntelligence();
   });
 
@@ -36,22 +36,22 @@ describe('appleIntelligenceToggle', () => {
 
   test('is unavailable on old iOS version', () => {
     platform.OS = 'ios';
-    platform.Version = '18.0';
+    platform.Version = '25.9';
     const availability = toggle.checkAppleIntelligenceAvailability();
     expect(availability.available).toBe(false);
-    expect(availability.reason).toContain('iOS 18.1');
+    expect(availability.reason).toContain('iOS 26');
   });
 
   test('enables on supported iOS versions', () => {
     platform.OS = 'ios';
-    platform.Version = '18.3';
+    platform.Version = '26.1';
     expect(toggle.enableAppleIntelligence()).toBe(true);
     expect(toggle.isAppleIntelligenceEnabled()).toBe(true);
   });
 
   test('setAppleIntelligenceEnabled(false) disables regardless of platform', () => {
     platform.OS = 'ios';
-    platform.Version = '18.3';
+    platform.Version = '26.1';
     toggle.enableAppleIntelligence();
     expect(toggle.isAppleIntelligenceEnabled()).toBe(true);
     expect(toggle.setAppleIntelligenceEnabled(false)).toBe(true);
@@ -60,7 +60,7 @@ describe('appleIntelligenceToggle', () => {
 
   test('config reflects availability and enabled state', () => {
     platform.OS = 'ios';
-    platform.Version = '18.3';
+    platform.Version = '26.1';
     toggle.enableAppleIntelligence();
     const config = toggle.getAppleIntelligenceConfig();
     expect(config.isAvailable).toBe(false);
@@ -88,7 +88,7 @@ describe('appleIntelligenceToggle', () => {
 
   test('resolveAppleIntelligenceAvailability keeps supported devices available', async () => {
     platform.OS = 'ios';
-    platform.Version = '18.3';
+    platform.Version = '26.1';
 
     const availability = await toggle.resolveAppleIntelligenceAvailability();
 

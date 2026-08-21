@@ -149,11 +149,7 @@ pub async fn stream_completion(
     .await
     .map_err(|e| format!("Streaming task failed: {}", e))??;
 
-    glimpse_bridge::emit_llm_done(
-        &request_id,
-        &result.text,
-        &result.stop_reason,
-    );
+    glimpse_bridge::emit_llm_done(&request_id, &result.text, &result.stop_reason);
 
     Ok(result)
 }

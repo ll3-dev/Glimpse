@@ -264,19 +264,6 @@ export interface DesktopLLMOverview {
   memoryPolicy: LocalLLMMemoryPolicy;
 }
 
-export const DEFAULT_DESKTOP_LLM_OVERVIEW: DesktopLLMOverview = {
-  runtimes: DEFAULT_RUNTIMES,
-  models: getDefaultModels(),
-  health: {
-    status: 'healthy',
-    loadedModelId: null,
-    lastUnloadAt: null,
-    queueDepth: 0,
-    memoryPressure: 'normal',
-  },
-  memoryPolicy: defaultDesktopLLMMemoryPolicy,
-};
-
 export async function getDesktopLLMOverview(): Promise<DesktopLLMOverview> {
   const service = getDesktopLLMService();
   const [runtimes, models, health] = await Promise.all([

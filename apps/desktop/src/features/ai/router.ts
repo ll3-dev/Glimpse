@@ -9,7 +9,7 @@
  * No Effect dependency -- plain async/await.
  */
 
-import type { AIProvider, AIFeature, CompletionRequest, CompletionResponse, MetadataOutput, StreamingCallbacks } from './types';
+import type { AIProvider, AIFeature, MetadataOutput, StreamingCallbacks } from './types';
 import { createLocalLLMProvider, completeLocalLLMStream } from './providers/local-llm-provider';
 import { createBYOKProvider, completeBYOKStream } from './providers/byok-provider';
 import { rulesProvider } from './providers/rules-provider';
@@ -73,17 +73,6 @@ function configuredKindForFeature(feature: AIFeature): string {
 export async function getProviderForFeature(feature: AIFeature): Promise<AIProvider> {
   const kind = configuredKindForFeature(feature);
   return resolveProvider(kind);
-}
-
-/**
- * Complete a prompt using the provider configured for the given feature.
- */
-export async function completeForFeature(
-  feature: AIFeature,
-  request: CompletionRequest,
-): Promise<CompletionResponse> {
-  const provider = await getProviderForFeature(feature);
-  return provider.complete(request);
 }
 
 /**

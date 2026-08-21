@@ -15,6 +15,8 @@ export interface UseMetadataGenerationInput {
 }
 
 export function useMetadataGeneration() {
+  // Metadata generation is a pure request and does not mutate query-backed state.
+  // react-doctor-disable-next-line react-doctor/query-mutation-missing-invalidation
   return useMutation<MetadataOutput, Error, UseMetadataGenerationInput>({
     mutationFn: async ({ content, title }) => {
       return generateMetadata(content, title);

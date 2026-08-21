@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use futures_util::StreamExt;
+use serde::Deserialize;
+use sha2::{Digest, Sha256};
 
 use crate::models::ManagedModelRecord;
 
@@ -44,12 +46,82 @@ pub fn is_model_downloaded(model_id: &str) -> bool {
     model_path(model_id).exists()
 }
 
-/// Build the HuggingFace download URL from repo and filename.
-fn hf_url(repo: &str, filename: &str) -> String {
+/// Build an immutable HuggingFace download URL from repo, commit, and filename.
+pub fn hf_url(repo: &str, revision: &str, filename: &str) -> String {
     format!(
-        "https://huggingface.co/{}/resolve/main/{}",
-        repo, filename
+        "https://huggingface.co/{}/resolve/{}/{}",
+        repo, revision, filename
     )
+}
+
+#[derive(Deserialize)]
+struct HubRepoInfo {
+    sha: String,
+    siblings: Vec<HubFile>,
+}
+
+#[derive(Deserialize)]
+struct HubFile {
+    rfilename: String,
+    size: Option<u64>,
+    lfs: Option<HubLfsInfo>,
+}
+
+#[derive(Deserialize)]
+struct HubLfsInfo {
+    sha256: String,
+    size: u64,
+}
+
+struct VerifiedArtifact {
+    url: String,
+    size: u64,
+    sha256: String,
+}
+
+async fn resolve_verified_artifact(
+    client: &reqwest::Client,
+    repo: &str,
+    filename: &str,
+) -> Result<VerifiedArtifact, String> {
+    let response = client
+        .get(format!(
+            "https://huggingface.co/api/models/{repo}?blobs=true"
+        ))
+        .send()
+        .await
+        .map_err(|error| format!("Failed to resolve model metadata: {error}"))?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "HuggingFace metadata returned status {} for {}",
+            response.status(),
+            repo
+        ));
+    }
+
+    let repo_info: HubRepoInfo = response
+        .json()
+        .await
+        .map_err(|error| format!("Invalid HuggingFace metadata: {error}"))?;
+    let file = repo_info
+        .siblings
+        .iter()
+        .find(|file| file.rfilename == filename)
+        .ok_or_else(|| format!("Model file is missing from HuggingFace metadata: {filename}"))?;
+    let lfs = file
+        .lfs
+        .as_ref()
+        .ok_or_else(|| format!("Model file has no LFS SHA-256 metadata: {filename}"))?;
+    let size = lfs.size.max(file.size.unwrap_or(0));
+    if repo_info.sha.is_empty() || lfs.sha256.is_empty() || size == 0 {
+        return Err("Model metadata is incomplete; refusing an unverified download".into());
+    }
+
+    Ok(VerifiedArtifact {
+        url: hf_url(repo, &repo_info.sha, filename),
+        size,
+        sha256: lfs.sha256.clone(),
+    })
 }
 
 /// Download a GGUF model from HuggingFace with progress events.
@@ -76,7 +148,6 @@ pub async fn download_model(
     let dest_path = dest_dir.join(format!("{}.gguf", model.id));
     let tmp_path = dest_path.with_extension("gguf.tmp");
 
-    let url = hf_url(&model.repo, &model.filename);
     let model_id = model.id.clone();
 
     // 실패 경로 정규화: tmp 정리 + 실패 이벤트 발행을 한 곳에서.
@@ -95,12 +166,17 @@ pub async fn download_model(
         Ok(c) => c,
         Err(e) => return fail(format!("Failed to create HTTP client: {}", e)),
     };
+    let artifact = match resolve_verified_artifact(&client, &model.repo, &model.filename).await {
+        Ok(artifact) => artifact,
+        Err(error) => return fail(error),
+    };
+    let url = artifact.url;
 
     // --- 재개 판단: 남은 tmp 크기로 Range 시작점 계산 ---
     let mut resume_offset: u64 = 0;
     if let Ok(meta) = tokio::fs::metadata(&tmp_path).await {
         resume_offset = meta.len();
-        if model.size > 0 && resume_offset >= model.size {
+        if resume_offset >= artifact.size {
             // tmp 가 이미 기대 크기 이상이면 이어받기 불가 — 처음부터.
             resume_offset = 0;
         }
@@ -145,16 +221,34 @@ pub async fn download_model(
     };
     let _ = resume_offset;
 
-    let content_length = response.content_length().unwrap_or(0);
-    let total_bytes = if resuming {
-        start_offset + content_length
-    } else {
-        response.content_length().unwrap_or(model.size)
-    };
+    let total_bytes = artifact.size;
     let mut bytes_received: u64 = start_offset;
     let mut file = tokio::fs::File::from_std(file);
 
-    use tokio::io::AsyncWriteExt;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let mut hasher = Sha256::new();
+    if resuming {
+        let mut prefix = match tokio::fs::File::open(&tmp_path).await {
+            Ok(prefix) => prefix,
+            Err(error) => {
+                return fail(format!("Failed to hash resumed download: {error}"));
+            }
+        };
+        let mut buffer = vec![0_u8; 1024 * 1024];
+        loop {
+            let read = match prefix.read(&mut buffer).await {
+                Ok(read) => read,
+                Err(error) => {
+                    return fail(format!("Failed to hash resumed download: {error}"));
+                }
+            };
+            if read == 0 {
+                break;
+            }
+            hasher.update(&buffer[..read]);
+        }
+    }
 
     let mut stream = response.bytes_stream();
 
@@ -181,6 +275,7 @@ pub async fn download_model(
         if let Err(e) = file.write_all(&chunk).await {
             return fail(format!("File write error: {}", e));
         }
+        hasher.update(&chunk);
 
         bytes_received += chunk_len;
 
@@ -211,10 +306,18 @@ pub async fn download_model(
     drop(file);
 
     // --- 최종 크기 검증: 서버 조기 종료로 짧게 끝난 스트림 차단 ---
-    if total_bytes > 0 && (bytes_received as i64 - total_bytes as i64).abs() > 1024 {
+    if (bytes_received as i64 - artifact.size as i64).abs() > 1024 {
         return fail(format!(
             "Size mismatch: received {} of {} bytes",
-            bytes_received, total_bytes
+            bytes_received, artifact.size
+        ));
+    }
+
+    let actual_sha256 = format!("{:x}", hasher.finalize());
+    if actual_sha256 != artifact.sha256.to_lowercase() {
+        return fail(format!(
+            "SHA-256 mismatch: expected {}, received {}",
+            artifact.sha256, actual_sha256
         ));
     }
 
@@ -281,7 +384,10 @@ fn collect_gguf_files(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
             let path = entry.path();
             if path.is_dir() {
                 collect_gguf_files(&path, depth + 1, out);
-            } else if path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("gguf")) {
+            } else if path
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("gguf"))
+            {
                 out.push(path);
             }
         }

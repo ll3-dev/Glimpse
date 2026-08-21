@@ -2,7 +2,7 @@
  * Apple Intelligence Metadata Provider
  *
  * Uses Apple's on-device Foundation Models for metadata generation.
- * Available on iOS 18.1+ and macOS 15.1+.
+ * Available through Apple's Foundation Models framework on iOS 26+.
  */
 
 import { Effect } from "effect";
@@ -73,7 +73,7 @@ function parseTagsResponse(response: string): string[] {
  * Create an Apple Intelligence metadata provider.
  *
  * Availability requirements:
- * - iOS 18.1+ or macOS 15.1+
+ * - iOS 26+
  * - User has enabled Apple Intelligence toggle
  * - Device supports Apple Intelligence (A17+ or M-series chip)
  */

@@ -37,12 +37,12 @@ export function disableBYOK(): void {
   setBYOKEnabled(false);
 }
 
-export function setProvider(provider: BYOKProviderType | null): void {
+export async function setProvider(provider: BYOKProviderType | null): Promise<void> {
   const previous = getBYOKStoreConfig();
-  setBYOKProvider(provider);
 
   if (!provider) {
-    setBYOKApiKey(null);
+    await setBYOKApiKey(null);
+    setBYOKProvider(null);
     setBYOKEnabled(false);
     setBYOKModel(null);
     setBYOKBaseUrl(null);
@@ -50,9 +50,11 @@ export function setProvider(provider: BYOKProviderType | null): void {
   }
 
   if (previous.provider !== null && previous.provider !== provider) {
-    setBYOKApiKey(null);
+    await setBYOKApiKey(null);
     setBYOKEnabled(false);
   }
+
+  setBYOKProvider(provider);
 
   setBYOKModel(getDefaultByokModel(provider));
 
@@ -65,7 +67,10 @@ export function setProvider(provider: BYOKProviderType | null): void {
   setBYOKBaseUrl(null);
 }
 
-export function setApiKey(provider: BYOKProviderType, apiKey: string): ValidationResult {
+export async function setApiKey(
+  provider: BYOKProviderType,
+  apiKey: string,
+): Promise<ValidationResult> {
   const trimmedKey = apiKey.trim();
   const configuredBaseUrl = normalizeBaseUrl(getBYOKStoreConfig().baseUrl);
   const allowLooseOpenAIKeyFormat =
@@ -80,8 +85,8 @@ export function setApiKey(provider: BYOKProviderType, apiKey: string): Validatio
     return validation;
   }
 
+  await setBYOKApiKey(trimmedKey);
   setBYOKProvider(provider);
-  setBYOKApiKey(trimmedKey);
 
   return { valid: true };
 }
@@ -126,6 +131,6 @@ export function setModel(model: string): ValidationResult {
   return { valid: true };
 }
 
-export function clearApiKey(): void {
-  clearBYOKStoredSettings();
+export async function clearApiKey(): Promise<void> {
+  await clearBYOKStoredSettings();
 }

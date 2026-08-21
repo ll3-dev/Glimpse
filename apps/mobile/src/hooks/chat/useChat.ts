@@ -14,10 +14,12 @@ import { logger } from '@/src/utils/logger';
 import { generateAssistantReply, savePartialAssistantReply } from './chatGeneration';
 import { getLocalLLMRuntime } from './chatRuntime';
 import { getSelectedLocalModel } from '@/src/features/settings/local-llm.selectors';
+import { buildChatKnowledgeContext } from '@/src/features/ai/chat-context';
 
 interface UseChatOptions {
   conversationId: string;
   contextItem?: KnowledgeItem | null;
+  knowledgeItems?: KnowledgeItem[];
 }
 
 interface UseChatResult {
@@ -29,7 +31,11 @@ interface UseChatResult {
   abortAndSave: () => Promise<void>;
 }
 
-export function useChat({ conversationId, contextItem }: UseChatOptions): UseChatResult {
+export function useChat({
+  conversationId,
+  contextItem,
+  knowledgeItems = [],
+}: UseChatOptions): UseChatResult {
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +61,15 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
 
     try {
       const target = resolveEffectiveTarget('chat');
+      const previousMessages = messages?.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })) ?? [];
+      const contextItems = buildChatKnowledgeContext(
+        text.trim(),
+        contextItem,
+        knowledgeItems
+      );
 
       if (target.kind === 'local') {
         const model = getSelectedLocalModel();
@@ -68,8 +83,8 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
           model,
           conversationId,
           userText: text.trim(),
-          previousMessages: messages?.map((m) => ({ role: m.role, content: m.content })) ?? [],
-          contextItem,
+          previousMessages,
+          contextItems,
           addMessage,
           streamingTextRef,
           onToken: (token) => {
@@ -86,7 +101,8 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
 
         const result = await executeChatTarget(target, {
           userText: text.trim(),
-          contextItem,
+          messages: previousMessages,
+          contextItems,
         });
 
         if (isFailure(result)) {
@@ -130,7 +146,7 @@ export function useChat({ conversationId, contextItem }: UseChatOptions): UseCha
         setIsGenerating(false);
       }
     }
-  }, [conversationId, contextItem, isGenerating, addMessage, messages]);
+  }, [conversationId, contextItem, isGenerating, addMessage, knowledgeItems, messages]);
 
   /**
    * Abort current generation and save partial response

@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
 import type { LocalModelDefinition } from '@glimpse/shared';
-import { getDesktopModels } from '@glimpse/shared';
 import type { ModelDownloadStatus } from './desktop-llm-service';
 import { llmQueryKeys } from './use-desktop-llm-overview';
 
@@ -49,31 +48,11 @@ export interface DownloadFailure {
 export const modelKeys = {
   ...llmQueryKeys,
   available: ['models', 'available'] as const,
-  registry: ['models', 'registry'] as const,
 };
 
 // ---------------------------------------------------------------------------
 // Hooks
 // ---------------------------------------------------------------------------
-
-/** Desktop-only models from the shared LOCAL_MODEL_REGISTRY. */
-export function useModelRegistry() {
-  return useQuery({
-    queryKey: modelKeys.registry,
-    queryFn: () => getDesktopModels(),
-    staleTime: Infinity, // static data
-  });
-}
-
-/** Models known to the Rust backend (downloaded / ready). */
-export function useInstalledModels() {
-  return useQuery<ManagedModelRecord[]>({
-    queryKey: modelKeys.available,
-    queryFn: () => invoke<ManagedModelRecord[]>('list_managed_models'),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  });
-}
 
 /**
  * Track download progress for all active downloads.

@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,25 +27,29 @@ import { useMessageActions } from "@/src/hooks/chat/useMessageActions";
 import { useConversationActions } from "@/src/hooks/chat/useConversationActions";
 import { useChatNavigation } from "@/src/hooks/chat/useChatNavigation";
 import { ScreenHeader } from "@glimpse/ui/primitives/screen-header";
+import { useSemanticColor } from "@glimpse/ui";
 
 export default function ChatDetailScreen() {
   const { id, contextItem: contextItemId } = useLocalSearchParams<{ id: string; contextItem?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const appText = useSemanticColor("appText");
 
   const { data: conversations } = useConversationsQuery();
   const { data: messages, isLoading: isLoadingMessages } = useMessagesQuery(id);
   const { data: knowledgeItems } = useKnowledgeItemsQuery();
   const conversation = conversations?.find((item) => item.id === id) ?? null;
 
-  const contextItem = contextItemId && knowledgeItems
-    ? knowledgeItems.find((item) => item.id === contextItemId)
+  const effectiveContextItemId = contextItemId ?? conversation?.contextItemId ?? undefined;
+  const contextItem = effectiveContextItemId && knowledgeItems
+    ? knowledgeItems.find((item) => item.id === effectiveContextItemId)
     : null;
 
   const { sendMessage, isGenerating, streamingText, error, abortAndSave } =
     useChat({
       conversationId: id,
       contextItem,
+      knowledgeItems,
     });
 
   // AI Setup
@@ -101,21 +105,25 @@ export default function ChatDetailScreen() {
       <ScreenHeader
         title={headerTitle}
         leftElement={
-          <TouchableOpacity
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="대화 목록으로 돌아가기"
             onPress={() => navigation.handleBackPress()}
-            className="-ml-3 h-10 w-10 items-center justify-center"
+            className="-ml-3 min-h-11 min-w-11 items-center justify-center"
           >
-            <ChevronLeft size={24} color="#37352f" />
-          </TouchableOpacity>
+            <ChevronLeft size={24} color={appText} />
+          </Pressable>
         }
         rightElement={
           conversation ? (
-            <TouchableOpacity
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="대화 정보 편집"
               onPress={conversationActions.handleOpenEditModal}
-              className="h-10 w-10 items-center justify-center rounded-full bg-app-border/40 active:opacity-70"
+              className="min-h-11 min-w-11 items-center justify-center rounded-full bg-app-border/40 active:opacity-70"
             >
-              <SquarePen size={18} color="#37352f" />
-            </TouchableOpacity>
+              <SquarePen size={18} color={appText} />
+            </Pressable>
           ) : undefined
         }
       />

@@ -1,8 +1,8 @@
 import type { AppleIntelligencePlatform } from './appleIntelligence.types';
 
 const MIN_VERSIONS = {
-  ios: '18.1',
-  macos: '15.1',
+  ios: '26.0',
+  macos: '26.0',
 } as const;
 
 function parseVersion(version: string): number[] {

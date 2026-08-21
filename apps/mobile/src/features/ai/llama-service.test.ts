@@ -218,6 +218,41 @@ describe('createLlamaService', () => {
       expect(capturedOptions[1]?.n_ctx).toBe(2048);
       expect(service.isModelLoaded()).toBe(true);
     });
+
+    test('falls back to CPU after exhausting Metal load candidates', async () => {
+      const capturedOptions: Record<string, unknown>[] = [];
+
+      mock.module('llama.rn', () => ({
+        initLlama: mock(async (options: Record<string, unknown>) => {
+          capturedOptions.push(options);
+
+          if (options.n_gpu_layers !== 0) {
+            throw new Error('Metal allocation failed');
+          }
+
+          return {
+            completion: mock(async () => ({
+              text: 'Generated text',
+              tokens_evaluated: 10,
+            })),
+            stopCompletion: mock(async () => {}),
+            release: mock(async () => {}),
+          };
+        }),
+      }));
+
+      const { createLlamaService: createService } = await import('./llama-service');
+      const service = createService();
+
+      await service.loadModel('/path/to/model.gguf', {
+        contextSize: 4096,
+        gpuLayers: -1,
+      });
+
+      expect(capturedOptions.map((options) => options.n_gpu_layers)).toEqual([-1, -1, -1, 0]);
+      expect(capturedOptions.at(-1)?.flash_attn_type).toBeUndefined();
+      expect(service.isModelLoaded()).toBe(true);
+    });
   });
 
   describe('isModelLoaded', () => {
@@ -294,6 +329,44 @@ describe('createLlamaService', () => {
       });
       // Should have default stop tokens
       expect(capturedOptions[0].stop).toBeInstanceOf(Array);
+    });
+
+    test('passes structured messages through the GGUF Jinja chat template', async () => {
+      const capturedOptions: Record<string, unknown>[] = [];
+      mock.module('llama.rn', () => ({
+        initLlama: mock(async () => ({
+          completion: mock(async (options: Record<string, unknown>) => {
+            capturedOptions.push(options);
+            return {
+              text: 'Generated text',
+              tokens_evaluated: 10,
+            };
+          }),
+          release: mock(async () => {}),
+        })),
+      }));
+
+      const { createLlamaService: createService } = await import('./llama-service');
+      const service = createService();
+
+      await service.loadModel('/path/to/model.gguf');
+      await service.generate({
+        messages: [
+          { role: 'system', content: '한국어로 답하세요.' },
+          { role: 'user', content: '안녕' },
+        ],
+        enableThinking: false,
+      });
+
+      expect(capturedOptions[0]).toMatchObject({
+        messages: [
+          { role: 'system', content: '한국어로 답하세요.' },
+          { role: 'user', content: '안녕' },
+        ],
+        jinja: true,
+        enable_thinking: false,
+      });
+      expect(capturedOptions[0]).not.toHaveProperty('prompt');
     });
 
     test('passes custom generation options', async () => {

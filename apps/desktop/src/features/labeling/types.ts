@@ -4,7 +4,7 @@ import type {
   KnowledgeItemLabelStatus,
 } from '@glimpse/shared';
 
-export const LABEL_TAXONOMY = [
+const LABEL_TAXONOMY = [
   'todo',
   'idea',
   'reference',

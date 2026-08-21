@@ -5,9 +5,13 @@
  * Model definitions are sourced from the shared @glimpse/shared registry.
  */
 
-import type { LocalModelDefinition } from '@glimpse/shared';
-import { getChatModels } from '@glimpse/shared';
-import type { LocalLLMModelFamily } from '../local-llm';
+import type {
+  GGUFSource,
+  LocalModelDefinition,
+  MobileModelProfile,
+} from "@glimpse/shared";
+import { getChatModels } from "@glimpse/shared";
+import type { LocalLLMModelFamily } from "../local-llm";
 
 /**
  * Model metadata for download and display
@@ -29,6 +33,20 @@ export interface ModelInfo {
   sizeBytes?: number;
   /** Model description */
   description?: string;
+  /** Quantization used by the downloadable artifact */
+  quantization: string;
+  /** Publisher/model-card maximum context; runtime may intentionally use less. */
+  contextLength: number;
+  /** License identifier from the publisher/model card */
+  license?: string;
+  /** Base-model release month shown in the catalog */
+  releasedAt?: string;
+  /** Whether the downloadable GGUF came from the model publisher */
+  ggufSource?: GGUFSource;
+  /** Original model repository for community conversions */
+  sourceModelRepo?: string;
+  /** Device-oriented recommendation metadata */
+  mobileProfile: MobileModelProfile;
 }
 
 /**
@@ -44,6 +62,13 @@ function toModelInfo(def: LocalModelDefinition): ModelInfo {
     size: def.displaySize,
     sizeBytes: def.sizeBytes,
     description: def.description,
+    quantization: def.quantization,
+    contextLength: def.contextLength,
+    license: def.license,
+    releasedAt: def.releasedAt,
+    ggufSource: def.ggufSource,
+    sourceModelRepo: def.sourceModelRepo,
+    mobileProfile: def.mobileProfile!,
   };
 }
 
@@ -51,11 +76,17 @@ function toModelInfo(def: LocalModelDefinition): ModelInfo {
  * Recommended models for mobile devices
  *
  * Selection criteria:
- * - Small enough to fit on device (under 4GB)
- * - Good performance/quality ratio
- * - Compatible with llama.rn
+ * - Mobile or high-memory edge hardware is an intended target
+ * - Compatible with llama.rn 0.12.x model architectures
+ * - Public, single-file GGUF download
+ *
+ * Per-device RAM cutoffs are applied by device-compatibility.ts instead of
+ * excluding larger models from this source catalog.
  */
-export const RECOMMENDED_MODELS: ModelInfo[] = getChatModels('mobile').map(toModelInfo);
+export const RECOMMENDED_MODELS: ModelInfo[] = getChatModels("mobile")
+  .filter((model) => model.mobileProfile)
+  .sort((a, b) => a.mobileProfile!.rank - b.mobileProfile!.rank)
+  .map(toModelInfo);
 
 /**
  * Get a model by its ID

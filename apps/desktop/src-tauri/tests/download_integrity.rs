@@ -6,10 +6,21 @@
 //! 3. 상태 가드 — 다운로드 중 모델은 중복 mark_model_downloading / delete 가 거부된다.
 
 use std::sync::{Arc, Mutex};
+use tauri::test::{mock_context, noop_assets, MockRuntime};
 use tauri::Listener;
-use tauri::test::{MockRuntime, mock_context, noop_assets};
 
 type Received = Arc<Mutex<Vec<String>>>;
+
+#[test]
+fn huggingface_url_is_pinned_to_an_immutable_revision() {
+    let url = glimpse_desktop::download::hf_url("owner/model", "0123456789abcdef", "model.gguf");
+
+    assert_eq!(
+        url,
+        "https://huggingface.co/owner/model/resolve/0123456789abcdef/model.gguf"
+    );
+    assert!(!url.contains("/resolve/main/"));
+}
 
 fn app_with_failed_listener() -> (tauri::App<MockRuntime>, Received) {
     let core = glimpse_core::SharedCore::in_memory().expect("in-memory SharedCore");
@@ -19,9 +30,9 @@ fn app_with_failed_listener() -> (tauri::App<MockRuntime>, Received) {
         .build(mock_context(noop_assets()))
         .expect("mock app builds");
 
-    glimpse_bridge::glimpse_package().set_event_sink(Some(rustra::tauri_support::tauri_event_sink(
-        app.handle().clone(),
-    )));
+    glimpse_bridge::glimpse_package().set_event_sink(Some(
+        rustra::tauri_support::tauri_event_sink(app.handle().clone()),
+    ));
 
     let failures: Received = Arc::new(Mutex::new(Vec::new()));
     let f = Arc::clone(&failures);
@@ -43,7 +54,10 @@ fn download_failed_event_reaches_channel_with_camel_case_payload() {
     let payload: serde_json::Value = serde_json::from_str(&failures[0]).unwrap();
     assert_eq!(payload["modelId"], "qwen-test");
     assert_eq!(payload["error"], "HTTP 503");
-    assert!(payload.get("model_id").is_none(), "camelCase contract must hold");
+    assert!(
+        payload.get("model_id").is_none(),
+        "camelCase contract must hold"
+    );
 
     glimpse_bridge::glimpse_package().set_event_sink(None);
 }
@@ -106,7 +120,10 @@ fn downloading_models_reject_duplicate_mark_and_delete() {
         .get_model("qwen3.5-0.8b-q4")
         .expect("model record persists");
     assert_eq!(model.status, "not_downloaded");
-    assert!(model.download_error.is_none(), "error must be cleared on delete");
+    assert!(
+        model.download_error.is_none(),
+        "error must be cleared on delete"
+    );
 }
 
 #[test]

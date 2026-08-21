@@ -26,7 +26,8 @@ import type { LocalModel } from '@/src/stores/settings/local-llm.store';
 import {
   type LlamaService,
 } from '../llama-service';
-import { createLocalLLMRuntime } from '../local-llm';
+import { createLocalLLMRuntime } from '../local-llm/runtime';
+import { getSharedLocalLLMRuntime } from '../local-llm/runtime-singleton';
 
 /**
  * Local LLM provider configuration
@@ -51,7 +52,9 @@ export interface LocalLLMProviderConfig {
 export function createLocalLLMProvider(config: LocalLLMProviderConfig = {}): MetadataProvider {
   const checkIsReady = config.isReady ?? isLocalLLMReady;
   const getSelected = config.getSelectedModel ?? getSelectedLocalModel;
-  const runtime = createLocalLLMRuntime(config.llamaService);
+  const runtime = config.llamaService
+    ? createLocalLLMRuntime(config.llamaService)
+    : getSharedLocalLLMRuntime();
 
   return {
     name: "local",

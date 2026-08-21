@@ -98,4 +98,5 @@ export {
 
 export { syncRecommendedLocalModels } from './local-llm.sync';
 export { downloadLocalModel, cancelLocalModelDownload } from './local-llm.download';
+export { recoverLocalModelDownload } from './local-llm.download-recovery';
 export { canToggleLocalLLM, getLocalLLMToggleDisabledReason } from './localLLMToggle';

@@ -25,6 +25,8 @@ export interface HFFileInfo {
     sha256: string;
     size: number;
   };
+  /** Immutable repository commit used for the download URL. */
+  revision?: string;
 }
 
 /**
@@ -35,21 +37,35 @@ export interface HFRepoInfo {
   id: string;
   /** Model ID */
   modelId: string;
+  /** Repository commit SHA returned by the Hub API. */
+  sha?: string;
   /** Available files */
-  siblings: { rfilename: string }[];
+  siblings: HFRepoFile[];
+}
+
+interface HFRepoFile {
+  rfilename: string;
+  size?: number;
+  blobId?: string;
+  lfs?: {
+    sha256: string;
+    size: number;
+  };
 }
 
 /**
  * HuggingFace API class for model operations
  */
 export class HuggingFaceAPI {
+  private static fileInfoCache = new Map<string, HFFileInfo | null>();
+
   /**
    * Get the download URL for a model file
    */
-  static getModelDownloadUrl(repo: string, filename: string): string {
+  static getModelDownloadUrl(repo: string, filename: string, revision = 'main'): string {
     // Resolve subdirectory if filename contains /
     const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
-    return `${HF_FILE_BASE}/${repo}/resolve/main/${encodedFilename}`;
+    return `${HF_FILE_BASE}/${repo}/resolve/${encodeURIComponent(revision)}/${encodedFilename}`;
   }
 
   /**
@@ -77,6 +93,47 @@ export class HuggingFaceAPI {
       }
 
       return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get exact size and LFS SHA-256 for a repository file.
+   *
+   * Android DownloadManager can preallocate the destination to its final size,
+   * so size alone cannot prove that a background download is complete.
+   */
+  static async getFileInfo(repo: string, filename: string): Promise<HFFileInfo | null> {
+    const cacheKey = `${repo}/${filename}`;
+    const cached = this.fileInfoCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    try {
+      const response = await fetch(`${HF_API_BASE}/models/${repo}?blobs=true`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      if (!response.ok) return null;
+
+      const repoInfo = (await response.json()) as HFRepoInfo;
+      const file = repoInfo.siblings.find((sibling) => sibling.rfilename === filename);
+      if (!file) {
+        this.fileInfoCache.set(cacheKey, null);
+        return null;
+      }
+
+      const fileInfo: HFFileInfo = {
+        path: file.rfilename,
+        size: file.lfs?.size ?? file.size ?? 0,
+        sha256: file.lfs?.sha256,
+        lfs: file.lfs,
+        revision: repoInfo.sha,
+      };
+      this.fileInfoCache.set(cacheKey, fileInfo);
+      return fileInfo;
     } catch {
       return null;
     }

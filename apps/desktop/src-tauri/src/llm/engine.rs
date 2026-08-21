@@ -45,8 +45,9 @@ mod imp {
 
         pub fn load_model(&mut self, path: &str, context_length: u32) -> Result<(), String> {
             let model_params = LlamaModelParams::default();
-            let model = LlamaModel::load_from_file(&self.backend, PathBuf::from(path), &model_params)
-                .map_err(|e: LlamaModelLoadError| format!("Failed to load model: {}", e))?;
+            let model =
+                LlamaModel::load_from_file(&self.backend, PathBuf::from(path), &model_params)
+                    .map_err(|e: LlamaModelLoadError| format!("Failed to load model: {}", e))?;
             self.model = Some(model);
             self.model_path = Some(PathBuf::from(path));
             self.context_length = context_length.max(512);
@@ -68,9 +69,7 @@ mod imp {
 
         /// 레지스트리 context_length 를 반영한 컨텍스트 파라미터.
         fn context_params(&self) -> LlamaContextParams {
-            LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(
-                self.context_length,
-            ))
+            LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(self.context_length))
         }
 
         pub fn completion(
@@ -104,9 +103,9 @@ mod imp {
             for (i, &token) in tokens.iter().take(n_tokens).enumerate() {
                 // logits = true only for the last token
                 let is_last = i == n_tokens - 1;
-                batch.add(token, i as i32, &[0], is_last).map_err(|e| {
-                    format!("Failed to add token to batch: {}", e)
-                })?;
+                batch
+                    .add(token, i as i32, &[0], is_last)
+                    .map_err(|e| format!("Failed to add token to batch: {}", e))?;
             }
 
             ctx.decode(&mut batch)
@@ -150,8 +149,8 @@ mod imp {
                     .map_err(|e| format!("Token-to-string failed: {}", e))?;
                 builder.extend_from_slice(&bytes);
             }
-            let text = String::from_utf8(builder)
-                .map_err(|e| format!("Token-to-string failed: {}", e))?;
+            let text =
+                String::from_utf8(builder).map_err(|e| format!("Token-to-string failed: {}", e))?;
 
             Ok(text)
         }
@@ -190,9 +189,9 @@ mod imp {
 
             for (i, &token) in tokens.iter().take(n_tokens).enumerate() {
                 let is_last = i == n_tokens - 1;
-                batch.add(token, i as i32, &[0], is_last).map_err(|e| {
-                    format!("Failed to add token to batch: {}", e)
-                })?;
+                batch
+                    .add(token, i as i32, &[0], is_last)
+                    .map_err(|e| format!("Failed to add token to batch: {}", e))?;
             }
 
             ctx.decode(&mut batch)
@@ -240,8 +239,8 @@ mod imp {
                     .map_err(|e| format!("Token-to-string failed: {}", e))?;
                 builder.extend_from_slice(&bytes);
             }
-            let text = String::from_utf8(builder)
-                .map_err(|e| format!("Token-to-string failed: {}", e))?;
+            let text =
+                String::from_utf8(builder).map_err(|e| format!("Token-to-string failed: {}", e))?;
 
             Ok(text)
         }
@@ -387,14 +386,18 @@ mod imp {
         fn stub_completion_returns_error_not_fake_text() {
             let engine = loaded_stub();
             let result = engine.completion("프롬프트", 32, Some(0.7));
-            assert!(result.is_err(), "stub must not return Ok — fake text would be persisted as real data");
+            assert!(
+                result.is_err(),
+                "stub must not return Ok — fake text would be persisted as real data"
+            );
             assert!(result.unwrap_err().contains("llm` feature"));
         }
 
         #[test]
         fn stub_completion_stream_returns_error_not_fake_text() {
             let engine = loaded_stub();
-            let result = engine.completion_stream("한국어 프롬프트 — UTF-8 경계 안전", 32, None, |_| {});
+            let result =
+                engine.completion_stream("한국어 프롬프트 — UTF-8 경계 안전", 32, None, |_| {});
             assert!(result.is_err(), "stub stream must not return Ok");
         }
 
@@ -402,13 +405,19 @@ mod imp {
         fn stub_embedding_returns_error_not_zero_vector() {
             let engine = loaded_stub();
             let result = engine.embedding("text");
-            assert!(result.is_err(), "stub must not return Ok — zero vectors silently corrupt similarity");
+            assert!(
+                result.is_err(),
+                "stub must not return Ok — zero vectors silently corrupt similarity"
+            );
         }
 
         #[test]
         fn stub_without_model_reports_no_model_loaded() {
             let engine = LlmEngine::new();
-            assert!(engine.completion("x", 1, None).unwrap_err().contains("No model loaded"));
+            assert!(engine
+                .completion("x", 1, None)
+                .unwrap_err()
+                .contains("No model loaded"));
         }
     }
 }

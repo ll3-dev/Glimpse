@@ -56,7 +56,10 @@ fn format_messages_to_prompt(
                 "assistant" => "assistant",
                 _ => "user",
             };
-            prompt.push_str(&format!("<|im_start|>{}\n{}\n<|im_end|>\n", role, msg.content));
+            prompt.push_str(&format!(
+                "<|im_start|>{}\n{}\n<|im_end|>\n",
+                role, msg.content
+            ));
         }
         prompt.push_str("<|im_start|>assistant\n");
         prompt
@@ -134,7 +137,11 @@ impl DesktopRuntimeStateInner {
             })
     }
 
-    pub fn mark_model_downloaded(&self, model_id: &str, path: &str) -> Result<ManagedModelRecord, String> {
+    pub fn mark_model_downloaded(
+        &self,
+        model_id: &str,
+        path: &str,
+    ) -> Result<ManagedModelRecord, String> {
         let mut models = self
             .models
             .lock()
@@ -160,10 +167,7 @@ impl DesktopRuntimeStateInner {
 
         // 중복 다운로드 가드 — 이미 진행 중이면 상태를 덮어쓰지 않는다
         if model.status == "downloading" {
-            return Err(format!(
-                "Model {} is already downloading",
-                model_id
-            ));
+            return Err(format!("Model {} is already downloading", model_id));
         }
         model.status = "downloading".into();
         model.download_error = None;
@@ -316,16 +320,12 @@ impl DesktopRuntimeStateInner {
             // 모델 X 로 요청했을 때 health 가 실제와 어긋난다.
         }
 
-        let model_family = self
-            .models
-            .lock()
-            .ok()
-            .and_then(|models| {
-                models
-                    .iter()
-                    .find(|m| m.id == request.model_id)
-                    .map(|m| m.family.clone())
-            });
+        let model_family = self.models.lock().ok().and_then(|models| {
+            models
+                .iter()
+                .find(|m| m.id == request.model_id)
+                .map(|m| m.family.clone())
+        });
 
         let prompt = format_messages_to_prompt(&request.messages, model_family.as_deref());
         let max_tokens = request.max_tokens.unwrap_or(256);
@@ -373,16 +373,12 @@ impl DesktopRuntimeStateInner {
             // loaded_model_id 는 load_model 이 설정한 실제 로드 모델을 반영
         }
 
-        let model_family = self
-            .models
-            .lock()
-            .ok()
-            .and_then(|models| {
-                models
-                    .iter()
-                    .find(|m| m.id == request.model_id)
-                    .map(|m| m.family.clone())
-            });
+        let model_family = self.models.lock().ok().and_then(|models| {
+            models
+                .iter()
+                .find(|m| m.id == request.model_id)
+                .map(|m| m.family.clone())
+        });
 
         let prompt = format_messages_to_prompt(&request.messages, model_family.as_deref());
         let max_tokens = request.max_tokens.unwrap_or(256);

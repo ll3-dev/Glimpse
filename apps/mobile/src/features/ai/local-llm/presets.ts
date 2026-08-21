@@ -1,107 +1,23 @@
-import type { KnowledgeItem } from '@glimpse/shared';
-import type {
-  LocalLLMMessage,
-  LocalLLMModelFamily,
-  LocalLLMPreset,
-} from './types';
-
-function buildContextSystemPrompt(contextItem?: KnowledgeItem | null): string {
-  const basePrompt = '당신은 도움이 되는 AI 어시스턴트입니다. 한국어로 친근하고 자연스럽게 대화해 주세요.';
-
-  if (!contextItem) {
-    return basePrompt;
-  }
-
-  const contextInfo: string[] = [];
-  if (contextItem.title) {
-    contextInfo.push(`제목: ${contextItem.title}`);
-  }
-  if (contextItem.body) {
-    contextInfo.push(`내용: ${contextItem.body}`);
-  }
-  if (contextItem.url) {
-    contextInfo.push(`URL: ${contextItem.url}`);
-  }
-  if (contextItem.summary) {
-    contextInfo.push(`요약: ${contextItem.summary}`);
-  }
-  if (contextItem.tags && contextItem.tags.length > 0) {
-    contextInfo.push(`태그: ${contextItem.tags.join(', ')}`);
-  }
-
-  if (contextInfo.length === 0) {
-    return basePrompt;
-  }
-
-  return `${basePrompt}
-
-사용자가 다음 항목에 대해 질문하고 있습니다:
-${contextInfo.join('\n')}
-
-이 컨텍스트를 바탕으로 질문에 답변해 주세요.`;
-}
-
-function buildMetadataSystemPrompt(task: 'summary' | 'tags'): string {
-  if (task === 'summary') {
-    return 'You summarize content. Output only the requested summary with no preamble.';
-  }
-
-  return 'You extract concise tags. Output only a comma-separated tag list with no preamble.';
-}
-
-function buildGenericPrompt(systemPrompt: string, userPrompt: string): string {
-  return `System:
-${systemPrompt}
-
-User:
-${userPrompt}
-
-Assistant:
-`;
-}
-
-function buildChatMLPrompt(systemPrompt: string, messages: LocalLLMMessage[]): string {
-  let prompt = `<|im_start|>system\n${systemPrompt}\n<|im_end|>\n`;
-  for (const message of messages) {
-    const role = message.role === 'user' ? 'user' : 'assistant';
-    prompt += `<|im_start|>${role}\n${message.content}\n<|im_end|>\n`;
-  }
-  prompt += `<|im_start|>assistant\n`;
-  return prompt;
-}
-
-function buildChatMLInstructionPrompt(systemPrompt: string, instruction: string): string {
-  return `<|im_start|>system
-${systemPrompt}
-<|im_end|>
-<|im_start|>user
-${instruction}
-<|im_end|>
-<|im_start|>assistant
-`;
-}
-
-function buildConversationText(messages: LocalLLMMessage[]): string {
-  return messages
-    .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}:\n${message.content}`)
-    .join('\n\n');
-}
-
-function sanitizeWithMarkers(text: string, markers: string[]): string {
-  let sanitized = text;
-
-  for (const marker of markers) {
-    const index = sanitized.indexOf(marker);
-    if (index >= 0) {
-      sanitized = sanitized.slice(0, index);
-    }
-  }
-
-  return sanitized.trim();
-}
-
-const GENERIC_STOP_TOKENS = ['User:', 'System:', 'Assistant:', '</s>'];
-const QWEN_STOP_TOKENS = ['<|im_end|>', '<|endoftext|>', '</s>'];
+import type { LocalLLMModelFamily, LocalLLMPreset } from './types';
+import {
+  EMBEDDED_STOP_TOKENS,
+  GENERIC_STOP_TOKENS,
+  LFM_STOP_TOKENS,
+  QWEN_STOP_TOKENS,
+  buildChatMLInstructionPrompt,
+  buildChatMLPrompt,
+  buildContextSystemPrompt,
+  buildConversationText,
+  buildEmbeddedChatInput,
+  buildGenericPrompt,
+  buildLFMChatPrompt,
+  buildLFMInstructionPrompt,
+  buildMetadataSystemPrompt,
+  sanitizeLFMOutput,
+  sanitizeReasoningOutput,
+  sanitizeWithMarkers,
+} from './prompt-templates';
+import { MODEL_PRESET_OVERRIDES } from './preset-overrides';
 
 const genericPreset: LocalLLMPreset = {
   family: 'generic-instruct',
@@ -113,7 +29,7 @@ const genericPreset: LocalLLMPreset = {
   },
   loadOptions: {
     contextSize: 2048,
-    gpuLayers: 0,
+    gpuLayers: -1,
     useMlock: false,
     useMmap: true,
     flashAttention: false,
@@ -127,6 +43,33 @@ const genericPreset: LocalLLMPreset = {
   sanitizeOutput(text) {
     return sanitizeWithMarkers(text, GENERIC_STOP_TOKENS);
   },
+};
+
+const embeddedChatPreset: LocalLLMPreset = {
+  family: 'embedded-chat',
+  stopTokens: EMBEDDED_STOP_TOKENS,
+  defaults: {
+    maxTokens: 512,
+    temperature: 0.3,
+    topP: 0.9,
+  },
+  loadOptions: {
+    contextSize: 4096,
+    gpuLayers: -1,
+    useMlock: false,
+    useMmap: true,
+    flashAttention: true,
+  },
+  buildChatPrompt(messages, contextItem) {
+    return buildEmbeddedChatInput(buildContextSystemPrompt(contextItem), messages);
+  },
+  buildInstructionPrompt(task, instruction) {
+    return buildEmbeddedChatInput(
+      buildMetadataSystemPrompt(task),
+      [{ role: 'user', content: instruction }],
+    );
+  },
+  sanitizeOutput: sanitizeReasoningOutput,
 };
 
 const qwenPreset: LocalLLMPreset = {
@@ -164,33 +107,42 @@ const qwenPreset: LocalLLMPreset = {
   },
 };
 
-const FAMILY_PRESETS: Record<LocalLLMModelFamily, LocalLLMPreset> = {
-  'generic-instruct': genericPreset,
-  'qwen-chatml': qwenPreset,
-  llama: genericPreset,
-  mistral: genericPreset,
-  phi: genericPreset,
-  qwen: qwenPreset,
-  gemma: genericPreset,
-  glm: qwenPreset,
-  nomic: genericPreset,
+const lfmPreset: LocalLLMPreset = {
+  family: 'lfm2',
+  stopTokens: LFM_STOP_TOKENS,
+  defaults: {
+    maxTokens: 512,
+    temperature: 0.1,
+    topP: 0.95,
+  },
+  loadOptions: {
+    contextSize: 4096,
+    gpuLayers: -1,
+    useMlock: false,
+    useMmap: true,
+    flashAttention: true,
+  },
+  buildChatPrompt(messages, contextItem) {
+    return buildLFMChatPrompt(buildContextSystemPrompt(contextItem), messages);
+  },
+  buildInstructionPrompt(task, instruction) {
+    return buildLFMInstructionPrompt(buildMetadataSystemPrompt(task), instruction);
+  },
+  sanitizeOutput: sanitizeLFMOutput,
 };
 
-const MODEL_OVERRIDES: Partial<Record<string, Partial<LocalLLMPreset>>> = {
-  'qwen3.5-4b-q4': {
-    defaults: {
-      maxTokens: 384,
-      temperature: 0.2,
-      topP: 0.85,
-    },
-  },
-  'qwen3.5-4b-unsloth-q4': {
-    defaults: {
-      maxTokens: 384,
-      temperature: 0.2,
-      topP: 0.85,
-    },
-  },
+const FAMILY_PRESETS: Record<LocalLLMModelFamily, LocalLLMPreset> = {
+  'embedded-chat': embeddedChatPreset,
+  'generic-instruct': genericPreset,
+  'qwen-chatml': qwenPreset,
+  lfm2: lfmPreset,
+  llama: embeddedChatPreset,
+  mistral: embeddedChatPreset,
+  phi: embeddedChatPreset,
+  qwen: qwenPreset,
+  gemma: embeddedChatPreset,
+  glm: embeddedChatPreset,
+  nomic: genericPreset,
 };
 
 export function resolveLocalLLMPreset(
@@ -198,7 +150,7 @@ export function resolveLocalLLMPreset(
 ): LocalLLMPreset {
   const family = model?.family ?? 'generic-instruct';
   const basePreset = FAMILY_PRESETS[family] ?? genericPreset;
-  const override = model ? MODEL_OVERRIDES[model.id] : undefined;
+  const override = model ? MODEL_PRESET_OVERRIDES[model.id] : undefined;
 
   if (!override) {
     return basePreset;

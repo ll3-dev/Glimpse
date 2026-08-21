@@ -26,7 +26,7 @@ function getUnavailableReason(
     case 'unsupported_platform':
       return 'Apple Intelligence는 Apple 기기에서만 사용할 수 있습니다';
     case 'unsupported_os':
-      return `${platform.OS === 'macos' ? 'macOS 15.1' : 'iOS 18.1'} 이상이 필요합니다`;
+      return `${platform.OS === 'macos' ? 'macOS 26' : 'iOS 26'} 이상이 필요합니다`;
     case 'unsupported_device':
       return '이 기기는 Apple Intelligence를 지원하지 않습니다';
     case 'disabled':

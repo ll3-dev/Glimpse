@@ -1,4 +1,11 @@
-import { createLlamaService, type GenerateOptions, type GenerateResult, type LlamaService, type StreamOptions } from '../llama-service';
+import {
+  createLlamaService,
+  type GenerateOptions,
+  type GenerateResult,
+  type LlamaPromptInput,
+  type LlamaService,
+  type StreamOptions,
+} from '../llama-service';
 import { buildSummaryPrompt, buildTagsPrompt } from '../providers/metadata-text';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
 import type { KnowledgeItem } from '@glimpse/shared';
@@ -10,24 +17,26 @@ export interface LocalLLMRuntime {
   buildChatPrompt: (
     model: LocalModel,
     messages: LocalLLMMessage[],
-    contextItem?: KnowledgeItem | null
-  ) => string;
+    contextItems?: KnowledgeItem[] | null
+  ) => LlamaPromptInput;
   buildMetadataPrompt: (
     model: LocalModel,
     task: 'summary' | 'tags',
     instructionInput: Parameters<typeof buildSummaryPrompt>[0]
-  ) => string;
+  ) => LlamaPromptInput;
   generate: (
     model: LocalModel,
-    prompt: string,
+    prompt: LlamaPromptInput,
     options?: GenerateOptions
   ) => Promise<GenerateResult>;
   generateStream: (
     model: LocalModel,
-    prompt: string,
+    prompt: LlamaPromptInput,
     options?: StreamOptions
   ) => Promise<GenerateResult>;
   stopGeneration: () => Promise<void>;
+  unloadModel: () => Promise<void>;
+  isModelLoaded: () => boolean;
 }
 
 export function createLocalLLMRuntime(service: LlamaService = createLlamaService()): LocalLLMRuntime {
@@ -90,8 +99,8 @@ export function createLocalLLMRuntime(service: LlamaService = createLlamaService
   return {
     ensureModelLoaded,
 
-    buildChatPrompt(model, messages, contextItem) {
-      return resolveLocalLLMPreset(model).buildChatPrompt(messages, contextItem);
+    buildChatPrompt(model, messages, contextItems) {
+      return resolveLocalLLMPreset(model).buildChatPrompt(messages, contextItems);
     },
 
     buildMetadataPrompt(model, task, input) {
@@ -107,12 +116,46 @@ export function createLocalLLMRuntime(service: LlamaService = createLlamaService
 
     async generateStream(model, prompt, options) {
       await ensureModelLoaded(model);
-      const result = await service.generateStream(prompt, resolveOptions(model, options));
+      const preset = resolveLocalLLMPreset(model);
+      const resolvedOptions = resolveOptions(model, options);
+      let rawStreamText = '';
+      let emittedText = '';
+
+      const result = await service.generateStream(prompt, {
+        ...resolvedOptions,
+        onToken: options?.onToken
+          ? (token) => {
+              rawStreamText += token;
+              const nextText = preset.sanitizeOutput(rawStreamText);
+
+              if (nextText.startsWith(emittedText)) {
+                const delta = nextText.slice(emittedText.length);
+                if (delta) {
+                  emittedText = nextText;
+                  options.onToken?.(delta);
+                }
+              }
+            }
+          : undefined,
+      });
       return sanitizeResult(model, result);
     },
 
     async stopGeneration() {
       await service.stopGeneration();
+    },
+
+    async unloadModel() {
+      if (loadingPromise) {
+        await loadingPromise.catch(() => undefined);
+      }
+      await service.stopGeneration();
+      await service.unloadModel();
+      loadedModelId = null;
+    },
+
+    isModelLoaded() {
+      return service.isModelLoaded();
     },
   };
 }

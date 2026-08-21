@@ -202,7 +202,6 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             status: "not_downloaded".into(),
             download_error: None,
         },
-
         // Desktop medium
         ManagedModelRecord {
             id: "qwen3.5-9b-q4".into(),
@@ -300,7 +299,6 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             status: "not_downloaded".into(),
             download_error: None,
         },
-
         // Desktop large
         ManagedModelRecord {
             id: "qwen3.5-27b-q4".into(),
@@ -350,7 +348,6 @@ pub fn default_models() -> Vec<ManagedModelRecord> {
             status: "not_downloaded".into(),
             download_error: None,
         },
-
         // Embedding
         ManagedModelRecord {
             id: "nomic-embed-text-v1.5-q8_0".into(),

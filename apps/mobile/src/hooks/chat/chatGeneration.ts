@@ -4,6 +4,7 @@ import { appError, type AppError } from "@/src/lib/effect-result";
 import type { LocalLLMRuntime } from '@/src/features/ai/local-llm';
 import type { LocalModel } from '@/src/stores/settings/local-llm.store';
 import type { KnowledgeItem } from '@glimpse/shared';
+import { selectRecentChatMessages } from '@/src/features/ai/chat-context';
 
 export interface ChatMessageWriter {
   (input: { conversationId: string; role: 'user' | 'assistant'; content: string }): Promise<unknown>;
@@ -15,7 +16,7 @@ export async function generateAssistantReply(params: {
   conversationId: string;
   userText: string;
   previousMessages?: { role: 'user' | 'assistant'; content: string }[];
-  contextItem?: KnowledgeItem | null;
+  contextItems?: KnowledgeItem[];
   addMessage: ChatMessageWriter;
   streamingTextRef: MutableRefObject<string>;
   onToken: (token: string) => void;
@@ -33,7 +34,7 @@ export async function generateAssistantReply(params: {
     conversationId,
     userText,
     previousMessages = [],
-    contextItem,
+    contextItems,
     addMessage,
     streamingTextRef,
     onToken,
@@ -47,14 +48,14 @@ export async function generateAssistantReply(params: {
   });
 
   const fullMessages: { role: 'user' | 'assistant'; content: string }[] = [
-    ...previousMessages.map((m) => ({ role: m.role, content: m.content })),
+    ...selectRecentChatMessages(previousMessages),
     { role: 'user', content: userText },
   ];
 
   const prompt = runtime.buildChatPrompt(
     model,
     fullMessages,
-    contextItem
+    contextItems
   );
 
   const result = await runtime.generateStream(model, prompt, {
@@ -107,7 +108,7 @@ export function generateAssistantReplyEffect(params: {
   conversationId: string;
   userText: string;
   previousMessages?: { role: 'user' | 'assistant'; content: string }[];
-  contextItem?: KnowledgeItem | null;
+  contextItems?: KnowledgeItem[];
   addMessage: ChatMessageWriter;
   streamingTextRef: MutableRefObject<string>;
   onToken: (token: string) => void;
@@ -118,7 +119,7 @@ export function generateAssistantReplyEffect(params: {
     conversationId,
     userText,
     previousMessages = [],
-    contextItem,
+    contextItems,
     addMessage,
     streamingTextRef,
     onToken,
@@ -136,7 +137,7 @@ export function generateAssistantReplyEffect(params: {
     }));
 
     const fullMessages: { role: 'user' | 'assistant'; content: string }[] = [
-      ...previousMessages.map((m) => ({ role: m.role, content: m.content })),
+      ...selectRecentChatMessages(previousMessages),
       { role: 'user', content: userText },
     ];
 
@@ -144,7 +145,7 @@ export function generateAssistantReplyEffect(params: {
     const prompt = runtime.buildChatPrompt(
       model,
       fullMessages,
-      contextItem
+      contextItems
     );
 
     // Generate response with streaming

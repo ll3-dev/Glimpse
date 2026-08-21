@@ -7,6 +7,8 @@ import { createLlamaService } from './llama-service.factory';
 export type {
   GenerateOptions,
   GenerateResult,
+  LlamaChatMessage,
+  LlamaPromptInput,
   LoadModelOptions,
   LlamaService,
   StreamOptions,

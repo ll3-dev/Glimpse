@@ -6,149 +6,94 @@
  */
 
 import RNBlobUtil from 'react-native-blob-util';
+import { Platform } from 'react-native';
 import { HuggingFaceAPI } from './huggingface-api';
 import type { ModelInfo } from './model-list';
+import {
+  deleteModel,
+  ensureModelDownloadDirectories,
+  getModelPath,
+  getModelSize,
+  getPartialModelPath,
+  isModelDownloaded,
+  listDownloadedModels,
+  movePartialModelToFinal,
+  recoverModelDownload,
+  type RecoveredModelDownload,
+} from './model-download-storage';
 
-/**
- * Download progress information
- */
 export interface DownloadProgress {
-  /** Bytes written so far */
   written: number;
-  /** Total bytes to download */
   total: number;
-  /** Progress percentage (0-100) */
   percentage: number;
 }
 
-/**
- * Download state for tracking active downloads
- */
-export type DownloadState =
-  | { status: 'idle' }
-  | { status: 'downloading'; progress: DownloadProgress }
-  | { status: 'completed'; path: string }
-  | { status: 'error'; error: string };
-
-/**
- * Callback for download progress updates
- */
 export type ProgressCallback = (progress: DownloadProgress) => void;
 
-/**
- * Model downloader class
- *
- * Manages downloading, storing, and deleting GGUF model files.
- */
 export class ModelDownloader {
-  private static MODELS_DIR = `${RNBlobUtil.fs.dirs.DocumentDir}/models/`;
-  /** 다운로드 중 임시 확장자 — 최종 파일과 구분해 부분 파일이 완성본으로 취급되지 않게 한다 */
-  private static readonly PART_SUFFIX = '.part';
   private activeTask: { cancel?: () => Promise<unknown> | unknown } | null = null;
   private activeFilename: string | null = null;
   private cancelledFilenames = new Set<string>();
 
-  /**
-   * Ensure the models directory exists
-   */
-  private static async ensureModelsDir(): Promise<void> {
-    const exists = await RNBlobUtil.fs.isDir(this.MODELS_DIR);
-    if (!exists) {
-      await RNBlobUtil.fs.mkdir(this.MODELS_DIR);
-    }
-  }
-
-  /**
-   * Get the local path for a model file
-   */
   static getModelPath(filename: string): string {
-    return `${this.MODELS_DIR}${filename}`;
+    return getModelPath(filename);
   }
 
-  /**
-   * Check if a model is already downloaded.
-   *
-   * 존재만 확인하지 않는다 — 앱 강제 종료 등으로 남은 부분 파일이
-   * 완성본으로 취급되면 모델 로드 단계에서 깨지는 문제가 생긴다.
-   * 크기 검증에 필요한 expectedSize를 받아, 불일치 파일은 삭제 후
-   * false를 반환한다.
-   */
-  static async isModelDownloaded(filename: string, expectedSize?: number): Promise<boolean> {
-    const path = this.getModelPath(filename);
-    try {
-      const exists = await RNBlobUtil.fs.exists(path);
-      if (!exists) {
-        return false;
-      }
-      if (typeof expectedSize === 'number' && expectedSize > 0) {
-        const stat = await RNBlobUtil.fs.stat(path);
-        // content-encoding 등으로 ±1KB 오차를 허용한다
-        if (Math.abs(stat.size - expectedSize) > 1024) {
-          await RNBlobUtil.fs.unlink(path).catch(() => {});
-          return false;
-        }
-      }
-      return true;
-    } catch {
-      return false;
-    }
+  static async isModelDownloaded(
+    filename: string,
+    expectedSize?: number,
+    expectedSha256?: string,
+  ): Promise<boolean> {
+    return isModelDownloaded(filename, expectedSize, expectedSha256);
   }
 
-  /**
-   * Get the size of a downloaded model file
-   */
   static async getModelSize(filename: string): Promise<number | null> {
-    const path = this.getModelPath(filename);
-    try {
-      const exists = await RNBlobUtil.fs.exists(path);
-      if (!exists) {
-        return null;
-      }
-      const stat = await RNBlobUtil.fs.stat(path);
-      return stat.size;
-    } catch {
-      return null;
-    }
+    return getModelSize(filename);
   }
 
-  /**
-   * Delete a downloaded model file
-   */
   static async deleteModel(filename: string): Promise<void> {
-    const path = this.getModelPath(filename);
-    try {
-      const exists = await RNBlobUtil.fs.exists(path);
-      if (exists) {
-        await RNBlobUtil.fs.unlink(path);
-      }
-    } catch (error) {
+    return deleteModel(filename);
+  }
+
+  static async recoverDownload(
+    model: ModelInfo,
+  ): Promise<RecoveredModelDownload> {
+    const fileInfo = await HuggingFaceAPI.getFileInfo(model.repo, model.filename);
+    return recoverModelDownload(
+      model.filename,
+      fileInfo?.size || model.sizeBytes,
+      fileInfo?.lfs?.sha256 ?? fileInfo?.sha256,
+    );
+  }
+
+  isDownloadActive(filename: string): boolean {
+    return this.activeFilename === filename && this.activeTask !== null;
+  }
+
+  async downloadModel(model: ModelInfo, onProgress?: ProgressCallback): Promise<string> {
+    await ensureModelDownloadDirectories();
+
+    const localPath = ModelDownloader.getModelPath(model.filename);
+    const partPath = getPartialModelPath(model.filename);
+    const fileInfo = await HuggingFaceAPI.getFileInfo(model.repo, model.filename);
+    const expectedSize = fileInfo?.lfs?.size ?? fileInfo?.size;
+    const expectedSha256 = fileInfo?.lfs?.sha256 ?? fileInfo?.sha256;
+    const revision = fileInfo?.revision;
+    if (!expectedSize || !expectedSha256 || !revision) {
       throw new Error(
-        `모델 삭제 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+        '다운로드 검증 실패: 고정된 모델 버전 또는 SHA-256 메타데이터를 확인할 수 없습니다.',
       );
     }
-  }
+    const downloadUrl = HuggingFaceAPI.getModelDownloadUrl(
+      model.repo,
+      model.filename,
+      revision,
+    );
 
-  /**
-   * Download a model from HuggingFace
-   *
-   * @param model - Model info containing repo and filename
-   * @param onProgress - Optional callback for progress updates
-   * @returns Local file path on success
-   */
-  async downloadModel(model: ModelInfo, onProgress?: ProgressCallback): Promise<string> {
-    await ModelDownloader.ensureModelsDir();
-
-    const downloadUrl = HuggingFaceAPI.getModelDownloadUrl(model.repo, model.filename);
-    const localPath = ModelDownloader.getModelPath(model.filename);
-    const partPath = `${localPath}${ModelDownloader.PART_SUFFIX}`;
-
-    // Get expected file size for progress calculation & final verification
-    const expectedSize = await HuggingFaceAPI.getFileSize(model.repo, model.filename);
-
-    // Check if already downloaded (with size verification when known)
     const alreadyDownloaded = await ModelDownloader.isModelDownloaded(
       model.filename,
-      expectedSize ?? undefined,
+      expectedSize,
+      expectedSha256,
     );
     if (alreadyDownloaded) {
       return localPath;
@@ -161,8 +106,21 @@ export class ModelDownloader {
       // .part 에 기록해 완료 검증 전까지 최종 경로를 오염시키지 않는다
       const task = RNBlobUtil.config({
         path: partPath,
-        indicator: true,
+        indicator: Platform.OS === 'ios',
         overwrite: true,
+        IOSBackgroundTask: Platform.OS === 'ios',
+        addAndroidDownloads:
+          Platform.OS === 'android'
+            ? {
+                useDownloadManager: true,
+                path: partPath,
+                title: model.name,
+                description: 'Glimpse 로컬 AI 모델 다운로드',
+                mime: 'application/octet-stream',
+                notification: true,
+                mediaScannable: false,
+              }
+            : undefined,
       }).fetch('GET', downloadUrl, {
         Accept: 'application/octet-stream',
       });
@@ -172,7 +130,7 @@ export class ModelDownloader {
 
       task
         .progress({ count: 100 }, (received: number, total: number) => {
-          const effectiveTotal = expectedSize ?? total;
+          const effectiveTotal = expectedSize || total;
           const progress: DownloadProgress = {
             written: received,
             total: effectiveTotal,
@@ -183,31 +141,16 @@ export class ModelDownloader {
         })
         .then(async (res) => {
           const writtenPath = res.path();
-
-          // 크기 검증: 알려진 expectedSize 와 다르면 부분 다운로드다
-          if (typeof expectedSize === 'number' && expectedSize > 0) {
-            const stat = await RNBlobUtil.fs.stat(writtenPath).catch(() => null);
-            if (!stat || Math.abs(stat.size - expectedSize) > 1024) {
-              await RNBlobUtil.fs.unlink(writtenPath).catch(() => {});
-              reject(
-                new Error(
-                  `다운로드 검증 실패: 예상 ${expectedSize}바이트, 실제 ${stat?.size ?? 'unknown'}바이트`,
-                ),
-              );
-              return;
-            }
+          if (writtenPath !== partPath && (await RNBlobUtil.fs.exists(writtenPath))) {
+            await RNBlobUtil.fs.mv(writtenPath, partPath);
           }
-
-          // 검증 통과 — 최종 경로로 이동
-          const moved = await RNBlobUtil.fs
-            .mv(writtenPath, localPath)
-            .catch(() => false);
-          if (!moved) {
-            await RNBlobUtil.fs.unlink(writtenPath).catch(() => {});
-            reject(new Error('다운로드 완료 처리 실패: 최종 파일 이동 불가'));
-            return;
-          }
-          resolve(localPath);
+          resolve(
+            await movePartialModelToFinal(
+              model.filename,
+              expectedSize,
+              expectedSha256,
+            ),
+          );
         })
         .catch((error) => {
           // Clean up partial download
@@ -229,12 +172,6 @@ export class ModelDownloader {
     });
   }
 
-  /**
-   * Cancel an active download
-   *
-   * Note: react-native-blob-util doesn't have a direct cancel method,
-   * so we track active downloads and mark them for cancellation.
-   */
   async cancelDownload(filename: string): Promise<void> {
     this.cancelledFilenames.add(filename);
 
@@ -243,32 +180,16 @@ export class ModelDownloader {
     }
   }
 
-  /**
-   * List all downloaded models
-   */
   static async listDownloadedModels(): Promise<string[]> {
-    await this.ensureModelsDir();
-
-    try {
-      const files = await RNBlobUtil.fs.ls(this.MODELS_DIR);
-      return files.filter((f) => f.endsWith('.gguf'));
-    } catch {
-      return [];
-    }
+    return listDownloadedModels();
   }
 
-  /**
-   * Get total storage used by downloaded models
-   */
   static async getTotalStorageUsed(): Promise<number> {
     const files = await this.listDownloadedModels();
     const sizes = await Promise.all(files.map((file) => this.getModelSize(file)));
     return sizes.reduce((total, size) => total + (size ?? 0), 0);
   }
 
-  /**
-   * Format bytes to human readable string
-   */
   static formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
 
@@ -280,7 +201,4 @@ export class ModelDownloader {
   }
 }
 
-/**
- * Default downloader instance
- */
 export const modelDownloader = new ModelDownloader();

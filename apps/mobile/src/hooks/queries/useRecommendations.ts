@@ -7,6 +7,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
   getPendingRecommendations,
+  refreshRecommendations,
   type RecommendationWithItems,
 } from '@/src/features/recommendation';
 import { queryKeys } from '@/src/lib/query-keys';
@@ -23,6 +24,7 @@ export function useRecommendationsQuery(): UseQueryResult<RecommendationWithItem
   return useQuery({
     queryKey: queryKeys.recommendations.pending,
     queryFn: async (): Promise<RecommendationWithItems[]> => {
+      await refreshRecommendations();
       const result = await getPendingRecommendations();
       if (result.success === false) {
         throw new Error(result.error.message);

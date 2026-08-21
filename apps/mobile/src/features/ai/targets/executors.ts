@@ -15,9 +15,15 @@ import { deriveRuleBasedLabels, RULE_BASED_LABELER_VERSION } from '@/src/feature
 import { LABEL_TAXONOMY, type LabelingResult } from '@/src/features/labeling/types';
 import { getSelectedLocalModel } from '@/src/features/settings/local-llm.selectors';
 import { getLocalLLMRuntime } from '@/src/hooks/chat/chatRuntime';
+import type { LlamaPromptInput } from '@/src/features/ai/llama-service';
 import { getApiKey, getBaseUrl, getModel, getProvider } from '@/src/features/settings/byok.selectors';
 import { ensureBYOKHydrated } from '@/src/stores/settings/byok.store';
 import type { AITarget } from './types';
+import {
+  formatKnowledgeContext,
+  selectRecentChatMessages,
+} from '../chat-context';
+import type { LocalLLMMessage } from '../local-llm';
 
 export interface MetadataExecutionInput {
   content: string;
@@ -27,6 +33,9 @@ export interface MetadataExecutionInput {
 
 export interface ChatExecutionInput {
   userText: string;
+  messages?: LocalLLMMessage[];
+  contextItems?: KnowledgeItem[];
+  /** @deprecated Use contextItems for grounded multi-item chat. */
   contextItem?: KnowledgeItem | null;
 }
 
@@ -46,7 +55,7 @@ type BYOKChatConfig = {
 
 type LocalChatContext = {
   model: NonNullable<ReturnType<typeof getSelectedLocalModel>>;
-  prompt: string;
+  prompt: LlamaPromptInput;
   runtime: ReturnType<typeof getLocalLLMRuntime>;
 };
 
@@ -126,14 +135,22 @@ function getLabelVersion(target: AITarget): string {
   }
 }
 
-function buildBYOKChatPrompt(input: ChatExecutionInput): string {
+function resolveChatContextItems(input: ChatExecutionInput): KnowledgeItem[] {
+  if (input.contextItems) return input.contextItems;
+  return input.contextItem ? [input.contextItem] : [];
+}
+
+function buildChatSystemPrompt(input: ChatExecutionInput): string {
+  const base = '당신은 Glimpse 사용자의 지식 보관함을 돕는 AI 어시스턴트입니다. 한국어로 정확하고 자연스럽게 답하세요.';
+  const context = formatKnowledgeContext(resolveChatContextItems(input));
+  return context ? `${base}\n\n${context}` : base;
+}
+
+function buildChatMessages(input: ChatExecutionInput): LocalLLMMessage[] {
   return [
-    input.contextItem?.title ? `Context title: ${input.contextItem.title}` : null,
-    input.contextItem?.body ? `Context body: ${input.contextItem.body}` : null,
-    `User: ${input.userText}`,
-  ]
-    .filter(Boolean)
-    .join('\n\n');
+    ...selectRecentChatMessages(input.messages ?? []),
+    { role: 'user' as const, content: input.userText },
+  ];
 }
 
 function resolveLocalChatContext(input: ChatExecutionInput): Result<LocalChatContext> {
@@ -153,8 +170,8 @@ function resolveLocalChatContext(input: ChatExecutionInput): Result<LocalChatCon
       runtime,
       prompt: runtime.buildChatPrompt(
         model,
-        [{ role: 'user', content: input.userText }],
-        input.contextItem
+        buildChatMessages(input),
+        resolveChatContextItems(input)
       ),
     },
   };
@@ -188,8 +205,11 @@ function resolveBYOKRequest(
   apiKey: string,
   model: string,
   baseUrl: string | null,
-  prompt: string
+  input: ChatExecutionInput
 ): BYOKRequest {
+  const system = buildChatSystemPrompt(input);
+  const messages = buildChatMessages(input);
+
   if (provider === 'openai') {
     return {
       endpoint: `${(baseUrl ?? 'https://api.openai.com/v1').replace(/\/$/, '')}/chat/completions`,
@@ -201,7 +221,7 @@ function resolveBYOKRequest(
         },
         body: JSON.stringify({
           model,
-          messages: [{ role: 'user', content: prompt }],
+          messages: [{ role: 'system', content: system }, ...messages],
           max_tokens: 512,
           temperature: 0.3,
         }),
@@ -222,7 +242,8 @@ function resolveBYOKRequest(
         body: JSON.stringify({
           model,
           max_tokens: 512,
-          messages: [{ role: 'user', content: prompt }],
+          system,
+          messages,
         }),
       },
     };
@@ -236,7 +257,11 @@ function resolveBYOKRequest(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: { parts: [{ text: system }] },
+        contents: messages.map((message) => ({
+          role: message.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: message.content }],
+        })),
       }),
     },
   };
@@ -320,7 +345,7 @@ async function executeBYOKChatTarget(input: ChatExecutionInput): Promise<Result<
     byokConfig.data.apiKey,
     byokConfig.data.model,
     byokConfig.data.baseUrl,
-    buildBYOKChatPrompt(input)
+    input
   );
   const response = await fetch(request.endpoint, request.init);
 
@@ -481,7 +506,7 @@ function executeBYOKChatTargetEffect(input: ChatExecutionInput): Effect.Effect<s
       byokConfig.data.apiKey,
       byokConfig.data.model,
       byokConfig.data.baseUrl,
-      buildBYOKChatPrompt(input)
+      input
     );
 
     const response = yield* _(Effect.tryPromise({

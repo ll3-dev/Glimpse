@@ -1,4 +1,9 @@
-import type { GenerateOptions, LoadModelOptions, StreamOptions } from '../llama-service';
+import type {
+  GenerateOptions,
+  LlamaPromptInput,
+  LoadModelOptions,
+  StreamOptions,
+} from '../llama-service';
 import type { LocalLLMModelFamily } from '@/src/features/core/application/state';
 import type { KnowledgeItem } from '@glimpse/shared';
 export type { LocalLLMModelFamily };
@@ -15,9 +20,12 @@ export interface LocalLLMPreset {
   loadOptions?: LoadModelOptions;
   buildChatPrompt: (
     messages: LocalLLMMessage[],
-    contextItem?: KnowledgeItem | null
-  ) => string;
-  buildInstructionPrompt: (task: 'summary' | 'tags', instruction: string) => string;
+    contextItems?: KnowledgeItem[] | null
+  ) => LlamaPromptInput;
+  buildInstructionPrompt: (
+    task: 'summary' | 'tags',
+    instruction: string
+  ) => LlamaPromptInput;
   sanitizeOutput: (text: string) => string;
 }
 

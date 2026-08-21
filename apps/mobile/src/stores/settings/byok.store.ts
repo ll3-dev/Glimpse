@@ -21,18 +21,15 @@ import {
 import { logger } from '@/src/utils/logger';
 
 function loadPersistedSettings(): BYOKConfig {
-  const enabled = storage.getBoolean(StorageKeys.BYOK_ENABLED) ?? false;
   const providerValue = storage.getString(StorageKeys.BYOK_PROVIDER) ?? null;
   const provider = isBYOKProvider(providerValue) ? providerValue : null;
-  // Check for any legacy unencrypted MMKV key (will be migrated asynchronously)
-  const legacyApiKey = storage.getString(StorageKeys.BYOK_API_KEY) ?? null;
   const baseUrl = storage.getString(StorageKeys.BYOK_BASE_URL) ?? null;
   const model = storage.getString(StorageKeys.BYOK_MODEL) ?? null;
 
   return {
-    enabled: provider !== null && legacyApiKey !== null ? enabled : false,
+    enabled: false,
     provider,
-    apiKey: legacyApiKey,
+    apiKey: null,
     baseUrl,
     model,
   };
@@ -123,13 +120,13 @@ export function setBYOKProvider(provider: BYOKProviderType | null): void {
   updateBYOKStoreConfig((config) => ({ ...config, provider }));
 }
 
-export function setBYOKApiKey(apiKey: string | null): void {
+export async function setBYOKApiKey(apiKey: string | null): Promise<void> {
   if (apiKey) {
-    void setSecureItem(SecureStorageKeys.BYOK_API_KEY, apiKey);
-    // Remove legacy unencrypted key from MMKV if present
+    await setSecureItem(SecureStorageKeys.BYOK_API_KEY, apiKey);
+    // Plaintext is removed only after the encrypted write is confirmed.
     storage.remove(StorageKeys.BYOK_API_KEY);
   } else {
-    void deleteSecureItem(SecureStorageKeys.BYOK_API_KEY);
+    await deleteSecureItem(SecureStorageKeys.BYOK_API_KEY);
     storage.remove(StorageKeys.BYOK_API_KEY);
   }
   updateBYOKStoreConfig((config) => ({ ...config, apiKey }));
@@ -153,13 +150,13 @@ export function setBYOKModel(model: string | null): void {
   updateBYOKStoreConfig((config) => ({ ...config, model }));
 }
 
-export function clearBYOKStoredSettings(): void {
+export async function clearBYOKStoredSettings(): Promise<void> {
+  await deleteSecureItem(SecureStorageKeys.BYOK_API_KEY);
   storage.remove(StorageKeys.BYOK_ENABLED);
   storage.remove(StorageKeys.BYOK_PROVIDER);
   storage.remove(StorageKeys.BYOK_API_KEY);
   storage.remove(StorageKeys.BYOK_BASE_URL);
   storage.remove(StorageKeys.BYOK_MODEL);
-  void deleteSecureItem(SecureStorageKeys.BYOK_API_KEY);
   resetBYOKStoreConfig();
 }
 

@@ -1,5 +1,10 @@
 import { DEFAULT_STOP_TOKENS } from './llama-service.constants';
-import type { GenerateOptions, GenerateResult, LoadModelOptions } from './llama-service.types';
+import type {
+  GenerateOptions,
+  GenerateResult,
+  LlamaPromptInput,
+  LoadModelOptions,
+} from './llama-service.types';
 
 export function validateModelPath(modelPath: string): void {
   if (!modelPath || typeof modelPath !== 'string') {
@@ -26,9 +31,15 @@ export function buildLoadOptions(modelPath: string, options?: LoadModelOptions) 
   };
 }
 
-export function buildCompletionOptions(prompt: string, options?: GenerateOptions) {
+export function buildCompletionOptions(prompt: LlamaPromptInput, options?: GenerateOptions) {
   return {
-    prompt,
+    ...(typeof prompt === 'string'
+      ? { prompt }
+      : {
+          messages: prompt.messages,
+          jinja: true,
+          enable_thinking: prompt.enableThinking ?? false,
+        }),
     n_predict: options?.maxTokens ?? 256,
     temperature: options?.temperature ?? 0.7,
     top_p: options?.topP ?? 0.9,

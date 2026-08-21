@@ -21,9 +21,9 @@ import {
 } from './index';
 
 describe('ai target registry', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clearLocalLLMSettings();
-    clearBYOKStoredSettings();
+    await clearBYOKStoredSettings();
     resetAITargetSettings();
   });
 
@@ -52,9 +52,9 @@ describe('ai target registry', () => {
     expect(metadataTargets.some((target) => target.id === createLocalTargetId('not-ready-model'))).toBe(false);
   });
 
-  test('lists only fully configured byok target as selectable', () => {
+  test('lists only fully configured byok target as selectable', async () => {
     setBYOKProvider('openai');
-    setBYOKApiKey('sk-test');
+    await setBYOKApiKey('sk-test');
     setBYOKModel('gpt-4.1-mini');
     setBYOKEnabled(true);
 

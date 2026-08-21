@@ -69,12 +69,23 @@ export function useBYOKSectionState() {
     };
   }, [byokEnabled]);
 
-  const selectProvider = useCallback((provider: BYOKProviderType) => {
-    setProvider(provider);
-    setShowKey(false);
+  const selectProvider = useCallback(async (provider: BYOKProviderType) => {
+    try {
+      await setProvider(provider);
+      setShowKey(false);
+      return null;
+    } catch (error) {
+      return {
+        title: 'Provider 변경 실패',
+        message:
+          error instanceof Error
+            ? error.message
+            : '보안 저장소를 갱신할 수 없습니다.',
+      };
+    }
   }, []);
 
-  const saveApiKey = useCallback((): BYOKActionFeedback => {
+  const saveApiKey = useCallback(async (): Promise<BYOKActionFeedback> => {
     if (!selectedProvider) {
       return {
         title: '오류',
@@ -89,8 +100,15 @@ export function useBYOKSectionState() {
       };
     }
 
-    const result = setApiKey(selectedProvider, apiKeyInput);
-    if (result.valid) {
+    try {
+      const result = await setApiKey(selectedProvider, apiKeyInput);
+      if (!result.valid) {
+        return {
+          title: '저장 실패',
+          message: result.error ?? 'API 키를 저장할 수 없습니다',
+        };
+      }
+
       setApiKeyInput('');
       setIsEditingApiKey(false);
       setShowKey(false);
@@ -98,12 +116,15 @@ export function useBYOKSectionState() {
         title: '저장 완료',
         message: 'API 키가 저장되었습니다',
       };
+    } catch (error) {
+      return {
+        title: '저장 실패',
+        message:
+          error instanceof Error
+            ? error.message
+            : '보안 저장소에 API 키를 저장할 수 없습니다.',
+      };
     }
-
-    return {
-      title: '저장 실패',
-      message: result.error ?? 'API 키를 저장할 수 없습니다',
-    };
   }, [selectedProvider, apiKeyInput, hasStoredApiKey]);
 
   const startApiKeyEdit = useCallback(() => {

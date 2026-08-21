@@ -43,6 +43,7 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps) {
       );
 
       const completedItems: KnowledgeItem[] = [];
+      const failureUpdates: Promise<unknown>[] = [];
       let failedCount = 0;
 
       for (const [index, result] of results.entries()) {
@@ -56,14 +57,18 @@ export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps) {
         const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
         // 실패 기록은 best-effort — 이 기록마저 실패해도 전체를
         // 실패시키지 않는다
-        await deps.coreClient
-          .updateKnowledgeItem(item.id, {
-            labelStatus: 'failed',
-            labelError: message,
-            updatedAt: now(),
-          })
-          .catch(() => undefined);
+        failureUpdates.push(
+          deps.coreClient
+            .updateKnowledgeItem(item.id, {
+              labelStatus: 'failed',
+              labelError: message,
+              updatedAt: now(),
+            })
+            .catch(() => undefined),
+        );
       }
+
+      await Promise.all(failureUpdates);
 
       if (completedItems.length === 0 && failedCount > 0) {
         return {

@@ -2,6 +2,7 @@ import { initLlama, type LlamaContext } from 'llama.rn';
 import type {
   GenerateResult,
   LlamaService,
+  LlamaPromptInput,
   LoadModelOptions,
   StreamOptions,
 } from './llama-service.types';
@@ -76,6 +77,14 @@ function isParallelModeDisabledError(error: unknown): boolean {
   return extractErrorMessage(error).includes('Parallel mode not enabled');
 }
 
+function getPromptLength(prompt: LlamaPromptInput): number {
+  if (typeof prompt === 'string') {
+    return prompt.length;
+  }
+
+  return prompt.messages.reduce((length, message) => length + message.content.length, 0);
+}
+
 export function createLlamaService(): LlamaService {
   let context: LlamaContext | null = null;
   let stopFn: (() => Promise<void>) | null = null;
@@ -116,6 +125,15 @@ export function createLlamaService(): LlamaService {
 
         try {
           context = await initLlama(candidate, (progress) => options?.onProgress?.(Math.round(progress)));
+          logger.info('llama.rn model loaded', {
+            modelPath,
+            gpu: context.gpu,
+            devices: context.devices,
+            reasonNoGPU: context.reasonNoGPU || undefined,
+            contextSize: candidate.n_ctx,
+            gpuLayers: candidate.n_gpu_layers,
+            flashAttention: candidate.flash_attn_type === 'on',
+          });
           return;
         } catch (error) {
           const message = extractErrorMessage(error);
@@ -135,6 +153,7 @@ export function createLlamaService(): LlamaService {
               previousError: message,
               nextUseMlock: nextCandidate.use_mlock,
               nextContextSize: nextCandidate.n_ctx,
+              nextGpuLayers: nextCandidate.n_gpu_layers,
             });
           }
         }
@@ -156,7 +175,7 @@ export function createLlamaService(): LlamaService {
         const result = await activeContext.completion(buildCompletionOptions(prompt, options));
         return toGenerateResult(result, startTime);
       } catch (error) {
-        logger.error('llama.rn completion failed', error, { promptLength: prompt.length });
+        logger.error('llama.rn completion failed', error, { promptLength: getPromptLength(prompt) });
         throw new Error(`Generation failed: ${extractErrorMessage(error)}`);
       }
     },
@@ -241,7 +260,7 @@ export function createLlamaService(): LlamaService {
         stopFn = null;
         emitStreamDone(requestId, fullText, 'error');
         logger.error('llama.rn streaming completion failed', error, {
-          promptLength: prompt.length,
+          promptLength: getPromptLength(prompt),
           tokenCount: fullText.length,
         });
         throw new Error(`Streaming generation failed: ${extractErrorMessage(error)}`);
@@ -276,20 +295,26 @@ function buildLoadCandidates(baseOptions: ReturnType<typeof buildLoadOptions>) {
   const contextSizes = Array.from(new Set([baseOptions.n_ctx, 2048, 1024])).filter(
     (value): value is number => typeof value === 'number' && value > 0 && value <= baseOptions.n_ctx
   );
+  const gpuLayerOptions =
+    baseOptions.n_gpu_layers === 0 ? [0] : [baseOptions.n_gpu_layers, 0];
 
-  for (const contextSize of contextSizes) {
-    for (const useMlock of [baseOptions.use_mlock, false]) {
-      const candidate = {
-        ...baseOptions,
-        n_ctx: contextSize,
-        use_mlock: useMlock,
-      };
-      const key = `${candidate.n_ctx}:${candidate.use_mlock}:${candidate.n_gpu_layers}`;
-      if (seen.has(key)) {
-        continue;
+  for (const gpuLayers of gpuLayerOptions) {
+    for (const contextSize of contextSizes) {
+      for (const useMlock of [baseOptions.use_mlock, false]) {
+        const candidate = {
+          ...baseOptions,
+          n_ctx: contextSize,
+          n_gpu_layers: gpuLayers,
+          use_mlock: useMlock,
+          flash_attn_type: gpuLayers === 0 ? undefined : baseOptions.flash_attn_type,
+        };
+        const key = `${candidate.n_ctx}:${candidate.use_mlock}:${candidate.n_gpu_layers}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        candidates.push(candidate);
       }
-      seen.add(key);
-      candidates.push(candidate);
     }
   }
 

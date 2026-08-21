@@ -182,5 +182,3 @@ export async function completeLocalLLMStream(
     unlisten?.();
   }
 }
-
-export const localLLMProvider = createLocalLLMProvider();
