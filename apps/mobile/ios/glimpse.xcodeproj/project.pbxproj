@@ -10,6 +10,8 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1A2B3C4D5E6F789012345678 /* AppGroupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7890123456789A /* AppGroupModule.swift */; };
 		2B3C4D5E6F7890123456789B /* AppGroupModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F7890123456789ABC /* AppGroupModule.m */; };
+		A11E00000000000000000001 /* AppleIntelligenceModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000003 /* AppleIntelligenceModule.swift */; };
+		A11E00000000000000000002 /* AppleIntelligenceModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000004 /* AppleIntelligenceModule.m */; };
 		3A86FDA75BB24D23BA5C3C53 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A480D10E13C94759BFCEF1C8 /* MainInterface.storyboard */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		43A5854242941AE72B390448 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F81E9C9E5409B127151B7D16 /* ExpoModulesProvider.swift */; };
@@ -56,6 +58,8 @@
 		2B3C4D5E6F7890123456789A /* AppGroupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppGroupModule.swift; path = glimpse/AppGroupModule.swift; sourceTree = "<group>"; };
 		399B0A8A11214959934FD020 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3C4D5E6F7890123456789ABC /* AppGroupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppGroupModule.m; path = glimpse/AppGroupModule.m; sourceTree = "<group>"; };
+		A11E00000000000000000003 /* AppleIntelligenceModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleIntelligenceModule.swift; path = glimpse/AppleIntelligenceModule.swift; sourceTree = "<group>"; };
+		A11E00000000000000000004 /* AppleIntelligenceModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppleIntelligenceModule.m; path = glimpse/AppleIntelligenceModule.m; sourceTree = "<group>"; };
 		62944ACBC99A4DC69186EABB /* ShareExtension.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		92207BFF5381453097B13B7E /* ShareExtensionPreprocessor.js */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ShareExtensionPreprocessor.js; sourceTree = "<group>"; };
 		9284CAF38FE542F5B0D42483 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 9; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +100,8 @@
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
 				2B3C4D5E6F7890123456789A /* AppGroupModule.swift */,
 				3C4D5E6F7890123456789ABC /* AppGroupModule.m */,
+				A11E00000000000000000003 /* AppleIntelligenceModule.swift */,
+				A11E00000000000000000004 /* AppleIntelligenceModule.m */,
 				F11748442D0722820044C1D9 /* glimpse-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -313,7 +319,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [[ -f \"$PODS_ROOT/../.xcode.env\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env\"\nfi\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" \"$PROJECT_ROOT\" ios absolute | tail -n 1)\"\nfi\n\nif [[ -z \"$CLI_PATH\" ]]; then\n  # Use Expo CLI\n  export CLI_PATH=\"$(\"$NODE_BINARY\" --print \"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\")\"\nfi\nif [[ -z \"$BUNDLE_COMMAND\" ]]; then\n  # Default Expo CLI command for bundling\n  export BUNDLE_COMMAND=\"export:embed\"\nfi\n\n# Source .xcode.env.updates if it exists to allow\n# SKIP_BUNDLING to be unset if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.updates\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.updates\"\nfi\n# Source local changes to allow overrides\n# if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\n\n";
+			shellScript = "if [[ -f \"$PODS_ROOT/../.xcode.env\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env\"\nfi\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" \"$PROJECT_ROOT\" ios absolute | tail -n 1)\"\nfi\n\nif [[ -z \"$CLI_PATH\" ]]; then\n  # Use Expo CLI\n  export CLI_PATH=\"$(\"$NODE_BINARY\" --print \"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\")\"\nfi\nif [[ -z \"$BUNDLE_COMMAND\" ]]; then\n  # Default Expo CLI command for bundling\n  export BUNDLE_COMMAND=\"export:embed\"\nfi\n\n# Source .xcode.env.updates if it exists to allow\n# SKIP_BUNDLING to be unset if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.updates\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.updates\"\nfi\n# Source local changes to allow overrides\n# if needed\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# Hermes 0.14.1 bytecode crashes during startup on physical iOS 26 devices.\n# Keep the Hermes runtime while embedding the source bundle for Release builds.\nif [[ \"$CONFIGURATION\" != *Debug* ]]; then\n  export USE_HERMES=false\nfi\n\n`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\n\n";
 		};
 		08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -346,6 +352,7 @@
 				"${PODS_ROOT}/Target Support Files/Pods-glimpse/Pods-glimpse-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoTaskManager/ExpoTaskManager_privacy.bundle",
@@ -359,6 +366,7 @@
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoTaskManager_privacy.bundle",
@@ -433,6 +441,8 @@
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				1A2B3C4D5E6F789012345678 /* AppGroupModule.swift in Sources */,
 				2B3C4D5E6F7890123456789B /* AppGroupModule.m in Sources */,
+				A11E00000000000000000001 /* AppleIntelligenceModule.swift in Sources */,
+				A11E00000000000000000002 /* AppleIntelligenceModule.m in Sources */,
 				43A5854242941AE72B390448 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -686,6 +696,7 @@
 				COPY_PHASE_STRIP = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXTRA_PACKAGER_ARGS = "--minify false";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

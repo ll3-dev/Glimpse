@@ -3,6 +3,25 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+def releaseSigningProperties = new Properties()
+def releaseSigningPropertiesFile = rootProject.file('keystore.properties')
+if (releaseSigningPropertiesFile.exists()) {
+    releaseSigningPropertiesFile.withInputStream { releaseSigningProperties.load(it) }
+}
+
+def releaseSigningValue = { String propertyName, String environmentName ->
+    def value = findProperty(propertyName) ?: releaseSigningProperties.getProperty(propertyName) ?: System.getenv(environmentName)
+    value?.toString()?.trim()
+}
+def releaseSigning = [
+    storeFile: releaseSigningValue('glimpse.releaseStoreFile', 'GLIMPSE_RELEASE_STORE_FILE'),
+    storePassword: releaseSigningValue('glimpse.releaseStorePassword', 'GLIMPSE_RELEASE_STORE_PASSWORD'),
+    keyAlias: releaseSigningValue('glimpse.releaseKeyAlias', 'GLIMPSE_RELEASE_KEY_ALIAS'),
+    keyPassword: releaseSigningValue('glimpse.releaseKeyPassword', 'GLIMPSE_RELEASE_KEY_PASSWORD'),
+]
+def hasAnyReleaseSigningValue = releaseSigning.values().any { it }
+def hasCompleteReleaseSigning = releaseSigning.values().every { it }
+def allowUnsignedRelease = (findProperty('glimpse.allowUnsignedRelease') ?: 'false').toBoolean()
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -103,15 +122,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasCompleteReleaseSigning) {
+            production {
+                storeFile rootProject.file(releaseSigning.storeFile)
+                storePassword releaseSigning.storePassword
+                keyAlias releaseSigning.keyAlias
+                keyPassword releaseSigning.keyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (hasCompleteReleaseSigning) {
+                signingConfig signingConfigs.production
+            }
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
@@ -128,6 +155,26 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+}
+
+def validateProductionSigning = tasks.register('validateProductionSigning') {
+    group = 'verification'
+    description = 'Fails release builds that do not have a complete production signing configuration.'
+
+    doLast {
+        if (hasAnyReleaseSigningValue && !hasCompleteReleaseSigning) {
+            throw new GradleException('Android release signing is only partially configured. Provide all four glimpse.release* properties (or GLIMPSE_RELEASE_* environment variables).')
+        }
+        if (!hasCompleteReleaseSigning && !allowUnsignedRelease) {
+            throw new GradleException('Android release signing is missing. Configure production signing or pass -Pglimpse.allowUnsignedRelease=true for a compile-only validation artifact.')
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name in ['assembleRelease', 'bundleRelease', 'packageRelease', 'validateSigningRelease']) {
+        task.dependsOn(validateProductionSigning)
     }
 }
 

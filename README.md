@@ -98,10 +98,12 @@ bun run start
 - `bun run ios`: 모바일 앱 iOS 실행
 - `bun run android`: 모바일 앱 Android 실행
 - `bun run web`: 모바일 앱 web 실행
+- `bun run web:export`: 모바일 web 정적 export 검증
 - `bun run lint`: 모바일 lint 실행
 - `bun run typecheck`: 모바일 TypeScript 검사
 - `bun test`: 모바일 테스트 실행
 - `bun run test:coverage`: 모바일 테스트 커버리지 실행
+- `bun run audit:critical`: critical JavaScript 의존성 취약점 차단
 - `bun run desktop:dev`: 데스크톱 프론트엔드 개발 서버 실행
 - `bun run desktop:build`: 데스크톱 프론트엔드 빌드
 - `bun run desktop:preview`: 데스크톱 빌드 결과 미리보기
@@ -267,3 +269,12 @@ cargo check -p glimpse-core
 ## English Summary
 
 Glimpse is a Bun workspace built around an Expo-based React Native app, with shared packages for UI and types, plus a Rust core connected to both apps through the shared rustra bridge (`packages/bridge-rust`). The current structure exists to keep mobile iteration fast, share contracts across surfaces, and isolate performance-sensitive native logic behind a stable boundary.
+
+## 프로젝트 정책
+
+- [보안 정책](SECURITY.md)
+- [개인정보 처리 안내](PRIVACY.md)
+- [기여 가이드](CONTRIBUTING.md)
+- [지원 및 문의](SUPPORT.md)
+- [변경 이력](CHANGELOG.md)
+- [모바일 스토어 제출 절차](apps/mobile/docs/store-submission.md)

@@ -46,8 +46,11 @@ apps/mobile/rust-output/
 
 .env
 .logs/
+coverage/
+apps/desktop/src-tauri/.release/
 drizzle/
 *.db
+apps/mobile/google-service-account.json
 
 # Build outputs
 packages/*/dist/

@@ -34,6 +34,7 @@
     "android": {
       "package": "kr.ll3.glimpse",
       "versionCode": 1,
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#f7f6f3"

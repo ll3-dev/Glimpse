@@ -1,6 +1,7 @@
 import { Component, useState, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, ChevronDown, RotateCcw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { captureDiagnostic } from '@glimpse/shared';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -26,6 +27,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({ errorInfo });
     // Log for debugging -- could be wired to a telemetry endpoint later.
     console.error('[ErrorBoundary]', error, errorInfo);
+    captureDiagnostic('error', 'Desktop React ErrorBoundary', error);
   }
 
   handleReload = () => {
@@ -75,7 +77,7 @@ function ErrorFallback({ error, errorInfo, onReload }: ErrorFallbackProps) {
             Reload
           </Button>
           <a
-            href="https://github.com/anthropics/claude-code/issues"
+            href="https://github.com/ll3-dev/Glimpse/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -127,4 +129,3 @@ function ErrorDetails({ error, componentStack }: ErrorDetailsProps) {
     </div>
   );
 }
-

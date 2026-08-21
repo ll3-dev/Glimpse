@@ -13,6 +13,8 @@ class AppDelegate: ExpoAppDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    excludePrivateLocalDataFromBackup()
+
     let delegate = ReactNativeDelegate()
     let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -29,6 +31,36 @@ class AppDelegate: ExpoAppDelegate {
 #endif
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func excludePrivateLocalDataFromBackup() {
+    let fileManager = FileManager.default
+    var directories: [URL] = []
+
+    if let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+      directories.append(documents.appendingPathComponent("glimpse", isDirectory: true))
+      directories.append(documents.appendingPathComponent("models", isDirectory: true))
+    }
+    if let appGroup = fileManager.containerURL(
+      forSecurityApplicationGroupIdentifier: "group.kr.ll3.glimpse"
+    ) {
+      directories.append(appGroup)
+    }
+
+    for directory in directories {
+      do {
+        try fileManager.createDirectory(
+          at: directory,
+          withIntermediateDirectories: true
+        )
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var mutableDirectory = directory
+        try mutableDirectory.setResourceValues(values)
+      } catch {
+        NSLog("[Glimpse] Failed to exclude local data from backup: %@", error.localizedDescription)
+      }
+    }
   }
 
   // Linking API

@@ -35,6 +35,8 @@ PODS:
     - ExpoModulesCore
   - ExpoClipboard (55.0.16):
     - ExpoModulesCore
+  - ExpoDevice (55.0.20):
+    - ExpoModulesCore
   - ExpoDomWebView (55.0.6):
     - ExpoModulesCore
   - ExpoFileSystem (55.0.25):
@@ -133,7 +135,7 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
-  - llama-rn (0.11.1):
+  - llama-rn (0.12.9):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2428,6 +2430,7 @@ DEPENDENCIES:
   - ExpoBackgroundTask (from `../../../node_modules/expo-background-task/ios`)
   - ExpoBlur (from `../../../node_modules/expo-blur/ios`)
   - ExpoClipboard (from `../../../node_modules/expo-clipboard/ios`)
+  - ExpoDevice (from `../../../node_modules/expo-device/ios`)
   - "ExpoDomWebView (from `../../../node_modules/@expo/dom-webview/ios`)"
   - ExpoFileSystem (from `../../../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../../../node_modules/expo-font/ios`)
@@ -2566,6 +2569,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/expo-blur/ios"
   ExpoClipboard:
     :path: "../../../node_modules/expo-clipboard/ios"
+  ExpoDevice:
+    :path: "../../../node_modules/expo-device/ios"
   ExpoDomWebView:
     :path: "../../../node_modules/@expo/dom-webview/ios"
   ExpoFileSystem:
@@ -2799,6 +2804,7 @@ SPEC CHECKSUMS:
   ExpoBackgroundTask: d9b0d7a9630a0cb85f3904d7ba0ec72d154649eb
   ExpoBlur: 1050576a9c8bd37c8e800852a981ab56b737e353
   ExpoClipboard: 22455e54ebf6fce0886e322827e67f5eab9dfa07
+  ExpoDevice: 0c815f00c8975f15027e7abf256bc62bc11ea2dd
   ExpoDomWebView: b2e9d601f9cb77d3c97da73234e175b64be91928
   ExpoFileSystem: 8d5b2404ef2e839136146812d0036485d3ed8198
   ExpoFont: a7e34a75bdfb703fa07a0e87807f836236608c76
@@ -2826,7 +2832,7 @@ SPEC CHECKSUMS:
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
-  llama-rn: 41276e68eb7cf538592dd8972ea5f58798b9dcae
+  llama-rn: 047c75d1fa00e66ca19d000978a694c3fa0634e7
   MMKVCore: 3d16ce9f7d411e135020915fde98a056859a1efa
   NitroMmkv: b94a2c63a98d5bdf6bb697eb876e2af039d1874b
   NitroModules: 2eeca4b43c7432c1b4aac71c033e08c05079bf8f

@@ -12,6 +12,7 @@ use tauri::Manager;
 
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state::DesktopRuntimeStateInner::from_defaults())
         // rustra bridge: the managed package backing `rustra_dispatch`.
         // `rustra::tauri_support::register` cannot be used here because it
@@ -25,11 +26,10 @@ fn main() {
                 .path()
                 .app_data_dir()
                 .expect("failed to resolve app data directory");
-            std::fs::create_dir_all(&app_data_dir)
-                .expect("failed to create app data directory");
+            std::fs::create_dir_all(&app_data_dir).expect("failed to create app data directory");
             let db_path = app_data_dir.join("glimpse-core.db");
-            let storage =
-                glimpse_core::SqliteStorage::new(&db_path).expect("failed to initialize core database");
+            let storage = glimpse_core::SqliteStorage::new(&db_path)
+                .expect("failed to initialize core database");
 
             // SharedCore owns the SQLite connection and is not Clone, so the
             // bridge global takes sole ownership — exactly one connection per
@@ -48,9 +48,9 @@ fn main() {
             // `RustraState` managed above, so installing here covers every emit.
             // `register_with_events` cannot be used because this shell wires
             // `rustra_dispatch` through its own single `generate_handler!`.
-            glimpse_bridge::glimpse_package().set_event_sink(Some(rustra::tauri_support::tauri_event_sink(
-                app.handle().clone(),
-            )));
+            glimpse_bridge::glimpse_package().set_event_sink(Some(
+                rustra::tauri_support::tauri_event_sink(app.handle().clone()),
+            ));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
