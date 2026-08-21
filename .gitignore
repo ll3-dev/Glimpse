@@ -55,9 +55,11 @@ apps/mobile/google-service-account.json
 # Build outputs
 packages/*/dist/
 apps/desktop/dist/
+apps/mobile/dist-web/
 .tsdown/
 
 # Android build artifacts
+apps/mobile/android/app/src/main/assets/ggml-hexagon/
 .cxx/
 android/.build/
 android/build/
