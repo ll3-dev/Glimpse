@@ -6,17 +6,9 @@ import { validateInput, type KnowledgeItemInput } from '@glimpse/features/captur
 import { useSaveKnowledgeItemMutation } from '@glimpse/hooks';
 import { useMetadataGeneration } from '@/features/ai/use-metadata-generation';
 import type { KnowledgeItem } from '@glimpse/shared';
+import { CaptureModalForm, type CaptureFormData } from './CaptureModalForm';
 
 type CaptureType = 'note' | 'link' | 'highlight';
-
-interface FormData {
-  title: string;
-  body: string;
-  url: string;
-  text: string;
-  sourceUrl: string;
-  tags: string;
-}
 
 interface FieldErrors {
   [key: string]: string;
@@ -26,11 +18,7 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
-function isIdCollisionError(_error: unknown): boolean {
-  return false;
-}
-
-const EMPTY_FORM: FormData = {
+const EMPTY_FORM: CaptureFormData = {
   title: '',
   body: '',
   url: '',
@@ -39,19 +27,13 @@ const EMPTY_FORM: FormData = {
   tags: '',
 };
 
-const TABS: { key: CaptureType; label: string }[] = [
-  { key: 'note', label: 'Note' },
-  { key: 'link', label: 'Link' },
-  { key: 'highlight', label: 'Highlight' },
-];
-
 export function CaptureModal() {
   const router = useRouter();
   const saveMutation = useSaveKnowledgeItemMutation();
   const metadataMutation = useMetadataGeneration();
 
   const [activeType, setActiveType] = useState<CaptureType>('note');
-  const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [form, setForm] = useState<CaptureFormData>(EMPTY_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -63,16 +45,7 @@ export function CaptureModal() {
     router.history.back();
   }, [router, isBusy]);
 
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) {
-        handleClose();
-      }
-    },
-    [handleClose],
-  );
-
-  const updateField = useCallback((field: keyof FormData, value: string) => {
+  const updateField = useCallback((field: keyof CaptureFormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => {
       const next = { ...prev };
@@ -197,8 +170,13 @@ export function CaptureModal() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={handleBackdropClick}
     >
+      <button
+        type="button"
+        aria-label="Close capture modal"
+        className="absolute inset-0 cursor-default"
+        onClick={handleClose}
+      />
       <div className="relative w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -216,153 +194,16 @@ export function CaptureModal() {
           </button>
         </div>
 
-        {/* Type Tabs */}
-        <div className="flex gap-1 rounded-lg bg-muted p-1 mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                setActiveType(tab.key);
-                setErrors({});
-              }}
-              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                activeType === tab.key
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Form Fields */}
-        <div className="space-y-4">
-          {/* Title - shown for all types */}
-          <div>
-            <label htmlFor="capture-title" className="block text-sm font-medium text-foreground mb-1.5">
-              Title <span className="text-muted-foreground">(optional)</span>
-            </label>
-            <input
-              id="capture-title"
-              type="text"
-              value={form.title}
-              onChange={(e) => updateField('title', e.target.value)}
-              placeholder="Enter a title..."
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-            />
-          </div>
-
-          {/* Note: body */}
-          {activeType === 'note' && (
-            <div>
-              <label htmlFor="capture-note-body" className="block text-sm font-medium text-foreground mb-1.5">
-                Body <span className="text-destructive">*</span>
-              </label>
-              <textarea
-                id="capture-note-body"
-                value={form.body}
-                onChange={(e) => updateField('body', e.target.value)}
-                placeholder="Write your note..."
-                rows={6}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
-              />
-              {errors.body && (
-                <p className="mt-1 text-xs text-destructive">{errors.body}</p>
-              )}
-            </div>
-          )}
-
-          {/* Link: URL */}
-          {activeType === 'link' && (
-            <div>
-              <label htmlFor="capture-link-url" className="block text-sm font-medium text-foreground mb-1.5">
-                URL <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="capture-link-url"
-                type="url"
-                value={form.url}
-                onChange={(e) => updateField('url', e.target.value)}
-                placeholder="https://..."
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
-              {errors.url && (
-                <p className="mt-1 text-xs text-destructive">{errors.url}</p>
-              )}
-            </div>
-          )}
-
-          {/* Link: body */}
-          {activeType === 'link' && (
-            <div>
-              <label htmlFor="capture-link-body" className="block text-sm font-medium text-foreground mb-1.5">
-                Body <span className="text-muted-foreground">(optional)</span>
-              </label>
-              <textarea
-                id="capture-link-body"
-                value={form.body}
-                onChange={(e) => updateField('body', e.target.value)}
-                placeholder="Add a description..."
-                rows={4}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
-              />
-            </div>
-          )}
-
-          {/* Highlight: text */}
-          {activeType === 'highlight' && (
-            <div>
-              <label htmlFor="capture-highlight-text" className="block text-sm font-medium text-foreground mb-1.5">
-                Text <span className="text-destructive">*</span>
-              </label>
-              <textarea
-                id="capture-highlight-text"
-                value={form.text}
-                onChange={(e) => updateField('text', e.target.value)}
-                placeholder="Paste or type the highlighted text..."
-                rows={6}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none"
-              />
-              {errors.text && (
-                <p className="mt-1 text-xs text-destructive">{errors.text}</p>
-              )}
-            </div>
-          )}
-
-          {/* Highlight: source URL */}
-          {activeType === 'highlight' && (
-            <div>
-              <label htmlFor="capture-highlight-source" className="block text-sm font-medium text-foreground mb-1.5">
-                Source URL <span className="text-muted-foreground">(optional)</span>
-              </label>
-              <input
-                id="capture-highlight-source"
-                type="url"
-                value={form.sourceUrl}
-                onChange={(e) => updateField('sourceUrl', e.target.value)}
-                placeholder="https://..."
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-              />
-            </div>
-          )}
-
-          {/* Tags - shown for all types */}
-          <div>
-            <label htmlFor="capture-tags" className="block text-sm font-medium text-foreground mb-1.5">
-              Tags <span className="text-muted-foreground">(optional, comma-separated)</span>
-            </label>
-            <input
-              id="capture-tags"
-              type="text"
-              value={form.tags}
-              onChange={(e) => updateField('tags', e.target.value)}
-              placeholder="e.g. design, reference, idea"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-            />
-          </div>
-        </div>
+        <CaptureModalForm
+          activeType={activeType}
+          form={form}
+          errors={errors}
+          onTypeChange={(type) => {
+            setActiveType(type);
+            setErrors({});
+          }}
+          onFieldChange={updateField}
+        />
 
         {/* Footer Actions */}
         <div className="mt-6 flex items-center justify-between">

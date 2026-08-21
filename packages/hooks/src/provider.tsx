@@ -1,11 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { CoreClientContext } from './core-client-context';
+import { queryClient } from './query-client';
 import type { CoreClient } from '@glimpse/shared';
 import type { ReactNode } from 'react';
-
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 1000 * 60 * 5 } },
-});
 
 export function GlimpseProvider({
   coreClient,
@@ -22,5 +19,3 @@ export function GlimpseProvider({
     </CoreClientContext.Provider>
   );
 }
-
-export { queryClient };

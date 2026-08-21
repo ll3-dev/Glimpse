@@ -22,6 +22,8 @@ export function useRespondToRecommendationMutation() {
 
 export function useLogFeedbackMutation() {
   const coreClient = useCoreClient();
+  // Feedback logging has no query-backed read model to invalidate.
+  // react-doctor-disable-next-line react-doctor/query-mutation-missing-invalidation
   return useMutation({
     mutationFn: (event: FeedbackEvent) => coreClient.logRecommendationFeedback(event),
   });

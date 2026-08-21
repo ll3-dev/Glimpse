@@ -1,6 +1,7 @@
 // Core
 export { CoreClientContext, useCoreClient } from './core-client-context';
-export { GlimpseProvider, queryClient } from './provider';
+export { GlimpseProvider } from './provider';
+export { queryClient } from './query-client';
 
 // Query Keys
 export { queryKeys } from './query-keys';
