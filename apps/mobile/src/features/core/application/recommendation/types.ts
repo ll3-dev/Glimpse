@@ -15,7 +15,7 @@ export interface GenerateRecommendationsDeps {
   coreClient: {
     listWeeklyKnowledgeItems: (since: number) => Promise<KnowledgeItem[]>;
   };
-  getWeeklyItems: () => Promise<WeeklyItemsResult>;
+  getWeeklyItems: (since?: number) => Promise<WeeklyItemsResult>;
 }
 
 export interface GenerateRecommendationsResult {

@@ -86,6 +86,7 @@ pub type CoreReviewFeedbackType = ReviewFeedbackType;
 // ============================================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct KnowledgeItem {
     pub id: String,
     #[serde(rename = "type")]
@@ -192,6 +193,7 @@ pub struct KnowledgeItemPatch {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Conversation {
     pub id: String,
     pub title: Option<String>,
@@ -218,6 +220,7 @@ pub struct ConversationPatch {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Message {
     pub id: String,
     pub conversation_id: String,
@@ -239,6 +242,7 @@ pub struct MessagePatch {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Recommendation {
     pub id: String,
     pub item_a_id: String,
@@ -259,11 +263,52 @@ pub struct RecommendationPatch {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FeedbackEvent {
     pub id: String,
     pub recommendation_id: String,
     pub action: FeedbackActionType,
     pub created_at: i64,
+}
+
+/// Versioned, portable snapshot of all user-authored Glimpse data.
+///
+/// Model binaries and API credentials are intentionally excluded: models can
+/// be downloaded again and credentials remain in the platform secure store.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataExport {
+    pub format_version: u32,
+    pub exported_at: i64,
+    pub knowledge_items: Vec<KnowledgeItem>,
+    pub conversations: Vec<Conversation>,
+    pub messages: Vec<Message>,
+    pub recommendations: Vec<Recommendation>,
+    pub feedback_events: Vec<FeedbackEvent>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DataImportSummary {
+    pub knowledge_items: usize,
+    pub conversations: usize,
+    pub messages: usize,
+    pub recommendations: usize,
+    pub feedback_events: usize,
+}
+
+impl DataExport {
+    pub const FORMAT_VERSION: u32 = 1;
+
+    pub fn summary(&self) -> DataImportSummary {
+        DataImportSummary {
+            knowledge_items: self.knowledge_items.len(),
+            conversations: self.conversations.len(),
+            messages: self.messages.len(),
+            recommendations: self.recommendations.len(),
+            feedback_events: self.feedback_events.len(),
+        }
+    }
 }
 
 pub type NewFeedbackEvent = FeedbackEvent;
@@ -335,7 +380,10 @@ mod tests {
         let value: KnowledgeItemPatch =
             serde_json::from_str(r#"{"title":"hello","tags":["a","b"]}"#).unwrap();
         assert_eq!(value.title, NullablePatch::Value("hello".to_string()));
-        assert_eq!(value.tags, NullablePatch::Value(vec!["a".to_string(), "b".to_string()]));
+        assert_eq!(
+            value.tags,
+            NullablePatch::Value(vec!["a".to_string(), "b".to_string()])
+        );
     }
 }
 

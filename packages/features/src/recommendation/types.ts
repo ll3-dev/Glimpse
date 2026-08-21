@@ -21,7 +21,11 @@ export interface GenerateRecommendationsDeps {
   coreClient: {
     listWeeklyKnowledgeItems: (since: number) => Promise<KnowledgeItem[]>;
   };
-  getWeeklyItems: () => Promise<WeeklyItemsResult>;
+  getWeeklyItems: (since?: number) => Promise<WeeklyItemsResult>;
+}
+
+export interface GenerateRecommendationsResult {
+  recommendations: GeneratedRecommendation[];
 }
 
 export interface GenerateResult {
@@ -117,6 +121,10 @@ export type RespondToRecommendationResult =
   | RespondToRecommendationSuccessResult
   | RespondToRecommendationFailureResult;
 
+export type RespondSuccessResult = RespondToRecommendationSuccessResult;
+export type RespondFailureResult = RespondToRecommendationFailureResult;
+export type RespondResult = RespondToRecommendationResult;
+
 export interface RecommendationFeedbackDeps {
   coreClient: {
     logRecommendationFeedback: (event: FeedbackEvent) => Promise<FeedbackEvent>;
@@ -142,6 +150,10 @@ export interface LogRecommendationFeedbackFailureResult {
 export type LogRecommendationFeedbackResult =
   | LogRecommendationFeedbackSuccessResult
   | LogRecommendationFeedbackFailureResult;
+
+export type LogFeedbackSuccessResult = LogRecommendationFeedbackSuccessResult;
+export type LogFeedbackFailureResult = LogRecommendationFeedbackFailureResult;
+export type LogFeedbackResult = LogRecommendationFeedbackResult;
 
 export interface RecentFeedbackSuccessResult {
   success: true;

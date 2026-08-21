@@ -10,6 +10,9 @@ pub enum Error {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
     #[error("Record not found: {0} with id {1}")]
     NotFound(String, String),
 

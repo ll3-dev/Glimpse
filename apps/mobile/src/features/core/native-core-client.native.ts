@@ -109,4 +109,7 @@ export const nativeCoreClient: CoreClient = {
     selectDelegate().then((c) => c.listRecentFeedbackEvents(limit)),
   logRecommendationFeedback: (event) =>
     selectDelegate().then((c) => c.logRecommendationFeedback(event)),
+  exportData: () => selectDelegate().then((c) => c.exportData()),
+  importData: (dataJson) => selectDelegate().then((c) => c.importData(dataJson)),
+  deleteAllData: () => selectDelegate().then((c) => c.deleteAllData()),
 };

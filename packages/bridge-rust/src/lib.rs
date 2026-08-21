@@ -6,6 +6,7 @@
 use rustra::ffi::FfiFormat;
 
 pub mod conversation;
+pub mod data;
 pub mod error;
 pub mod events;
 pub mod feedback;
@@ -17,6 +18,7 @@ pub mod review;
 pub mod state;
 
 pub use conversation::conversation_package;
+pub use data::data_package;
 pub use error::to_rustra_err;
 pub use events::{
     emit_llm_done, emit_llm_token, emit_model_download_done, emit_model_download_failed,
@@ -30,8 +32,7 @@ pub use recommendation::recommendation_package;
 pub use review::review_package;
 pub use state::{core_state, init_core, initialize_core, reset_core};
 
-/// Assembles the flat `glimpse.core` package with ALL 27 commands (26 domain
-/// + `initializeCore`).
+/// Assembles the flat `glimpse.core` package with every shared domain command.
 ///
 /// Hosts that want a single registration surface (Tauri dispatch, mobile FFI)
 /// use this; per-domain packages remain available for granular hosting.
@@ -44,6 +45,7 @@ pub fn glimpse_package() -> rustra::Package {
                 // metadata consts are module-private, so registration must
                 // happen inside the defining module).
                 .pipe(conversation::register_commands)
+                .pipe(data::register_commands)
                 .pipe(feedback::register_commands)
                 .pipe(knowledge::register_commands)
                 .pipe(message::register_commands)

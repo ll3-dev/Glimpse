@@ -45,4 +45,7 @@ export const mobileCoreClient: MobileCoreClient = {
 
   listRecentFeedbackEvents: (limit) => nativeCoreClient.listRecentFeedbackEvents(limit),
   logRecommendationFeedback: (event) => nativeCoreClient.logRecommendationFeedback(event),
+  exportData: () => nativeCoreClient.exportData(),
+  importData: (dataJson) => nativeCoreClient.importData(dataJson),
+  deleteAllData: () => nativeCoreClient.deleteAllData(),
 };

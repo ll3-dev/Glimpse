@@ -50,7 +50,7 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps)
     input: { since: number; limit?: number } = { since: Date.now() - 7 * 24 * 60 * 60 * 1000 }
   ): Promise<GenerateRecommendationsDepsResult> => {
     try {
-      const weeklyItems = await deps.getWeeklyItems();
+      const weeklyItems = await deps.getWeeklyItems(input.since);
       if (weeklyItems.success === false) {
         return { success: false, error: weeklyItems.error };
       }

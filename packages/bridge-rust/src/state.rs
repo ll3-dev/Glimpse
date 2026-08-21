@@ -77,8 +77,8 @@ pub fn initialize_core(input: InitializeCoreInput) -> Result<InitializeCoreOutpu
         return Ok(InitializeCoreOutput { initialized: false });
     }
 
-    let storage = glimpse_core::SqliteStorage::new(&input.db_path)
-        .map_err(crate::error::to_rustra_err)?;
+    let storage =
+        glimpse_core::SqliteStorage::new(&input.db_path).map_err(crate::error::to_rustra_err)?;
     let replaced = init_core(SharedCore::new(storage));
     let initialized = replaced.is_none();
     // Under a true race a previous racer's connection is returned here — the
@@ -106,9 +106,7 @@ pub fn init_core(core: SharedCore) -> Option<SharedCore> {
 /// before dispatching any bridge command.
 pub fn core_state() -> CoreGuard {
     CoreGuard {
-        _outer: CORE
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        _outer: CORE.lock().unwrap_or_else(|poisoned| poisoned.into_inner()),
     }
 }
 
@@ -116,9 +114,7 @@ pub fn core_state() -> CoreGuard {
 ///
 /// Used by the unified `glimpse.core` package — must live in this module
 /// because `#[command]`'s generated metadata consts are module-private.
-pub(crate) fn register_commands(
-    builder: rustra::PackageBuilder,
-) -> rustra::PackageBuilder {
+pub(crate) fn register_commands(builder: rustra::PackageBuilder) -> rustra::PackageBuilder {
     rustra::register!(builder, initialize_core)
 }
 

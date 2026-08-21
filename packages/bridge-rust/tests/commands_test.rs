@@ -7,19 +7,18 @@
 use glimpse_bridge::{init_core, knowledge_package, reset_core};
 use glimpse_core::SharedCore;
 use serde_json::json;
-use std::sync::{Mutex, Once};
+use std::sync::Mutex;
 
 /// Bridge state is process-global (OnceLock), so tests serialize on this lock
 /// and each test only asserts on its own seeded items.
 static TEST_LOCK: Mutex<()> = Mutex::new(());
-static INIT: Once = Once::new();
 
 fn setup() -> std::sync::MutexGuard<'static, ()> {
-    let guard = TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-    INIT.call_once(|| {
-        let core = SharedCore::in_memory().expect("in-memory SharedCore");
-        let _ = init_core(core);
-    });
+    let guard = TEST_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let core = SharedCore::in_memory().expect("in-memory SharedCore");
+    let _ = init_core(core);
     guard
 }
 
@@ -29,32 +28,35 @@ fn save_knowledge_item_roundtrips_with_camel_case_fields() {
     let pkg = knowledge_package();
 
     let out = pkg
-        .invoke_json("saveKnowledgeItem", json!({
-            "item": {
-                "id": "k-1",
-                "type": "note",
-                "title": "First note",
-                "body": null,
-                "url": null,
-                "summary": null,
-                "tags": ["rust", "bridge"],
-                "labels": null,
-                "provisionalLabels": null,
-                "labelStatus": null,
-                "labelSource": null,
-                "labelVersion": null,
-                "labelScore": null,
-                "labelRequestedAt": null,
-                "labelCompletedAt": null,
-                "labelError": null,
-                "createdAt": 1000,
-                "updatedAt": 1000,
-                "stability": null,
-                "difficulty": null,
-                "lastReviewedAt": null,
-                "nextReviewAt": 2000
-            }
-        }))
+        .invoke_json(
+            "saveKnowledgeItem",
+            json!({
+                "item": {
+                    "id": "k-1",
+                    "type": "note",
+                    "title": "First note",
+                    "body": null,
+                    "url": null,
+                    "summary": null,
+                    "tags": ["rust", "bridge"],
+                    "labels": null,
+                    "provisionalLabels": null,
+                    "labelStatus": null,
+                    "labelSource": null,
+                    "labelVersion": null,
+                    "labelScore": null,
+                    "labelRequestedAt": null,
+                    "labelCompletedAt": null,
+                    "labelError": null,
+                    "createdAt": 1000,
+                    "updatedAt": 1000,
+                    "stability": null,
+                    "difficulty": null,
+                    "lastReviewedAt": null,
+                    "nextReviewAt": 2000
+                }
+            }),
+        )
         .expect("saveKnowledgeItem should succeed");
 
     assert_eq!(out["item"]["id"], "k-1");
@@ -141,7 +143,10 @@ fn list_and_query_knowledge_commands_roundtrip() {
         .iter()
         .map(|item| item["id"].as_str().expect("id string"))
         .collect();
-    assert!(listed_ids.contains(&"k-3"), "k-3 missing from {listed_ids:?}");
+    assert!(
+        listed_ids.contains(&"k-3"),
+        "k-3 missing from {listed_ids:?}"
+    );
 
     let got = pkg
         .invoke_json("getKnowledgeItemById", json!({ "itemId": "k-3" }))
@@ -162,10 +167,16 @@ fn list_and_query_knowledge_commands_roundtrip() {
         .iter()
         .map(|item| item["id"].as_str().expect("id string"))
         .collect();
-    assert!(weekly_ids.contains(&"k-3"), "k-3 missing from {weekly_ids:?}");
+    assert!(
+        weekly_ids.contains(&"k-3"),
+        "k-3 missing from {weekly_ids:?}"
+    );
 
     let pending = pkg
-        .invoke_json("listPendingKnowledgeItemsForLabeling", json!({ "limit": 10 }))
+        .invoke_json(
+            "listPendingKnowledgeItemsForLabeling",
+            json!({ "limit": 10 }),
+        )
         .expect("listPendingKnowledgeItemsForLabeling should succeed");
     // core 가 label_status enum 을 plain 문자열로 저장하도록 수정됨
     // (serde 인용 시 WHERE 절과 불일치하던 버그) — k-3 이 pending 으로
@@ -281,7 +292,10 @@ fn message_commands_roundtrip() {
     assert_eq!(added["message"]["conversationId"], "c-9");
 
     let listed = pkg
-        .invoke_json("listConversationMessages", json!({ "conversationId": "c-9" }))
+        .invoke_json(
+            "listConversationMessages",
+            json!({ "conversationId": "c-9" }),
+        )
         .expect("listConversationMessages should succeed");
     let ids: Vec<&str> = listed["messages"]
         .as_array()
@@ -299,8 +313,11 @@ fn message_commands_roundtrip() {
         .expect("updateMessage should succeed");
     assert_eq!(updated["message"]["content"], "edited");
 
-    pkg.invoke_json("deleteMessage", json!({ "messageId": "m-1", "deletedAt": 2000 }))
-        .expect("deleteMessage should succeed");
+    pkg.invoke_json(
+        "deleteMessage",
+        json!({ "messageId": "m-1", "deletedAt": 2000 }),
+    )
+    .expect("deleteMessage should succeed");
 }
 
 // ============================================================================
@@ -338,13 +355,11 @@ fn recommendation_commands_roundtrip() {
     let pending = pkg
         .invoke_json("listPendingRecommendations", json!({}))
         .expect("listPendingRecommendations should succeed");
-    assert!(
-        pending["recommendations"]
-            .as_array()
-            .expect("array")
-            .iter()
-            .any(|r| r["id"] == "r-1")
-    );
+    assert!(pending["recommendations"]
+        .as_array()
+        .expect("array")
+        .iter()
+        .any(|r| r["id"] == "r-1"));
 
     pkg.invoke_json(
         "respondToRecommendation",
@@ -502,10 +517,58 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 27 commands (26 domain + initializeCore)
+    // schema exposes all 30 commands, including data portability.
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
-    assert_eq!(commands.len(), 27, "unified package must expose 27 commands");
+    assert_eq!(
+        commands.len(),
+        30,
+        "unified package must expose 30 commands"
+    );
+}
+
+#[test]
+fn data_commands_export_import_and_delete_roundtrip() {
+    let _guard = setup();
+    let pkg = glimpse_bridge::glimpse_package();
+
+    pkg.invoke_json(
+        "saveKnowledgeItem",
+        json!({
+            "item": {
+                "id": "portable", "type": "note", "title": "Portable", "body": "body",
+                "url": null, "summary": null, "tags": null, "labels": null,
+                "provisionalLabels": null, "labelStatus": null, "labelSource": null,
+                "labelVersion": null, "labelScore": null, "labelRequestedAt": null,
+                "labelCompletedAt": null, "labelError": null, "createdAt": 1,
+                "updatedAt": 1, "stability": null, "difficulty": null,
+                "lastReviewedAt": null, "nextReviewAt": null
+            }
+        }),
+    )
+    .expect("seed item should save");
+
+    let exported = pkg
+        .invoke_json("exportData", json!({}))
+        .expect("data should export");
+    let data_json = exported["dataJson"].as_str().expect("JSON string");
+    assert!(data_json.contains("portable"));
+
+    pkg.invoke_json("deleteAllData", json!({}))
+        .expect("data should delete");
+    let empty = pkg
+        .invoke_json("listKnowledgeItems", json!({}))
+        .expect("empty data should list");
+    assert!(empty["items"].as_array().expect("array").is_empty());
+
+    let imported = pkg
+        .invoke_json("importData", json!({ "dataJson": data_json }))
+        .expect("data should import");
+    assert_eq!(imported["knowledgeItems"], 1);
+    let restored = pkg
+        .invoke_json("listKnowledgeItems", json!({}))
+        .expect("restored data should list");
+    assert_eq!(restored["items"][0]["id"], "portable");
 }
 
 // ============================================================================
@@ -559,13 +622,20 @@ fn malformed_patch_value_returns_invalid_args_not_silent_null() {
         .expect_err("string-typed labelScore must be rejected");
 
     assert_eq!(err.code(), "command.invalid_args");
-    assert!(err.message().contains("labelScore"), "message: {}", err.message());
+    assert!(
+        err.message().contains("labelScore"),
+        "message: {}",
+        err.message()
+    );
 
     // The rejection must NOT have mutated the stored value.
     let got = pkg
         .invoke_json("getKnowledgeItemById", json!({ "itemId": "k-err" }))
         .expect("read-back should succeed");
-    assert_eq!(got["item"]["labelScore"], 0.5, "malformed patch must not clear the column");
+    assert_eq!(
+        got["item"]["labelScore"], 0.5,
+        "malformed patch must not clear the column"
+    );
 }
 
 #[test]
@@ -598,7 +668,11 @@ fn respond_to_recommendation_bad_enum_returns_invalid_args() {
         .expect_err("unknown enum string must be rejected");
 
     assert_eq!(err.code(), "command.invalid_args");
-    assert!(err.message().contains("status"), "message: {}", err.message());
+    assert!(
+        err.message().contains("status"),
+        "message: {}",
+        err.message()
+    );
 
     // The typo must not have been persisted as a fallback status.
     let after = pkg
@@ -610,7 +684,10 @@ fn respond_to_recommendation_bad_enum_returns_invalid_args() {
         .iter()
         .find(|r| r["id"] == "r-bad")
         .expect("recommendation present");
-    assert_eq!(status["status"], "pending", "bad enum must not persist a fallback");
+    assert_eq!(
+        status["status"], "pending",
+        "bad enum must not persist a fallback"
+    );
 }
 
 // ============================================================================
@@ -647,7 +724,10 @@ fn initialize_core_is_idempotent_and_serves_subsequent_commands() {
     // exactly one SQLite connection per process. It must not even touch the
     // bogus path (no "unable to open database file" error).
     let second = pkg
-        .invoke_json("initializeCore", json!({ "dbPath": "/dev/null/other.sqlite" }))
+        .invoke_json(
+            "initializeCore",
+            json!({ "dbPath": "/dev/null/other.sqlite" }),
+        )
         .expect("second initializeCore should succeed");
     assert_eq!(second["initialized"], false, "second call is a no-op");
 
@@ -679,7 +759,11 @@ fn initialize_core_is_idempotent_and_serves_subsequent_commands() {
         .iter()
         .map(|item| item["id"].as_str().expect("id string"))
         .collect();
-    assert_eq!(ids, vec!["init-1"], "fresh db must contain only the new item");
+    assert_eq!(
+        ids,
+        vec!["init-1"],
+        "fresh db must contain only the new item"
+    );
 
     // Restore the in-memory core other tests rely on.
     let _ = init_core(previous);

@@ -7,6 +7,7 @@ import { logger } from "@/src/utils/logger";
 // Legacy path (before App Group migration)
 const LEGACY_CORE_DIRECTORY = `${RNBlobUtil.fs.dirs.DocumentDir}/glimpse`;
 const LEGACY_DB_PATH = `${LEGACY_CORE_DIRECTORY}/glimpse.sqlite`;
+const SQLITE_SIDECAR_SUFFIXES = ["-wal", "-shm"] as const;
 
 let initializationPromise: Promise<string> | null = null;
 
@@ -24,28 +25,63 @@ async function migrateToAppGroup(appGroupPath: string): Promise<void> {
   if (legacyDbExists && !newDbExists) {
     logger.info("Migrating database from DocumentDir to App Group container...");
 
-    // Copy the database file
-    await RNBlobUtil.fs.cp(LEGACY_DB_PATH, newDbPath);
+    const legacyFiles = [
+      LEGACY_DB_PATH,
+      ...(await Promise.all(
+        SQLITE_SIDECAR_SUFFIXES.map(async (suffix) => {
+          const path = `${LEGACY_DB_PATH}${suffix}`;
+          return (await RNBlobUtil.fs.exists(path)) ? path : null;
+        })
+      )),
+    ].filter((path): path is string => path !== null);
+    const stagedFiles: { source: string; staged: string; target: string }[] = [];
 
-    // Verify both existence and byte size before removing the only known-good copy.
-    const newDbExistsAfterCopy = await RNBlobUtil.fs.exists(newDbPath);
-    if (!newDbExistsAfterCopy) {
-      throw new Error("Database migration failed: copy did not succeed");
-    }
+    try {
+      for (const source of legacyFiles) {
+        const suffix = source.slice(LEGACY_DB_PATH.length);
+        const target = `${newDbPath}${suffix}`;
+        const staged = `${target}.migrating`;
+        if (await RNBlobUtil.fs.exists(staged)) {
+          await RNBlobUtil.fs.unlink(staged);
+        }
+        await RNBlobUtil.fs.cp(source, staged);
 
-    const [legacyStat, copiedStat] = await Promise.all([
-      RNBlobUtil.fs.stat(LEGACY_DB_PATH),
-      RNBlobUtil.fs.stat(newDbPath),
-    ]);
-    if (legacyStat.size <= 0 || copiedStat.size !== legacyStat.size) {
-      await RNBlobUtil.fs.unlink(newDbPath);
-      throw new Error(
-        `Database migration failed: expected ${legacyStat.size} bytes, copied ${copiedStat.size} bytes`
+        const [sourceStat, stagedStat] = await Promise.all([
+          RNBlobUtil.fs.stat(source),
+          RNBlobUtil.fs.stat(staged),
+        ]);
+        if (sourceStat.size <= 0 || stagedStat.size !== sourceStat.size) {
+          throw new Error(
+            `Database migration failed for ${suffix || "main"}: expected ${sourceStat.size} bytes, copied ${stagedStat.size} bytes`
+          );
+        }
+        stagedFiles.push({ source, staged, target });
+      }
+
+      // Sidecars are committed first and the main DB last. The main file is the
+      // migration marker, so an interrupted copy is retried on the next launch.
+      const commitOrder = [...stagedFiles].sort((left, right) =>
+        left.target === newDbPath ? 1 : right.target === newDbPath ? -1 : 0
       );
+      for (const file of commitOrder) {
+        if (await RNBlobUtil.fs.exists(file.target)) {
+          await RNBlobUtil.fs.unlink(file.target);
+        }
+        await RNBlobUtil.fs.mv(file.staged, file.target);
+      }
+    } catch (error) {
+      await Promise.all(
+        stagedFiles.map(async ({ staged }) => {
+          if (await RNBlobUtil.fs.exists(staged)) {
+            await RNBlobUtil.fs.unlink(staged);
+          }
+        })
+      );
+      throw error;
     }
 
-    // Remove the old database (keep the directory for other files)
-    await RNBlobUtil.fs.unlink(LEGACY_DB_PATH);
+    // Remove the legacy set only after every database file is committed.
+    await Promise.all(legacyFiles.map((path) => RNBlobUtil.fs.unlink(path)));
 
     logger.info("Database migration completed successfully");
   }

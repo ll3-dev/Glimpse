@@ -3,11 +3,13 @@
  */
 
 export type LocalLLMModelFamily =
+  | 'embedded-chat'
   | 'llama'
   | 'mistral'
   | 'phi'
   | 'qwen'
   | 'qwen-chatml'
+  | 'lfm2'
   | 'gemma'
   | 'glm'
   | 'nomic'

@@ -55,4 +55,7 @@ export const nativeCoreClient: CoreClient = {
 
   listRecentFeedbackEvents: (limit) => getDelegate().listRecentFeedbackEvents(limit),
   logRecommendationFeedback: (event) => getDelegate().logRecommendationFeedback(event),
+  exportData: () => getDelegate().exportData(),
+  importData: (dataJson) => getDelegate().importData(dataJson),
+  deleteAllData: () => getDelegate().deleteAllData(),
 };

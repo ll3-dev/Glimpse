@@ -4,6 +4,7 @@ mod conversation;
 mod feedback;
 mod knowledge;
 mod message;
+mod portability;
 mod recommendation;
 mod review;
 

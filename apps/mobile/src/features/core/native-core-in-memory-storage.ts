@@ -78,6 +78,10 @@ export class InMemoryStorage {
     return this.messages.get(conversationId) ?? [];
   }
 
+  getAllMessages(): Message[] {
+    return Array.from(this.messages.values()).flat();
+  }
+
   updateMessage(messageId: string, patch: Partial<Message>): Message | undefined {
     for (const messages of this.messages.values()) {
       const index = messages.findIndex((message) => message.id === messageId);
@@ -124,5 +128,17 @@ export class InMemoryStorage {
 
   getRecentFeedbackEvents(limit: number): FeedbackEvent[] {
     return this.feedbackEvents.slice(-limit);
+  }
+
+  getAllFeedbackEvents(): FeedbackEvent[] {
+    return [...this.feedbackEvents];
+  }
+
+  clear(): void {
+    this.knowledgeItems.clear();
+    this.conversations.clear();
+    this.messages.clear();
+    this.recommendations.clear();
+    this.feedbackEvents = [];
   }
 }

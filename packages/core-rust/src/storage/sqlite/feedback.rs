@@ -52,4 +52,25 @@ impl SqliteStorage {
 
         Ok(events)
     }
+
+    pub(super) fn list_all_feedback_events(&self) -> Result<Vec<FeedbackEvent>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT id, recommendation_id, action, created_at
+            FROM feedback_events
+            ORDER BY created_at ASC, id ASC
+            "#,
+        )?;
+        let events = stmt
+            .query_map([], |row| {
+                Ok(FeedbackEvent {
+                    id: row.get(0)?,
+                    recommendation_id: row.get(1)?,
+                    action: parse_json_column(row, 2)?,
+                    created_at: row.get(3)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(events)
+    }
 }

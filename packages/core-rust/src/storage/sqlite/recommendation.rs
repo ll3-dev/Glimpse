@@ -14,17 +14,23 @@ impl SqliteStorage {
 
     pub fn insert_recommendation(&self, recommendation: &Recommendation) -> Result<()> {
         let status_str = Self::recommendation_status_to_str(&recommendation.status);
+        let (item_a_id, item_b_id) = if recommendation.item_a_id < recommendation.item_b_id {
+            (&recommendation.item_a_id, &recommendation.item_b_id)
+        } else {
+            (&recommendation.item_b_id, &recommendation.item_a_id)
+        };
 
         self.conn.execute(
             r#"
-            INSERT OR REPLACE INTO recommendations (
+            INSERT INTO recommendations (
                 id, item_a_id, item_b_id, reason, status, created_at, responded_at
             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            ON CONFLICT(item_a_id, item_b_id) DO NOTHING
             "#,
             params![
                 recommendation.id,
-                recommendation.item_a_id,
-                recommendation.item_b_id,
+                item_a_id,
+                item_b_id,
                 recommendation.reason,
                 status_str,
                 recommendation.created_at,

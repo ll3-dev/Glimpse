@@ -2,6 +2,7 @@ import type {
   Conversation,
   CoreClient,
   FeedbackEvent,
+  DataImportSummary,
   GetDueKnowledgeItemsInput,
   KnowledgeItem,
   Message,
@@ -12,6 +13,39 @@ import { InMemoryStorage } from './native-core-in-memory-storage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FORGOTTEN_REVIEW_INTERVAL_MS = 4 * 60 * 60 * 1000;
+const DATA_EXPORT_FORMAT_VERSION = 1;
+
+type PortableData = {
+  formatVersion: number;
+  exportedAt: number;
+  knowledgeItems: KnowledgeItem[];
+  conversations: Conversation[];
+  messages: Message[];
+  recommendations: Recommendation[];
+  feedbackEvents: FeedbackEvent[];
+};
+
+function parsePortableData(dataJson: string): PortableData {
+  const parsed: unknown = JSON.parse(dataJson);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('가져오기 데이터는 JSON 객체여야 합니다.');
+  }
+  const data = parsed as Partial<PortableData>;
+  if (data.formatVersion !== DATA_EXPORT_FORMAT_VERSION) {
+    throw new Error(`지원하지 않는 데이터 버전입니다: ${String(data.formatVersion)}`);
+  }
+  const collections = [
+    data.knowledgeItems,
+    data.conversations,
+    data.messages,
+    data.recommendations,
+    data.feedbackEvents,
+  ];
+  if (collections.some((collection) => !Array.isArray(collection))) {
+    throw new Error('가져오기 데이터의 컬렉션 형식이 올바르지 않습니다.');
+  }
+  return data as PortableData;
+}
 
 function createNotFoundError(entityName: string, id: string): Error {
   return new Error(`${entityName} not found: ${id}`);
@@ -207,6 +241,42 @@ export function createFallbackCoreClient(
     async logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent> {
       storage.addFeedbackEvent(event);
       return event;
+    },
+
+    async exportData(): Promise<string> {
+      const data: PortableData = {
+        formatVersion: DATA_EXPORT_FORMAT_VERSION,
+        exportedAt: Date.now(),
+        knowledgeItems: storage.getAllKnowledgeItems(),
+        conversations: storage.getAllConversations(),
+        messages: storage.getAllMessages(),
+        recommendations: storage.getAllRecommendations(),
+        feedbackEvents: storage.getAllFeedbackEvents(),
+      };
+      return JSON.stringify(data, null, 2);
+    },
+
+    async importData(dataJson: string): Promise<DataImportSummary> {
+      const data = parsePortableData(dataJson);
+      storage.clear();
+      data.knowledgeItems.forEach((item) => storage.addKnowledgeItem(item));
+      data.conversations.forEach((conversation) => storage.addConversation(conversation));
+      data.messages.forEach((message) => storage.addMessage(message.conversationId, message));
+      data.recommendations.forEach((recommendation) =>
+        storage.addRecommendation(recommendation),
+      );
+      data.feedbackEvents.forEach((event) => storage.addFeedbackEvent(event));
+      return {
+        knowledgeItems: data.knowledgeItems.length,
+        conversations: data.conversations.length,
+        messages: data.messages.length,
+        recommendations: data.recommendations.length,
+        feedbackEvents: data.feedbackEvents.length,
+      };
+    },
+
+    async deleteAllData(): Promise<void> {
+      storage.clear();
     },
   };
 }

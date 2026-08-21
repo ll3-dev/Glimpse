@@ -86,9 +86,7 @@ pub struct UpdateKnowledgeItemOutput {
 }
 
 #[command]
-pub fn update_knowledge_item(
-    input: UpdateKnowledgeItemInput,
-) -> Result<UpdateKnowledgeItemOutput> {
+pub fn update_knowledge_item(input: UpdateKnowledgeItemInput) -> Result<UpdateKnowledgeItemOutput> {
     let core = crate::state::core_state();
     let patch: glimpse_core::KnowledgeItemPatch = input.patch.try_into()?;
     let item = core
@@ -108,9 +106,7 @@ pub struct DeleteKnowledgeItemInput {
 pub struct DeleteKnowledgeItemOutput {}
 
 #[command]
-pub fn delete_knowledge_item(
-    input: DeleteKnowledgeItemInput,
-) -> Result<DeleteKnowledgeItemOutput> {
+pub fn delete_knowledge_item(input: DeleteKnowledgeItemInput) -> Result<DeleteKnowledgeItemOutput> {
     let core = crate::state::core_state();
     core.delete_knowledge_item(&input.item_id)
         .map_err(crate::error::to_rustra_err)?;
@@ -226,9 +222,7 @@ pub fn get_due_knowledge_items(
 pub fn knowledge_package() -> rustra::Package {
     static CACHED: std::sync::OnceLock<rustra::Package> = std::sync::OnceLock::new();
     CACHED
-        .get_or_init(|| {
-            register_commands(rustra::Package::builder("glimpse.knowledge")).build()
-        })
+        .get_or_init(|| register_commands(rustra::Package::builder("glimpse.knowledge")).build())
         .clone()
 }
 
@@ -237,9 +231,7 @@ pub fn knowledge_package() -> rustra::Package {
 /// Used both by [`knowledge_package`] and by the unified `glimpse.core`
 /// package — must live in this module because `#[command]`'s generated
 /// metadata consts are module-private.
-pub(crate) fn register_commands(
-    builder: rustra::PackageBuilder,
-) -> rustra::PackageBuilder {
+pub(crate) fn register_commands(builder: rustra::PackageBuilder) -> rustra::PackageBuilder {
     rustra::register!(
         builder,
         save_knowledge_item,

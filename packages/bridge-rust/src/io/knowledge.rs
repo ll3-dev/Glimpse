@@ -167,10 +167,7 @@ impl TryFrom<KnowledgeItemPatchIo> for KnowledgeItemPatch {
 
     fn try_from(patch: KnowledgeItemPatchIo) -> Result<Self, RustraError> {
         Ok(Self {
-            item_type: patch
-                .item_type
-                .map(|s| parse_enum("type", s))
-                .transpose()?,
+            item_type: patch.item_type.map(|s| parse_enum("type", s)).transpose()?,
             title: to_patch("title", patch.title)?,
             body: to_patch("body", patch.body)?,
             url: to_patch("url", patch.url)?,

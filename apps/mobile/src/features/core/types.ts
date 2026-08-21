@@ -2,6 +2,7 @@
 import type {
   Conversation,
   CoreKnowledgeItemLike,
+  DataImportSummary,
   FeedbackEvent,
   GetDueKnowledgeItemsInput,
   InitializeReviewScheduleInput,
@@ -69,4 +70,9 @@ export interface MobileCoreClient {
   // Feedback Events
   listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]>;
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
+
+  // Data portability
+  exportData(): Promise<string>;
+  importData(dataJson: string): Promise<DataImportSummary>;
+  deleteAllData(): Promise<void>;
 }

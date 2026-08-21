@@ -30,6 +30,15 @@ const bridge = {
   respondToRecommendation: mock(
     (_recommendationId: string, _status: string, _event: unknown) => undefined
   ),
+  exportData: mock(() => '{}'),
+  importData: mock((_dataJson: string) => ({
+    knowledgeItems: 0,
+    conversations: 0,
+    messages: 0,
+    recommendations: 0,
+    feedbackEvents: 0,
+  })),
+  deleteAllData: mock(() => undefined),
 };
 
 mock.module('./native-core-client', () => ({

@@ -52,6 +52,9 @@ import {
   calculateTagOverlap,
   calculateNextReview,
   initializeReviewSchedule,
+  exportData,
+  importData,
+  deleteAllData,
 } from '@glimpse/bridge-generated';
 
 export function createRustraCoreClient(): CoreClient {
@@ -129,5 +132,12 @@ export function createRustraCoreClient(): CoreClient {
       (await calculateNextReview(input)) as CalculateNextReviewOutput,
     initializeReviewSchedule: async (input) =>
       (await initializeReviewSchedule(input)) as InitializeReviewScheduleOutput,
+
+    // -- Data portability --
+    exportData: async () => (await exportData({})).dataJson,
+    importData: async (dataJson) => importData({ dataJson }),
+    deleteAllData: async () => {
+      await deleteAllData({});
+    },
   };
 }

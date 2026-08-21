@@ -1,5 +1,5 @@
 import { createSaveKnowledgeItem } from '@/src/features/core/application/capture';
-import { initializeReviewSchedule } from '../review';
+import { initializeReviewSchedule } from '../review/initializeReviewSchedule';
 import { logger } from '@/src/utils/logger';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 import type {

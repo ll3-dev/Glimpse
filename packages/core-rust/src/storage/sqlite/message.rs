@@ -84,6 +84,30 @@ impl SqliteStorage {
         Ok(messages)
     }
 
+    pub(super) fn list_all_messages(&self) -> Result<Vec<Message>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT id, conversation_id, role, content, created_at, updated_at, deleted_at
+            FROM messages
+            ORDER BY created_at ASC, id ASC
+            "#,
+        )?;
+        let messages = stmt
+            .query_map([], |row| {
+                Ok(Message {
+                    id: row.get(0)?,
+                    conversation_id: row.get(1)?,
+                    role: parse_json_column(row, 2)?,
+                    content: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    deleted_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(messages)
+    }
+
     pub fn update_message(&self, id: &str, patch: &MessagePatch) -> Result<Message> {
         let existing = self
             .get_message(id)?

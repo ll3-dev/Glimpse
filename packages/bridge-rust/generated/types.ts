@@ -144,6 +144,10 @@ export type CreateConversationOutput = {
   conversation: ConversationIo;
 };
 
+export type DeleteAllDataInput = Record<string, unknown>;
+
+export type DeleteAllDataOutput = Record<string, unknown>;
+
 export type DeleteConversationInput = {
   conversationId: string;
   deletedAt: number;
@@ -164,6 +168,12 @@ export type DeleteMessageInput = {
 
 export type DeleteMessageOutput = Record<string, unknown>;
 
+export type ExportDataInput = Record<string, unknown>;
+
+export type ExportDataOutput = {
+  dataJson: string;
+};
+
 export type GetDueKnowledgeItemsInput = {
   now: number;
   limit?: number | null;
@@ -179,6 +189,18 @@ export type GetKnowledgeItemByIdInput = {
 
 export type GetKnowledgeItemByIdOutput = {
   item?: KnowledgeItemIo | null;
+};
+
+export type ImportDataInput = {
+  dataJson: string;
+};
+
+export type ImportDataOutput = {
+  knowledgeItems: number;
+  conversations: number;
+  messages: number;
+  recommendations: number;
+  feedbackEvents: number;
 };
 
 export type InitializeCoreInput = {
