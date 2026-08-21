@@ -22,7 +22,7 @@ import {
   Linking,
   ScrollView,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -144,35 +144,35 @@ export default function LibraryDetailScreen() {
       <ScreenHeader
         title="보관함 상세"
         leftElement={
-          <TouchableOpacity onPress={() => router.back()} className="-ml-2 p-2">
+          <Pressable onPress={() => router.back()} className="-ml-2 p-2">
             <ArrowLeft size={24} color="#37352f" />
-          </TouchableOpacity>
+          </Pressable>
         }
         rightElement={
           item ? (
             <View className="flex-row items-center gap-1">
-              <TouchableOpacity
+              <Pressable
                 onPress={handleCopyContent}
                 className="p-2 active:opacity-70"
                 accessibilityLabel="복사"
               >
                 <Copy size={18} color="#787774" />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={() => setIsEditModalOpen(true)}
                 className="p-2 active:opacity-70"
                 accessibilityLabel="수정"
               >
                 <Pencil size={18} color="#787774" />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={handleDelete}
                 disabled={isDeleting}
                 className="p-2 -mr-2 active:opacity-70"
                 accessibilityLabel="삭제"
               >
                 <Trash2 size={18} color="#eb5757" />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : undefined
         }
@@ -195,7 +195,8 @@ export default function LibraryDetailScreen() {
       {showItem && item && (
         <ScrollView
           className="flex-1 px-6"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          contentInset={{ bottom: insets.bottom }}
         >
           {/* Main Editorial Card */}
           <Card className="p-5 mb-4">
@@ -228,7 +229,7 @@ export default function LibraryDetailScreen() {
 
             {/* URL Link */}
             {item.url && (
-              <TouchableOpacity
+              <Pressable
                 className="flex-row items-center justify-between bg-app-bg border border-app-border rounded-md px-3.5 py-2.5 mb-4 active:opacity-80"
                 onPress={() => item.url && Linking.openURL(item.url)}
               >
@@ -239,7 +240,7 @@ export default function LibraryDetailScreen() {
                   {item.url}
                 </Text>
                 <ExternalLink size={14} color="#2383e2" />
-              </TouchableOpacity>
+              </Pressable>
             )}
 
             {/* AI Summary Callout */}
@@ -285,7 +286,7 @@ export default function LibraryDetailScreen() {
           </Card>
 
           {/* AI Chat Action CTA */}
-          <TouchableOpacity
+          <Pressable
             onPress={handleStartChat}
             disabled={isCreatingChat}
             className="flex-row items-center justify-center bg-app-text rounded-md py-3.5 px-4 shadow-sm active:opacity-90"
@@ -294,7 +295,7 @@ export default function LibraryDetailScreen() {
             <Text className="text-sm font-semibold text-white">
               {isCreatingChat ? '대화 준비 중...' : '이 항목으로 AI와 대화하기'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </ScrollView>
       )}
 

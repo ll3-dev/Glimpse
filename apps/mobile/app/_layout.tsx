@@ -4,11 +4,17 @@ import "@/src/lib/init";
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { LogBox, Platform, View, Text, TouchableOpacity } from "react-native";
+import { LogBox, Platform, View, Text, Pressable } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AlertTriangle, RefreshCw } from "lucide-react-native";
 
-import { useAppForegroundLabeling, useWarmLocalLLM } from "@/src/hooks";
+import {
+  useAppForegroundLabeling,
+  useAppForegroundRecommendations,
+  useRecoverLocalModelDownload,
+  useReleaseLocalLLMOnPressure,
+  useWarmLocalLLM,
+} from "@/src/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
@@ -21,10 +27,14 @@ import { useProcessPendingShares } from "@/src/features/share/pending-share-proc
 import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
+import { useSemanticColor } from "@glimpse/ui";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
+  useAppForegroundRecommendations();
+  useRecoverLocalModelDownload();
   useWarmLocalLLM();
+  useReleaseLocalLLMOnPressure();
   useProcessPendingShares();
   return <>{children}</>;
 }
@@ -36,11 +46,14 @@ function CoreInitErrorFallback({
   error: Error;
   onRetry: () => void;
 }) {
+  const appAccent = useSemanticColor("appAccent");
+  const appBg = useSemanticColor("appBg");
+
   return (
     <View className="flex-1 bg-app-bg items-center justify-center p-6">
       <View className="w-full max-w-sm rounded-2xl border border-app-border bg-app-card p-6 shadow-sm">
         <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-tag-rose-bg/60 border border-tag-rose-text/20">
-          <AlertTriangle size={24} color="#eb5757" />
+          <AlertTriangle size={24} color={appAccent} />
         </View>
 
         <Text className="text-app-text text-lg font-semibold tracking-tight mb-1">
@@ -58,16 +71,17 @@ function CoreInitErrorFallback({
           </View>
         )}
 
-        <TouchableOpacity
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="데이터베이스 초기화 다시 시도"
           onPress={onRetry}
-          activeOpacity={0.8}
-          className="flex-row h-11 items-center justify-center rounded-xl bg-app-text px-4 shadow-sm"
+          className="flex-row min-h-11 items-center justify-center rounded-xl bg-app-text px-4 shadow-sm active:opacity-80"
         >
-          <RefreshCw size={16} color="#f7f6f3" className="mr-2" />
+          <RefreshCw size={16} color={appBg} className="mr-2" />
           <Text className="text-app-bg text-sm font-semibold ml-2">
             다시 시도
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -147,6 +161,7 @@ export default function RootLayout() {
                   >
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="local-models" />
                     <Stack.Screen name="library/[id]" />
                   </Stack>
                   <GlobalModelDownloadBanner />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Alert, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSaveKnowledgeItemMutation } from '@/src/hooks';
 import { useRouter } from 'expo-router';
@@ -78,9 +78,9 @@ export default function CaptureScreen() {
         <ScreenHeader
           title="새 기록"
           leftElement={
-            <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <Pressable onPress={() => router.back()} className="p-2 -ml-2">
               <X size={24} color="#37352f" />
-            </TouchableOpacity>
+            </Pressable>
           }
           rightElement={
             <CaptureSaveButton isSaving={isPending} onPress={handleSave} />

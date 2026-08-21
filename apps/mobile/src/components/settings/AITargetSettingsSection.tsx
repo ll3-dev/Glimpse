@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { Card, Text } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import { SettingsSection } from './SettingsSection';
 import type { AIFeature, AITargetDescriptor } from '@/src/features/ai/targets';
 
@@ -29,8 +30,11 @@ function TargetPicker({
       </Text>
       <View className="flex-row flex-wrap gap-2">
         {allowUseDefault ? (
-          <TouchableOpacity
-            className={`rounded-md border px-3 py-1.5 active:opacity-80 ${
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityLabel={`${title}: 기본값 사용`}
+            accessibilityState={{ checked: inheritsDefault }}
+            className={`min-h-11 justify-center rounded-md border px-3 py-1.5 active:opacity-80 ${
               inheritsDefault ? 'border-app-text bg-app-text' : 'border-app-border bg-app-surface'
             }`}
             onPress={() => onSelect(null)}
@@ -38,14 +42,17 @@ function TargetPicker({
             <Text className={`text-xs font-semibold ${inheritsDefault ? 'text-white' : 'text-app-text'}`}>
               기본값 사용
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ) : null}
         {options.map((option) => {
           const selected = !inheritsDefault && selectedId === option.id;
           return (
-            <TouchableOpacity
+            <Pressable
               key={option.id}
-              className={`rounded-md border px-3 py-1.5 active:opacity-80 ${
+              accessibilityRole="radio"
+              accessibilityLabel={`${title}: ${option.label}`}
+              accessibilityState={{ checked: selected }}
+              className={`min-h-11 justify-center rounded-md border px-3 py-1.5 active:opacity-80 ${
                 selected ? 'border-app-text bg-app-text' : 'border-app-border bg-app-surface'
               }`}
               onPress={() => onSelect(option.id)}
@@ -53,7 +60,7 @@ function TargetPicker({
               <Text className={`text-xs font-semibold ${selected ? 'text-white' : 'text-app-text'}`}>
                 {option.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>
@@ -89,11 +96,12 @@ export function AITargetSettingsSection({
   onSelectLabelingTarget,
 }: AITargetSettingsSectionProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const appMuted = useSemanticColor('appMuted');
 
   return (
     <SettingsSection
       title="기본 AI 엔진"
-      icon={<Sparkles size={18} color="#787774" />}
+      icon={<Sparkles size={18} color={appMuted} />}
       footer="앱 전반(요약, 태그, 대화)에서 기본으로 사용할 AI를 선택합니다."
     >
       <TargetPicker
@@ -108,19 +116,22 @@ export function AITargetSettingsSection({
       />
 
       {/* Collapsible Advanced Feature Routing */}
-      <TouchableOpacity
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="기능별 세부 라우팅"
+        accessibilityState={{ expanded: showAdvanced }}
         onPress={() => setShowAdvanced((prev) => !prev)}
-        className="mt-1 flex-row items-center justify-between py-2 border-t border-app-border/60 active:opacity-70"
+        className="mt-1 min-h-11 flex-row items-center justify-between py-2 border-t border-app-border/60 active:opacity-70"
       >
         <Text className="text-xs font-medium text-app-muted">
           기능별 세부 라우팅 (고급)
         </Text>
         {showAdvanced ? (
-          <ChevronUp size={14} color="#787774" />
+          <ChevronUp size={14} color={appMuted} />
         ) : (
-          <ChevronDown size={14} color="#787774" />
+          <ChevronDown size={14} color={appMuted} />
         )}
-      </TouchableOpacity>
+      </Pressable>
 
       {showAdvanced && (
         <View className="mt-3 pt-2">

@@ -21,7 +21,7 @@ describe('maskApiKey', () => {
   });
 
   test('limits masked portion to 20 chars', () => {
-    const longKey = 'sk-1234567890123456789012345678901234567890';
+    const longKey = `sk-${'1234567890'.repeat(4)}`;
     const masked = maskApiKey(longKey);
     const starCount = masked.split('').filter((c) => c === '*').length;
     expect(starCount).toBeLessThanOrEqual(20);

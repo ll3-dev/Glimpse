@@ -45,10 +45,10 @@ export async function getSecureItem(key: SecureStorageKey | string): Promise<str
   try {
     const available = await isSecureStoreAvailable();
     if (!available) {
-      // Fallback for web / environments without native keychain
-      const fallbackValue = storage.getString(key) ?? null;
-      memoryCache.set(key, fallbackValue);
-      return fallbackValue;
+      if (Platform.OS === 'web') {
+        return null;
+      }
+      throw new Error('Secure storage is unavailable on this device.');
     }
 
     const value = await SecureStore.getItemAsync(key, {
@@ -58,7 +58,7 @@ export async function getSecureItem(key: SecureStorageKey | string): Promise<str
     return value ?? null;
   } catch (error) {
     logger.error(`Failed to get secure item for key: ${key}`, error);
-    return null;
+    throw error;
   }
 }
 
@@ -69,20 +69,23 @@ export async function setSecureItem(
   key: SecureStorageKey | string,
   value: string
 ): Promise<void> {
-  memoryCache.set(key, value);
-
   try {
     const available = await isSecureStoreAvailable();
     if (!available) {
-      storage.set(key, value);
-      return;
+      if (Platform.OS === 'web') {
+        memoryCache.set(key, value);
+        return;
+      }
+      throw new Error('Secure storage is unavailable on this device.');
     }
 
     await SecureStore.setItemAsync(key, value, {
       keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
     });
+    memoryCache.set(key, value);
   } catch (error) {
     logger.error(`Failed to set secure item for key: ${key}`, error);
+    throw error;
   }
 }
 
@@ -90,20 +93,23 @@ export async function setSecureItem(
  * Delete item securely from Keychain / Keystore
  */
 export async function deleteSecureItem(key: SecureStorageKey | string): Promise<void> {
-  memoryCache.delete(key);
-
   try {
     const available = await isSecureStoreAvailable();
     if (!available) {
-      storage.remove(key);
-      return;
+      if (Platform.OS === 'web') {
+        memoryCache.delete(key);
+        return;
+      }
+      throw new Error('Secure storage is unavailable on this device.');
     }
 
     await SecureStore.deleteItemAsync(key, {
       keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
     });
+    memoryCache.delete(key);
   } catch (error) {
     logger.error(`Failed to delete secure item for key: ${key}`, error);
+    throw error;
   }
 }
 
@@ -132,7 +138,6 @@ export async function migrateLegacyPlaintextKey(
     }
   } catch (error) {
     logger.error(`Failed to migrate legacy key ${legacyKey} to ${secureKey}`, error);
+    throw error;
   }
-
-  return null;
 }

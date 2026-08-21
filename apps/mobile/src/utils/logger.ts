@@ -1,4 +1,5 @@
 import { Effect } from 'effect';
+import { captureDiagnostic } from '@glimpse/shared';
 
 type LogContext = Record<string, unknown>;
 
@@ -52,6 +53,7 @@ export const logger = {
 
   warn: (message: string, context?: LogContext) => {
     console.warn(message, context ?? {});
+    captureDiagnostic('warning', message);
   },
 
   error: (message: string, error?: unknown, context?: LogContext) => {
@@ -61,6 +63,7 @@ export const logger = {
       ...(stack ? { stack } : {}),
       ...context,
     });
+    captureDiagnostic('error', message, error);
   },
 };
 
@@ -80,7 +83,17 @@ export function installGlobalErrorTraceLogger() {
   const previousHandler = errorUtils.getGlobalHandler?.();
 
   errorUtils.setGlobalHandler((error, isFatal) => {
-    logger.error('Unhandled JavaScript error', error, { isFatal: Boolean(isFatal) });
+    const fatal = Boolean(isFatal);
+    if (fatal) {
+      console.error('Unhandled JavaScript error', {
+        error: formatError(error),
+        stack: toErrorStack(error),
+        isFatal: true,
+      });
+      captureDiagnostic('fatal', 'Unhandled JavaScript error', error);
+    } else {
+      logger.error('Unhandled JavaScript error', error, { isFatal: false });
+    }
     previousHandler?.(error, isFatal);
   });
 }

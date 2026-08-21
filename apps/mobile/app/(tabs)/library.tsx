@@ -1,6 +1,6 @@
-import { View, TouchableOpacity, ScrollView, Text } from "react-native";
-import { FlashList } from "@shopify/flash-list";
-import { useState, useMemo } from "react";
+import { View, Pressable, Text } from "react-native";
+import { FlashList, type ListRenderItem } from "@shopify/flash-list";
+import { useCallback, useState, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Settings, ArrowUpDown, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -8,25 +8,17 @@ import { Plus } from "@glimpse/ui/icons";
 import {
   EmptyLibraryState,
   KnowledgeItemCard,
+  LibraryFilterBar,
   LibrarySearchInput,
 } from "@/src/components/library";
 import { resolveLibrarySearch } from "@/src/features/library";
 import { useForegroundLabeling, useKnowledgeItemsQuery } from "@/src/hooks";
 import { ScreenHeader } from "@glimpse/ui/primitives";
 import { getDisplayLabels } from "@/src/features/labeling";
-import type { KnowledgeItemType } from "@glimpse/shared";
+import type { KnowledgeItem } from "@glimpse/shared";
+import type { LibraryFilterType } from '@/src/components/library/LibraryFilterBar';
 
-type FilterType = 'all' | KnowledgeItemType;
 type SortOrder = 'latest' | 'oldest' | 'title';
-
-const FILTER_OPTIONS: { type: FilterType; label: string }[] = [
-  { type: 'all', label: '전체' },
-  { type: 'note', label: '메모' },
-  { type: 'link', label: '링크' },
-  { type: 'highlight', label: '하이라이트' },
-  { type: 'screenshot', label: '스크린샷' },
-  { type: 'share', label: '공유' },
-];
 
 const SORT_OPTIONS: { order: SortOrder; label: string }[] = [
   { order: 'latest', label: '최신순' },
@@ -36,7 +28,7 @@ const SORT_OPTIONS: { order: SortOrder; label: string }[] = [
 
 export default function LibraryScreen() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<FilterType>("all");
+  const [selectedType, setSelectedType] = useState<LibraryFilterType>("all");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
   const [showSortPicker, setShowSortPicker] = useState(false);
@@ -113,11 +105,29 @@ export default function LibraryScreen() {
 
   const hasActiveFilters = selectedType !== 'all' || selectedTag !== null || Boolean(searchQuery.trim());
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setSearchQuery('');
     setSelectedType('all');
     setSelectedTag(null);
-  };
+  }, []);
+
+  const handleOpenItem = useCallback(
+    (itemId: string) => router.push(`/library/${itemId}`),
+    [router]
+  );
+
+  const handleSelectTag = useCallback((tag: string) => setSelectedTag(tag), []);
+
+  const renderKnowledgeItem = useCallback<ListRenderItem<KnowledgeItem>>(
+    ({ item }) => (
+      <KnowledgeItemCard
+        item={item}
+        onPress={handleOpenItem}
+        onSelectTag={handleSelectTag}
+      />
+    ),
+    [handleOpenItem, handleSelectTag]
+  );
 
   return (
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
@@ -126,19 +136,19 @@ export default function LibraryScreen() {
         subtitle={`${items?.length || 0}개의 지식`}
         rightElement={
           <View className="flex-row items-center gap-1">
-            <TouchableOpacity
+            <Pressable
               className="p-2 active:opacity-70"
               onPress={() => setShowSortPicker((prev) => !prev)}
               accessibilityLabel="정렬"
             >
               <ArrowUpDown size={20} color={sortOrder !== 'latest' ? '#2383e2' : '#37352f'} />
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               className="p-2 -mr-2 active:opacity-70"
               onPress={() => router.push('/settings')}
             >
               <Settings size={24} color="#37352f" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         }
       />
@@ -151,7 +161,7 @@ export default function LibraryScreen() {
           {SORT_OPTIONS.map((opt) => {
             const isActive = sortOrder === opt.order;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={opt.order}
                 onPress={() => {
                   setSortOrder(opt.order);
@@ -170,76 +180,19 @@ export default function LibraryScreen() {
                 >
                   {opt.label}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>
       )}
 
-      {/* Unified Filter Row */}
-      <View className="pb-2.5">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 24, gap: 6, alignItems: 'center' }}
-        >
-          {FILTER_OPTIONS.map((filter) => {
-            const isActive = selectedType === filter.type && selectedTag === null;
-            return (
-              <TouchableOpacity
-                key={filter.type}
-                onPress={() => {
-                  setSelectedType(filter.type);
-                  setSelectedTag(null);
-                }}
-                activeOpacity={0.7}
-                className={`px-3 py-1.5 rounded-md border ${
-                  isActive
-                    ? 'bg-app-text border-app-text'
-                    : 'bg-app-surface border-app-border active:bg-app-bg'
-                }`}
-              >
-                <Text
-                  className={`text-xs font-medium tracking-tight ${
-                    isActive ? 'text-white' : 'text-app-muted'
-                  }`}
-                >
-                  {filter.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {availableTags.length > 0 && <View className="h-4 w-px bg-app-border mx-1" />}
-
-          {availableTags.map((tag) => {
-            const isSelected = selectedTag === tag;
-            return (
-              <TouchableOpacity
-                key={tag}
-                onPress={() => {
-                  setSelectedTag(isSelected ? null : tag);
-                  setSelectedType('all');
-                }}
-                activeOpacity={0.7}
-                className={`px-2.5 py-1.5 rounded-md border ${
-                  isSelected
-                    ? 'bg-app-text border-app-text'
-                    : 'bg-app-surface border-app-border active:bg-app-bg'
-                }`}
-              >
-                <Text
-                  className={`text-xs font-medium ${
-                    isSelected ? 'text-white font-semibold' : 'text-app-muted'
-                  }`}
-                >
-                  #{tag}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+      <LibraryFilterBar
+        selectedType={selectedType}
+        selectedTag={selectedTag}
+        availableTags={availableTags}
+        onSelectType={setSelectedType}
+        onSelectTag={setSelectedTag}
+      />
 
       {/* Active Filter Indicator & Reset */}
       {hasActiveFilters && (
@@ -248,39 +201,34 @@ export default function LibraryScreen() {
             {filteredItems.length}개 항목 표시 중
             {selectedTag ? ` · #${selectedTag}` : ''}
           </Text>
-          <TouchableOpacity
+          <Pressable
             onPress={handleResetFilters}
             className="flex-row items-center py-0.5 px-2 rounded bg-app-border/40"
           >
             <X size={11} color="#787774" className="mr-1" />
             <Text className="text-[11px] font-medium text-app-muted">필터 초기화</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
 
       <View className="flex-1 px-6">
         <FlashList
           data={filteredItems}
-          renderItem={({ item }) => (
-            <KnowledgeItemCard
-              item={item}
-              onPress={() => router.push(`/library/${item.id}`)}
-              onSelectTag={(tag) => setSelectedTag(tag)}
-            />
-          )}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+          renderItem={renderKnowledgeItem}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          contentInset={{ bottom: insets.bottom }}
+          keyExtractor={(item) => item.id}
           ListEmptyComponent={<EmptyLibraryState {...emptyState} />}
         />
       </View>
 
-      <TouchableOpacity
-        activeOpacity={0.8}
+      <Pressable
         onPress={() => router.push("/capture")}
         className="absolute right-6 w-14 h-14 rounded-full bg-black items-center justify-center shadow-lg"
         style={{ bottom: insets.bottom + 16 }}
       >
         <Plus color="white" size={30} />
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

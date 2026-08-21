@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Animated,
   View,
   Modal,
   KeyboardAvoidingView,
   Platform,
   TextInput,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { Button, Text, Textarea } from '@glimpse/ui/primitives';
 import type { Message } from '@glimpse/shared';
@@ -27,30 +26,12 @@ export function MessageEditModal({
 }: MessageEditModalProps) {
   const [content, setContent] = useState(message?.content ?? '');
   const textareaRef = useRef<TextInput>(null);
-  const [slideAnim] = useState(() => new Animated.Value(400));
 
   useEffect(() => {
     if (visible && message) {
       setContent(message.content);
-      
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }).start();
     }
-  }, [visible, message, slideAnim]);
-
-  const animateClose = (callback: () => void) => {
-    Animated.timing(slideAnim, {
-      toValue: 400,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      callback();
-    });
-  };
+  }, [visible, message]);
 
   const handleSave = () => {
     if (message && content.trim()) {
@@ -59,9 +40,7 @@ export function MessageEditModal({
   };
 
   const handleClose = () => {
-    animateClose(() => {
-      onCancel();
-    });
+    onCancel();
   };
 
   if (!message) return null;
@@ -70,28 +49,26 @@ export function MessageEditModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity
+        <Pressable
           className="flex-1 justify-end bg-black/50"
-          activeOpacity={1}
           onPress={handleClose}
         >
-          <Animated.View
-            style={{ transform: [{ translateY: slideAnim }] }}
+          <View
             className="rounded-t-2xl bg-app-surface p-6 pb-10 shadow-xl border-t border-app-border"
             onStartShouldSetResponder={() => true}
           >
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">메시지 수정</Text>
-              <TouchableOpacity onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
+              <Pressable onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
                 <X size={16} color="#787774" />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View className="mb-6 h-40">
@@ -118,8 +95,8 @@ export function MessageEditModal({
                 <Text className="text-sm font-bold text-white">수정 완료</Text>
               </Button>
             </View>
-          </Animated.View>
-        </TouchableOpacity>
+          </View>
+        </Pressable>
       </KeyboardAvoidingView>
     </Modal>
   );

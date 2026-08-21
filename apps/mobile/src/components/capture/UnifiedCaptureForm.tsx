@@ -4,7 +4,6 @@ import {
   TextInput,
   View,
   Text,
-  TouchableOpacity,
   Pressable,
   ActivityIndicator,
 } from 'react-native';
@@ -141,14 +140,15 @@ export function UnifiedCaptureForm({
       contentContainerStyle={{
         paddingHorizontal: 24,
         paddingTop: 16,
-        paddingBottom: bottomInset + 100,
+        paddingBottom: 100,
       }}
+      contentInset={{ bottom: bottomInset }}
       keyboardShouldPersistTaps="handled"
     >
       {/* Quick Assistant Bar */}
       <View className="mb-4 flex-row flex-wrap items-center gap-2">
         {clipboardText && !body && (
-          <TouchableOpacity
+          <Pressable
             onPress={handlePasteClipboard}
             className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
           >
@@ -156,10 +156,10 @@ export function UnifiedCaptureForm({
             <Text className="text-xs font-medium text-app-muted">
               클립보드 붙여넣기
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
 
-        <TouchableOpacity
+        <Pressable
           onPress={handlePickImage}
           className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
         >
@@ -167,10 +167,10 @@ export function UnifiedCaptureForm({
           <Text className="text-xs font-medium text-app-muted">
             {imageUri ? '사진 변경' : '사진 첨부'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
 
         {hasUrl && (
-          <TouchableOpacity
+          <Pressable
             onPress={() => handleFetchMetadata()}
             disabled={isFetchingMetadata}
             className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
@@ -183,7 +183,7 @@ export function UnifiedCaptureForm({
             <Text className="text-xs font-medium text-app-primary">
               {isFetchingMetadata ? '가져오는 중...' : '웹 제목 자동 추출'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
 
         {ocrState === 'running' && (

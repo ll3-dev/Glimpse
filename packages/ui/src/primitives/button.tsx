@@ -87,7 +87,8 @@ function Button({
           buttonVariants({ variant, size, className })
         )}
         ref={ref}
-        role="button"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: Boolean(props.disabled) }}
         {...props}
       />
     </TextClassContext.Provider>

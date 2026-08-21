@@ -9,7 +9,7 @@ import { Alert } from "react-native";
 import {
   useDeleteConversationMutation,
   useUpdateConversationDetailsMutation,
-} from "../mutations";
+} from "../mutations/useChatMutations";
 
 interface UseConversationActionsOptions {
   conversationId: string;

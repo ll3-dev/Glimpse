@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import type { LocalModel } from '@/src/features/settings';
 import {
   AlertDialog,
@@ -62,7 +62,7 @@ export function ChatAISetupDialog({
               const isSelected = model.id === selectedModelId;
 
               return (
-                <TouchableOpacity
+                <Pressable
                   key={model.id}
                   className={`rounded-md border px-4 py-3 active:opacity-80 ${
                     isSelected ? 'border-app-text bg-app-text' : 'border-app-border bg-app-surface'
@@ -75,7 +75,7 @@ export function ChatAISetupDialog({
                   <Text className={`mt-1 text-xs ${isSelected ? 'text-white/80' : 'text-app-muted'}`}>
                     {isSelected ? '현재 선택된 모델' : '이 모델로 채팅 시작'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>

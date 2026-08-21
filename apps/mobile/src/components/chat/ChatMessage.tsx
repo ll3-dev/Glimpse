@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { TouchableOpacity, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Check, ChevronDown, ChevronUp, Copy, BookmarkPlus, BookmarkCheck } from 'lucide-react-native';
 import { Text } from '@glimpse/ui/primitives';
@@ -97,9 +97,8 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
       <View
         className={`mb-3 flex-row ${isUser ? "justify-end" : "justify-start"}`}
       >
-        <TouchableOpacity
+        <Pressable
           onLongPress={handleLongPress}
-          activeOpacity={0.8}
           className={`max-w-[85%] rounded-2xl px-4 py-3 ${
             isUser
               ? "rounded-br-md bg-app-text"
@@ -108,7 +107,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
         >
           {!isUser && parsedContent.reasoning && (
             <View className="mb-3 rounded-md bg-app-bg border border-app-border px-3 py-2">
-              <TouchableOpacity
+              <Pressable
                 onPress={() => setShowReasoning((prev) => !prev)}
                 className="flex-row items-center justify-between"
               >
@@ -131,7 +130,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
                 ) : (
                   <ChevronDown size={16} color="#787774" />
                 )}
-              </TouchableOpacity>
+              </Pressable>
               {showReasoning && (
                 <View className="mt-2 pt-2 border-t border-app-border">
                   <ChatMarkdown
@@ -152,11 +151,10 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
 
           {!isUser && (
             <View className="mt-3 flex-row items-center justify-end gap-2">
-              <TouchableOpacity
+              <Pressable
                 onPress={handleSaveToKnowledge}
                 disabled={isSaving}
                 className="flex-row items-center rounded-md bg-app-bg border border-app-border px-2.5 py-1"
-                activeOpacity={0.7}
               >
                 {saved ? (
                   <BookmarkCheck size={13} color="#1a7f37" />
@@ -170,12 +168,11 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
                 >
                   {saved ? "저장됨" : isSaving ? "저장 중..." : "보관함에 저장"}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={handleCopy}
                 className="flex-row items-center rounded-md bg-app-bg border border-app-border px-2.5 py-1"
-                activeOpacity={0.7}
               >
                 {copied ? (
                   <Check size={13} color="#1a7f37" />
@@ -185,7 +182,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
                 <Text className="ml-1.5 text-xs font-medium text-app-muted">
                   {copied ? "복사됨" : "복사"}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           )}
 
@@ -198,7 +195,7 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
               (수정됨)
             </Text>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <MessageActionDialogs

@@ -4,7 +4,7 @@ import {
   TextInput,
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -97,14 +97,15 @@ export function CaptureForm({
       contentContainerStyle={{
         paddingHorizontal: 24, // px-6
         paddingTop: 16,
-        paddingBottom: bottomInset + 100,
+        paddingBottom: 100,
       }}
+      contentInset={{ bottom: bottomInset }}
       keyboardShouldPersistTaps="handled"
     >
       {/* Quick Assistant Bar (Clipboard / Link fetch) */}
       <View className="mb-4 flex-row flex-wrap items-center gap-2">
         {clipboardContent && !body && (
-          <TouchableOpacity
+          <Pressable
             onPress={handlePasteClipboard}
             className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
           >
@@ -112,11 +113,11 @@ export function CaptureForm({
             <Text className="text-xs font-medium text-app-muted" numberOfLines={1}>
               클립보드 붙여넣기
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
 
         {isLink && body.trim().length > 0 && (
-          <TouchableOpacity
+          <Pressable
             onPress={() => handleFetchMetadata()}
             disabled={isFetchingMetadata}
             className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
@@ -129,7 +130,7 @@ export function CaptureForm({
             <Text className="text-xs font-medium text-app-primary">
               {isFetchingMetadata ? '가져오는 중...' : '웹 제목 자동 추출'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
 

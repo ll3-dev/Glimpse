@@ -1,6 +1,7 @@
 import * as React from "react";
 import { TextInput, type TextInputProps } from "react-native";
 import { cn } from "../lib/cn";
+import { useSemanticColor } from "../theme/semantic-colors";
 
 function Input({
   className,
@@ -10,6 +11,8 @@ function Input({
   placeholderTextColorClassName?: string;
   ref?: React.RefObject<TextInput>;
 }) {
+  const placeholderColor = useSemanticColor("appSubtle");
+
   return (
     <TextInput
       className={cn(
@@ -17,7 +20,7 @@ function Input({
         props.editable === false && "opacity-50 web:cursor-not-allowed",
         className
       )}
-      placeholderTextColor={props.placeholderTextColor || "#9b9a97"}
+      placeholderTextColor={props.placeholderTextColor || placeholderColor}
       {...props}
     />
   );

@@ -4,7 +4,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -82,11 +82,11 @@ export function EditKnowledgeItemModal({
         <View className="bg-app-surface rounded-t-2xl max-h-[85%] overflow-hidden border-t border-app-border">
           {/* Modal Header */}
           <View className="flex-row items-center justify-between px-6 py-4 border-b border-app-border">
-            <TouchableOpacity onPress={onClose} className="p-1 -ml-1">
+            <Pressable onPress={onClose} className="p-1 -ml-1">
               <X size={22} color="#787774" />
-            </TouchableOpacity>
+            </Pressable>
             <Text className="text-base font-semibold text-app-text">기록 수정</Text>
-            <TouchableOpacity
+            <Pressable
               onPress={handleSave}
               disabled={isPending}
               className="flex-row items-center bg-app-text px-3 py-1.5 rounded-full active:opacity-80"
@@ -95,7 +95,7 @@ export function EditKnowledgeItemModal({
               <Text className="ml-1 text-xs font-semibold text-white">
                 {isPending ? '저장 중' : '저장'}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView className="p-6">

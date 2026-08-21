@@ -1,62 +1,65 @@
-import { Alert, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Eye, EyeOff, Key, Radio } from 'lucide-react-native';
-import { Input, Button, Text, Switch } from '@glimpse/ui/primitives';
+import { Alert, View } from 'react-native';
+import { Key } from 'lucide-react-native';
+import { Text, Switch } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import { SettingsSection } from './SettingsSection';
+import { BYOKApiKeyEditor } from './BYOKApiKeyEditor';
+import { BYOKConnectionFields } from './BYOKConnectionFields';
+import { BYOKProviderPicker } from './BYOKProviderPicker';
 import { type BYOKProviderType } from '@/src/features/settings';
 
 type BYOKSectionProps = {
-  providers: readonly BYOKProviderType[];
-  selectedProvider: BYOKProviderType | null;
-  apiKeyInput: string;
-  baseUrlInput: string;
-  modelInput: string;
-  showKey: boolean;
-  hasStoredApiKey: boolean;
-  maskedStoredApiKey: string;
-  isEditingApiKey: boolean;
-  byokConfigured: boolean;
-  byokEnabled: boolean;
-  byokReady: boolean;
-  isTestingConnection?: boolean;
-  onProviderSelect: (provider: BYOKProviderType) => void;
-  onApiKeyChange: (value: string) => void;
-  onBaseUrlChange: (value: string) => void;
-  onModelChange: (value: string) => void;
-  onToggleShowKey: () => void;
-  onStartApiKeyEdit: () => void;
-  onCancelApiKeyEdit: () => void;
-  onSaveConnectionConfig: () => void;
-  onSaveKey: () => void;
-  onToggleBYOK: () => void;
-  onTestConnection?: () => void;
+  state: {
+    providers: readonly BYOKProviderType[];
+    selectedProvider: BYOKProviderType | null;
+    apiKeyInput: string;
+    baseUrlInput: string;
+    modelInput: string;
+    showKey: boolean;
+    hasStoredApiKey: boolean;
+    maskedStoredApiKey: string;
+    isEditingApiKey: boolean;
+    configured: boolean;
+    enabled: boolean;
+    ready: boolean;
+    connectionTestStatus: 'idle' | 'testing';
+  };
+  actions: {
+    selectProvider: (provider: BYOKProviderType) => void | Promise<void>;
+    changeApiKey: (value: string) => void;
+    changeBaseUrl: (value: string) => void;
+    changeModel: (value: string) => void;
+    toggleShowKey: () => void;
+    startApiKeyEdit: () => void;
+    cancelApiKeyEdit: () => void;
+    saveConnectionConfig: () => void;
+    saveKey: () => void | Promise<void>;
+    toggleBYOK: () => void;
+    testConnection?: () => void;
+  };
 };
 
 export function BYOKSection({
-  providers,
-  selectedProvider,
-  apiKeyInput,
-  baseUrlInput,
-  modelInput,
-  showKey,
-  hasStoredApiKey,
-  maskedStoredApiKey,
-  isEditingApiKey,
-  byokConfigured,
-  byokEnabled,
-  byokReady,
-  isTestingConnection = false,
-  onProviderSelect,
-  onApiKeyChange,
-  onBaseUrlChange,
-  onModelChange,
-  onToggleShowKey,
-  onStartApiKeyEdit,
-  onCancelApiKeyEdit,
-  onSaveConnectionConfig,
-  onSaveKey,
-  onToggleBYOK,
-  onTestConnection,
+  state,
+  actions,
 }: BYOKSectionProps) {
+  const {
+    providers,
+    selectedProvider,
+    apiKeyInput,
+    baseUrlInput,
+    modelInput,
+    showKey,
+    hasStoredApiKey,
+    maskedStoredApiKey,
+    isEditingApiKey,
+    configured: byokConfigured,
+    enabled: byokEnabled,
+    ready: byokReady,
+    connectionTestStatus,
+  } = state;
+  const isTestingConnection = connectionTestStatus === 'testing';
+  const appMuted = useSemanticColor('appMuted');
   const disabled = !byokConfigured && !byokEnabled;
   const disabledReason = selectedProvider
     ? 'BYOK를 사용하려면 API 키를 먼저 저장해주세요.'
@@ -68,15 +71,13 @@ export function BYOKSection({
       return;
     }
 
-    onToggleBYOK();
+    actions.toggleBYOK();
   };
-
-  const hasAnyKey = Boolean(apiKeyInput.trim() || hasStoredApiKey);
 
   return (
     <SettingsSection
       title="Bring Your Own Key"
-      icon={<Key size={18} color="#787774" />}
+      icon={<Key size={18} color={appMuted} />}
       footer={
         !byokReady && !byokEnabled
           ? disabledReason
@@ -92,6 +93,8 @@ export function BYOKSection({
           </Text>
         </View>
         <Switch
+          accessibilityLabel="BYOK 사용"
+          accessibilityHint={disabled ? disabledReason : undefined}
           checked={byokEnabled}
           onCheckedChange={handleTogglePress}
           disabled={disabled}
@@ -101,129 +104,36 @@ export function BYOKSection({
       {/* Show details only when enabled */}
       {byokEnabled && (
         <View className="mt-4">
-          <View className="mb-4">
-            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
-              Provider
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {providers.map((provider) => (
-                <TouchableOpacity
-                  key={provider}
-                  className={`px-3 py-1.5 rounded-md border active:opacity-80 ${
-                    selectedProvider === provider
-                      ? 'bg-app-text border-app-text'
-                      : 'bg-app-surface border-app-border'
-                  }`}
-                  onPress={() => onProviderSelect(provider)}
-                >
-                  <Text
-                    className={`text-xs font-semibold uppercase ${
-                      selectedProvider === provider ? 'text-white' : 'text-app-text'
-                    }`}
-                  >
-                    {provider}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View className="mb-4">
-            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
-              연결 설정
-            </Text>
-            <Input
-              className="mb-2"
-              placeholder="Base URL (OpenAI에서만 override 적용)"
-              value={baseUrlInput}
-              onChangeText={onBaseUrlChange}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Input
-              placeholder="Model (예: gpt-4o-mini)"
-              value={modelInput}
-              onChangeText={onModelChange}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          <Button onPress={onSaveConnectionConfig} variant="outline" className="mb-4">
-            <Text>연결 설정 저장</Text>
-          </Button>
-
-          <View className="mb-4">
-            <Text className="text-xs font-bold text-app-muted mb-2 uppercase tracking-tight">
-              API 키
-            </Text>
-            {hasStoredApiKey && !isEditingApiKey ? (
-              <View className="rounded-md border border-app-border bg-app-surface px-3 py-3">
-                <Text className="text-xs text-app-subtle font-medium mb-3">
-                  저장된 키: {maskedStoredApiKey}
-                </Text>
-                <Button onPress={onStartApiKeyEdit} variant="outline">
-                  <Text>API 키 변경</Text>
-                </Button>
-              </View>
-            ) : (
-              <View>
-                <View className="relative">
-                  <Input
-                    className="pr-12"
-                    placeholder="새 API 키를 입력하세요"
-                    value={apiKeyInput}
-                    onChangeText={onApiKeyChange}
-                    secureTextEntry={!showKey}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    className="absolute right-0 top-0 bottom-0 px-4 justify-center"
-                    onPress={onToggleShowKey}
-                  >
-                    {showKey ? (
-                      <EyeOff size={16} color="#787774" />
-                    ) : (
-                      <Eye size={16} color="#787774" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-                {hasStoredApiKey && (
-                  <Button onPress={onCancelApiKeyEdit} variant="ghost" className="mt-2">
-                    <Text>키 변경 취소</Text>
-                  </Button>
-                )}
-              </View>
-            )}
-          </View>
-
-          <View className="gap-2">
-            {(!hasStoredApiKey || isEditingApiKey) && (
-              <Button onPress={onSaveKey}>
-                <Text>
-                  {hasStoredApiKey ? '새 API 키 저장' : 'API 키 저장'}
-                </Text>
-              </Button>
-            )}
-
-            {onTestConnection && hasAnyKey && (
-              <TouchableOpacity
-                onPress={onTestConnection}
-                disabled={isTestingConnection}
-                className="flex-row items-center justify-center rounded-md border border-app-border bg-app-bg py-2.5 active:bg-app-border/40"
-              >
-                {isTestingConnection ? (
-                  <ActivityIndicator size="small" color="#37352f" className="mr-2" />
-                ) : (
-                  <Radio size={14} color="#787774" className="mr-2" />
-                )}
-                <Text className="text-xs font-semibold text-app-text">
-                  {isTestingConnection ? '연결 확인 중...' : 'API 연결 테스트'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <BYOKProviderPicker
+            providers={providers}
+            selectedProvider={selectedProvider}
+            onSelect={actions.selectProvider}
+          />
+          <BYOKConnectionFields
+            baseUrl={baseUrlInput}
+            model={modelInput}
+            onBaseUrlChange={actions.changeBaseUrl}
+            onModelChange={actions.changeModel}
+            onSave={actions.saveConnectionConfig}
+          />
+          <BYOKApiKeyEditor
+            state={{
+              apiKey: apiKeyInput,
+              showKey,
+              hasStoredApiKey,
+              maskedStoredApiKey,
+              isEditingApiKey,
+              connectionTestStatus: isTestingConnection ? 'testing' : 'idle',
+            }}
+            actions={{
+              changeApiKey: actions.changeApiKey,
+              toggleShowKey: actions.toggleShowKey,
+              startEdit: actions.startApiKeyEdit,
+              cancelEdit: actions.cancelApiKeyEdit,
+              saveKey: actions.saveKey,
+              testConnection: actions.testConnection,
+            }}
+          />
         </View>
       )}
     </SettingsSection>

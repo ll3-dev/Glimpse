@@ -14,6 +14,7 @@ import { ReviewItemCard } from '@/src/components/review';
 import { ScreenHeader } from '@glimpse/ui/primitives';
 import { toast } from '@/src/stores/toast.store';
 import { logger } from '@/src/utils/logger';
+import { useCallback } from 'react';
 
 export default function ReviewScreen() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function ReviewScreen() {
   const items = data?.items ?? [];
   const isRefreshing = isFetching && !isLoading;
 
-  const handleComplete = (itemId: string) => {
+  const handleComplete = useCallback((itemId: string) => {
     markAsReviewed(
       { itemId },
       {
@@ -36,9 +37,9 @@ export default function ReviewScreen() {
         },
       }
     );
-  };
+  }, [markAsReviewed]);
 
-  const handlePostpone = (itemId: string) => {
+  const handlePostpone = useCallback((itemId: string) => {
     postponeReview(
       { itemId },
       {
@@ -50,7 +51,25 @@ export default function ReviewScreen() {
         },
       }
     );
-  };
+  }, [postponeReview]);
+
+  const handleOpenItem = useCallback(
+    (itemId: string) => router.push(`/library/${itemId}`),
+    [router]
+  );
+
+  const renderReviewItem = useCallback(
+    (item: (typeof items)[number]) => (
+      <ReviewItemCard
+        key={item.id}
+        item={item}
+        onPress={handleOpenItem}
+        onComplete={handleComplete}
+        onPostpone={handlePostpone}
+      />
+    ),
+    [handleComplete, handleOpenItem, handlePostpone]
+  );
 
   return (
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
@@ -70,15 +89,7 @@ export default function ReviewScreen() {
         emptyTitle="복습할 항목이 없습니다"
         emptyDescription={"새로운 항목을 저장하면\n자동으로 복습 일정이 잡혀요"}
         keyExtractor={(item) => item.id}
-        renderItem={(item) => (
-          <ReviewItemCard
-            key={item.id}
-            item={item}
-            onPress={() => router.push(`/library/${item.id}`)}
-            onComplete={() => handleComplete(item.id)}
-            onPostpone={() => handlePostpone(item.id)}
-          />
-        )}
+        renderItem={renderReviewItem}
       />
     </View>
   );

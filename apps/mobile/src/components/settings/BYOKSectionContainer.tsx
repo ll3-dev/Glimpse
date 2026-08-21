@@ -9,9 +9,16 @@ export function BYOKSectionContainer() {
   const { state, actions } = useBYOKSectionState();
   const [isTestingConnection, setIsTestingConnection] = useState(false);
 
-  const handleSaveKey = () => {
-    const feedback = actions.saveApiKey();
+  const handleSaveKey = async () => {
+    const feedback = await actions.saveApiKey();
     Alert.alert(feedback.title, feedback.message);
+  };
+
+  const handleProviderSelect = async (provider: (typeof state.providers)[number]) => {
+    const feedback = await actions.selectProvider(provider);
+    if (feedback) {
+      Alert.alert(feedback.title, feedback.message);
+    }
   };
 
   const handleToggleBYOK = () => {
@@ -66,30 +73,34 @@ export function BYOKSectionContainer() {
 
   return (
     <BYOKSection
-      providers={state.providers}
-      selectedProvider={state.selectedProvider}
-      apiKeyInput={state.apiKeyInput}
-      baseUrlInput={state.baseUrlInput}
-      modelInput={state.modelInput}
-      showKey={state.showKey}
-      hasStoredApiKey={state.hasStoredApiKey}
-      maskedStoredApiKey={state.maskedStoredApiKey}
-      isEditingApiKey={state.isEditingApiKey}
-      byokConfigured={state.byokConfigured}
-      byokEnabled={state.byokEnabled}
-      byokReady={state.byokReady}
-      isTestingConnection={isTestingConnection}
-      onProviderSelect={actions.selectProvider}
-      onApiKeyChange={actions.setApiKeyInput}
-      onBaseUrlChange={actions.setBaseUrlInput}
-      onModelChange={actions.setModelInput}
-      onToggleShowKey={() => actions.setShowKey(!state.showKey)}
-      onStartApiKeyEdit={actions.startApiKeyEdit}
-      onCancelApiKeyEdit={actions.cancelApiKeyEdit}
-      onSaveConnectionConfig={handleSaveConnectionConfig}
-      onSaveKey={handleSaveKey}
-      onToggleBYOK={handleToggleBYOK}
-      onTestConnection={handleTestConnection}
+      state={{
+        providers: state.providers,
+        selectedProvider: state.selectedProvider,
+        apiKeyInput: state.apiKeyInput,
+        baseUrlInput: state.baseUrlInput,
+        modelInput: state.modelInput,
+        showKey: state.showKey,
+        hasStoredApiKey: state.hasStoredApiKey,
+        maskedStoredApiKey: state.maskedStoredApiKey,
+        isEditingApiKey: state.isEditingApiKey,
+        configured: state.byokConfigured,
+        enabled: state.byokEnabled,
+        ready: state.byokReady,
+        connectionTestStatus: isTestingConnection ? 'testing' : 'idle',
+      }}
+      actions={{
+        selectProvider: handleProviderSelect,
+        changeApiKey: actions.setApiKeyInput,
+        changeBaseUrl: actions.setBaseUrlInput,
+        changeModel: actions.setModelInput,
+        toggleShowKey: () => actions.setShowKey(!state.showKey),
+        startApiKeyEdit: actions.startApiKeyEdit,
+        cancelApiKeyEdit: actions.cancelApiKeyEdit,
+        saveConnectionConfig: handleSaveConnectionConfig,
+        saveKey: handleSaveKey,
+        toggleBYOK: handleToggleBYOK,
+        testConnection: handleTestConnection,
+      }}
     />
   );
 }

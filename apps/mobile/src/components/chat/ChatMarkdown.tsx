@@ -8,9 +8,15 @@ type ChatMarkdownProps = {
 };
 
 type InlineSegment =
-  | { type: 'text'; value: string }
-  | { type: 'bold'; value: string }
-  | { type: 'code'; value: string };
+  | { id: string; type: 'text'; value: string }
+  | { id: string; type: 'bold'; value: string }
+  | { id: string; type: 'code'; value: string };
+
+type MarkdownBlock =
+  | { id: string; type: 'code'; content: string }
+  | { id: string; type: 'list'; items: { id: string; content: string }[] }
+  | { id: string; type: 'heading'; level: 1 | 2 | 3; content: string }
+  | { id: string; type: 'paragraph'; content: string };
 
 function parseInlineSegments(text: string): InlineSegment[] {
   const segments: InlineSegment[] = [];
@@ -22,30 +28,34 @@ function parseInlineSegments(text: string): InlineSegment[] {
     const index = match.index ?? 0;
 
     if (index > lastIndex) {
-      segments.push({ type: 'text', value: text.slice(lastIndex, index) });
+      segments.push({
+        id: `text:${lastIndex}`,
+        type: 'text',
+        value: text.slice(lastIndex, index),
+      });
     }
 
     if (value.startsWith('`')) {
-      segments.push({ type: 'code', value: value.slice(1, -1) });
+      segments.push({ id: `code:${index}`, type: 'code', value: value.slice(1, -1) });
     } else {
-      segments.push({ type: 'bold', value: value.slice(2, -2) });
+      segments.push({ id: `bold:${index}`, type: 'bold', value: value.slice(2, -2) });
     }
 
     lastIndex = index + value.length;
   }
 
   if (lastIndex < text.length) {
-    segments.push({ type: 'text', value: text.slice(lastIndex) });
+    segments.push({ id: `text:${lastIndex}`, type: 'text', value: text.slice(lastIndex) });
   }
 
   return segments;
 }
 
 function renderInline(text: string, textClassName: string) {
-  return parseInlineSegments(text).map((segment, index) => {
+  return parseInlineSegments(text).map((segment) => {
     if (segment.type === 'bold') {
       return (
-        <Text key={`bold-${index}-${segment.value.slice(0, 10)}`} className={`${textClassName} font-semibold`}>
+        <Text key={segment.id} className={`${textClassName} font-semibold`}>
           {segment.value}
         </Text>
       );
@@ -54,7 +64,7 @@ function renderInline(text: string, textClassName: string) {
     if (segment.type === 'code') {
       return (
         <Text
-          key={`code-${index}-${segment.value.slice(0, 10)}`}
+          key={segment.id}
           className={`${textClassName} rounded bg-black/10 px-1 font-mono text-[13px]`}
         >
           {segment.value}
@@ -63,7 +73,7 @@ function renderInline(text: string, textClassName: string) {
     }
 
     return (
-      <Text key={`text-${index}-${segment.value.slice(0, 10)}`} className={textClassName}>
+      <Text key={segment.id} className={textClassName}>
         {segment.value}
       </Text>
     );
@@ -76,12 +86,7 @@ export function ChatMarkdown({
   mutedTextClassName = textClassName,
 }: ChatMarkdownProps) {
   const lines = content.split(/\r?\n/);
-  const blocks: (
-    | { type: 'code'; content: string }
-    | { type: 'list'; items: string[] }
-    | { type: 'heading'; level: 1 | 2 | 3; content: string }
-    | { type: 'paragraph'; content: string }
-  )[] = [];
+  const blocks: MarkdownBlock[] = [];
 
   let index = 0;
   while (index < lines.length) {
@@ -93,6 +98,7 @@ export function ChatMarkdown({
     }
 
     if (line.startsWith('```')) {
+      const blockStart = index;
       const codeLines: string[] = [];
       index += 1;
       while (index < lines.length && !lines[index]?.trim().startsWith('```')) {
@@ -100,38 +106,43 @@ export function ChatMarkdown({
         index += 1;
       }
       index += 1;
-      blocks.push({ type: 'code', content: codeLines.join('\n') });
+      blocks.push({ id: `code:${blockStart}`, type: 'code', content: codeLines.join('\n') });
       continue;
     }
 
     if (/^###\s+/.test(line)) {
-      blocks.push({ type: 'heading', level: 3, content: line.replace(/^###\s+/, '') });
+      blocks.push({ id: `heading:${index}`, type: 'heading', level: 3, content: line.replace(/^###\s+/, '') });
       index += 1;
       continue;
     }
 
     if (/^##\s+/.test(line)) {
-      blocks.push({ type: 'heading', level: 2, content: line.replace(/^##\s+/, '') });
+      blocks.push({ id: `heading:${index}`, type: 'heading', level: 2, content: line.replace(/^##\s+/, '') });
       index += 1;
       continue;
     }
 
     if (/^#\s+/.test(line)) {
-      blocks.push({ type: 'heading', level: 1, content: line.replace(/^#\s+/, '') });
+      blocks.push({ id: `heading:${index}`, type: 'heading', level: 1, content: line.replace(/^#\s+/, '') });
       index += 1;
       continue;
     }
 
     if (/^[-*]\s+/.test(line)) {
-      const items: string[] = [];
+      const blockStart = index;
+      const items: { id: string; content: string }[] = [];
       while (index < lines.length && /^[-*]\s+/.test(lines[index]?.trim() ?? '')) {
-        items.push((lines[index]?.trim() ?? '').replace(/^[-*]\s+/, ''));
+        items.push({
+          id: `list-item:${index}`,
+          content: (lines[index]?.trim() ?? '').replace(/^[-*]\s+/, ''),
+        });
         index += 1;
       }
-      blocks.push({ type: 'list', items });
+      blocks.push({ id: `list:${blockStart}`, type: 'list', items });
       continue;
     }
 
+    const blockStart = index;
     const paragraphLines: string[] = [];
     while (
       index < lines.length &&
@@ -143,15 +154,15 @@ export function ChatMarkdown({
       paragraphLines.push(lines[index]?.trim() ?? '');
       index += 1;
     }
-    blocks.push({ type: 'paragraph', content: paragraphLines.join(' ') });
+    blocks.push({ id: `paragraph:${blockStart}`, type: 'paragraph', content: paragraphLines.join(' ') });
   }
 
   return (
     <View className="gap-2">
-      {blocks.map((block, blockIndex) => {
+      {blocks.map((block) => {
         if (block.type === 'code') {
           return (
-            <View key={`code-${blockIndex}`} className="rounded-xl bg-black/10 px-3 py-2">
+            <View key={block.id} className="rounded-xl bg-black/10 px-3 py-2">
               <Text className={`${mutedTextClassName} font-mono text-[13px]`}>
                 {block.content}
               </Text>
@@ -161,12 +172,12 @@ export function ChatMarkdown({
 
         if (block.type === 'list') {
           return (
-            <View key={`list-${blockIndex}`} className="gap-1">
-              {block.items.map((item, itemIndex) => (
-                <View key={`item-${itemIndex}`} className="flex-row items-start">
+            <View key={block.id} className="gap-1">
+              {block.items.map((item) => (
+                <View key={item.id} className="flex-row items-start">
                   <Text className={`${textClassName} mr-2`}>{'\u2022'}</Text>
                   <Text className={`${textClassName} flex-1`}>
-                    {renderInline(item, textClassName)}
+                    {renderInline(item.content, textClassName)}
                   </Text>
                 </View>
               ))}
@@ -183,14 +194,14 @@ export function ChatMarkdown({
                 : `${textClassName} text-[15px] font-semibold`;
 
           return (
-            <Text key={`heading-${blockIndex}`} className={headingClass}>
+            <Text key={block.id} className={headingClass}>
               {renderInline(block.content, headingClass)}
             </Text>
           );
         }
 
         return (
-          <Text key={`paragraph-${blockIndex}`} className={textClassName}>
+          <Text key={block.id} className={textClassName}>
             {renderInline(block.content, textClassName)}
           </Text>
         );

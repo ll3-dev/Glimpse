@@ -4,7 +4,7 @@
  * Displays list of conversations and allows creating new ones.
  */
 
-import { View, TouchableOpacity, Text } from "react-native";
+import { View, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, MessageCircle } from 'lucide-react-native';
@@ -12,6 +12,8 @@ import { useConversationsQuery, useCreateConversationMutation } from '@/src/hook
 import { ScreenHeader, Skeleton } from '@glimpse/ui/primitives';
 import { ConversationList } from '@/src/components/chat';
 import { FlashList } from "@shopify/flash-list";
+import { useCallback } from 'react';
+import type { Conversation } from '@glimpse/shared';
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
@@ -20,7 +22,7 @@ export default function ChatScreen() {
   const { data: conversations, isLoading } = useConversationsQuery();
   const { mutate: createConversation, isPending: isCreating } = useCreateConversationMutation();
 
-  const handleCreateConversation = () => {
+  const handleCreateConversation = useCallback(() => {
     createConversation({}, {
       onSuccess: (conversation) => {
         router.push(`/chat/${conversation.id}`);
@@ -29,7 +31,19 @@ export default function ChatScreen() {
         console.error("Failed to create conversation:", error);
       },
     });
-  };
+  }, [createConversation, router]);
+
+  const handleOpenConversation = useCallback(
+    (conversationId: string) => router.push(`/chat/${conversationId}`),
+    [router]
+  );
+
+  const renderConversation = useCallback(
+    ({ item }: { item: Conversation }) => (
+      <ConversationList conversation={item} onPress={handleOpenConversation} />
+    ),
+    [handleOpenConversation]
+  );
 
   const showLoading = isLoading;
   const showEmpty = !isLoading && (!conversations || conversations.length === 0);
@@ -48,17 +62,16 @@ export default function ChatScreen() {
         }
         rightElement={
           showData ? (
-            <TouchableOpacity
+            <Pressable
               className="flex-row items-center bg-black px-3 py-1.5 rounded-full"
               onPress={handleCreateConversation}
               disabled={isCreating}
-              activeOpacity={0.7}
             >
               <Plus size={14} color="white" strokeWidth={3} />
               <Text className="ml-1.5 text-xs font-bold text-white">
                 {isCreating ? "생성 중" : "새 대화"}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ) : undefined
         }
       />
@@ -86,14 +99,10 @@ export default function ChatScreen() {
         <View className="flex-1 px-6">
           <FlashList
             data={conversations}
-            renderItem={({ item }) => (
-              <ConversationList
-                conversation={item}
-                onPress={() => router.push(`/chat/${item.id}`)}
-              />
-            )}
+            renderItem={renderConversation}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            contentInset={{ bottom: insets.bottom }}
           />
         </View>
       )}
@@ -110,7 +119,7 @@ export default function ChatScreen() {
           <Text className="mb-6 text-center text-sm text-app-muted leading-relaxed">
             AI와 자유롭게 대화하거나{"\n"}보관함 항목에 대해 질문해 보세요
           </Text>
-          <TouchableOpacity
+          <Pressable
             className="flex-row items-center rounded-md bg-app-text px-5 py-2.5 active:opacity-90"
             onPress={handleCreateConversation}
             disabled={isCreating}
@@ -119,10 +128,9 @@ export default function ChatScreen() {
             <Text className="ml-2 font-medium text-sm text-white">
               {isCreating ? "생성 중..." : "새 대화 시작"}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
     </View>
   );
 }
-

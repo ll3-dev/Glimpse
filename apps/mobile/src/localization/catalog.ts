@@ -1,0 +1,95 @@
+export const messages = {
+  ko: {
+    common: {
+      back: '뒤로 가기',
+      cancel: '취소',
+    },
+    settings: {
+      title: '설정',
+      languageTitle: '언어',
+      languageFooter: '언어 변경은 즉시 적용되고 이 기기에 저장됩니다',
+      korean: '한국어',
+      english: 'English',
+      secureStorageNote:
+        'ⓘ API 키는 기기의 보안 저장소에, 나머지 BYOK 설정은 로컬 저장소에 저장됩니다.\n화면에는 마스킹된 키만 표시되며, Base URL override는 현재 OpenAI provider에서만 적용됩니다.',
+      exportDoneTitle: '내보내기 완료',
+      exportDoneMessage: 'Glimpse 데이터 JSON을 클립보드에 복사했습니다.',
+      exportFailedTitle: '내보내기 실패',
+      importConfirmTitle: '클립보드 데이터로 교체할까요?',
+      importConfirmMessage:
+        '현재 보관함과 대화 기록을 먼저 내보내 두는 것을 권장합니다. 가져오기는 검증에 통과한 뒤 한 번에 적용됩니다.',
+      importAction: '가져오기',
+      importDoneTitle: '가져오기 완료',
+      importFailedTitle: '가져오기 실패',
+      deleteConfirmTitle: '보관함과 대화를 모두 삭제할까요?',
+      deleteConfirmMessage:
+        '이 작업은 되돌릴 수 없습니다. 설정, API 키, 다운로드한 모델 파일은 유지됩니다.',
+      deleteAction: '모두 삭제',
+      deleteDoneTitle: '삭제 완료',
+      deleteDoneMessage: '보관함, 대화, 추천 기록을 모두 삭제했습니다.',
+      deleteFailedTitle: '삭제 실패',
+      unknownError: '알 수 없는 오류가 발생했습니다.',
+      importedSummary: (knowledgeItems: number, conversations: number, itemMessages: number) =>
+        `보관함 ${knowledgeItems}개, 대화 ${conversations}개, 메시지 ${itemMessages}개를 복원했습니다.`,
+    },
+    data: {
+      title: '데이터 관리',
+      footer: '내보내기에는 보관함, 대화, 추천 기록이 포함되며 API 키와 모델 파일은 포함되지 않습니다',
+      exportTitle: 'JSON을 클립보드로 내보내기',
+      exportDescription: '다른 기기나 백업 위치에 붙여넣을 수 있습니다',
+      importTitle: '클립보드 JSON 가져오기',
+      importDescription: '현재 보관함과 대화 기록을 검증된 백업으로 교체합니다',
+      deleteTitle: '보관함과 대화 기록 모두 삭제',
+      deleteDescription: '설정, API 키, 다운로드한 모델 파일은 유지됩니다',
+      busyLabel: (title: string) => `${title} 진행 중`,
+    },
+  },
+  en: {
+    common: {
+      back: 'Go back',
+      cancel: 'Cancel',
+    },
+    settings: {
+      title: 'Settings',
+      languageTitle: 'Language',
+      languageFooter: 'Language changes apply immediately and are saved on this device',
+      korean: '한국어',
+      english: 'English',
+      secureStorageNote:
+        'ⓘ API keys are kept in secure device storage; other BYOK settings stay in local storage.\nOnly masked keys are shown. The Base URL override currently applies only to the OpenAI provider.',
+      exportDoneTitle: 'Export complete',
+      exportDoneMessage: 'Copied the Glimpse data JSON to the clipboard.',
+      exportFailedTitle: 'Export failed',
+      importConfirmTitle: 'Replace data from the clipboard?',
+      importConfirmMessage:
+        'Export your current library and chats first. Import validates the backup before replacing data atomically.',
+      importAction: 'Import',
+      importDoneTitle: 'Import complete',
+      importFailedTitle: 'Import failed',
+      deleteConfirmTitle: 'Delete the library and all chats?',
+      deleteConfirmMessage:
+        'This cannot be undone. Settings, API keys, and downloaded model files are preserved.',
+      deleteAction: 'Delete all',
+      deleteDoneTitle: 'Deletion complete',
+      deleteDoneMessage: 'Deleted the library, chats, and recommendation history.',
+      deleteFailedTitle: 'Deletion failed',
+      unknownError: 'An unknown error occurred.',
+      importedSummary: (knowledgeItems: number, conversations: number, itemMessages: number) =>
+        `Restored ${knowledgeItems} library items, ${conversations} chats, and ${itemMessages} messages.`,
+    },
+    data: {
+      title: 'Data management',
+      footer: 'Exports include the library, chats, and recommendation history, but not API keys or model files',
+      exportTitle: 'Copy JSON export',
+      exportDescription: 'Paste it on another device or into your backup location',
+      importTitle: 'Import clipboard JSON',
+      importDescription: 'Replace the current library and chats with a validated backup',
+      deleteTitle: 'Delete library and chat history',
+      deleteDescription: 'Settings, API keys, and downloaded models are preserved',
+      busyLabel: (title: string) => `${title} in progress`,
+    },
+  },
+} as const;
+
+export type AppLocale = keyof typeof messages;
+export type AppMessages = (typeof messages)[AppLocale];

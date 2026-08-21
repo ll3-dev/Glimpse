@@ -8,7 +8,7 @@ import { Card } from '@glimpse/ui/primitives';
 
 type KnowledgeItemCardProps = {
   item: KnowledgeItem;
-  onPress?: () => void;
+  onPress?: (itemId: string) => void;
   onSelectTag?: (tag: string) => void;
 };
 
@@ -91,7 +91,7 @@ export function KnowledgeItemCard({ item, onPress, onSelectTag }: KnowledgeItemC
     <Card className="mb-2 overflow-hidden">
       <Pressable
         className="flex-row items-center p-4 active:opacity-80"
-        onPress={onPress}
+        onPress={() => onPress?.(item.id)}
         disabled={!onPress}
       >
         <ItemContent item={item} showBadges={showBadges} onSelectTag={onSelectTag} />

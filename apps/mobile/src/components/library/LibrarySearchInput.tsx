@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react-native';
-import { TextInput, View, TouchableOpacity } from 'react-native';
+import { TextInput, View, Pressable } from 'react-native';
 
 type LibrarySearchInputProps = {
   value: string;
@@ -21,13 +21,13 @@ export function LibrarySearchInput({ value, onChangeText }: LibrarySearchInputPr
           autoCorrect={false}
         />
         {value.length > 0 && (
-          <TouchableOpacity
+          <Pressable
             onPress={() => onChangeText('')}
             className="p-1 -mr-1"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <X size={14} color="#787774" />
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
     </View>

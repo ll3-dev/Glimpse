@@ -4,7 +4,7 @@
  * Text input area for sending messages.
  */
 
-import { View, TextInput, TouchableOpacity, ActivityIndicator, Platform, Keyboard } from 'react-native';
+import { View, TextInput, Pressable, ActivityIndicator, Platform, Keyboard } from 'react-native';
 import { Send } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -100,7 +100,7 @@ export function ChatInput({
             editable={!isLoading}
           />
         </View>
-        <TouchableOpacity
+        <Pressable
           className="w-11 h-11 rounded-full items-center justify-center mb-0"
           style={{ 
             backgroundColor: canSend ? theme.primary : theme.inputBg,
@@ -116,7 +116,7 @@ export function ChatInput({
           ) : (
             <Send size={18} color={canSend ? 'white' : theme.muted} />
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

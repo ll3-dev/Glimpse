@@ -14,15 +14,15 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react-native';
-import { Text, TouchableOpacity, Pressable, View } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { Card } from '@glimpse/ui/primitives';
 
 type ReviewItemCardProps = {
   item: KnowledgeItem;
-  onPress?: () => void;
-  onComplete: () => void;
-  onPostpone: () => void;
+  onPress?: (itemId: string) => void;
+  onComplete: (itemId: string) => void;
+  onPostpone: (itemId: string) => void;
 };
 
 const TYPE_CONFIG = {
@@ -114,13 +114,13 @@ export function ReviewItemCard({
                 <Text className="text-[11px] text-app-subtle">다시 탭하여 닫기</Text>
               </View>
               {onPress && (
-                <TouchableOpacity
-                  onPress={onPress}
+                <Pressable
+                  onPress={() => onPress(item.id)}
                   className="flex-row items-center py-0.5 px-2"
                 >
                   <Text className="text-xs text-app-primary font-medium mr-1">상세 보기</Text>
                   <ArrowRight size={12} color="#2383e2" />
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
           </View>
@@ -129,25 +129,23 @@ export function ReviewItemCard({
 
       {/* Review Feedback Actions */}
       <View className="flex-row border-t border-app-border bg-app-surface">
-        <TouchableOpacity
+        <Pressable
           className="flex-1 flex-row items-center justify-center py-3 bg-app-surface active:bg-tag-mint-bg/40"
-          onPress={onComplete}
-          activeOpacity={0.7}
+          onPress={() => onComplete(item.id)}
         >
           <Check size={15} color="#1a7f37" />
           <Text className="ml-1.5 text-xs font-bold text-tag-mint-text">기억남 (완료)</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         <View className="w-px bg-app-border" />
 
-        <TouchableOpacity
+        <Pressable
           className="flex-1 flex-row items-center justify-center py-3 bg-app-surface active:bg-app-bg"
-          onPress={onPostpone}
-          activeOpacity={0.7}
+          onPress={() => onPostpone(item.id)}
         >
           <Clock size={14} color="#787774" />
           <Text className="ml-1.5 text-xs font-semibold text-app-muted">나중에 복습</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </Card>
   );

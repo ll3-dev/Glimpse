@@ -4,7 +4,7 @@
  * Displays context information when chatting about a library item.
  */
 
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { X, FileText, Link as LinkIcon, Image } from 'lucide-react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 
@@ -35,9 +35,9 @@ export function ContextBadge({ item, onRemove }: ContextBadgeProps) {
         {displayTitle}
       </Text>
       {onRemove && (
-        <TouchableOpacity onPress={onRemove} className="ml-2 p-1">
+        <Pressable onPress={onRemove} className="ml-2 p-1">
           <X size={16} color="#787774" />
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );

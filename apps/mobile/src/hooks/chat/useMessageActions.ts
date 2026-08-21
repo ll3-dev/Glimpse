@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useUpdateMessageMutation, useDeleteMessageMutation } from '../mutations';
+import { useUpdateMessageMutation, useDeleteMessageMutation } from '../mutations/useChatMutations';
 import type { Message } from '@glimpse/shared';
 
 interface UseMessageActionsOptions {

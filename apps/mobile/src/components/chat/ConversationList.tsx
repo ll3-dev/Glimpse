@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import type { Conversation } from '@glimpse/shared';
 
 interface ConversationListProps {
   conversation: Conversation;
-  onPress: () => void;
+  onPress: (conversationId: string) => void;
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -33,10 +33,9 @@ export function ConversationList({ conversation, onPress }: ConversationListProp
   const hasCustomIcon = Boolean(conversation.icon);
 
   return (
-    <TouchableOpacity
+    <Pressable
       className="flex-row items-center p-3.5 bg-app-surface border border-app-border rounded-md mb-2 active:opacity-80"
-      onPress={onPress}
-      activeOpacity={0.8}
+      onPress={() => onPress(conversation.id)}
     >
       <View className="w-9 h-9 rounded-md bg-app-border/40 items-center justify-center mr-3">
         {hasCustomIcon ? (
@@ -58,6 +57,6 @@ export function ConversationList({ conversation, onPress }: ConversationListProp
           {relativeTime}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

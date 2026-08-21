@@ -69,8 +69,9 @@ export function ScreenshotForm({
       contentContainerStyle={{
         paddingHorizontal: 24, // px-6
         paddingTop: 20,
-        paddingBottom: bottomInset + 100,
+        paddingBottom: 100,
       }}
+      contentInset={{ bottom: bottomInset }}
       keyboardShouldPersistTaps="handled"
     >
       {!selectedImage ? (

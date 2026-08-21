@@ -1,6 +1,7 @@
 import { Alert, View, Text } from 'react-native';
 import { Cpu } from 'lucide-react-native';
 import { Switch } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import { SettingsSection } from './SettingsSection';
 import type { AppleIntelligenceConfig } from '@/src/features/settings';
 
@@ -10,10 +11,11 @@ type AppleIntelligenceSectionProps = {
 };
 
 export function AppleIntelligenceSection({ config, onToggle }: AppleIntelligenceSectionProps) {
+  const appMuted = useSemanticColor('appMuted');
   const footer = config.isCheckingAvailability
     ? 'ⓘ 지원 여부를 확인하고 있습니다'
     : config.isAvailable
-      ? 'ⓘ 지원 기기에서 iOS 18.1+ / macOS 15.1+로 사용할 수 있습니다'
+      ? 'ⓘ 지원 기기에서 iOS 26+ Foundation Models로 사용할 수 있습니다'
       : undefined;
   const disabled = !config.isAvailable || config.isCheckingAvailability;
   const disabledReason = config.isCheckingAvailability
@@ -32,7 +34,7 @@ export function AppleIntelligenceSection({ config, onToggle }: AppleIntelligence
   return (
     <SettingsSection
       title="Apple Intelligence"
-      icon={<Cpu size={18} color="#787774" />}
+      icon={<Cpu size={18} color={appMuted} />}
       footer={footer}
     >
       <View className="flex-row items-center justify-between">
@@ -48,6 +50,8 @@ export function AppleIntelligenceSection({ config, onToggle }: AppleIntelligence
           )}
         </View>
         <Switch
+          accessibilityLabel="Apple Intelligence 사용"
+          accessibilityHint={disabled ? disabledReason : undefined}
           checked={config.enabled}
           onCheckedChange={handlePress}
           disabled={disabled}

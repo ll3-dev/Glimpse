@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
-  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  TouchableOpacity,
+  Pressable,
   View,
 } from 'react-native';
 import {
@@ -34,7 +33,6 @@ export function ConversationEditModal({
 }: ConversationEditModalProps) {
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
-  const [slideAnim] = useState(() => new Animated.Value(400));
 
   useEffect(() => {
     if (!conversation) return;
@@ -42,35 +40,10 @@ export function ConversationEditModal({
     setIcon(conversation.icon ?? null);
   }, [conversation]);
 
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }).start();
-    }
-  }, [visible, slideAnim]);
-
-  const animateClose = (callback: () => void) => {
-    Animated.timing(slideAnim, {
-      toValue: 400,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      callback();
-    });
-  };
-
   const handleClose = () => {
-    animateClose(() => {
-      if (conversation) {
-        setTitle(conversation.title ?? '');
-        setIcon(conversation.icon ?? null);
-      }
-      onCancel();
-    });
+    setTitle(conversation.title ?? '');
+    setIcon(conversation.icon ?? null);
+    onCancel();
   };
 
   const handleSave = () => {
@@ -78,9 +51,7 @@ export function ConversationEditModal({
   };
 
   const handleDeletePress = () => {
-    animateClose(() => {
-      onDelete();
-    });
+    onDelete();
   };
 
   if (!conversation) return null;
@@ -89,28 +60,26 @@ export function ConversationEditModal({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity
+        <Pressable
           className="flex-1 justify-end bg-black/50"
-          activeOpacity={1}
           onPress={handleClose}
         >
-          <Animated.View
-            style={{ transform: [{ translateY: slideAnim }] }}
+          <View
             className="rounded-t-2xl bg-app-surface p-6 pb-10 shadow-xl border-t border-app-border"
             onStartShouldSetResponder={() => true}
           >
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">대화 설정</Text>
-              <TouchableOpacity onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
+              <Pressable onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
                 <X size={16} color="#787774" />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View className="mb-5">
@@ -127,7 +96,7 @@ export function ConversationEditModal({
             <View className="mb-8">
               <Text className="mb-2 ml-1 text-[10px] font-bold uppercase tracking-wider text-app-muted">아이콘</Text>
               <View className="flex-row flex-wrap gap-2">
-                <TouchableOpacity
+                <Pressable
                   className={cn(
                     "h-10 w-10 items-center justify-center rounded-md border",
                     icon === null ? "border-app-text bg-app-text" : "border-app-border bg-app-bg"
@@ -135,9 +104,9 @@ export function ConversationEditModal({
                   onPress={() => setIcon(null)}
                 >
                   <Text className={cn("text-[10px] font-semibold uppercase", icon === null ? "text-white" : "text-app-muted")}>기본</Text>
-                </TouchableOpacity>
+                </Pressable>
                 {CHAT_CONVERSATION_ICONS.map((candidate) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={candidate}
                     className={cn(
                       "h-10 w-10 items-center justify-center rounded-md border",
@@ -146,7 +115,7 @@ export function ConversationEditModal({
                     onPress={() => setIcon(candidate)}
                   >
                     <Text className="text-base">{candidate}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -164,8 +133,8 @@ export function ConversationEditModal({
                 <Text className="text-sm font-bold text-white">저장하기</Text>
               </Button>
             </View>
-          </Animated.View>
-        </TouchableOpacity>
+          </View>
+        </Pressable>
       </KeyboardAvoidingView>
     </Modal>
   );

@@ -1,22 +1,28 @@
 import { Tabs } from "expo-router";
 import { Library, Sparkles, RotateCcw, MessageCircle } from "lucide-react-native";
 import { View } from "react-native";
+import { useSemanticColor } from "@glimpse/ui";
 
 export default function TabsLayout() {
+  const appText = useSemanticColor("appText");
+  const appMuted = useSemanticColor("appMuted");
+  const appBorder = useSemanticColor("appBorder");
+  const appSurface = useSemanticColor("appSurface");
+
   return (
     <View className="flex-1">
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#37352f",
-          tabBarInactiveTintColor: "#787774",
+          tabBarActiveTintColor: appText,
+          tabBarInactiveTintColor: appMuted,
           freezeOnBlur: true,
           lazy: false,
           tabBarStyle: {
             borderTopWidth: 1,
-            borderTopColor: "#edece9",
+            borderTopColor: appBorder,
             elevation: 0,
             shadowOpacity: 0,
-            backgroundColor: "#ffffff",
+            backgroundColor: appSurface,
           },
           tabBarLabelStyle: {
             fontSize: 11,
