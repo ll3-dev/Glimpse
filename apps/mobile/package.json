@@ -73,7 +73,7 @@
     "expo-secure-store": "~55.0.17",
     "expo-share-extension": "^5.0.6",
     "expo-share-intent": "^6.1.1",
-    "expo-splash-screen": "~55.0.24",
+    "expo-splash-screen": "~57.0.7",
     "expo-status-bar": "~55.0.6",
     "expo-symbols": "~55.0.9",
     "expo-system-ui": "~55.0.21",
