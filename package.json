@@ -34,7 +34,7 @@
     "ios": "bun run --cwd apps/mobile ios",
     "web": "bun run --cwd apps/mobile web",
     "web:export": "bun run --cwd apps/mobile web:export",
-    "lint": "bun run --cwd apps/mobile lint",
+    "lint": "bun run --cwd apps/mobile lint && bun run --cwd apps/desktop lint",
     "typecheck": "bun run --cwd apps/mobile typecheck",
     "desktop:dev": "bun run --cwd apps/desktop dev",
     "desktop:build": "bun run --cwd apps/desktop build",

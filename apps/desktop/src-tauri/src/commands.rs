@@ -111,12 +111,19 @@ pub fn run_completion(
     DesktopRuntimeService::run_completion(&state, request)
 }
 
+/// 임베딩 추론은 수 초 블로킹될 수 있어 메인 스레드가 아닌 blocking
+/// 스레드풀에서 실행한다(stream_completion의 spawn_blocking 선례).
 #[tauri::command]
-pub fn run_embedding(
+pub async fn run_embedding(
     request: EmbeddingRequest,
     state: tauri::State<'_, DesktopRuntimeState>,
 ) -> Result<EmbeddingResponse, String> {
-    DesktopRuntimeService::run_embedding(&state, request)
+    let state_clone: DesktopRuntimeState = (*state).clone();
+    tauri::async_runtime::spawn_blocking(
+        DesktopRuntimeService::run_embedding_blocking(state_clone, request),
+    )
+    .await
+    .map_err(|e| format!("Embedding task failed: {}", e))?
 }
 
 #[tauri::command]

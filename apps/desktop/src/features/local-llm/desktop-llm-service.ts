@@ -60,15 +60,30 @@ export interface CompletionResponse {
   modelId: string;
 }
 
+/**
+ * Rust `src-tauri/src/models.rs`의 `EmbeddingRequest`(camelCase serde)와
+ * 정확히 일치하는 와이어 형식. 데스크톱 bun 테스트
+ * (`desktop-llm-service.test.ts`)가 이 계약을 고정한다.
+ */
+export interface EmbeddingRequestWire {
+  runtimeId: string;
+  modelId: string;
+  input: string;
+}
+
+/** 서비스 수준 요청 — wire 형식으로 변환되기 전의 최소 입력. */
 export interface EmbeddingRequest {
   text: string;
   modelId?: string;
+  runtimeId?: string;
 }
 
+/**
+ * Rust `EmbeddingResponse { vector: Vec<f32> }`와 일치. 과거 잘못된
+ * `{ embedding, tokensUsed, modelId }` 타입은 런타임 실패를 은폐했었다.
+ */
 export interface EmbeddingResponse {
-  embedding: number[];
-  tokensUsed: number;
-  modelId: string;
+  vector: number[];
 }
 
 export interface RuntimeHealth {
@@ -182,6 +197,41 @@ function isTauriRuntimeAvailable(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
+// ============================================================================
+// run_embedding IPC contract (tested in desktop-llm-service.test.ts)
+// ============================================================================
+
+export const DEFAULT_EMBEDDING_RUNTIME_ID = 'managed-local';
+export const DEFAULT_EMBEDDING_MODEL_ID = 'default-embedding';
+
+/**
+ * Rust `EmbeddingRequest { runtime_id, model_id, input }`는
+ * `#[serde(rename_all = "camelCase")]`라 와이어 키는 `runtimeId/modelId/input`
+ * 이다. Rust 역직렬화는 불리는 쪽 필드가 필수이므로 누락 시 기본값을 채운다.
+ */
+export function buildEmbeddingInvokePayload(request: EmbeddingRequest): {
+  request: EmbeddingRequestWire;
+} {
+  return {
+    request: {
+      runtimeId: request.runtimeId ?? DEFAULT_EMBEDDING_RUNTIME_ID,
+      modelId: request.modelId ?? DEFAULT_EMBEDDING_MODEL_ID,
+      input: request.text,
+    },
+  };
+}
+
+/** Rust 응답은 `{ vector }` 하나뿐이다 — legacy `{ embedding }`은 계약 위반. */
+export function parseEmbeddingResponse(response: unknown): number[] {
+  const vector = (response as { vector?: unknown } | null | undefined)?.vector;
+  if (!Array.isArray(vector)) {
+    throw new Error(
+      'run_embedding response violated the TS↔Rust contract: expected { vector: number[] }',
+    );
+  }
+  return vector;
+}
+
 function createStaticDesktopLLMService(): DesktopLLMService {
   const models = getDefaultModels();
 
@@ -213,7 +263,7 @@ function createStaticDesktopLLMService(): DesktopLLMService {
       if (model && model.status === 'active') model.status = 'ready';
     },
     runCompletion: async () => ({ text: '', tokensUsed: 0, modelId: models[0].id }),
-    runEmbedding: async () => ({ embedding: [], tokensUsed: 0, modelId: models[3].id }),
+    runEmbedding: async () => ({ vector: [] }),
     getRuntimeHealth: async () => ({
       status: 'healthy',
       loadedModelId: null,
@@ -236,7 +286,10 @@ function createTauriBridge(): DesktopLLMService {
       invoke<{ loadedModelId: string; runtimeId: DesktopLLMRuntimeId }>('load_model', { modelId, runtimeId }),
     unloadModel: (modelId) => invoke<void>('unload_model', { modelId }),
     runCompletion: (request) => invoke<CompletionResponse>('run_completion', { request }),
-    runEmbedding: (request) => invoke<EmbeddingResponse>('run_embedding', { request }),
+    runEmbedding: async (request): Promise<EmbeddingResponse> => {
+      const raw = await invoke<unknown>('run_embedding', buildEmbeddingInvokePayload(request));
+      return { vector: parseEmbeddingResponse(raw) };
+    },
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
     onDownloadProgress: (callback) =>
       listen<DownloadProgressEvent>('rustra://model:download-progress', (e) => callback(e.payload)),
