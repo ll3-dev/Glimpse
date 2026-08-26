@@ -115,22 +115,6 @@ export type AddMessageOutput = {
   message: MessageIo;
 };
 
-export type CalculateNextReviewInput = {
-  lastReviewedAt?: number | null;
-  nextReviewAt?: number | null;
-  feedbackType: string;
-  now: number;
-  stability?: number | null;
-  difficulty?: number | null;
-};
-
-export type CalculateNextReviewOutput = {
-  intervalMs: number;
-  nextReviewAt: number;
-  stability: number;
-  difficulty: number;
-};
-
 export type CalculateTagOverlapInput = {
   left: CoreKnowledgeItemLikeIo;
   right: CoreKnowledgeItemLikeIo;

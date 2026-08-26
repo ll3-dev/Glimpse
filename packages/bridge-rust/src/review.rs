@@ -1,12 +1,15 @@
 //! Review scheduling rustra commands over `SharedCore`.
 //!
 //! These are pure calculations — they don't touch storage.
+//! Note: next-interval scheduling itself lives in the shared TS package
+//! (`@glimpse/features`); only tag overlap and schedule initialization cross
+//! the bridge.
 
 use rustra::prelude::*;
 
 use crate::io::{
-    CalculateNextReviewInputIo, CalculateNextReviewOutputIo, CalculateTagOverlapInputIo,
-    InitializeReviewScheduleInputIo, InitializeReviewScheduleOutputIo,
+    CalculateTagOverlapInputIo, InitializeReviewScheduleInputIo,
+    InitializeReviewScheduleOutputIo,
 };
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
@@ -28,30 +31,6 @@ pub fn calculate_tag_overlap(input: CalculateTagOverlapInput) -> Result<Calculat
     let core_input: glimpse_core::CalculateTagOverlapInput = input.input.into();
     Ok(CalculateTagOverlapOutput {
         overlap: core.calculate_tag_overlap(&core_input),
-    })
-}
-
-#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CalculateNextReviewInput {
-    #[serde(flatten)]
-    pub input: CalculateNextReviewInputIo,
-}
-
-#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CalculateNextReviewOutput {
-    #[serde(flatten)]
-    pub output: CalculateNextReviewOutputIo,
-}
-
-#[command]
-pub fn calculate_next_review(input: CalculateNextReviewInput) -> Result<CalculateNextReviewOutput> {
-    let core = crate::state::core_state();
-    let core_input: glimpse_core::CalculateNextReviewInput = input.input.try_into()?;
-    let output = core.calculate_next_review(&core_input);
-    Ok(CalculateNextReviewOutput {
-        output: output.into(),
     })
 }
 
@@ -95,10 +74,5 @@ pub fn review_package() -> rustra::Package {
 /// package — must live in this module because `#[command]`'s generated
 /// metadata consts are module-private.
 pub(crate) fn register_commands(builder: rustra::PackageBuilder) -> rustra::PackageBuilder {
-    rustra::register!(
-        builder,
-        calculate_tag_overlap,
-        calculate_next_review,
-        initialize_review_schedule
-    )
+    rustra::register!(builder, calculate_tag_overlap, initialize_review_schedule)
 }

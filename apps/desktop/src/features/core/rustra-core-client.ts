@@ -22,7 +22,6 @@ import type {
   Message,
   Recommendation,
   FeedbackEvent,
-  CalculateNextReviewOutput,
   InitializeReviewScheduleOutput,
 } from '@glimpse/shared';
 import {
@@ -50,13 +49,16 @@ import {
   listRecentFeedbackEvents,
   logRecommendationFeedback,
   calculateTagOverlap,
-  calculateNextReview,
   initializeReviewSchedule,
   exportData,
   importData,
   mergeData,
   deleteAllData,
 } from '@glimpse/bridge-generated';
+// Next-interval scheduling is computed in-process by the shared TS scheduler
+// (`@glimpse/features`) — the bridge no longer carries a calculate command.
+import { calculateNextReviewState } from '@glimpse/features';
+import type { CalculateNextReviewInput } from '@glimpse/shared';
 
 export function createRustraCoreClient(): CoreClient {
   return {
@@ -129,8 +131,11 @@ export function createRustraCoreClient(): CoreClient {
     // The flattened review outputs already match the shared shape; only
     // calculateTagOverlap wraps its result in an `overlap` field.
     calculateTagOverlap: async (input) => (await calculateTagOverlap(input)).overlap,
-    calculateNextReview: async (input) =>
-      (await calculateNextReview(input)) as CalculateNextReviewOutput,
+    calculateNextReview: async ({ lastReviewedAt, nextReviewAt, feedbackType, now, stability, difficulty }: CalculateNextReviewInput) =>
+      calculateNextReviewState(lastReviewedAt, nextReviewAt, feedbackType, now, {
+        stabilityDays: stability ?? 0.5,
+        difficulty: difficulty ?? 5.0,
+      }),
     initializeReviewSchedule: async (input) =>
       (await initializeReviewSchedule(input)) as InitializeReviewScheduleOutput,
 

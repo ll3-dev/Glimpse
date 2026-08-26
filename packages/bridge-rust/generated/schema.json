@@ -77,87 +77,6 @@
       }
     },
     {
-      "name": "calculateNextReview",
-      "commandId": 29,
-      "inputType": "CalculateNextReviewInput",
-      "outputType": "CalculateNextReviewOutput",
-      "inputSchema": {
-        "title": "CalculateNextReviewInput",
-        "type": "object",
-        "required": [
-          "feedbackType",
-          "now"
-        ],
-        "properties": {
-          "lastReviewedAt": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          },
-          "nextReviewAt": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          },
-          "feedbackType": {
-            "type": "string"
-          },
-          "now": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "stability": {
-            "default": null,
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double"
-          },
-          "difficulty": {
-            "default": null,
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double"
-          }
-        }
-      },
-      "outputSchema": {
-        "title": "CalculateNextReviewOutput",
-        "type": "object",
-        "required": [
-          "difficulty",
-          "intervalMs",
-          "nextReviewAt",
-          "stability"
-        ],
-        "properties": {
-          "intervalMs": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nextReviewAt": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "stability": {
-            "type": "number",
-            "format": "double"
-          },
-          "difficulty": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      }
-    },
-    {
       "name": "calculateTagOverlap",
       "commandId": 28,
       "inputType": "CalculateTagOverlapInput",
@@ -855,7 +774,7 @@
     },
     {
       "name": "initializeCore",
-      "commandId": 31,
+      "commandId": 30,
       "inputType": "InitializeCoreInput",
       "outputType": "InitializeCoreOutput",
       "inputSchema": {
@@ -887,7 +806,7 @@
     },
     {
       "name": "initializeReviewSchedule",
-      "commandId": 30,
+      "commandId": 29,
       "inputType": "InitializeReviewScheduleInput",
       "outputType": "InitializeReviewScheduleOutput",
       "inputSchema": {

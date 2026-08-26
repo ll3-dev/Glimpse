@@ -23,5 +23,10 @@ export {
   useUpdateMessageMutation,
   useDeleteMessageMutation,
 } from './mutations/useChatMutations';
-export { useMarkAsReviewedMutation, usePostponeReviewMutation } from './mutations/useReviewMutations';
+export {
+  scheduleNextReview,
+  useMarkAsReviewedMutation,
+  useMarkAsForgottenMutation,
+  usePostponeReviewMutation,
+} from './mutations/useReviewMutations';
 export { useRespondToRecommendationMutation, useLogFeedbackMutation } from './mutations/useRecommendationMutations';
