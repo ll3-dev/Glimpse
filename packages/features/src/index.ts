@@ -7,6 +7,7 @@ export {
   calculateInitialReviewAt,
   createBatchInitializeReviewSchedules,
   createGetDueItems,
+  createMarkAsForgotten,
   createMarkAsReviewed,
   createPostponeReview,
   initializeReviewScheduleWithCore,
@@ -23,6 +24,19 @@ export type {
   ReviewActionResult,
   ReviewActionSuccessResult,
   ReviewActionsDeps,
+} from './review';
+export {
+  calculateNextReviewState,
+  calculateNextReviewFromFeedbackImpl,
+  clampInterval,
+  toCoreInput,
+  MIN_INTERVAL_MS,
+  MAX_INTERVAL_MS,
+} from './review';
+export type {
+  MemoryState,
+  NextReviewDecision,
+  ReviewFeedbackType,
 } from './review';
 export {
   // Re-export recommendation types, excluding AppError (already in chat/review)

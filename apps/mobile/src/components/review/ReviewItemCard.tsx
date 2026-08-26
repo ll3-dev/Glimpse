@@ -13,6 +13,7 @@ import {
   EyeOff,
   Sparkles,
   ArrowRight,
+  X,
 } from 'lucide-react-native';
 import { Text, Pressable, View } from 'react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
@@ -22,6 +23,7 @@ type ReviewItemCardProps = {
   item: KnowledgeItem;
   onPress?: (itemId: string) => void;
   onComplete: (itemId: string) => void;
+  onForgot?: (itemId: string) => void;
   onPostpone: (itemId: string) => void;
 };
 
@@ -41,6 +43,7 @@ export function ReviewItemCard({
   item,
   onPress,
   onComplete,
+  onForgot,
   onPostpone,
 }: ReviewItemCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -134,17 +137,30 @@ export function ReviewItemCard({
           onPress={() => onComplete(item.id)}
         >
           <Check size={15} color="#1a7f37" />
-          <Text className="ml-1.5 text-xs font-bold text-tag-mint-text">기억남 (완료)</Text>
+          <Text className="ml-1.5 text-xs font-bold text-tag-mint-text">기억남</Text>
         </Pressable>
 
         <View className="w-px bg-app-border" />
+
+        {onForgot && (
+          <>
+            <Pressable
+              className="flex-1 flex-row items-center justify-center py-3 bg-app-surface active:bg-app-bg"
+              onPress={() => onForgot(item.id)}
+            >
+              <X size={14} color="#d4432e" />
+              <Text className="ml-1.5 text-xs font-semibold text-app-muted">기억 안 남</Text>
+            </Pressable>
+            <View className="w-px bg-app-border" />
+          </>
+        )}
 
         <Pressable
           className="flex-1 flex-row items-center justify-center py-3 bg-app-surface active:bg-app-bg"
           onPress={() => onPostpone(item.id)}
         >
           <Clock size={14} color="#787774" />
-          <Text className="ml-1.5 text-xs font-semibold text-app-muted">나중에 복습</Text>
+          <Text className="ml-1.5 text-xs font-semibold text-app-muted">나중에</Text>
         </Pressable>
       </View>
     </Card>

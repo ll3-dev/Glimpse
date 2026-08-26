@@ -55,6 +55,10 @@ pub struct CalculateNextReviewInputIo {
     pub next_review_at: Option<i64>,
     pub feedback_type: String,
     pub now: i64,
+    #[serde(default)]
+    pub stability: Option<f64>,
+    #[serde(default)]
+    pub difficulty: Option<f64>,
 }
 
 impl TryFrom<CalculateNextReviewInputIo> for CalculateNextReviewInput {
@@ -66,6 +70,8 @@ impl TryFrom<CalculateNextReviewInputIo> for CalculateNextReviewInput {
             next_review_at: value.next_review_at,
             feedback_type: parse_enum("feedbackType", value.feedback_type)?,
             now: value.now,
+            stability: value.stability,
+            difficulty: value.difficulty,
         })
     }
 }
@@ -75,6 +81,8 @@ impl TryFrom<CalculateNextReviewInputIo> for CalculateNextReviewInput {
 pub struct CalculateNextReviewOutputIo {
     pub interval_ms: i64,
     pub next_review_at: i64,
+    pub stability: f64,
+    pub difficulty: f64,
 }
 
 impl From<CalculateNextReviewOutput> for CalculateNextReviewOutputIo {
@@ -82,6 +90,8 @@ impl From<CalculateNextReviewOutput> for CalculateNextReviewOutputIo {
         Self {
             interval_ms: value.interval_ms,
             next_review_at: value.next_review_at,
+            stability: value.stability,
+            difficulty: value.difficulty,
         }
     }
 }

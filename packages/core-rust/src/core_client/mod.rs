@@ -180,11 +180,16 @@ mod tests {
             next_review_at: Some(one_day),
             feedback_type: ReviewFeedbackType::Remembered,
             now,
+            stability: Some(1.0),
+            difficulty: Some(5.0),
         };
 
         let output = client.calculate_next_review(&input);
-        assert_eq!(output.interval_ms, one_day * 2);
-        assert_eq!(output.next_review_at, now + one_day * 2);
+        // Elapsed (2 days) anchors growth: stability exceeds the prior value
+        // and the interval extends beyond one day.
+        assert!(output.interval_ms > one_day, "interval should extend");
+        assert!(output.stability > 1.0);
+        assert_eq!(output.next_review_at, now + output.interval_ms);
     }
 
     #[test]
@@ -197,6 +202,8 @@ mod tests {
             next_review_at: Some(one_day),
             feedback_type: ReviewFeedbackType::Postponed,
             now,
+            stability: Some(1.0),
+            difficulty: Some(5.0),
         };
 
         let output = client.calculate_next_review(&input);
@@ -213,13 +220,14 @@ mod tests {
             next_review_at: None,
             feedback_type: ReviewFeedbackType::Remembered,
             now,
+            stability: None,
+            difficulty: None,
         };
 
         let output = client.calculate_next_review(&input);
-        assert_eq!(
-            output.interval_ms,
-            review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS * 2
-        );
+        // Bootstrapped from the initial state, not a doubling rule.
+        assert!(output.interval_ms >= review::MIN_REVIEW_INTERVAL_MS);
+        assert!(output.stability >= 0.5);
     }
 
     #[test]
@@ -228,9 +236,11 @@ mod tests {
         let now = 1000_i64;
         let input = CalculateNextReviewInput {
             last_reviewed_at: Some(0),
-            next_review_at: Some(100 * 24 * 60 * 60 * 1000),
+            next_review_at: Some(400 * 24 * 60 * 60 * 1000),
             feedback_type: ReviewFeedbackType::Remembered,
             now,
+            stability: Some(3_650.0),
+            difficulty: Some(1.0),
         };
 
         let output = client.calculate_next_review(&input);
@@ -255,8 +265,8 @@ mod tests {
             output.next_review_at,
             created_at + review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS
         );
-        assert!(output.stability.is_none());
-        assert!(output.difficulty.is_none());
+        assert_eq!(output.stability, Some(0.5));
+        assert_eq!(output.difficulty, Some(5.0));
         assert!(output.last_reviewed_at.is_none());
     }
 

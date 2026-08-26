@@ -75,6 +75,7 @@ pub enum EmbeddingSourceType {
 #[serde(rename_all = "lowercase")]
 pub enum ReviewFeedbackType {
     Remembered,
+    Forgotten,
     Postponed,
 }
 
@@ -356,17 +357,28 @@ pub struct CalculateTagOverlapInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CalculateNextReviewInput {
     pub last_reviewed_at: Option<i64>,
     pub next_review_at: Option<i64>,
     pub feedback_type: ReviewFeedbackType,
     pub now: i64,
+    /// FSRS-style per-item memory state. None for legacy items that never
+    /// carried stability/difficulty — the scheduler bootstraps them.
+    #[serde(default)]
+    pub stability: Option<f64>,
+    #[serde(default)]
+    pub difficulty: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CalculateNextReviewOutput {
     pub interval_ms: i64,
     pub next_review_at: i64,
+    /// Updated memory state to persist on the item.
+    pub stability: f64,
+    pub difficulty: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -124,7 +124,7 @@ export interface CoreKnowledgeItemLike {
   createdAt?: number | null;
 }
 
-export type ReviewFeedbackType = 'remembered' | 'postponed';
+export type ReviewFeedbackType = 'remembered' | 'forgotten' | 'postponed';
 
 export interface CalculateTagOverlapInput {
   left: Pick<CoreKnowledgeItemLike, 'tags'>;
@@ -136,11 +136,15 @@ export interface CalculateNextReviewInput {
   nextReviewAt: number | null;
   feedbackType: ReviewFeedbackType;
   now: number;
+  stability?: number | null;
+  difficulty?: number | null;
 }
 
 export interface CalculateNextReviewOutput {
   intervalMs: number;
   nextReviewAt: number;
+  stability: number;
+  difficulty: number;
 }
 
 export interface InitializeReviewScheduleInput {

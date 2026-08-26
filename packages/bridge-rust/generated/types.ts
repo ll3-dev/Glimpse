@@ -120,11 +120,15 @@ export type CalculateNextReviewInput = {
   nextReviewAt?: number | null;
   feedbackType: string;
   now: number;
+  stability?: number | null;
+  difficulty?: number | null;
 };
 
 export type CalculateNextReviewOutput = {
   intervalMs: number;
   nextReviewAt: number;
+  stability: number;
+  difficulty: number;
 };
 
 export type CalculateTagOverlapInput = {

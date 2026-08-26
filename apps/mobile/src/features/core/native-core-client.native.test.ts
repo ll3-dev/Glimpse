@@ -36,16 +36,16 @@ describe('nativeCoreClient local review calculations', () => {
   });
 
   test('calculates next review from provided now value', async () => {
-    await expect(
-      nativeCoreClient.calculateNextReview({
-        lastReviewedAt: 0,
-        nextReviewAt: 24 * 60 * 60 * 1000,
-        feedbackType: 'remembered',
-        now: 100,
-      })
-    ).resolves.toEqual({
-      intervalMs: 24 * 60 * 60 * 1000,
-      nextReviewAt: 100 + 24 * 60 * 60 * 1000,
+    const output = await nativeCoreClient.calculateNextReview({
+      lastReviewedAt: 0,
+      nextReviewAt: 24 * 60 * 60 * 1000,
+      feedbackType: 'remembered',
+      now: 100,
     });
+    // FSRS-lite: remembered grows stability from the initial state.
+    expect(output.intervalMs).toBeGreaterThan(0);
+    expect(output.nextReviewAt).toBe(100 + output.intervalMs);
+    expect(output.stability).toBeGreaterThan(0);
+    expect(output.difficulty).toBeLessThan(5.0);
   });
 });

@@ -5,6 +5,7 @@
  */
 
 export {
+  useMarkAsForgottenMutation,
   useMarkAsReviewedMutation,
   usePostponeReviewMutation,
   useReviewActionsMutation,

@@ -109,6 +109,22 @@
           "now": {
             "type": "integer",
             "format": "int64"
+          },
+          "stability": {
+            "default": null,
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "difficulty": {
+            "default": null,
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
           }
         }
       },
@@ -116,8 +132,10 @@
         "title": "CalculateNextReviewOutput",
         "type": "object",
         "required": [
+          "difficulty",
           "intervalMs",
-          "nextReviewAt"
+          "nextReviewAt",
+          "stability"
         ],
         "properties": {
           "intervalMs": {
@@ -127,6 +145,14 @@
           "nextReviewAt": {
             "type": "integer",
             "format": "int64"
+          },
+          "stability": {
+            "type": "number",
+            "format": "double"
+          },
+          "difficulty": {
+            "type": "number",
+            "format": "double"
           }
         }
       }

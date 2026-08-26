@@ -86,12 +86,50 @@ function calculateTagOverlap(
 function calculateNextReview(
   input: Parameters<CoreClient['calculateNextReview']>[0],
 ): ReturnType<CoreClient['calculateNextReview']> {
-  const intervalMs =
-    input.feedbackType === 'remembered' ? DAY_MS : FORGOTTEN_REVIEW_INTERVAL_MS;
+  // FSRS-lite mirror of the Rust scheduler so the fallback path (no native
+  // core available) produces the same schedule as the real client.
+  const memory = {
+    stabilityDays: input.stability ?? 0.5,
+    difficulty: input.difficulty ?? 5.0,
+  };
+  const elapsedMs =
+    input.lastReviewedAt !== null && input.nextReviewAt !== null
+      ? Math.max(
+          Math.min(input.now - input.lastReviewedAt, input.nextReviewAt - input.lastReviewedAt),
+          0,
+        )
+      : 0;
 
+  let stabilityDays: number;
+  let difficulty: number;
+  if (input.feedbackType === 'postponed') {
+    const scheduledMs =
+      input.lastReviewedAt !== null && input.nextReviewAt !== null
+        ? Math.max(input.nextReviewAt - input.lastReviewedAt, 0)
+        : FORGOTTEN_REVIEW_INTERVAL_MS;
+    const intervalMs = Math.max(Math.min(scheduledMs, 365 * DAY_MS), 10 * 60 * 1000);
+    return Promise.resolve({
+      intervalMs,
+      nextReviewAt: input.now + intervalMs,
+      stability: memory.stabilityDays,
+      difficulty: memory.difficulty,
+    });
+  } else if (input.feedbackType === 'remembered') {
+    const baseDays = Math.max(elapsedMs / DAY_MS, memory.stabilityDays, 0.5);
+    const penalty = Math.max(1 + (memory.difficulty - 5) / 20, 0.3);
+    stabilityDays = Math.max(baseDays * 1.9 * penalty, memory.stabilityDays, 0.5);
+    difficulty = Math.max(memory.difficulty - 0.5, 1.0);
+  } else {
+    stabilityDays = Math.max(memory.stabilityDays * 0.35, 0.3);
+    difficulty = Math.min(memory.difficulty + 1.5, 10.0);
+  }
+
+  const intervalMs = Math.max(Math.min(Math.round(stabilityDays * DAY_MS), 365 * DAY_MS), 10 * 60 * 1000);
   return Promise.resolve({
     intervalMs,
     nextReviewAt: input.now + intervalMs,
+    stability: stabilityDays,
+    difficulty,
   });
 }
 
