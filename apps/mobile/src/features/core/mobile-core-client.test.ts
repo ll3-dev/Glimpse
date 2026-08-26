@@ -38,6 +38,13 @@ const bridge = {
     recommendations: 0,
     feedbackEvents: 0,
   })),
+  mergeData: mock((_dataJson: string) => ({
+    knowledgeItems: 0,
+    conversations: 0,
+    messages: 0,
+    recommendations: 0,
+    feedbackEvents: 0,
+  })),
   deleteAllData: mock(() => undefined),
 };
 

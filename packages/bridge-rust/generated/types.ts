@@ -297,6 +297,18 @@ export type LogRecommendationFeedbackOutput = {
   event: FeedbackEventIo;
 };
 
+export type MergeDataInput = {
+  dataJson: string;
+};
+
+export type MergeDataOutput = {
+  knowledgeItems: number;
+  conversations: number;
+  messages: number;
+  recommendations: number;
+  feedbackEvents: number;
+};
+
 export type RespondToRecommendationInput = {
   recommendationId: string;
   status: string;

@@ -13,7 +13,7 @@ import { InMemoryStorage } from './native-core-in-memory-storage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FORGOTTEN_REVIEW_INTERVAL_MS = 4 * 60 * 60 * 1000;
-const DATA_EXPORT_FORMAT_VERSION = 1;
+const DATA_EXPORT_FORMAT_VERSION = 2;
 
 type PortableData = {
   formatVersion: number;
@@ -23,6 +23,7 @@ type PortableData = {
   messages: Message[];
   recommendations: Recommendation[];
   feedbackEvents: FeedbackEvent[];
+  tombstones?: unknown[];
 };
 
 function parsePortableData(dataJson: string): PortableData {
@@ -31,7 +32,11 @@ function parsePortableData(dataJson: string): PortableData {
     throw new Error('가져오기 데이터는 JSON 객체여야 합니다.');
   }
   const data = parsed as Partial<PortableData>;
-  if (data.formatVersion !== DATA_EXPORT_FORMAT_VERSION) {
+  if (
+    typeof data.formatVersion !== 'number' ||
+    data.formatVersion < 1 ||
+    data.formatVersion > DATA_EXPORT_FORMAT_VERSION
+  ) {
     throw new Error(`지원하지 않는 데이터 버전입니다: ${String(data.formatVersion)}`);
   }
   const collections = [
@@ -273,6 +278,12 @@ export function createFallbackCoreClient(
         recommendations: data.recommendations.length,
         feedbackEvents: data.feedbackEvents.length,
       };
+    },
+
+    async mergeData(dataJson: string): Promise<DataImportSummary> {
+      // The fallback only runs in tests/web preview. Native builds use the
+      // Rust merge implementation with tombstones and deterministic clocks.
+      return this.importData(dataJson);
     },
 
     async deleteAllData(): Promise<void> {

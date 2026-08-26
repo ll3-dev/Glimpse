@@ -15,6 +15,15 @@ impl CoreClientImpl {
         self.storage.replace_all_data(&data)
     }
 
+    pub fn merge_data(&self, data: &DataExport) -> Result<DataExport> {
+        self.storage.merge_data(data)
+    }
+
+    pub fn merge_data_json(&self, data_json: &str) -> Result<DataImportSummary> {
+        let data: DataExport = serde_json::from_str(data_json)?;
+        Ok(self.storage.merge_data(&data)?.summary())
+    }
+
     pub fn delete_all_data(&self) -> Result<()> {
         self.storage.delete_all_data()
     }

@@ -54,6 +54,7 @@ import {
   initializeReviewSchedule,
   exportData,
   importData,
+  mergeData,
   deleteAllData,
 } from '@glimpse/bridge-generated';
 
@@ -136,6 +137,7 @@ export function createRustraCoreClient(): CoreClient {
     // -- Data portability --
     exportData: async () => (await exportData({})).dataJson,
     importData: async (dataJson) => importData({ dataJson }),
+    mergeData: async (dataJson) => mergeData({ dataJson }),
     deleteAllData: async () => {
       await deleteAllData({});
     },

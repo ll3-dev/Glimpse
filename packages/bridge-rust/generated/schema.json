@@ -4,7 +4,7 @@
   "commands": [
     {
       "name": "addMessage",
-      "commandId": 20,
+      "commandId": 21,
       "inputType": "AddMessageInput",
       "outputType": "AddMessageOutput",
       "inputSchema": {
@@ -78,7 +78,7 @@
     },
     {
       "name": "calculateNextReview",
-      "commandId": 28,
+      "commandId": 29,
       "inputType": "CalculateNextReviewInput",
       "outputType": "CalculateNextReviewOutput",
       "inputSchema": {
@@ -133,7 +133,7 @@
     },
     {
       "name": "calculateTagOverlap",
-      "commandId": 27,
+      "commandId": 28,
       "inputType": "CalculateTagOverlapInput",
       "outputType": "CalculateTagOverlapOutput",
       "inputSchema": {
@@ -283,7 +283,7 @@
     },
     {
       "name": "deleteAllData",
-      "commandId": 7,
+      "commandId": 8,
       "inputType": "DeleteAllDataInput",
       "outputType": "DeleteAllDataOutput",
       "inputSchema": {
@@ -324,7 +324,7 @@
     },
     {
       "name": "deleteKnowledgeItem",
-      "commandId": 14,
+      "commandId": 15,
       "inputType": "DeleteKnowledgeItemInput",
       "outputType": "DeleteKnowledgeItemOutput",
       "inputSchema": {
@@ -346,7 +346,7 @@
     },
     {
       "name": "deleteMessage",
-      "commandId": 22,
+      "commandId": 23,
       "inputType": "DeleteMessageInput",
       "outputType": "DeleteMessageOutput",
       "inputSchema": {
@@ -395,7 +395,7 @@
     },
     {
       "name": "getDueKnowledgeItems",
-      "commandId": 18,
+      "commandId": 19,
       "inputType": "GetDueKnowledgeItemsInput",
       "outputType": "GetDueKnowledgeItemsOutput",
       "inputSchema": {
@@ -588,7 +588,7 @@
     },
     {
       "name": "getKnowledgeItemById",
-      "commandId": 12,
+      "commandId": 13,
       "inputType": "GetKnowledgeItemByIdInput",
       "outputType": "GetKnowledgeItemByIdOutput",
       "inputSchema": {
@@ -829,7 +829,7 @@
     },
     {
       "name": "initializeCore",
-      "commandId": 30,
+      "commandId": 31,
       "inputType": "InitializeCoreInput",
       "outputType": "InitializeCoreOutput",
       "inputSchema": {
@@ -861,7 +861,7 @@
     },
     {
       "name": "initializeReviewSchedule",
-      "commandId": 29,
+      "commandId": 30,
       "inputType": "InitializeReviewScheduleInput",
       "outputType": "InitializeReviewScheduleOutput",
       "inputSchema": {
@@ -921,7 +921,7 @@
     },
     {
       "name": "listConversationMessages",
-      "commandId": 19,
+      "commandId": 20,
       "inputType": "ListConversationMessagesInput",
       "outputType": "ListConversationMessagesOutput",
       "inputSchema": {
@@ -1071,7 +1071,7 @@
     },
     {
       "name": "listKnowledgeItems",
-      "commandId": 11,
+      "commandId": 12,
       "inputType": "ListKnowledgeItemsInput",
       "outputType": "ListKnowledgeItemsOutput",
       "inputSchema": {
@@ -1247,7 +1247,7 @@
     },
     {
       "name": "listKnowledgeItemsByIds",
-      "commandId": 15,
+      "commandId": 16,
       "inputType": "ListKnowledgeItemsByIdsInput",
       "outputType": "ListKnowledgeItemsOutputByIds",
       "inputSchema": {
@@ -1434,7 +1434,7 @@
     },
     {
       "name": "listPendingKnowledgeItemsForLabeling",
-      "commandId": 17,
+      "commandId": 18,
       "inputType": "ListPendingKnowledgeItemsForLabelingInput",
       "outputType": "ListPendingKnowledgeItemsForLabelingOutput",
       "inputSchema": {
@@ -1620,7 +1620,7 @@
     },
     {
       "name": "listPendingRecommendations",
-      "commandId": 25,
+      "commandId": 26,
       "inputType": "ListPendingRecommendationsInput",
       "outputType": "ListPendingRecommendationsOutput",
       "inputSchema": {
@@ -1688,7 +1688,7 @@
     },
     {
       "name": "listRecentFeedbackEvents",
-      "commandId": 8,
+      "commandId": 9,
       "inputType": "ListRecentFeedbackEventsInput",
       "outputType": "ListRecentFeedbackEventsOutput",
       "inputSchema": {
@@ -1749,7 +1749,7 @@
     },
     {
       "name": "listRecommendations",
-      "commandId": 24,
+      "commandId": 25,
       "inputType": "ListRecommendationsInput",
       "outputType": "ListRecommendationsOutput",
       "inputSchema": {
@@ -1817,7 +1817,7 @@
     },
     {
       "name": "listWeeklyKnowledgeItems",
-      "commandId": 16,
+      "commandId": 17,
       "inputType": "ListWeeklyKnowledgeItemsInput",
       "outputType": "ListWeeklyKnowledgeItemsOutput",
       "inputSchema": {
@@ -2002,7 +2002,7 @@
     },
     {
       "name": "logRecommendationFeedback",
-      "commandId": 9,
+      "commandId": 10,
       "inputType": "LogRecommendationFeedbackInput",
       "outputType": "LogRecommendationFeedbackOutput",
       "inputSchema": {
@@ -2057,8 +2057,64 @@
       }
     },
     {
+      "name": "mergeData",
+      "commandId": 7,
+      "inputType": "MergeDataInput",
+      "outputType": "MergeDataOutput",
+      "inputSchema": {
+        "title": "MergeDataInput",
+        "type": "object",
+        "required": [
+          "dataJson"
+        ],
+        "properties": {
+          "dataJson": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "MergeDataOutput",
+        "type": "object",
+        "required": [
+          "conversations",
+          "feedbackEvents",
+          "knowledgeItems",
+          "messages",
+          "recommendations"
+        ],
+        "properties": {
+          "knowledgeItems": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "conversations": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "messages": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "recommendations": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "feedbackEvents": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    {
       "name": "respondToRecommendation",
-      "commandId": 26,
+      "commandId": 27,
       "inputType": "RespondToRecommendationInput",
       "outputType": "RespondToRecommendationOutput",
       "inputSchema": {
@@ -2114,7 +2170,7 @@
     },
     {
       "name": "saveKnowledgeItem",
-      "commandId": 10,
+      "commandId": 11,
       "inputType": "SaveKnowledgeItemInput",
       "outputType": "SaveKnowledgeItemOutput",
       "inputSchema": {
@@ -2295,7 +2351,7 @@
     },
     {
       "name": "saveRecommendations",
-      "commandId": 23,
+      "commandId": 24,
       "inputType": "SaveRecommendationsInput",
       "outputType": "SaveRecommendationsOutput",
       "inputSchema": {
@@ -2461,7 +2517,7 @@
     },
     {
       "name": "updateKnowledgeItem",
-      "commandId": 13,
+      "commandId": 14,
       "inputType": "UpdateKnowledgeItemInput",
       "outputType": "UpdateKnowledgeItemOutput",
       "inputSchema": {
@@ -2682,7 +2738,7 @@
     },
     {
       "name": "updateMessage",
-      "commandId": 21,
+      "commandId": 22,
       "inputType": "UpdateMessageInput",
       "outputType": "UpdateMessageOutput",
       "inputSchema": {

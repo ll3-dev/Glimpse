@@ -209,6 +209,7 @@ export interface CoreClient {
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
   exportData(): Promise<string>;
   importData(dataJson: string): Promise<DataImportSummary>;
+  mergeData(dataJson: string): Promise<DataImportSummary>;
   deleteAllData(): Promise<void>;
 }
 

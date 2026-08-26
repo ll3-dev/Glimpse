@@ -74,5 +74,6 @@ export interface MobileCoreClient {
   // Data portability
   exportData(): Promise<string>;
   importData(dataJson: string): Promise<DataImportSummary>;
+  mergeData(dataJson: string): Promise<DataImportSummary>;
   deleteAllData(): Promise<void>;
 }

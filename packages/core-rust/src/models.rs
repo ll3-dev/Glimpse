@@ -271,6 +271,16 @@ pub struct FeedbackEvent {
     pub created_at: i64,
 }
 
+/// A deletion marker carried between devices so an older snapshot cannot
+/// resurrect data that was removed somewhere else.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncTombstone {
+    pub entity_type: String,
+    pub entity_id: String,
+    pub deleted_at: i64,
+}
+
 /// Versioned, portable snapshot of all user-authored Glimpse data.
 ///
 /// Model binaries and API credentials are intentionally excluded: models can
@@ -285,6 +295,8 @@ pub struct DataExport {
     pub messages: Vec<Message>,
     pub recommendations: Vec<Recommendation>,
     pub feedback_events: Vec<FeedbackEvent>,
+    #[serde(default)]
+    pub tombstones: Vec<SyncTombstone>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -298,7 +310,7 @@ pub struct DataImportSummary {
 }
 
 impl DataExport {
-    pub const FORMAT_VERSION: u32 = 1;
+    pub const FORMAT_VERSION: u32 = 2;
 
     pub fn summary(&self) -> DataImportSummary {
         DataImportSummary {

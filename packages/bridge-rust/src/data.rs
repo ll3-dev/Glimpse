@@ -54,6 +54,38 @@ pub fn import_data(input: ImportDataInput) -> Result<ImportDataOutput> {
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct MergeDataInput {
+    pub data_json: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MergeDataOutput {
+    pub knowledge_items: usize,
+    pub conversations: usize,
+    pub messages: usize,
+    pub recommendations: usize,
+    pub feedback_events: usize,
+}
+
+/// Merge a remote snapshot without discarding newer local changes.
+#[command]
+pub fn merge_data(input: MergeDataInput) -> Result<MergeDataOutput> {
+    let core = crate::state::core_state();
+    let summary = core
+        .merge_data_json(&input.data_json)
+        .map_err(crate::error::to_rustra_err)?;
+    Ok(MergeDataOutput {
+        knowledge_items: summary.knowledge_items,
+        conversations: summary.conversations,
+        messages: summary.messages,
+        recommendations: summary.recommendations,
+        feedback_events: summary.feedback_events,
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct DeleteAllDataInput {}
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
@@ -76,5 +108,11 @@ pub fn data_package() -> rustra::Package {
 }
 
 pub(crate) fn register_commands(builder: rustra::PackageBuilder) -> rustra::PackageBuilder {
-    rustra::register!(builder, export_data, import_data, delete_all_data)
+    rustra::register!(
+        builder,
+        export_data,
+        import_data,
+        merge_data,
+        delete_all_data
+    )
 }
