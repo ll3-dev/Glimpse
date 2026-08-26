@@ -7,6 +7,7 @@ mod models;
 mod secrets;
 mod services;
 mod state;
+mod sync;
 
 use tauri::Manager;
 
@@ -39,6 +40,9 @@ fn main() {
                 "glimpse core was initialized more than once"
             );
 
+            let sync_state = sync::initialize(app.handle().clone(), &app_data_dir);
+            app.manage(sync_state);
+
             // rustra event push: route `Package::emit` (LLM token streaming)
             // straight to the webview. With the sink installed, `emit` bypasses
             // the polling EventBus and calls `app.emit_str` immediately —
@@ -54,7 +58,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // rustra bridge — all 25 domain commands via glimpse.core dispatch
+            // rustra bridge — all generated domain commands via glimpse.core dispatch
             rustra::tauri_support::rustra_dispatch,
             // LLM runtime commands
             commands::list_available_runtimes,
@@ -70,7 +74,11 @@ fn main() {
             commands::get_runtime_health,
             secrets::get_secret,
             secrets::set_secret,
-            secrets::delete_secret
+            secrets::delete_secret,
+            sync::get_sync_status,
+            sync::rotate_pairing_code,
+            sync::enable_tailscale_sync,
+            sync::forget_paired_client
         ])
         .build(tauri::generate_context!())
         .expect("error while building glimpse desktop tauri shell");
