@@ -24,6 +24,13 @@ impl SharedCore {
         self.client().snapshot_fingerprint()
     }
 
+    /// Fingerprint of a snapshot we did not necessarily produce ourselves —
+    /// used by the sync server to decide whether an incoming snapshot really
+    /// carries new content before paying for a merge.
+    pub fn fingerprint_of_snapshot(&self, data: &DataExport) -> Result<String> {
+        self.client().fingerprint_of_snapshot(data)
+    }
+
     pub fn delete_all_data(&self) -> Result<()> {
         self.client().delete_all_data()
     }

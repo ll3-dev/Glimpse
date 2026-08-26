@@ -27,7 +27,8 @@ import {
 import {
   discoveryBaseUrl,
   endpointCandidates,
-  isAuthErrorMessage,
+  HttpError,
+  isAuthError,
   normalizeBaseUrl,
 } from './sync-url';
 import type { PairResponse, SyncResponse } from './types';
@@ -207,10 +208,6 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   throw new Error(message);
 }
 
-function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
-}
-
 async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
   try {
     const found = await discoverSyncDesktops(1_500);
@@ -229,17 +226,31 @@ async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
+    // Never follow redirects: the pairing token must not be replayed against
+    // a different origin a 30x might point us at. Not every React Native
+    // fetch implementation honors `redirect`, so 3xx responses that do slip
+    // through are rejected below as well.
+    const response = await fetch(url, {
+      ...init,
+      redirect: 'error',
+      signal: controller.signal,
+    });
+    if (response.status >= 300 && response.status < 400) {
+      throw new HttpError('Desktop가 리다이렉트로 응답했습니다.', response.status);
+    }
     const body = (await response.json().catch(() => null)) as
       | T
       | { message?: string }
       | null;
     if (!response.ok) {
-      const message =
+      const serverMessage =
         body && typeof body === 'object' && 'message' in body
-          ? (body as { message?: string }).message
+          ? ((body as { message?: string }).message ?? null)
           : null;
-      throw new Error(message || `Desktop 요청 실패 (${response.status})`);
+      throw new HttpError(
+        serverMessage || `Desktop 요청 실패 (${response.status})`,
+        response.status,
+      );
     }
     if (!body) throw new Error('Desktop 응답이 비어 있습니다.');
     return body as T;

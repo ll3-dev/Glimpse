@@ -35,32 +35,56 @@ impl SqliteStorage {
     /// format_version) are excluded on purpose.
     pub fn snapshot_fingerprint(&self) -> Result<String> {
         let mut export = self.export_data()?;
-        export.format_version = 0;
-        export.exported_at = 0;
-        export
-            .knowledge_items
-            .iter_mut()
-            .for_each(|item| item.updated_at = 0);
-        export
-            .conversations
-            .iter_mut()
-            .for_each(|item| item.updated_at = 0);
-        export.messages.iter_mut().for_each(|item| {
-            item.updated_at = None;
-            item.created_at = 0;
-        });
-        export.recommendations.iter_mut().for_each(|item| {
-            item.created_at = 0;
-            item.responded_at = None;
-        });
-        export.feedback_events.iter_mut().for_each(|item| item.created_at = 0);
-        export.tombstones.iter_mut().for_each(|item| item.deleted_at = 0);
-
-        let canonical = serde_json::to_vec(&export)
-            .map_err(|error| crate::error::Error::InvalidInput(error.to_string()))?;
-        Ok(format!("{:x}", Sha256::digest(&canonical)))
+        normalize_for_fingerprint(&mut export);
+        canonical_snapshot_digest(&export)
     }
 
+    /// Content fingerprint of an arbitrary (e.g. just-received) snapshot,
+    /// using the exact same normalization and digest as
+    /// [`SqliteStorage::snapshot_fingerprint`]. Equal fingerprints therefore
+    /// mean "this remote snapshot carries the same domain content we already
+    /// hold", independent of volatile envelope fields (`exported_at`,
+    /// `format_version`) or who exported the data when.
+    pub fn fingerprint_of_snapshot(snapshot: &DataExport) -> Result<String> {
+        let mut normalized = snapshot.clone();
+        normalize_for_fingerprint(&mut normalized);
+        canonical_snapshot_digest(&normalized)
+    }
+}
+
+/// Strips fields whose values legitimately differ between devices without any
+/// content change: the export envelope and per-record clock columns the merge
+/// treats as volatile (kept in lockstep with `prefer_candidate`'s clocks).
+fn normalize_for_fingerprint(export: &mut DataExport) {
+    export.format_version = 0;
+    export.exported_at = 0;
+    export
+        .knowledge_items
+        .iter_mut()
+        .for_each(|item| item.updated_at = 0);
+    export
+        .conversations
+        .iter_mut()
+        .for_each(|item| item.updated_at = 0);
+    export.messages.iter_mut().for_each(|item| {
+        item.updated_at = None;
+        item.created_at = 0;
+    });
+    export.recommendations.iter_mut().for_each(|item| {
+        item.created_at = 0;
+        item.responded_at = None;
+    });
+    export.feedback_events.iter_mut().for_each(|item| item.created_at = 0);
+    export.tombstones.iter_mut().for_each(|item| item.deleted_at = 0);
+}
+
+fn canonical_snapshot_digest(export: &DataExport) -> Result<String> {
+    let canonical = serde_json::to_vec(export)
+        .map_err(|error| crate::error::Error::InvalidInput(error.to_string()))?;
+    Ok(format!("{:x}", Sha256::digest(&canonical)))
+}
+
+impl SqliteStorage {
     pub(super) fn list_sync_tombstones(&self) -> Result<Vec<SyncTombstone>> {
         let mut statement = self.conn.prepare(
             "SELECT entity_type, entity_id, deleted_at FROM sync_tombstones ORDER BY entity_type, entity_id",
@@ -135,6 +159,9 @@ impl SqliteStorage {
 pub(crate) const TOMBSTONE_GRACE_MS: i64 = 30 * 24 * 60 * 60 * 1000;
 
 pub(crate) fn merge_exports(mut local: DataExport, remote: DataExport) -> DataExport {
+    // One skew ceiling per merge: records win by whatever clock they carry,
+    // but no record may claim a timestamp further in the future than this.
+    let skew_ceiling = chrono::Utc::now().timestamp_millis().saturating_add(MAX_CLOCK_SKEW_MS);
     let mut tombstones = merge_records(
         local.tombstones,
         remote.tombstones,
@@ -148,30 +175,49 @@ pub(crate) fn merge_exports(mut local: DataExport, remote: DataExport) -> DataEx
         |item| item.id.clone(),
         |item| item.updated_at,
     );
+    knowledge_items
+        .iter_mut()
+        .for_each(|item| item.updated_at = clamp_future_timestamp(item.updated_at, skew_ceiling));
     let mut conversations = merge_records(
         local.conversations,
         remote.conversations,
         |item| item.id.clone(),
         conversation_clock,
     );
+    conversations.iter_mut().for_each(|item| {
+        item.updated_at = clamp_future_timestamp(item.updated_at, skew_ceiling);
+        item.deleted_at = item.deleted_at.map(|ts| clamp_future_timestamp(ts, skew_ceiling));
+    });
     let mut messages = merge_records(
         local.messages,
         remote.messages,
         |item| item.id.clone(),
         message_clock,
     );
+    messages.iter_mut().for_each(|item| {
+        item.created_at = clamp_future_timestamp(item.created_at, skew_ceiling);
+        item.updated_at = item.updated_at.map(|ts| clamp_future_timestamp(ts, skew_ceiling));
+        item.deleted_at = item.deleted_at.map(|ts| clamp_future_timestamp(ts, skew_ceiling));
+    });
     let mut recommendations = merge_records(
         local.recommendations,
         remote.recommendations,
         |item| item.id.clone(),
         recommendation_clock,
     );
+    recommendations.iter_mut().for_each(|item| {
+        item.created_at = clamp_future_timestamp(item.created_at, skew_ceiling);
+        item.responded_at = item.responded_at.map(|ts| clamp_future_timestamp(ts, skew_ceiling));
+    });
     let mut feedback_events = merge_records(
         local.feedback_events,
         remote.feedback_events,
         |item| item.id.clone(),
         |item| item.created_at,
     );
+    feedback_events
+        .iter_mut()
+        .for_each(|item| item.created_at = clamp_future_timestamp(item.created_at, skew_ceiling));
 
     apply_tombstones(
         &mut knowledge_items,
@@ -306,6 +352,16 @@ fn prefer_candidate<T: Serialize>(current: &T, candidate: &T, clock: &impl Fn(&T
                 > serde_json::to_string(current).unwrap_or_default())
 }
 
+/// Bounds how far into the future a merged record's timestamp may sit. A peer
+/// with a runaway clock would otherwise poison the dataset with year-3000
+/// stamps that no honest later edit can outrank; clamping to the skew ceiling
+/// keeps recency comparisons recoverable once the poisoned copy arrives. The
+/// ceiling is computed once per merge (`merge_exports`) so every record sees
+/// the same bound.
+fn clamp_future_timestamp(ts: i64, ceiling: i64) -> i64 {
+    ts.min(ceiling)
+}
+
 fn apply_tombstones<T>(
     records: &mut Vec<T>,
     tombstones: &[SyncTombstone],
@@ -433,6 +489,7 @@ mod tests {
         DataExport, KnowledgeItem, KnowledgeItemType, Recommendation, RecommendationStatus,
         SyncTombstone,
     };
+    use crate::storage::sqlite::SqliteStorage;
 
     use super::{merge_exports, ENTITY_KNOWLEDGE_ITEM, MAX_CLOCK_SKEW_MS, TOMBSTONE_GRACE_MS};
 
@@ -600,6 +657,66 @@ mod tests {
             forward.knowledge_items[0].title,
             backward.knowledge_items[0].title,
             "skewed-clock merges must converge regardless of direction"
+        );
+    }
+
+    #[test]
+    fn future_timestamps_beyond_skew_are_clamped_so_later_edits_win() {
+        // A device with a runaway clock (year ~3000) contributes a record whose
+        // timestamp is far in the future. Clamping bounds the damage: it may
+        // sit at most one skew window ahead of this device's clock, so a real
+        // edit made after that window — or any edit that lands inside the
+        // unclamped year-3000 gap — can outrank the poisoned copy.
+        let now = chrono::Utc::now().timestamp_millis();
+        let poisoned = snapshot(vec![item(
+            "same",
+            now + 100 * MAX_CLOCK_SKEW_MS,
+            "poisoned",
+        )]);
+        let merged = merge_exports(snapshot(vec![]), poisoned);
+        assert_eq!(
+            merged.knowledge_items[0].updated_at,
+            now + MAX_CLOCK_SKEW_MS,
+            "absurd future timestamps must be clamped to the skew ceiling"
+        );
+
+        // An honest edit strictly newer than the clamp ceiling outranks the
+        // poisoned copy by plain recency (it would lose on raw magnitude
+        // without the clamp).
+        let healed = snapshot(vec![item(
+            "same",
+            now + MAX_CLOCK_SKEW_MS + 5_000,
+            "healed",
+        )]);
+        let final_export = merge_exports(merged, healed);
+        assert_eq!(final_export.knowledge_items[0].title.as_deref(), Some("healed"));
+    }
+
+    #[test]
+    fn fingerprint_of_snapshot_matches_stored_fingerprint_for_identical_content() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        storage
+            .replace_all_data(&snapshot(vec![item("a", 100, "alpha"), item("b", 200, "beta")]))
+            .expect("fixture should import");
+        let stored = storage.snapshot_fingerprint().expect("fingerprint");
+
+        // Same content, different volatile envelope/clock values: equal print.
+        let mut incoming = storage.export_data().expect("export");
+        incoming.exported_at += 123_456;
+        for record in incoming.knowledge_items.iter_mut() {
+            record.updated_at += 7;
+        }
+        assert_eq!(
+            SqliteStorage::fingerprint_of_snapshot(&incoming).expect("remote fingerprint"),
+            stored,
+            "volatile-only differences must not change the fingerprint"
+        );
+
+        // A content difference must change it.
+        incoming.knowledge_items[0].title = Some("changed".into());
+        assert_ne!(
+            SqliteStorage::fingerprint_of_snapshot(&incoming).expect("changed fingerprint"),
+            stored
         );
     }
 }

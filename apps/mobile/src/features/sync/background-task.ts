@@ -3,6 +3,7 @@ import * as BackgroundTask from 'expo-background-task';
 import { BackgroundTaskResult, BackgroundTaskStatus } from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import { initializeCoreClient } from '@/src/features/core/initialize-core-client';
+import { logger } from '@/src/utils/logger';
 import { getSyncConfig } from './sync-store';
 import { syncWithDesktop } from './sync-client';
 
@@ -25,7 +26,10 @@ if (!TaskManager.isTaskDefined(SYNC_BACKGROUND_TASK)) {
       await initializeCoreClient();
       await syncWithDesktop();
       return BackgroundTaskResult.Success;
-    } catch {
+    } catch (error) {
+      logger.warn('Background sync failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return BackgroundTaskResult.Failed;
     }
   });

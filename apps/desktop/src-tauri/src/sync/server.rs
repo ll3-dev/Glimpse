@@ -48,6 +48,12 @@ struct PairResponse {
 #[serde(rename_all = "camelCase")]
 struct SyncRequest {
     device_id: String,
+    /// Deprecated: clients echo the fingerprint from the previous sync
+    /// response, which describes the *desktop's* past content, not the
+    /// client's. The skip decision is made by hashing the received snapshot
+    /// server-side; this field is kept only for wire compatibility and is
+    /// never consulted.
+    #[allow(dead_code)]
     fingerprint: Option<String>,
     snapshot: glimpse_core::DataExport,
 }
@@ -56,9 +62,9 @@ struct SyncRequest {
 #[serde(rename_all = "camelCase")]
 struct SyncResponse {
     protocol_version: u32,
-    /// `None` when the client's fingerprint matched ours: nothing changed on
-    /// the desktop since the client's last sync, so there is no snapshot to
-    /// return and no merge is needed in either direction.
+    /// `None` when the received snapshot is content-identical to what we
+    /// already hold: there is nothing to merge in either direction, so we
+    /// skip the rewrite (the common idle-polling case).
     snapshot: Option<glimpse_core::DataExport>,
     fingerprint: String,
     endpoints: PublicEndpoints,
@@ -87,25 +93,43 @@ impl IntoResponse for ApiError {
 
 pub fn router(state: ServerState) -> Router {
     let port = state.sync.port();
+    let local_names = advertised_host_names(&state.sync);
     Router::new()
         .route("/v1/health", get(health))
         .route("/v1/pair", post(pair))
         .route("/v1/sync", post(sync))
         .layer(axum::middleware::from_fn(move |request, next| {
-            reject_foreign_hosts(request, next, port)
+            reject_foreign_hosts(request, next, port, local_names.clone())
         }))
         .layer(DefaultBodyLimit::max(64 * 1024 * 1024))
         .with_state(state)
 }
 
+/// Hostnames under which this desktop legitimately advertises itself: the
+/// mDNS record advertised during discovery plus the device name. A request
+/// addressed by anything else (an arbitrary domain) is a rebinding attempt.
+fn advertised_host_names(state: &DesktopSyncState) -> std::sync::Arc<Vec<String>> {
+    let mut names = vec![format!(
+        "glimpse-{}.local",
+        state.device_id.chars().take(8).collect::<String>()
+    )];
+    let device = state.device_name.trim().to_ascii_lowercase();
+    if !device.is_empty() {
+        names.push(device);
+    }
+    std::sync::Arc::new(names)
+}
+
 /// DNS-rebinding defense: a browser page rebound to this machine must not be
 /// able to drive the sync API. Requests must address us as a local origin
-/// (`localhost[:port]`, `127.0.0.1[:port]`, `[::1][:port]`, or a LAN IP with
-/// the sync port) — anything else (a public-looking hostname) is refused.
+/// (`localhost[:any]`, a private/loopback/link-local IP) or via a proxy name
+/// we actually answer to (`*.ts.net` / our own advertised names) **on our
+/// sync port** — anything else is refused.
 async fn reject_foreign_hosts(
     request: axum::extract::Request,
     next: axum::middleware::Next,
     port: u16,
+    local_names: std::sync::Arc<Vec<String>>,
 ) -> Response {
     let host = request
         .headers()
@@ -113,7 +137,7 @@ async fn reject_foreign_hosts(
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
-    if is_allowed_host(host, port) {
+    if is_allowed_host(host, port, &local_names) {
         next.run(request).await
     } else {
         ApiError(
@@ -126,12 +150,18 @@ async fn reject_foreign_hosts(
 }
 
 /// Local origins and private/link-local LAN addresses are always allowed;
-/// anything else is only allowed when addressed with our sync port, which
-/// covers the Tailscale Serve proxy path while still refusing public IPs a
-/// rebinding attacker would use.
-fn is_allowed_host(host: &str, port: u16) -> bool {
+/// any other hostname is only allowed when addressed with our sync port AND
+/// it is a name we plausibly serve under — a Tailnet (`*.ts.net`) proxy name
+/// or our own mDNS advertisement. An arbitrary public-looking domain on our
+/// port (`evil.com:{port}`) is exactly the DNS-rebinding payload and must
+/// stay refused, as must bare integer/octal IP spellings of remote hosts.
+fn is_allowed_host(host: &str, port: u16, local_names: &[String]) -> bool {
     let host_only = host.rsplit_once(':').map(|(h, _)| h).unwrap_or(host);
     let host_only = host_only.trim_start_matches('[').trim_end_matches(']');
+    let host_only = host_only
+        .strip_suffix('.')
+        .unwrap_or(host_only)
+        .to_ascii_lowercase();
     let local_ip = host_only
         .parse::<std::net::IpAddr>()
         .is_ok_and(|ip| match ip {
@@ -140,10 +170,19 @@ fn is_allowed_host(host: &str, port: u16) -> bool {
             }
             std::net::IpAddr::V6(v6) => v6.is_loopback() || (v6.segments()[0] & 0xfe80) == 0xfe80,
         });
-    matches!(host_only, "localhost" | "127.0.0.1" | "::1")
-        || local_ip
-        || (host.ends_with(&format!(":{port}"))
-            && host_only.parse::<std::net::IpAddr>().is_err())
+    if matches!(host_only.as_str(), "localhost" | "127.0.0.1" | "::1") || local_ip {
+        return true;
+    }
+    // Anything not literally ours must at least arrive on the sync port —
+    // proxies (Tailscale Serve, mDNS resolution) forward to exactly that.
+    if !host.ends_with(&format!(":{port}")) {
+        return false;
+    }
+    host_only.ends_with(".ts.net")
+        || local_names.iter().any(|name| {
+            let name = name.strip_suffix('.').unwrap_or(name);
+            name.eq_ignore_ascii_case(&host_only)
+        })
 }
 
 async fn health(State(state): State<ServerState>) -> Json<HealthResponse> {
@@ -218,17 +257,18 @@ async fn sync(
     }
 
     let device_id = request.device_id;
-    let client_fingerprint = request.fingerprint;
     let remote_snapshot = request.snapshot;
     let (snapshot, fingerprint) = tauri::async_runtime::spawn_blocking(move || {
         let core = glimpse_bridge::core_state();
         let fingerprint = core
             .snapshot_fingerprint()
             .map_err(|error| error.to_string())?;
-        // If the client already holds identical content, skip the merge: this
-        // is the common idle-polling case, and re-writing the whole database
-        // every minute would burn flash and hold the core lock for nothing.
-        let snapshot = if client_fingerprint.as_deref() == Some(fingerprint.as_str()) {
+        // Skip the merge only when the received snapshot's *actual content*
+        // matches ours (see `should_skip_merge`). If the payload cannot be
+        // hashed we fail open and merge anyway — an unnecessary merge is
+        // cheap next to a lost change.
+        let skip = should_skip_merge(&fingerprint, &remote_snapshot);
+        let snapshot = if skip {
             None
         } else {
             Some(
@@ -298,11 +338,38 @@ fn bearer_token(headers: &HeaderMap) -> Option<&str> {
         .filter(|token| !token.is_empty())
 }
 
+/// Should the incoming snapshot be discarded without merging?
+///
+/// Only when the payload declares a supported envelope AND hashing its actual
+/// content yields the same fingerprint as our current dataset. An unsupported
+/// or unhashable payload cannot be meaningfully compared, so we fail open and
+/// let the merge (which validates strictly) decide. The `fingerprint` the
+/// client sends is deliberately ignored (deprecated wire field): it echoes a
+/// past desktop fingerprint rather than describing the snapshot payload, and
+/// trusting it silently dropped every client-side change until the desktop
+/// changed on its own.
+fn should_skip_merge(our_fingerprint: &str, remote_snapshot: &glimpse_core::DataExport) -> bool {
+    remote_snapshot.format_version != 0
+        && remote_snapshot.format_version <= glimpse_core::DataExport::FORMAT_VERSION
+        && glimpse_core::SqliteStorage::fingerprint_of_snapshot(remote_snapshot)
+            .ok()
+            .is_some_and(|remote_fingerprint| remote_fingerprint == our_fingerprint)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_allowed_host;
+    use std::sync::Arc;
+
+    use glimpse_core::{DataExport, KnowledgeItem, KnowledgeItemType, SqliteStorage};
+
+    use super::{is_allowed_host, should_skip_merge};
 
     const PORT: u16 = 34_129;
+    /// Empty advertisement set: only IPs, localhost, and `*.ts.net` apply.
+    const NO_ADVERTISED_NAMES: &[String] = &[];
+    fn advertised(names: &[&str]) -> Vec<String> {
+        names.iter().map(|name| name.to_string()).collect()
+    }
 
     #[test]
     fn local_and_private_hosts_are_allowed() {
@@ -317,7 +384,7 @@ mod tests {
             "[::1]:34129",
             "[fe80::1]:34129",
         ] {
-            assert!(is_allowed_host(host, PORT), "should allow {host}");
+            assert!(is_allowed_host(host, PORT, NO_ADVERTISED_NAMES), "should allow {host}");
         }
     }
 
@@ -326,16 +393,195 @@ mod tests {
         for host in [
             "attacker.example.com",
             "attacker.example.com:80",
+            // The DNS-rebinding payload itself: an arbitrary domain dressed up
+            // with our sync port used to pass the old port-only check.
+            "evil.com:34129",
+            "attacker.example.com:34129",
             "8.8.8.8:34129",
+            // Decimal-integer and octal spellings of a loopback/remote address
+            // parse as public IPs; they must not slip through as "hostnames".
+            "2130706433:34129",
+            "0177.0.0.1:34129",
             "glimpse.evil.ts.net:443",
+            // A different service's port is not ours even for real names.
+            "desktop.example.ts.net:443",
         ] {
-            assert!(!is_allowed_host(host, PORT), "should reject {host}");
+            assert!(!is_allowed_host(host, PORT, NO_ADVERTISED_NAMES), "should reject {host}");
         }
     }
 
     #[test]
-    fn proxied_hosts_using_the_sync_port_are_allowed() {
+    fn proxied_tailnet_hosts_using_the_sync_port_are_allowed() {
         // Tailscale Serve rewrites Host to the backend form for our port.
-        assert!(is_allowed_host("desktop.example.ts.net:34129", PORT));
+        assert!(is_allowed_host(
+            "desktop.example.ts.net:34129",
+            PORT,
+            NO_ADVERTISED_NAMES
+        ));
+        assert!(is_allowed_host(
+            "Machine-Name.Tail-scope.ts.net:34129",
+            PORT,
+            NO_ADVERTISED_NAMES
+        ));
+    }
+
+    #[test]
+    fn advertised_mdns_names_on_the_sync_port_are_allowed() {
+        let names = advertised(&["glimpse-a1b2c3d4.local", "Glimpse Desktop e5f6"]);
+        assert!(is_allowed_host("glimpse-a1b2c3d4.local:34129", PORT, &names));
+        // Case-insensitive match, with or without a trailing FDNS dot.
+        assert!(is_allowed_host("glimpse desktop e5f6:34129", PORT, &names));
+        assert!(is_allowed_host(
+            "GLIMPSE-A1B2C3D4.LOCAL.:34129",
+            PORT,
+            &names
+        ));
+        // Suffix resemblance is not a match.
+        assert!(!is_allowed_host(
+            "fake-glimpse-a1b2c3d4.local:34129",
+            PORT,
+            &names
+        ));
+        assert!(!is_allowed_host("glimpse-a1b2c3d4.local:443", PORT, &names));
+    }
+
+    #[test]
+    fn ts_net_lookalikes_outside_the_real_suffix_are_rejected() {
+        // Only the authoritative `.ts.net` suffix counts — not a lookalike
+        // TLD ending in a similarly spelled label.
+        assert!(!is_allowed_host(
+            "desktop.example.ts.net.evil.com:34129",
+            PORT,
+            NO_ADVERTISED_NAMES
+        ));
+        assert!(!is_allowed_host(
+            "desktop.example.bats.net:34129",
+            PORT,
+            NO_ADVERTISED_NAMES
+        ));
+    }
+
+    #[test]
+    fn arc_names_compile_and_match() {
+        // The middleware passes the advertised set as an Arc; make sure the
+        // slice-based helper accepts that shape.
+        let arc: Arc<Vec<String>> = Arc::new(advertised(&["glimpse-test.local"]));
+        assert!(is_allowed_host("glimpse-test.local:34129", PORT, &arc));
+    }
+
+    // --- Fingerprint skip decision (see `should_skip_merge`) -----------------
+
+    fn note(id: &str, title: &str, updated_at: i64) -> KnowledgeItem {
+        KnowledgeItem {
+            id: id.into(),
+            item_type: KnowledgeItemType::Note,
+            title: Some(title.into()),
+            body: None,
+            url: None,
+            summary: None,
+            tags: None,
+            labels: None,
+            provisional_labels: None,
+            label_status: None,
+            label_source: None,
+            label_version: None,
+            label_score: None,
+            label_requested_at: None,
+            label_completed_at: None,
+            label_error: None,
+            created_at: 1_000,
+            updated_at,
+            stability: None,
+            difficulty: None,
+            last_reviewed_at: None,
+            next_review_at: None,
+        }
+    }
+
+    fn empty_export() -> DataExport {
+        DataExport {
+            format_version: DataExport::FORMAT_VERSION,
+            exported_at: 0,
+            knowledge_items: vec![],
+            conversations: vec![],
+            messages: vec![],
+            recommendations: vec![],
+            feedback_events: vec![],
+            tombstones: vec![],
+        }
+    }
+
+    /// Reimplements the server-side merge flow around a standalone core so
+    /// the skip decision is exercised end to end: fingerprint our storage →
+    /// decide via `should_skip_merge` → merge or keep the existing data.
+    fn run_server_flow(our_storage: &SqliteStorage, incoming: DataExport) -> Option<DataExport> {
+        let our_fingerprint = our_storage.snapshot_fingerprint().expect("our fingerprint");
+        if should_skip_merge(&our_fingerprint, &incoming) {
+            return None;
+        }
+        Some(our_storage.merge_data(&incoming).expect("merge"))
+    }
+
+    #[test]
+    fn mobile_change_is_merged_even_when_client_echoes_a_stale_desktop_fingerprint() {
+        // The P0 regression: after a completed sync the client holds no new
+        // desktop fingerprint — yet it edited its own content. The old logic
+        // compared the *echoed* fingerprint and dropped this snapshot.
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared.knowledge_items.push(note("a", "shared", 100));
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        let mut client_snapshot = desktop.export_data().expect("client copy");
+        client_snapshot.knowledge_items.push(note("b", "mobile-only", 200));
+
+        assert!(
+            run_server_flow(&desktop, client_snapshot).is_some(),
+            "a changed snapshot must be merged regardless of any echoed fingerprint"
+        );
+        let titles = desktop
+            .export_data()
+            .expect("export")
+            .knowledge_items
+            .iter()
+            .filter_map(|item| item.title.clone())
+            .collect::<Vec<_>>();
+        assert!(
+            titles.contains(&"mobile-only".into()),
+            "mobile change must survive on the desktop, got {titles:?}"
+        );
+    }
+
+    #[test]
+    fn identical_content_snapshot_is_skipped() {
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared.knowledge_items.push(note("a", "shared", 100));
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        // Same content exported again: volatile envelope differs, content does not.
+        let mut echo = desktop.export_data().expect("export");
+        echo.exported_at += 999;
+
+        assert!(
+            run_server_flow(&desktop, echo).is_none(),
+            "an unchanged re-send must still skip the merge"
+        );
+    }
+
+    #[test]
+    fn corrupt_snapshot_fails_open_into_a_merge_attempt() {
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared.knowledge_items.push(note("a", "shared", 100));
+        desktop.replace_all_data(&shared).expect("seed desktop");
+        let our_fingerprint = desktop.snapshot_fingerprint().expect("fingerprint");
+
+        let mut broken = desktop.export_data().expect("export");
+        broken.format_version = DataExport::FORMAT_VERSION + 10;
+        assert!(
+            !should_skip_merge(&our_fingerprint, &broken),
+            "an unhashable/unverifiable snapshot must fall open into a merge"
+        );
     }
 }

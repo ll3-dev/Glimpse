@@ -28,7 +28,23 @@ export function endpointCandidates(
   return [...new Set([config.tailscaleUrl, config.lanUrl].filter(Boolean))] as string[];
 }
 
-/** Does an error message look like an HTTP 401 from fetchJson? */
-export function isAuthErrorMessage(message: string): boolean {
-  return /\(401\)/.test(message);
+/**
+ * An HTTP-level failure from the desktop sync API. Carries the response
+ * status so callers can branch on semantics (401 → re-pairing needed) instead
+ * of parsing human-readable message text, which is locale-dependent and
+ * frequently replaced by the server's body anyway.
+ */
+export class HttpError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
+}
+
+/** Was this rejection an HTTP 401 from the desktop (pairing token invalid)? */
+export function isAuthError(error: unknown): boolean {
+  return error instanceof HttpError && error.status === 401;
 }
