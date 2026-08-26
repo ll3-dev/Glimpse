@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { BYOKSection } from './BYOKSection';
 import { ModelManagerSection } from './ModelManagerSection';

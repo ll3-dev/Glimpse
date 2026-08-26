@@ -25,10 +25,11 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
       - run: bun install --frozen-lockfile
       - run: bun run lint
+      - run: bun run desktop:lint
       - run: bun run typecheck
       - run: bun run desktop:typecheck
       - run: bun run test:coverage
-      - run: bun test apps/desktop/src
+      - run: bun test packages/features/src apps/desktop/src --coverage
       - run: bun run web:export
       - run: bun run audit:critical
       - uses: actions/upload-artifact@v4

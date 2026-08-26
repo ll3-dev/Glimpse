@@ -60,7 +60,7 @@ import {
 
 export function createRustraCoreClient(): CoreClient {
   return {
-    initialize: async (_dbPath: string) => {
+    initialize: async () => {
       // The SQLite database is opened once in the Tauri setup hook
       // (main.rs) and handed to the bridge via init_core; nothing to do here.
     },
