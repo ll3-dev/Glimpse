@@ -86,12 +86,64 @@ impl IntoResponse for ApiError {
 }
 
 pub fn router(state: ServerState) -> Router {
+    let port = state.sync.port();
     Router::new()
         .route("/v1/health", get(health))
         .route("/v1/pair", post(pair))
         .route("/v1/sync", post(sync))
+        .layer(axum::middleware::from_fn(move |request, next| {
+            reject_foreign_hosts(request, next, port)
+        }))
         .layer(DefaultBodyLimit::max(64 * 1024 * 1024))
         .with_state(state)
+}
+
+/// DNS-rebinding defense: a browser page rebound to this machine must not be
+/// able to drive the sync API. Requests must address us as a local origin
+/// (`localhost[:port]`, `127.0.0.1[:port]`, `[::1][:port]`, or a LAN IP with
+/// the sync port) — anything else (a public-looking hostname) is refused.
+async fn reject_foreign_hosts(
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+    port: u16,
+) -> Response {
+    let host = request
+        .headers()
+        .get(axum::http::header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+
+    if is_allowed_host(host, port) {
+        next.run(request).await
+    } else {
+        ApiError(
+            StatusCode::FORBIDDEN,
+            "host_not_allowed",
+            format!("Host '{host}'은(는) 이 동기화 서버에 접근할 수 없습니다."),
+        )
+        .into_response()
+    }
+}
+
+/// Local origins and private/link-local LAN addresses are always allowed;
+/// anything else is only allowed when addressed with our sync port, which
+/// covers the Tailscale Serve proxy path while still refusing public IPs a
+/// rebinding attacker would use.
+fn is_allowed_host(host: &str, port: u16) -> bool {
+    let host_only = host.rsplit_once(':').map(|(h, _)| h).unwrap_or(host);
+    let host_only = host_only.trim_start_matches('[').trim_end_matches(']');
+    let local_ip = host_only
+        .parse::<std::net::IpAddr>()
+        .is_ok_and(|ip| match ip {
+            std::net::IpAddr::V4(v4) => {
+                v4.is_private() || v4.is_loopback() || v4.is_link_local()
+            }
+            std::net::IpAddr::V6(v6) => v6.is_loopback() || (v6.segments()[0] & 0xfe80) == 0xfe80,
+        });
+    matches!(host_only, "localhost" | "127.0.0.1" | "::1")
+        || local_ip
+        || (host.ends_with(&format!(":{port}"))
+            && host_only.parse::<std::net::IpAddr>().is_err())
 }
 
 async fn health(State(state): State<ServerState>) -> Json<HealthResponse> {
@@ -244,4 +296,46 @@ fn bearer_token(headers: &HeaderMap) -> Option<&str> {
         .strip_prefix("Bearer ")
         .map(str::trim)
         .filter(|token| !token.is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_allowed_host;
+
+    const PORT: u16 = 34_129;
+
+    #[test]
+    fn local_and_private_hosts_are_allowed() {
+        for host in [
+            "localhost",
+            "localhost:34129",
+            "127.0.0.1",
+            "127.0.0.1:34129",
+            "192.168.1.4:34129",
+            "10.0.0.2:34129",
+            "172.16.0.9:34129",
+            "[::1]:34129",
+            "[fe80::1]:34129",
+        ] {
+            assert!(is_allowed_host(host, PORT), "should allow {host}");
+        }
+    }
+
+    #[test]
+    fn foreign_and_rebound_hosts_are_rejected() {
+        for host in [
+            "attacker.example.com",
+            "attacker.example.com:80",
+            "8.8.8.8:34129",
+            "glimpse.evil.ts.net:443",
+        ] {
+            assert!(!is_allowed_host(host, PORT), "should reject {host}");
+        }
+    }
+
+    #[test]
+    fn proxied_hosts_using_the_sync_port_are_allowed() {
+        // Tailscale Serve rewrites Host to the backend form for our port.
+        assert!(is_allowed_host("desktop.example.ts.net:34129", PORT));
+    }
 }
