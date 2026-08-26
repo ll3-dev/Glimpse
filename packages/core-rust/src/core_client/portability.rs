@@ -24,6 +24,10 @@ impl CoreClientImpl {
         Ok(self.storage.merge_data(&data)?.summary())
     }
 
+    pub fn snapshot_fingerprint(&self) -> Result<String> {
+        self.storage.snapshot_fingerprint()
+    }
+
     pub fn delete_all_data(&self) -> Result<()> {
         self.storage.delete_all_data()
     }

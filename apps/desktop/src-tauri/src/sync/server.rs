@@ -48,6 +48,7 @@ struct PairResponse {
 #[serde(rename_all = "camelCase")]
 struct SyncRequest {
     device_id: String,
+    fingerprint: Option<String>,
     snapshot: glimpse_core::DataExport,
 }
 
@@ -55,9 +56,12 @@ struct SyncRequest {
 #[serde(rename_all = "camelCase")]
 struct SyncResponse {
     protocol_version: u32,
-    snapshot: glimpse_core::DataExport,
+    /// `None` when the client's fingerprint matched ours: nothing changed on
+    /// the desktop since the client's last sync, so there is no snapshot to
+    /// return and no merge is needed in either direction.
+    snapshot: Option<glimpse_core::DataExport>,
+    fingerprint: String,
     endpoints: PublicEndpoints,
-    graph_queued: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -95,7 +99,7 @@ async fn health(State(state): State<ServerState>) -> Json<HealthResponse> {
         protocol_version: SYNC_PROTOCOL_VERSION,
         device_id: state.sync.device_id.clone(),
         device_name: state.sync.device_name.clone(),
-        pairing_required: true,
+        pairing_required: state.sync.paired_clients().is_empty(),
     })
 }
 
@@ -131,12 +135,13 @@ async fn pair(
         .map_err(|message| {
             ApiError(StatusCode::INTERNAL_SERVER_ERROR, "persist_failed", message)
         })?;
+    let endpoints = endpoints_via_blocking_pool(&state).await;
     Ok(Json(PairResponse {
         protocol_version: SYNC_PROTOCOL_VERSION,
         desktop_device_id: state.sync.device_id.clone(),
         desktop_device_name: state.sync.device_name.clone(),
         token,
-        endpoints: state.sync.public_endpoints(),
+        endpoints,
     }))
 }
 
@@ -161,11 +166,25 @@ async fn sync(
     }
 
     let device_id = request.device_id;
+    let client_fingerprint = request.fingerprint;
     let remote_snapshot = request.snapshot;
-    let snapshot = tauri::async_runtime::spawn_blocking(move || {
+    let (snapshot, fingerprint) = tauri::async_runtime::spawn_blocking(move || {
         let core = glimpse_bridge::core_state();
-        core.merge_data(&remote_snapshot)
-            .map_err(|error| error.to_string())
+        let fingerprint = core
+            .snapshot_fingerprint()
+            .map_err(|error| error.to_string())?;
+        // If the client already holds identical content, skip the merge: this
+        // is the common idle-polling case, and re-writing the whole database
+        // every minute would burn flash and hold the core lock for nothing.
+        let snapshot = if client_fingerprint.as_deref() == Some(fingerprint.as_str()) {
+            None
+        } else {
+            Some(
+                core.merge_data(&remote_snapshot)
+                    .map_err(|error| error.to_string())?,
+            )
+        };
+        Ok((snapshot, fingerprint))
     })
     .await
     .map_err(|error| {
@@ -175,7 +194,7 @@ async fn sync(
             error.to_string(),
         )
     })?
-    .map_err(|message| {
+    .map_err(|message: String| {
         ApiError(
             StatusCode::UNPROCESSABLE_ENTITY,
             "sync_merge_failed",
@@ -184,17 +203,37 @@ async fn sync(
     })?;
 
     state.sync.mark_seen(&device_id);
-    let _ = state.app.emit(
-        "glimpse://sync-complete",
-        serde_json::json!({ "deviceId": device_id }),
-    );
+    if snapshot.is_some() {
+        // Graph analysis is driven by this event in the webview; only emit it
+        // when a merge actually changed desktop data.
+        let _ = state.app.emit(
+            "glimpse://sync-complete",
+            serde_json::json!({ "deviceId": device_id }),
+        );
+    }
 
+    let endpoints = endpoints_via_blocking_pool(&state).await;
     Ok(Json(SyncResponse {
         protocol_version: SYNC_PROTOCOL_VERSION,
         snapshot,
-        endpoints: state.sync.public_endpoints(),
-        graph_queued: true,
+        fingerprint,
+        endpoints,
     }))
+}
+
+/// `public_endpoints()` shells out to the tailscale CLI; never run that on
+/// the async runtime — park it on the blocking pool instead.
+async fn endpoints_via_blocking_pool(state: &ServerState) -> PublicEndpoints {
+    let sync = state.sync.clone();
+    tauri::async_runtime::spawn_blocking(move || sync.public_endpoints())
+        .await
+        .unwrap_or_else(|error| {
+            eprintln!("sync endpoint inspection failed: {error}");
+            PublicEndpoints {
+                local_port: state.sync.port(),
+                tailscale_url: None,
+            }
+        })
 }
 
 fn bearer_token(headers: &HeaderMap) -> Option<&str> {

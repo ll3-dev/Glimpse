@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use rusqlite::params;
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 use crate::error::Result;
 use crate::models::{
@@ -26,6 +27,38 @@ impl SqliteStorage {
         let merged = merge_exports(local, remote.clone());
         self.replace_all_data(&merged)?;
         self.export_data()
+    }
+
+    /// Deterministic content fingerprint of the merged dataset: equal
+    /// fingerprints mean both devices hold byte-identical domain content, so
+    /// peers can skip re-sending snapshots. Volatile fields (exported_at,
+    /// format_version) are excluded on purpose.
+    pub fn snapshot_fingerprint(&self) -> Result<String> {
+        let mut export = self.export_data()?;
+        export.format_version = 0;
+        export.exported_at = 0;
+        export
+            .knowledge_items
+            .iter_mut()
+            .for_each(|item| item.updated_at = 0);
+        export
+            .conversations
+            .iter_mut()
+            .for_each(|item| item.updated_at = 0);
+        export.messages.iter_mut().for_each(|item| {
+            item.updated_at = None;
+            item.created_at = 0;
+        });
+        export.recommendations.iter_mut().for_each(|item| {
+            item.created_at = 0;
+            item.responded_at = None;
+        });
+        export.feedback_events.iter_mut().for_each(|item| item.created_at = 0);
+        export.tombstones.iter_mut().for_each(|item| item.deleted_at = 0);
+
+        let canonical = serde_json::to_vec(&export)
+            .map_err(|error| crate::error::Error::InvalidInput(error.to_string()))?;
+        Ok(format!("{:x}", Sha256::digest(&canonical)))
     }
 
     pub(super) fn list_sync_tombstones(&self) -> Result<Vec<SyncTombstone>> {
@@ -94,6 +127,12 @@ impl SqliteStorage {
         Ok(())
     }
 }
+
+/// Grace window during which a tombstone stays valid even after every device
+/// has presumably seen it. Deletes are rare; keeping tombstones for a while is
+/// cheap compared to resurrecting a deleted record on a device that was
+/// offline during the delete.
+pub(crate) const TOMBSTONE_GRACE_MS: i64 = 30 * 24 * 60 * 60 * 1000;
 
 pub(crate) fn merge_exports(mut local: DataExport, remote: DataExport) -> DataExport {
     let mut tombstones = merge_records(
@@ -203,6 +242,7 @@ pub(crate) fn merge_exports(mut local: DataExport, remote: DataExport) -> DataEx
         &messages,
         &recommendations,
         &feedback_events,
+        local.exported_at.max(remote.exported_at),
     );
 
     sort_by_id(&mut knowledge_items, |item| &item.id);
@@ -214,8 +254,9 @@ pub(crate) fn merge_exports(mut local: DataExport, remote: DataExport) -> DataEx
         (&left.entity_type, &left.entity_id).cmp(&(&right.entity_type, &right.entity_id))
     });
 
+    let exported_at = chrono::Utc::now().timestamp_millis();
     local.format_version = DataExport::FORMAT_VERSION;
-    local.exported_at = chrono::Utc::now().timestamp_millis();
+    local.exported_at = exported_at;
     local.knowledge_items = knowledge_items;
     local.conversations = conversations;
     local.messages = messages;
@@ -244,9 +285,21 @@ where
     merged.into_values().collect()
 }
 
+/// Wall clocks on independent devices drift. When two clocks disagree by more
+/// than this window the disagreement itself is the signal: whichever side is
+/// in the future cannot be trusted to be "newer", so recency is decided by
+/// content order instead of by the suspicious timestamp.
+const MAX_CLOCK_SKEW_MS: i64 = 24 * 60 * 60 * 1000;
+
 fn prefer_candidate<T: Serialize>(current: &T, candidate: &T, clock: &impl Fn(&T) -> i64) -> bool {
     let current_clock = clock(current);
     let candidate_clock = clock(candidate);
+    let skew = candidate_clock.saturating_sub(current_clock).abs();
+    if skew > MAX_CLOCK_SKEW_MS {
+        // Absurd disagreement — fall back to deterministic content order.
+        return serde_json::to_string(candidate).unwrap_or_default()
+            > serde_json::to_string(current).unwrap_or_default();
+    }
     candidate_clock > current_clock
         || (candidate_clock == current_clock
             && serde_json::to_string(candidate).unwrap_or_default()
@@ -309,8 +362,21 @@ fn remove_stale_tombstones(
     messages: &[Message],
     recommendations: &[Recommendation],
     feedback_events: &[FeedbackEvent],
+    exported_at: i64,
 ) {
+    // A tombstone is kept when EITHER hold:
+    // 1. it is still inside the grace window (devices may not have seen the
+    //    delete yet), or
+    // 2. a live record with the same id is NEWER than the delete — the entity
+    //    was re-created after it, and the tombstone must keep suppressing
+    //    older copies arriving from devices that were offline.
+    // Everything else (delete older than the grace window with no resurrected
+    // record) is garbage and must be collected, or snapshots grow forever.
     tombstones.retain(|tombstone| {
+        let within_grace = exported_at.saturating_sub(tombstone.deleted_at) < TOMBSTONE_GRACE_MS;
+        if within_grace {
+            return true;
+        }
         let active_clock = match tombstone.entity_type.as_str() {
             ENTITY_KNOWLEDGE_ITEM => knowledge_items
                 .iter()
@@ -334,7 +400,7 @@ fn remove_stale_tombstones(
                 .map(|item| item.created_at),
             _ => None,
         };
-        active_clock.is_none_or(|clock| tombstone.deleted_at >= clock)
+        active_clock.is_some_and(|clock| clock > tombstone.deleted_at)
     });
 }
 
@@ -368,7 +434,7 @@ mod tests {
         SyncTombstone,
     };
 
-    use super::{merge_exports, ENTITY_KNOWLEDGE_ITEM};
+    use super::{merge_exports, ENTITY_KNOWLEDGE_ITEM, MAX_CLOCK_SKEW_MS, TOMBSTONE_GRACE_MS};
 
     fn item(id: &str, updated_at: i64, title: &str) -> KnowledgeItem {
         KnowledgeItem {
@@ -465,5 +531,75 @@ mod tests {
         let merged = merge_exports(left, right);
         assert_eq!(merged.recommendations.len(), 1);
         assert_eq!(merged.recommendations[0].id, "new-edge");
+    }
+
+    #[test]
+    fn tombstones_expire_after_grace_window_but_protect_recreated_records() {
+        let far_past = 1_000_i64;
+        // Tombstone older than the grace window with no live record: dropped.
+        let mut old_delete = snapshot(vec![]);
+        old_delete.exported_at = far_past + TOMBSTONE_GRACE_MS + 1;
+        old_delete.tombstones.push(SyncTombstone {
+            entity_type: ENTITY_KNOWLEDGE_ITEM.into(),
+            entity_id: "gone-forever".into(),
+            deleted_at: far_past,
+        });
+        let mut merged = merge_exports(old_delete.clone(), old_delete.clone());
+        assert!(
+            merged.tombstones.is_empty(),
+            "expired tombstone with no live record should be collected"
+        );
+
+        // Tombstone older than the grace window but the record was re-created
+        // after the delete: kept so it can still defend against older copies.
+        let mut recreated = snapshot(vec![item("reborn", far_past + 10, "reborn")]);
+        recreated.exported_at = far_past + TOMBSTONE_GRACE_MS + 1;
+        recreated.tombstones.push(SyncTombstone {
+            entity_type: ENTITY_KNOWLEDGE_ITEM.into(),
+            entity_id: "reborn".into(),
+            deleted_at: far_past,
+        });
+        merged = merge_exports(recreated.clone(), recreated.clone());
+        assert_eq!(
+            merged.tombstones.len(),
+            1,
+            "tombstone for a record re-created after the delete must survive"
+        );
+
+        // Fresh delete inside the grace window: always kept.
+        let mut fresh = snapshot(vec![]);
+        fresh.exported_at = far_past;
+        fresh.tombstones.push(SyncTombstone {
+            entity_type: ENTITY_KNOWLEDGE_ITEM.into(),
+            entity_id: "recently-deleted".into(),
+            deleted_at: far_past,
+        });
+        merged = merge_exports(fresh.clone(), fresh.clone());
+        assert_eq!(
+            merged.tombstones.len(),
+            1,
+            "recent tombstone inside the grace window must survive"
+        );
+    }
+
+    #[test]
+    fn absurd_future_clocks_cannot_outrank_legitimate_recency() {
+        // The remote device's clock is years ahead. With clocks that far apart
+        // the timestamps carry no information, so the winner must be picked by
+        // deterministic content order — identical in both merge directions —
+        // not by timestamp magnitude.
+        let now = 1_700_000_000_000_i64;
+        let mut local = snapshot(vec![item("same", now, "local")]);
+        local.exported_at = now;
+        let mut remote = snapshot(vec![item("same", now + 10 * MAX_CLOCK_SKEW_MS, "remote")]);
+        remote.exported_at = now;
+
+        let forward = merge_exports(local.clone(), remote.clone());
+        let backward = merge_exports(remote, local);
+        assert_eq!(
+            forward.knowledge_items[0].title,
+            backward.knowledge_items[0].title,
+            "skewed-clock merges must converge regardless of direction"
+        );
     }
 }

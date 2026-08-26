@@ -20,6 +20,10 @@ impl SharedCore {
         self.client().merge_data_json(data_json)
     }
 
+    pub fn snapshot_fingerprint(&self) -> Result<String> {
+        self.client().snapshot_fingerprint()
+    }
+
     pub fn delete_all_data(&self) -> Result<()> {
         self.client().delete_all_data()
     }

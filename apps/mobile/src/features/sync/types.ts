@@ -7,6 +7,8 @@ export type SyncConfig = {
   lanUrl: string | null;
   tailscaleUrl: string | null;
   lastSyncedAt: number | null;
+  /** Content fingerprint of the last snapshot the desktop confirmed equal. */
+  snapshotFingerprint: string | null;
 };
 
 export type SyncRuntimeStatus =
@@ -36,10 +38,11 @@ export type PairResponse = {
 
 export type SyncResponse = {
   protocolVersion: number;
-  snapshot: unknown;
+  /** Null when the desktop saw identical content and skipped the merge. */
+  snapshot: unknown | null;
+  fingerprint: string;
   endpoints: {
     localPort: number;
     tailscaleUrl: string | null;
   };
-  graphQueued: boolean;
 };
