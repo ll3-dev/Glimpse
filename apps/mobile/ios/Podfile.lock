@@ -2420,6 +2420,8 @@ PODS:
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
+  - SyncDiscoveryModule (1.0.0):
+    - ExpoModulesCore
   - UMAppLoader (55.0.5)
   - Yoga (0.0.0)
 
@@ -2542,6 +2544,7 @@ DEPENDENCIES:
   - RNSVG (from `../../../node_modules/react-native-svg`)
   - RNWorklets (from `../../../node_modules/react-native-worklets`)
   - RustraJSI (from `../modules/rustra-jsi/ios`)
+  - SyncDiscoveryModule (from `../modules/sync-discovery/ios`)
   - UMAppLoader (from `../../../node_modules/unimodules-app-loader/ios`)
   - Yoga (from `../../../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2792,6 +2795,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native-worklets"
   RustraJSI:
     :path: "../modules/rustra-jsi/ios"
+  SyncDiscoveryModule:
+    :path: "../modules/sync-discovery/ios"
   UMAppLoader:
     :path: "../../../node_modules/unimodules-app-loader/ios"
   Yoga:
@@ -2923,6 +2928,7 @@ SPEC CHECKSUMS:
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
+  SyncDiscoveryModule: badf4fc2bf86c80b2e475a7429af4f3d2ae215d0
   UMAppLoader: 045699ef1cc6afda399a5c78bde728f23bcce213
   Yoga: 3a3ee5afb97f3a990839cfae6092b0540c7441a4
 

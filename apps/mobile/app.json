@@ -23,6 +23,13 @@
         "NSPhotoLibraryUsageDescription": "지식 보관함에 이미지와 스크린샷을 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
         "NSPhotoLibraryAddUsageDescription": "이미지를 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
         "NSCameraUsageDescription": "문서 및 스크린샷 캡처를 위해 카메라 접근 권한이 필요합니다.",
+        "NSLocalNetworkUsageDescription": "같은 네트워크의 Glimpse Desktop을 찾아 동기화하기 위해 로컬 네트워크 접근이 필요합니다.",
+        "NSBonjourServices": [
+          "_glimpse-sync._tcp"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
@@ -42,6 +49,8 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CHANGE_WIFI_MULTICAST_STATE",
         "android.permission.RECEIVE_BOOT_COMPLETED"
       ]
     },
@@ -73,6 +82,9 @@
               "com.apple.developer.kernel.extended-virtual-addressing": true,
               "com.apple.developer.kernel.increased-memory-limit": true
             }
+          },
+          "android": {
+            "usesCleartextTraffic": true
           }
         }
       ],

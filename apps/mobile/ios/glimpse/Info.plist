@@ -53,6 +53,12 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your camera</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_glimpse-sync._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>같은 네트워크의 Glimpse Desktop을 찾아 동기화하기 위해 로컬 네트워크 접근이 필요합니다.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your microphone</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -12,6 +12,7 @@ import { logger } from '../utils/logger';
 
 export const SecureStorageKeys = {
   BYOK_API_KEY: 'glimpse_secure_byok_api_key',
+  SYNC_PAIRING_TOKEN: 'glimpse_secure_sync_pairing_token',
 } as const;
 
 export type SecureStorageKey =

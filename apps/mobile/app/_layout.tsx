@@ -14,6 +14,7 @@ import {
   useRecoverLocalModelDownload,
   useReleaseLocalLLMOnPressure,
   useWarmLocalLLM,
+  useAutoSync,
 } from "@/src/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
@@ -28,6 +29,7 @@ import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
 import { useSemanticColor } from "@glimpse/ui";
+import { ensureSyncBackgroundTaskRegistered } from "@/src/features/sync";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
@@ -36,6 +38,7 @@ function RootProviders({ children }: { children: React.ReactNode }) {
   useWarmLocalLLM();
   useReleaseLocalLLMOnPressure();
   useProcessPendingShares();
+  useAutoSync();
   return <>{children}</>;
 }
 
@@ -124,6 +127,10 @@ export default function RootLayout() {
 
     void ensureLabelingBackgroundTaskRegistered().catch((error) => {
       logger.error('Failed to register labeling background task', error);
+    });
+
+    void ensureSyncBackgroundTaskRegistered().catch((error) => {
+      logger.error('Failed to register desktop sync background task', error);
     });
 
     // iOS simulator can emit noisy CoreHaptics keyboard logs that are not app failures.

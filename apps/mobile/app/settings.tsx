@@ -10,6 +10,7 @@ import { BYOKSectionContainer } from '@/src/components/settings/BYOKSectionConta
 import { DataManagementSection } from '@/src/components/settings/DataManagementSection';
 import { LocalLLMSection } from '@/src/components/settings/LocalLLMSection';
 import { LanguageSection } from '@/src/components/settings/LanguageSection';
+import { DesktopSyncSection } from '@/src/components/settings/DesktopSyncSection';
 import { useDataManagementActions, useSettingsScreenState } from '@/src/hooks';
 import { useAppLocale } from '@/src/localization';
 
@@ -162,6 +163,8 @@ export default function SettingsScreen() {
         <BYOKSectionContainer />
 
         <LanguageSection />
+
+        <DesktopSyncSection />
 
         <DataManagementSection
           busyAction={dataActions.busyAction}

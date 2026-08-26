@@ -40,6 +40,9 @@ export const StorageKeys = {
   // Recommendation scheduling
   RECOMMENDATION_CADENCE: 'recommendation_cadence',
   RECOMMENDATION_LAST_REFRESH_AT: 'recommendation_last_refresh_at',
+  // Desktop synchronization
+  SYNC_CONFIG: 'sync_config_v1',
+  SYNC_DEVICE_ID: 'sync_device_id',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];
