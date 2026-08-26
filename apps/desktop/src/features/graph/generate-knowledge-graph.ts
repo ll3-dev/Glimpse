@@ -97,8 +97,11 @@ async function proposeWithDesktopAI(
       maxTokens: 1_200,
       temperature: 0.2,
     });
-    return parseEdges(response.text);
-  } catch {
+    return parseEdges(response.text, {
+      logger: { warn: (message, context) => console.warn(message, context ?? '') },
+    });
+  } catch (error) {
+    console.warn('[graph] AI edge proposal failed:', error);
     return [];
   }
 }

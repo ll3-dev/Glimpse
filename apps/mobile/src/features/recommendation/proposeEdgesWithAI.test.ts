@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { KnowledgeItem } from '@glimpse/shared';
-import { proposeEdgesWithAI } from './proposeEdgesWithAI';
+import { EDGE_PROPOSAL_LIMITS, proposeEdgesWithAI } from './proposeEdgesWithAI';
 
 function item(id: string, title: string): KnowledgeItem {
   return {
@@ -76,5 +76,48 @@ describe('proposeEdgesWithAI', () => {
       },
     });
     expect(throwing).toEqual([]);
+  });
+
+  test('prompt wraps item data in an XML delimiter with an ignore-instructions note', async () => {
+    let captured = '';
+    await proposeEdgesWithAI([item('a', 'A'), item('b', 'B')], {
+      resolveTarget: () => ({ kind: 'local' }),
+      executeChat: mock(async (_target: unknown, input: { userText: string }) => {
+        captured = input.userText;
+        return chatResult('[{"itemAId":"a","itemBId":"b","reason":"x"}]');
+      }) as never,
+    });
+
+    expect(captured).toContain('<knowledge_items>');
+    expect(captured).toContain('</knowledge_items>');
+    // The data section is declared untrusted.
+    expect(captured).toMatch(/무시/);
+    // Delimiter opens after the instructions, and the payload sits inside it.
+    const openIndex = captured.indexOf('<knowledge_items>');
+    const closeIndex = captured.indexOf('</knowledge_items>');
+    expect(openIndex).toBeGreaterThan(0);
+    expect(closeIndex).toBeGreaterThan(openIndex);
+    expect(captured.slice(openIndex, closeIndex)).toContain('"id":"a"');
+  });
+
+  test('input budget stays within the 2048-context preset (12 items x 160 chars)', () => {
+    expect(EDGE_PROPOSAL_LIMITS.MAX_INPUT_ITEMS).toBe(12);
+    // 12 items x 160-char excerpts keeps the full prompt inside the budget.
+    const items = Array.from({ length: EDGE_PROPOSAL_LIMITS.MAX_INPUT_ITEMS }, (_, i) =>
+      item(`id-${i}`, `T${i}`),
+    );
+    for (const entry of items) entry.body = 'x'.repeat(500);
+    let promptLength = 0;
+    proposeEdgesWithAI(items, {
+      resolveTarget: () => ({ kind: 'local' }),
+      executeChat: mock(async (_t: unknown, input: { userText: string }) => {
+        promptLength = input.userText.length;
+        return chatResult('[]');
+      }) as never,
+    });
+    // Instructions + 12x160 excerpts: measured ~3k chars ≈ 750-850 tokens,
+    // roughly 40% of the 2048-token preset. The ceiling guards against the
+    // old 20x200 blowup (~4.5k chars) rather than exact sizing.
+    expect(promptLength).toBeLessThanOrEqual(4100);
   });
 });

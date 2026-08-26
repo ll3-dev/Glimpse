@@ -6,9 +6,12 @@ import { generateKnowledgeGraph } from '@/features/graph/generate-knowledge-grap
 
 const GRAPH_DIGEST_KEY = 'glimpse_graph_source_digest_v1';
 const GRAPH_FAILURE_KEY = 'glimpse_graph_failure_backoff_v1';
+const GRAPH_CONSECUTIVE_FAILURES_KEY = 'glimpse_graph_consecutive_failures_v1';
 /** Match generate-knowledge-graph: only the newest MAX_ITEMS feed the graph. */
 const GRAPH_INPUT_ITEMS = 24;
 const FAILURE_BACKOFF_MS = 15 * 60_000;
+/** After this many consecutive failures, stop auto-retrying until manual run. */
+const MAX_CONSECUTIVE_FAILURES = 3;
 
 export function useKnowledgeGraphAutomation() {
   const coreClient = useCoreClient();
@@ -47,6 +50,19 @@ export function useKnowledgeGraphAutomation() {
     // same input instead of re-running the LLM on every sync tick.
     const failedAt = Number(localStorage.getItem(GRAPH_FAILURE_KEY) ?? 0);
     if (Date.now() - failedAt < FAILURE_BACKOFF_MS) return;
+    // Break endless silent retry loops: after MAX_CONSECUTIVE_FAILURES the
+    // hook stops auto-running. A successful manual generation resets the
+    // counter.
+    const consecutiveFailures = Number(
+      localStorage.getItem(GRAPH_CONSECUTIVE_FAILURES_KEY) ?? 0,
+    );
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      console.warn(
+        `[graph] skipping auto-regeneration after ${consecutiveFailures} consecutive failures; ` +
+          'run the graph manually to retry',
+      );
+      return;
+    }
 
     const timeout = window.setTimeout(() => {
       running.current = true;
@@ -54,10 +70,16 @@ export function useKnowledgeGraphAutomation() {
         .then(() => {
           localStorage.setItem(GRAPH_DIGEST_KEY, digest);
           localStorage.removeItem(GRAPH_FAILURE_KEY);
+          localStorage.removeItem(GRAPH_CONSECUTIVE_FAILURES_KEY);
           return queryClient.invalidateQueries({ queryKey: ['recommendations'] });
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          console.error('[graph] knowledge graph generation failed:', error);
           localStorage.setItem(GRAPH_FAILURE_KEY, String(Date.now()));
+          localStorage.setItem(
+            GRAPH_CONSECUTIVE_FAILURES_KEY,
+            String(consecutiveFailures + 1),
+          );
         })
         .finally(() => {
           running.current = false;
