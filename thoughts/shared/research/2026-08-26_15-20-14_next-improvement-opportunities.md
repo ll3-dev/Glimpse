@@ -182,4 +182,13 @@ last_updated_by: loopy
 
 ## 후속 단계
 
-리서치 완료. SPEC/계획 문서로 이어가려면 `/create_spec` 실행.
+리서치 완료 및 실행 완료 (2026-08-26):
+
+- **A1 라벨링** — 21288ac (저장 시 pending 등록)
+- **B 동기화 내구성** — dd3e8c4 (지문 스킵, 툼스톤 GC, 클록 스큐, 백오프), 9c9763e (DNS 리바인딩 방어)
+- **A2 복습** — 79fd1a0 (FSRS-lite, forgotten 피드백)
+- **A3 추천 폐루프** — d366b65 (거절 쌍 차단, 태그 페널티)
+- **C1 sync 테스트** — cfaf3a4, **C2 라벨러 수렴** — 87f3616, **A5 모바일 LLM 추천** — 832e410
+- **C3 chat 테스트+버그** — d3cace7, **C4 CI 게이트** — 4c737a9, **A4 의미 검색** — 35e12bd
+
+남은 것: 외부 의존(eas 자격증명, GUI 수동 검증, ShareExtension 빌드), 남은 중복 쌍(rustra-core-client, useForegroundLabeling), 그래프 증분 처리(24개 상한).
