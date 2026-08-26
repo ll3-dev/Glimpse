@@ -17,4 +17,15 @@ RCT_EXTERN_METHOD(
   reject: (RCTPromiseRejectBlock)reject
 )
 
+RCT_EXTERN_METHOD(
+  clearPendingShareText: (RCTPromiseResolveBlock)resolve
+  reject: (RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  replacePendingShareUrls: (NSArray *)urls
+  resolve: (RCTPromiseResolveBlock)resolve
+  reject: (RCTPromiseRejectBlock)reject
+)
+
 @end
