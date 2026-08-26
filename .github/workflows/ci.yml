@@ -32,7 +32,7 @@ jobs:
       - run: bun test packages/features/src apps/desktop/src --coverage
       - run: bun run web:export
       - run: bun run audit:critical
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: web-static-export
           path: apps/mobile/dist-web
@@ -93,7 +93,7 @@ jobs:
       - run: cp target/aarch64-linux-android/release/libglimpse_bridge.a apps/mobile/android/glimpse-core/libs/arm64-v8a/libglimpse_bridge.a
       - run: ./gradlew :app:bundleRelease -Pglimpse.allowUnsignedRelease=true -PreactNativeArchitectures=arm64-v8a
         working-directory: apps/mobile/android
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android-release-unsigned-validation
           path: apps/mobile/android/app/build/outputs/bundle/release/*.aab
