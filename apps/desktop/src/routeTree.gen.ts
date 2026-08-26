@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './app/_authenticated'
 import { Route as IndexRouteImport } from './app/index'
 import { Route as AuthenticatedSettingsRouteImport } from './app/_authenticated/settings'
 import { Route as AuthenticatedReviewRouteImport } from './app/_authenticated/review'
+import { Route as AuthenticatedGraphRouteImport } from './app/_authenticated/graph'
 import { Route as AuthenticatedDigestRouteImport } from './app/_authenticated/digest'
 import { Route as AuthenticatedLibraryIndexRouteImport } from './app/_authenticated/library/index'
 import { Route as AuthenticatedChatIndexRouteImport } from './app/_authenticated/chat/index'
@@ -42,6 +43,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
   id: '/review',
   path: '/review',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedGraphRoute = AuthenticatedGraphRouteImport.update({
+  id: '/graph',
+  path: '/graph',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDigestRoute = AuthenticatedDigestRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/capture': typeof CaptureRoute
   '/digest': typeof AuthenticatedDigestRoute
+  '/graph': typeof AuthenticatedGraphRoute
   '/review': typeof AuthenticatedReviewRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/capture': typeof CaptureRoute
   '/digest': typeof AuthenticatedDigestRoute
+  '/graph': typeof AuthenticatedGraphRoute
   '/review': typeof AuthenticatedReviewRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/capture': typeof CaptureRoute
   '/_authenticated/digest': typeof AuthenticatedDigestRoute
+  '/_authenticated/graph': typeof AuthenticatedGraphRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/chat/$conversationId': typeof AuthenticatedChatConversationIdRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/capture'
     | '/digest'
+    | '/graph'
     | '/review'
     | '/settings'
     | '/chat/$conversationId'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/capture'
     | '/digest'
+    | '/graph'
     | '/review'
     | '/settings'
     | '/chat/$conversationId'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/capture'
     | '/_authenticated/digest'
+    | '/_authenticated/graph'
     | '/_authenticated/review'
     | '/_authenticated/settings'
     | '/_authenticated/chat/$conversationId'
@@ -188,6 +200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/graph': {
+      id: '/_authenticated/graph'
+      path: '/graph'
+      fullPath: '/graph'
+      preLoaderRoute: typeof AuthenticatedGraphRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/digest': {
       id: '/_authenticated/digest'
       path: '/digest'
@@ -228,6 +247,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDigestRoute: typeof AuthenticatedDigestRoute
+  AuthenticatedGraphRoute: typeof AuthenticatedGraphRoute
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedChatConversationIdRoute: typeof AuthenticatedChatConversationIdRoute
@@ -238,6 +258,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDigestRoute: AuthenticatedDigestRoute,
+  AuthenticatedGraphRoute: AuthenticatedGraphRoute,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedChatConversationIdRoute: AuthenticatedChatConversationIdRoute,
