@@ -6,8 +6,6 @@ import { initializeCoreClient } from '@/src/features/core/initialize-core-client
 import { getSyncConfig } from './sync-store';
 import { syncWithDesktop } from './sync-client';
 
-export { isSyncInBackoff } from './sync-client';
-
 export const SYNC_BACKGROUND_TASK = 'glimpse-desktop-sync-background-task';
 const MINIMUM_INTERVAL_MINUTES = 15;
 

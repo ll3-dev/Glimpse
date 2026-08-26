@@ -1,8 +1,5 @@
 import * as Device from 'expo-device';
-import {
-  discoverSyncDesktops,
-  type DiscoveredSyncDesktop,
-} from '../../../modules/sync-discovery/src';
+import { discoverSyncDesktops, type DiscoveredSyncDesktop } from '../../../modules/sync-discovery/src';
 import { mobileCoreClient } from '@/src/features/core';
 import { generateId } from '@/src/lib/id';
 import { storage, StorageKeys } from '@/src/lib/storage';
@@ -20,6 +17,19 @@ import {
   setSyncRuntime,
   updateSyncConfig,
 } from './sync-store';
+import {
+  createBackoffController,
+  isHoldingOff,
+  recordFailure,
+  recordSuccess,
+  type BackoffController,
+} from './backoff';
+import {
+  discoveryBaseUrl,
+  endpointCandidates,
+  isAuthErrorMessage,
+  normalizeBaseUrl,
+} from './sync-url';
 import type { PairResponse, SyncResponse } from './types';
 
 const SYNC_PROTOCOL_VERSION = 1;
@@ -27,46 +37,13 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 let syncPromise: Promise<boolean> | null = null;
 
-/** Tracks consecutive sync failures so auto-sync can back off exponentially. */
-let consecutiveFailures = 0;
-const MAX_BACKOFF_MS = 30 * 60_000;
-
-/** Marks that the last failure was an auth rejection (401) — unrecoverable
- * without re-pairing, so we stop auto-retrying until the user acts. */
-let pairingInvalidated = false;
-
-export function syncBackoffState(): { backoffMs: number; invalidated: boolean } {
-  return {
-    backoffMs: Math.min(60_000 * 2 ** consecutiveFailures, MAX_BACKOFF_MS),
-    invalidated: pairingInvalidated,
-  };
-}
+/** Module-level backoff state shared across auto-sync invocations.
+ * Exposed to siblings via `readSyncBackoff` so the background task can check
+ * the hold-off without importing private module state. */
+let backoff: BackoffController = createBackoffController();
 
 export function isSyncInBackoff(now: number = Date.now()): boolean {
-  if (pairingInvalidated) return true;
-  return consecutiveFailures > 0 && now < backoffUntil;
-}
-
-let backoffUntil = 0;
-
-export function normalizeBaseUrl(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, '');
-  if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-}
-
-export function discoveryBaseUrl(desktop: DiscoveredSyncDesktop): string {
-  const host = desktop.host.includes(':') && !desktop.host.startsWith('[')
-    ? `[${desktop.host}]`
-    : desktop.host;
-  return `http://${host}:${desktop.port}`;
-}
-
-export function endpointCandidates(config = getSyncConfig()): string[] {
-  // The tailnet endpoint remains valid across network changes, while a cached
-  // LAN address commonly becomes stale as soon as the phone leaves Wi-Fi.
-  return [...new Set([config.tailscaleUrl, config.lanUrl].filter(Boolean))] as string[];
+  return isHoldingOff(backoff, now);
 }
 
 export function getOrCreateSyncDeviceId(): string {
@@ -123,9 +100,7 @@ export async function pairWithDesktop(baseUrl: string, pairingCode: string): Pro
       autoSync: true,
     });
     setSyncRuntime('idle');
-    pairingInvalidated = false;
-    consecutiveFailures = 0;
-    backoffUntil = 0;
+    backoff = createBackoffController();
     await syncWithDesktop({ force: true });
   } catch (error) {
     const message = errorMessage(error);
@@ -156,11 +131,11 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   }
   const token = await getSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
   if (!token) {
-    pairingInvalidated = true;
+    backoff = recordFailure(backoff, Date.now(), true);
     setSyncRuntime('error', '페어링 토큰이 없습니다. 다시 페어링해 주세요.');
     return false;
   }
-  if (!options.force && isSyncInBackoff()) {
+  if (isHoldingOff(backoff, Date.now(), options)) {
     // Auto-sync cooldown after failures; a manual sync always ignores it.
     return false;
   }
@@ -201,7 +176,7 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   for (const baseUrl of candidates) {
     try {
       await attempt(baseUrl);
-      onSyncSuccess();
+      backoff = recordSuccess(backoff);
       setSyncRuntime('synced');
       return true;
     } catch (error) {
@@ -216,7 +191,7 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     for (const baseUrl of rediscovered.filter((url) => !candidates.includes(url))) {
       try {
         await attempt(baseUrl);
-        onSyncSuccess();
+        backoff = recordSuccess(backoff);
         setSyncRuntime('synced');
         return true;
       } catch (error) {
@@ -226,29 +201,14 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     }
   }
 
-  onSyncFailure(lastError);
+  backoff = recordFailure(backoff, Date.now(), isAuthError(lastError));
   const message = errorMessage(lastError);
   setSyncRuntime('error', message);
   throw new Error(message);
 }
 
-function onSyncSuccess(): void {
-  consecutiveFailures = 0;
-  backoffUntil = 0;
-}
-
-function onSyncFailure(error: unknown): void {
-  if (isAuthError(error)) {
-    // Token rejected — retrying cannot fix it; hold until re-pairing.
-    pairingInvalidated = true;
-    return;
-  }
-  consecutiveFailures += 1;
-  backoffUntil = Date.now() + syncBackoffState().backoffMs;
-}
-
 function isAuthError(error: unknown): boolean {
-  return error instanceof Error && /\(401\)/.test(error.message);
+  return error instanceof Error && isAuthErrorMessage(error.message);
 }
 
 async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
