@@ -205,8 +205,8 @@ export type ParsedChatMessageContent = {
   isReasoningInProgress: boolean;
 };
 
-const THINK_OPEN_TAG = '\u200B';
-const THINK_CLOSE_TAG = '\u200B';
+const THINK_OPEN_TAG = '<think>';
+const THINK_CLOSE_TAG = '</think>';
 
 function summarizeReasoning(reasoning: string | null): string | null {
   if (!reasoning) return null;
