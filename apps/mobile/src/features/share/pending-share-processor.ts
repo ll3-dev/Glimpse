@@ -9,14 +9,11 @@ import { useEffect } from "react";
 import { AppState, Platform, AppStateStatus } from "react-native";
 import { mobileCoreClient } from "@/src/features/core/mobile-core-client";
 import { logger } from "@/src/utils/logger";
-import type { KnowledgeItem, KnowledgeItemType } from "@glimpse/shared";
 import { getPendingShareData, clearPendingShareData } from "@/src/utils/app-group-path";
 import { generateId } from "@/src/lib/id";
+import { createProcessShareData, type PendingShareData } from "./process-share-data";
 
-interface PendingShareData {
-  text?: string[];
-  webUrl?: { url: string; meta: string }[];
-}
+export type { PendingShareData } from "./process-share-data";
 
 let isProcessing = false;
 
@@ -25,76 +22,11 @@ let isProcessing = false;
  */
 async function processShareData(data: PendingShareData): Promise<boolean> {
   try {
-    let saved = false;
-
-    // Process text share
-    if (data.text && data.text.length > 0) {
-      const combinedText = data.text.join("\n");
-      const item: KnowledgeItem = {
-        id: generateId(),
-        type: "share" as KnowledgeItemType,
-        title: null,
-        body: combinedText,
-        url: null,
-        summary: null,
-        tags: null,
-        labels: null,
-        provisionalLabels: null,
-        labelStatus: null,
-        labelSource: null,
-        labelVersion: null,
-        labelScore: null,
-        labelRequestedAt: null,
-        labelCompletedAt: null,
-        labelError: null,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        stability: null,
-        difficulty: null,
-        lastReviewedAt: null,
-        nextReviewAt: null,
-      };
-      await mobileCoreClient.saveKnowledgeItem(item);
-      logger.info("[PendingShareProcessor] Saved text share");
-      saved = true;
-    }
-
-    // Process URL share
-    if (data.webUrl && data.webUrl.length > 0) {
-      await Promise.all(
-        data.webUrl.map(async (webUrl) => {
-          const item: KnowledgeItem = {
-            id: generateId(),
-            type: "share" as KnowledgeItemType,
-            title: webUrl.url,
-            body: webUrl.meta || null,
-            url: webUrl.url,
-            summary: null,
-            tags: null,
-            labels: null,
-            provisionalLabels: null,
-            labelStatus: null,
-            labelSource: null,
-            labelVersion: null,
-            labelScore: null,
-            labelRequestedAt: null,
-            labelCompletedAt: null,
-            labelError: null,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            stability: null,
-            difficulty: null,
-            lastReviewedAt: null,
-            nextReviewAt: null,
-          };
-          await mobileCoreClient.saveKnowledgeItem(item);
-          logger.info("[PendingShareProcessor] Saved URL share:", { url: webUrl.url });
-        })
-      );
-      saved = true;
-    }
-
-    return saved;
+    return await createProcessShareData({
+      saveKnowledgeItem: (item) => mobileCoreClient.saveKnowledgeItem(item),
+      generateId,
+      logger,
+    })(data);
   } catch (error) {
     logger.error("[PendingShareProcessor] Failed to process share data:", error);
     return false;
