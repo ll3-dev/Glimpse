@@ -141,6 +141,53 @@ describe('recommendation application layer', () => {
     dateNow.mockRestore();
   });
 
+  test('generateRecommendations skips rejected pairs and suppressed tags', async () => {
+    const items = [
+      createItem('a', ['react']),
+      createItem('b', ['react']),
+      createItem('c', ['rust']),
+      createItem('d', ['rust']),
+      createItem('e', ['react', 'rust']),
+      createItem('f', ['react', 'rust']),
+    ];
+    const coreClient = {
+      listWeeklyKnowledgeItems: mock(async () => items),
+      listRecommendations: mock(async () => [
+        // a-b was ignored by the user — must not be re-proposed.
+        { id: 'rec-old', itemA_id: 'a', itemB_id: 'b', status: 'ignored' },
+        // a-c pair previously rejected on the react tag.
+        { id: 'rec-tag', itemA_id: 'a', itemB_id: 'e', status: 'ignored' },
+      ]),
+      listRecentFeedbackEvents: mock(async () => [
+        { id: 'fb-1', recommendationId: 'rec-old', action: 'ignore' as const, createdAt: 1 },
+        { id: 'fb-2', recommendationId: 'rec-tag', action: 'ignore' as const, createdAt: 2 },
+      ]),
+    };
+
+    const generate = createGenerateRecommendations({
+      coreClient,
+      getWeeklyItems: mock(async () => ({ success: true as const, items })),
+    });
+    const result = await generate({ since: 0 });
+
+    if (result.success === false) throw new Error('generate should succeed');
+    const pairs = result.recommendations.map((r) => [r.itemAId, r.itemBId].sort().join('-'));
+    // a-b: explicitly rejected pair, never again.
+    expect(pairs).not.toContain('a-b');
+    // a-e: rejected pair (rec-tag), never again.
+    expect(pairs).not.toContain('a-e');
+    // react tag was rejected twice with no accepts — pairs joined only by
+    // react would need another qualifying tag; e-f shares rust too so it
+    // stays, but b has only react so a-b style pairs are gone (already
+    // covered) and b-e/b-f are only-react pairs... b-e/b-f share only react.
+    expect(pairs).not.toContain('b-e');
+    expect(pairs).not.toContain('b-f');
+    // c-d shares rust (no verdicts) — still recommended.
+    expect(pairs).toContain('c-d');
+    // e-f shares rust + react; rust qualifies.
+    expect(pairs).toContain('e-f');
+  });
+
   test('getWeeklyItems passes since through and wraps thrown errors', async () => {
     const success = createGetWeeklyItems({
       coreClient: { listWeeklyKnowledgeItems: mock(async () => [createItem('a', null)]) },

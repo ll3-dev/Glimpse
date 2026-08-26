@@ -20,6 +20,25 @@ export interface GeneratedRecommendation {
 export interface GenerateRecommendationsDeps {
   coreClient: {
     listWeeklyKnowledgeItems: (since: number) => Promise<KnowledgeItem[]>;
+    /** Optional quality-feedback inputs; absent deps skip the loop. */
+    listRecommendations?: () => Promise<
+      Array<{
+        id: string;
+        itemA_id: string;
+        itemB_id: string;
+        status: string;
+      }>
+    >;
+    listRecentFeedbackEvents?: (
+      limit: number,
+    ) => Promise<
+      Array<{
+        id: string;
+        recommendationId: string;
+        action: 'accept' | 'ignore' | 'dismiss';
+        createdAt: number;
+      }>
+    >;
   };
   getWeeklyItems: (since?: number) => Promise<WeeklyItemsResult>;
 }
