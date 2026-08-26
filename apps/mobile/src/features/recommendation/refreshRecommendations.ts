@@ -4,6 +4,7 @@ import { storage, StorageKeys } from '@/src/lib/storage';
 import { logger } from '@/src/utils/logger';
 import { generateRecommendations, saveRecommendations } from './generateRecommendations';
 import { getCadence } from './updateRecommendationCadence';
+import { proposeEdgesWithAI } from './proposeEdgesWithAI';
 import type { GeneratedRecommendation } from './generateRecommendations.types';
 
 const DEFAULT_GENERATION_LIMIT = 100;
@@ -17,7 +18,18 @@ export interface RecommendationRefreshDeps {
   listRecommendations: () => Promise<Recommendation[]>;
   generate: (input: { since: number; limit: number }) => ReturnType<typeof generateRecommendations>;
   save: (recommendations: GeneratedRecommendation[]) => ReturnType<typeof saveRecommendations>;
+  /** Optional LLM edge proposals merged on top of tag-overlap results. */
+  proposeEdges?: (items: KnowledgeItemRef[]) => Promise<GeneratedRecommendation[]>;
+  listWeeklyItems?: (since: number) => Promise<KnowledgeItemRef[]>;
 }
+
+type KnowledgeItemRef = {
+  id: string;
+  title: string | null;
+  summary: string | null;
+  tags: string[] | null;
+  body?: string | null;
+};
 
 export type RecommendationRefreshResult =
   | { success: true; skipped: true; reason: 'not_due'; createdCount: 0 }
@@ -74,6 +86,8 @@ function getDefaultDeps(): RecommendationRefreshDeps {
     listRecommendations: () => mobileCoreClient.listRecommendations(),
     generate: generateRecommendations,
     save: saveRecommendations,
+    listWeeklyItems: (since) => mobileCoreClient.listWeeklyKnowledgeItems(since),
+    proposeEdges: (items) => proposeEdgesWithAI(items as never),
   };
 }
 
@@ -96,9 +110,26 @@ export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
         return { success: false, error: generated.error };
       }
 
+      // AI edge proposals enrich tag overlap when a chat target is
+      // configured; empty results (no model / failure) keep tag-only output.
+      let aiEdges: GeneratedRecommendation[] = [];
+      if (deps.proposeEdges && deps.listWeeklyItems) {
+        try {
+          const weeklyItems = await deps.listWeeklyItems(now - 7 * 24 * 60 * 60 * 1000);
+          const proposed = await deps.proposeEdges(weeklyItems);
+          aiEdges = proposed.map((edge) => ({
+            itemAId: edge.itemAId,
+            itemBId: edge.itemBId,
+            reason: edge.reason,
+          }));
+        } catch (error) {
+          logger.warn('AI edge proposal skipped', { error: String(error) });
+        }
+      }
+
       const existing = await deps.listRecommendations();
       const recommendations = filterNewRecommendations(
-        generated.recommendations,
+        [...aiEdges, ...generated.recommendations],
         existing
       ).slice(0, DEFAULT_SAVE_LIMIT);
 
