@@ -91,8 +91,11 @@ pub async fn enable_tailscale_sync(
         .await
         .map_err(|error| error.to_string())??;
     // Serve config just changed — the per-poll endpoint cache must not keep
-    // serving the previous answer.
+    // serving the previous answer, and the status answer returned here (and
+    // the UI's next poll) must reflect the new serveEnabled immediately
+    // instead of the TTL cache's stale one.
     state.invalidate_cached_endpoints();
+    state.invalidate_cached_tailscale_status();
     Ok(status(&state))
 }
 
