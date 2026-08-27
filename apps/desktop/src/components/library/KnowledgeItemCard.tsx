@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { KnowledgeItem } from '@glimpse/shared';
 import {
   BookOpen,
@@ -38,7 +39,7 @@ interface KnowledgeItemCardProps {
   onClick: (id: string) => void;
 }
 
-export function KnowledgeItemCard({ item, onClick }: KnowledgeItemCardProps) {
+function KnowledgeItemCardImpl({ item, onClick }: KnowledgeItemCardProps) {
   const preview =
     item.title || item.body?.slice(0, 120) || item.summary?.slice(0, 120) || 'Untitled';
 
@@ -94,3 +95,10 @@ export function KnowledgeItemCard({ item, onClick }: KnowledgeItemCardProps) {
     </button>
   );
 }
+
+/** 리스트 전체 재렌더(검색 입력·쿼리 무효화)에서 바뀌지 않은 카드의
+ * 라벨 계산·포맷을 건너뛴다. */
+export const KnowledgeItemCard = memo(
+  KnowledgeItemCardImpl,
+  (prev, next) => prev.item === next.item && prev.onClick === next.onClick,
+);

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useKnowledgeItemsQuery } from '@glimpse/hooks';
 import { filterKnowledgeItems } from '@glimpse/features/search';
 import { useDesktopSemanticRerank } from '@/features/search/useSemanticRerank';
@@ -22,6 +22,11 @@ function LibraryPage() {
   const semantic = useDesktopSemanticRerank(keywordMatches, searchQuery);
   const filteredItems = semantic.items;
 
+  const handleItemClick = useCallback(
+    (id: string) => navigate({ to: '/library/$itemId', params: { itemId: id } }),
+    [navigate],
+  );
+
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
@@ -36,7 +41,7 @@ function LibraryPage() {
         <KnowledgeItemList
           items={filteredItems}
           isLoading={isLoading}
-          onItemClick={(id) => navigate({ to: '/library/$itemId', params: { itemId: id } })}
+          onItemClick={handleItemClick}
         />
       </div>
     </div>

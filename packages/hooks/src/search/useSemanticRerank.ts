@@ -164,5 +164,18 @@ export function useSemanticRerank(
     };
   }, [items, query, deps]);
 
-  return { items: ranked ?? items, active: ranked !== null };
+  // 새 객체를 매 렌더 만들지 않는다 — 호출부가 이 값을 useMemo/useEffect
+  // deps로 쓰면 객체 정체성 때문에 메모가 항상 풀린다.
+  const resultRef = useRef<{ items: KnowledgeItem[]; active: boolean }>({
+    items,
+    active: false,
+  });
+  const rankedValue = ranked ?? items;
+  if (
+    resultRef.current.active !== (ranked !== null) ||
+    resultRef.current.items !== rankedValue
+  ) {
+    resultRef.current = { items: rankedValue, active: ranked !== null };
+  }
+  return resultRef.current;
 }
