@@ -19,6 +19,12 @@ import { rankBySemanticSimilarity } from '@glimpse/features';
 export const MAX_EMBED_ITEMS = 30;
 /** Per-keystroke embed storm을 막는 query debounce. */
 export const SEMANTIC_RERANK_DEBOUNCE_MS = 250;
+/**
+ * 벡터 캐시 상한 — 항목당 수 KB 부동소수점 배열이 세션 내내 남으므로, 삭제된
+ * 항목의 벡터가 무한히 쌓이지 않게 삽입 순서 LRU로 자른다. 검색 상한의
+ * 여유 배수(2×)면 히트율에는 사실상 영향이 없다.
+ */
+const EMBEDDING_CACHE_MAX_ENTRIES = MAX_EMBED_ITEMS * 2;
 const EXCERPT_LENGTH = 500;
 
 /** 주입형 임베딩 계약 — 요청 배열 한 번에 벡터 배열(순서 보존)로 응답. */
@@ -134,7 +140,16 @@ export function useSemanticRerank(
           if (cancelled || runId !== runIdRef.current) return;
 
           missItems.forEach((item, index) => {
-            cacheRef.current.set(item.id, {
+            // 삽입 순서 LRU: 최신이 아래로 가고, 상한 초과 시 가장 오래된
+            // 키를 버린다. Map은 삽입/삭제 순서를 유지하므로 재삽입만으로
+            // "최근 사용" 표시가 된다.
+            const cache = cacheRef.current;
+            if (!cache.has(item.id) && cache.size >= EMBEDDING_CACHE_MAX_ENTRIES) {
+              const oldest = cache.keys().next().value;
+              if (oldest !== undefined) cache.delete(oldest);
+            }
+            cache.delete(item.id);
+            cache.set(item.id, {
               key: embeddingCacheKey(target.modelId, item),
               vector: responses[index].vector,
             });
