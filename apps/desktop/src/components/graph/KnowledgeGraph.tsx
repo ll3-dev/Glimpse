@@ -1,5 +1,6 @@
 import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { Network } from 'lucide-react';
+import { useMemo } from 'react';
 import { layoutGraph } from '@/features/graph/layout';
 
 interface KnowledgeGraphProps {
@@ -17,6 +18,21 @@ const NODE_COLORS = [
 ] as const;
 
 export function KnowledgeGraph({ items, recommendations, isLoading }: KnowledgeGraphProps) {
+  const { nodes, edges } = useMemo(
+    () => layoutGraph(items, recommendations),
+    [items, recommendations],
+  );
+  // Nodes without any edge render smaller; precompute the set once instead of
+  // scanning every edge per node (O(nodes × edges)).
+  const connectedNodeIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const edge of edges) {
+      ids.add(edge.source.id);
+      ids.add(edge.target.id);
+    }
+    return ids;
+  }, [edges]);
+
   if (isLoading) {
     return <div className="h-[620px] animate-pulse rounded-xl border border-border bg-card" />;
   }
@@ -30,7 +46,6 @@ export function KnowledgeGraph({ items, recommendations, isLoading }: KnowledgeG
     );
   }
 
-  const { nodes, edges } = layoutGraph(items, recommendations);
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <svg
@@ -57,7 +72,7 @@ export function KnowledgeGraph({ items, recommendations, isLoading }: KnowledgeG
         {nodes.map((node, index) => (
           <g key={node.id} transform={`translate(${node.x} ${node.y})`}>
             <circle
-              r={edges.some((edge) => edge.source.id === node.id || edge.target.id === node.id) ? 25 : 20}
+              r={connectedNodeIds.has(node.id) ? 25 : 20}
               className="fill-card stroke-border"
               strokeWidth="2"
             />
