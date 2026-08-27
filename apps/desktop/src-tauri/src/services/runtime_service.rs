@@ -49,6 +49,23 @@ impl DesktopRuntimeService {
         }
     }
 
+    /// 배치 임베딩도 단건과 같은 블로킹 특성을 가진다 — 요청 전체를
+    /// spawn_blocking 위의 클로저 한 번으로 처리한다.
+    pub fn run_embedding_batch_blocking(
+        state: DesktopRuntimeState,
+        requests: Vec<EmbeddingRequest>,
+    ) -> impl FnOnce() -> Result<Vec<EmbeddingResponse>, String> + Send + 'static {
+        move || {
+            let inputs: Vec<String> =
+                requests.iter().map(|request| request.input.clone()).collect();
+            let vectors = state.run_embedding_batch(&inputs)?;
+            Ok(vectors
+                .into_iter()
+                .map(|vector| EmbeddingResponse { vector })
+                .collect())
+        }
+    }
+
     pub fn get_runtime_health(state: &DesktopRuntimeState) -> Result<RuntimeHealth, String> {
         state.get_health()
     }
