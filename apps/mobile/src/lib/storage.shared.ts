@@ -43,6 +43,8 @@ export const StorageKeys = {
   // Desktop synchronization
   SYNC_CONFIG: 'sync_config_v1',
   SYNC_DEVICE_ID: 'sync_device_id',
+  // Semantic search (BYOK embedding opt-in)
+  SEMANTIC_RERANK_ENABLED: 'semantic_rerank_enabled',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

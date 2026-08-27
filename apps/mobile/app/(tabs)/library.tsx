@@ -12,6 +12,7 @@ import {
   LibrarySearchInput,
 } from "@/src/components/library";
 import { resolveLibrarySearch } from "@/src/features/library";
+import { useMobileSemanticRerank } from "@/src/features/search/useMobileSemanticRerank";
 import { useForegroundLabeling, useKnowledgeItemsQuery } from "@/src/hooks";
 import { ScreenHeader } from "@glimpse/ui/primitives";
 import { getDisplayLabels } from "@/src/features/labeling";
@@ -103,7 +104,24 @@ export default function LibraryScreen() {
     };
   }, [items, searchQuery, selectedType, selectedTag, sortOrder]);
 
+  // BYOK 옵트인 시 키워드 매치를 의미 유사도로 재정렬(오프/자격 미비는
+  // pass-through). 필터·정렬 뒤가 아니라 검색 직후 순위에만 개입한다.
+  const semantic = useMobileSemanticRerank(filteredItems, searchQuery);
+  const rerankedItems = useMemo(
+    () => (semantic.active ? sortPreservingRank(filteredItems, semantic.items) : filteredItems),
+    [semantic, filteredItems]
+  );
+
   const hasActiveFilters = selectedType !== 'all' || selectedTag !== null || Boolean(searchQuery.trim());
+
+  // semantic.items는 상위 MAX_EMBED_ITEMS까지만 재정렬된 부분집합일 수 있다.
+  // 미포함 항목은 기존 순서 뒤에 붙여 "재정렬된 것 우선"을 보존한다.
+  function sortPreservingRank(base: KnowledgeItem[], ranked: KnowledgeItem[]): KnowledgeItem[] {
+    const rank = new Map(ranked.map((item, index) => [item.id, index]));
+    return [...base].sort(
+      (a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
 
   const handleResetFilters = useCallback(() => {
     setSearchQuery('');
@@ -213,7 +231,7 @@ export default function LibraryScreen() {
 
       <View className="flex-1 px-6">
         <FlashList
-          data={filteredItems}
+          data={rerankedItems}
           renderItem={renderKnowledgeItem}
           contentContainerStyle={{ paddingBottom: 100 }}
           contentInset={{ bottom: insets.bottom }}
