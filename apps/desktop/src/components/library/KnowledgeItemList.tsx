@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { KnowledgeItemCard } from './KnowledgeItemCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,7 +9,42 @@ interface KnowledgeItemListProps {
   onItemClick: (id: string) => void;
 }
 
+/** First paint renders this many cards; scrolling near the bottom appends more. */
+const INITIAL_VISIBLE_COUNT = 30;
+const INCREMENT = 30;
+/** Start loading the next chunk this many pixels before the list bottom. */
+const LOAD_MORE_THRESHOLD_PX = 600;
+
 export function KnowledgeItemList({ items, isLoading, onItemClick }: KnowledgeItemListProps) {
+  // Windowed rendering: the library query returns the whole collection, and
+  // mounting thousands of cards at once dominates first paint. A search query
+  // shrinks `items` below the window anyway, so this only helps the unfiltered
+  // browse case.
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const [renderedLength, setRenderedLength] = useState(items.length);
+  if (renderedLength !== items.length) {
+    // A fresh result set must not keep a stale window (React's
+    // adjust-state-when-props-change pattern; re-render is immediate).
+    setRenderedLength(items.length);
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+  }
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || visibleCount >= items.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((count) => Math.min(count + INCREMENT, items.length));
+        }
+      },
+      { rootMargin: `${LOAD_MORE_THRESHOLD_PX}px` },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [visibleCount, items.length]);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -46,9 +82,10 @@ export function KnowledgeItemList({ items, isLoading, onItemClick }: KnowledgeIt
 
   return (
     <div className="space-y-2">
-      {items.map((item) => (
+      {items.slice(0, visibleCount).map((item) => (
         <KnowledgeItemCard key={item.id} item={item} onClick={onItemClick} />
       ))}
+      {visibleCount < items.length && <div ref={sentinelRef} aria-hidden="true" />}
     </div>
   );
 }
