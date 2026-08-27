@@ -52,8 +52,11 @@ function isVerdictExpired(at: number | null | undefined, now: number): boolean {
 }
 
 /** Verdict clock for an edge: when the user acted on it, else when it arose. */
-function edgeVerdictAt(edge: { createdAt: number; respondedAt: number | null }): number | null {
-  return edge.respondedAt ?? edge.createdAt;
+function edgeVerdictAt(edge: {
+  createdAt?: number;
+  respondedAt?: number | null;
+}): number | null {
+  return edge.respondedAt ?? edge.createdAt ?? null;
 }
 
 export async function calculateTagOverlap(
