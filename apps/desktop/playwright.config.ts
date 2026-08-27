@@ -11,6 +11,10 @@ import { defineConfig } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // `.spec`/`.test` suffixes would make root `bun test` pick the file up as
+  // a bun test and crash on Playwright's describe(); a bare name keeps the
+  // bun suite clean while Playwright matches everything in testDir.
+  testMatch: /e2e-smoke\.ts$/,
   timeout: 30_000,
   fullyParallel: false,
   workers: 1,
