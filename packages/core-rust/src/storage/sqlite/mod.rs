@@ -23,7 +23,8 @@ use crate::error::{Error, Result};
 const SCHEMA_SQL: &str = include_str!("../schema.sql");
 const MIGRATION_V2_SQL: &str = include_str!("../migrations/0002_unique_recommendation_pairs.sql");
 const MIGRATION_V3_SQL: &str = include_str!("../migrations/0003_sync_tombstones.sql");
-const SCHEMA_VERSION: i64 = 3;
+const MIGRATION_V4_SQL: &str = include_str!("../migrations/0004_delta_sync.sql");
+const SCHEMA_VERSION: i64 = 4;
 
 /// SQLite-based storage backend.
 pub struct SqliteStorage {
@@ -102,6 +103,13 @@ impl SqliteStorage {
 
         if current_version < 3 {
             if let Err(error) = self.conn.execute_batch(MIGRATION_V3_SQL) {
+                return Err(error.into());
+            }
+            current_version = 3;
+        }
+
+        if current_version < 4 {
+            if let Err(error) = self.conn.execute_batch(MIGRATION_V4_SQL) {
                 return Err(error.into());
             }
         }

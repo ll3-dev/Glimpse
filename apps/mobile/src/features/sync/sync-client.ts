@@ -1,8 +1,5 @@
 import * as Device from 'expo-device';
-import {
-  discoverSyncDesktops,
-  type DiscoveredSyncDesktop,
-} from '../../../modules/sync-discovery/src';
+import { discoverSyncDesktops, type DiscoveredSyncDesktop } from '../../../modules/sync-discovery/src';
 import { mobileCoreClient } from '@/src/features/core';
 import { generateId } from '@/src/lib/id';
 import { storage, StorageKeys } from '@/src/lib/storage';
@@ -20,6 +17,24 @@ import {
   setSyncRuntime,
   updateSyncConfig,
 } from './sync-store';
+import {
+  createBackoffController,
+  isHoldingOff,
+  recordFailure,
+  recordSuccess,
+  type BackoffController,
+} from './backoff';
+import {
+  discoveryBaseUrl,
+  endpointCandidates,
+  HttpError,
+  isAuthError,
+  normalizeBaseUrl,
+} from './sync-url';
+import {
+  maybeCompressRequestBody,
+  parseResponseBody,
+} from './payload-compression';
 import type { PairResponse, SyncResponse } from './types';
 
 const SYNC_PROTOCOL_VERSION = 1;
@@ -27,46 +42,13 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 let syncPromise: Promise<boolean> | null = null;
 
-/** Tracks consecutive sync failures so auto-sync can back off exponentially. */
-let consecutiveFailures = 0;
-const MAX_BACKOFF_MS = 30 * 60_000;
-
-/** Marks that the last failure was an auth rejection (401) — unrecoverable
- * without re-pairing, so we stop auto-retrying until the user acts. */
-let pairingInvalidated = false;
-
-export function syncBackoffState(): { backoffMs: number; invalidated: boolean } {
-  return {
-    backoffMs: Math.min(60_000 * 2 ** consecutiveFailures, MAX_BACKOFF_MS),
-    invalidated: pairingInvalidated,
-  };
-}
+/** Module-level backoff state shared across auto-sync invocations.
+ * Exposed to siblings via `readSyncBackoff` so the background task can check
+ * the hold-off without importing private module state. */
+let backoff: BackoffController = createBackoffController();
 
 export function isSyncInBackoff(now: number = Date.now()): boolean {
-  if (pairingInvalidated) return true;
-  return consecutiveFailures > 0 && now < backoffUntil;
-}
-
-let backoffUntil = 0;
-
-export function normalizeBaseUrl(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, '');
-  if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-}
-
-export function discoveryBaseUrl(desktop: DiscoveredSyncDesktop): string {
-  const host = desktop.host.includes(':') && !desktop.host.startsWith('[')
-    ? `[${desktop.host}]`
-    : desktop.host;
-  return `http://${host}:${desktop.port}`;
-}
-
-export function endpointCandidates(config = getSyncConfig()): string[] {
-  // The tailnet endpoint remains valid across network changes, while a cached
-  // LAN address commonly becomes stale as soon as the phone leaves Wi-Fi.
-  return [...new Set([config.tailscaleUrl, config.lanUrl].filter(Boolean))] as string[];
+  return isHoldingOff(backoff, now);
 }
 
 export function getOrCreateSyncDeviceId(): string {
@@ -123,9 +105,7 @@ export async function pairWithDesktop(baseUrl: string, pairingCode: string): Pro
       autoSync: true,
     });
     setSyncRuntime('idle');
-    pairingInvalidated = false;
-    consecutiveFailures = 0;
-    backoffUntil = 0;
+    backoff = createBackoffController();
     await syncWithDesktop({ force: true });
   } catch (error) {
     const message = errorMessage(error);
@@ -156,11 +136,11 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   }
   const token = await getSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
   if (!token) {
-    pairingInvalidated = true;
+    backoff = recordFailure(backoff, Date.now(), true);
     setSyncRuntime('error', '페어링 토큰이 없습니다. 다시 페어링해 주세요.');
     return false;
   }
-  if (!options.force && isSyncInBackoff()) {
+  if (isHoldingOff(backoff, Date.now(), options)) {
     // Auto-sync cooldown after failures; a manual sync always ignores it.
     return false;
   }
@@ -170,29 +150,69 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   if (candidates.length === 0) {
     candidates = await rediscoverPairedDesktop(config.desktopDeviceId);
   }
-  const snapshot = JSON.parse(await mobileCoreClient.exportData()) as unknown;
+  // Watermark path: when we know how far the desktop has already seen, skip
+  // exporting and shipping the full snapshot — the request is then a few
+  // bytes. Built lazily so the delta path never pays the export cost.
+  const watermark = config.outboundWatermark;
+  const snapshotPromise = watermark == null
+    ? mobileCoreClient.exportData().then((data) => JSON.parse(data) as unknown)
+    : null;
   let lastError: unknown = new Error('연결 가능한 Desktop 주소가 없습니다.');
 
   const attempt = async (baseUrl: string): Promise<boolean> => {
+    const requestBody: Record<string, unknown> = {
+      deviceId: getOrCreateSyncDeviceId(),
+      fingerprint: config.snapshotFingerprint,
+    };
+    if (watermark == null) {
+      requestBody.snapshot = await snapshotPromise;
+    } else {
+      requestBody.sinceWatermark = watermark;
+    }
+    // Large payloads ride gzip: both peers share the tower-http contract.
+    const requestPayload = maybeCompressRequestBody(JSON.stringify(requestBody));
     const response = await fetchJson<SyncResponse>(`${baseUrl}/v1/sync`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        ...requestPayload.headers,
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        deviceId: getOrCreateSyncDeviceId(),
-        fingerprint: config.snapshotFingerprint,
-        snapshot,
-      }),
+      body: requestPayload.body.buffer.slice(
+        requestPayload.body.byteOffset,
+        requestPayload.body.byteOffset + requestPayload.body.byteLength,
+      ) as ArrayBuffer,
     });
     assertProtocol(response.protocolVersion);
+
+    if (response.delta != null) {
+      // Watermark path succeeded: merge incrementally, advance the
+      // watermark only from the server's own number.
+      const mergedJson = JSON.stringify(response.delta);
+      if (mobileCoreClient.mergeDelta) {
+        await mobileCoreClient.mergeDelta(mergedJson);
+      } else {
+        await mobileCoreClient.mergeData(mergedJson);
+      }
+      config = updateSyncConfig({
+        lastSyncedAt: Date.now(),
+        outboundWatermark: response.newWatermark ?? watermark,
+        tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
+      });
+      return true;
+    }
+
     if (response.snapshot != null) {
+      // Full path (or the server could not serve our watermark): merge and
+      // reset the watermark — the response describes desktop state as of
+      // now, so an existing watermark would under-report future changes.
       await mobileCoreClient.mergeData(JSON.stringify(response.snapshot));
     }
     config = updateSyncConfig({
       lastSyncedAt: Date.now(),
       snapshotFingerprint: response.fingerprint,
+      outboundWatermark: null,
       tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
     });
     return true;
@@ -201,7 +221,7 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   for (const baseUrl of candidates) {
     try {
       await attempt(baseUrl);
-      onSyncSuccess();
+      backoff = recordSuccess(backoff);
       setSyncRuntime('synced');
       return true;
     } catch (error) {
@@ -216,7 +236,7 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     for (const baseUrl of rediscovered.filter((url) => !candidates.includes(url))) {
       try {
         await attempt(baseUrl);
-        onSyncSuccess();
+        backoff = recordSuccess(backoff);
         setSyncRuntime('synced');
         return true;
       } catch (error) {
@@ -226,29 +246,10 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     }
   }
 
-  onSyncFailure(lastError);
+  backoff = recordFailure(backoff, Date.now(), isAuthError(lastError));
   const message = errorMessage(lastError);
   setSyncRuntime('error', message);
   throw new Error(message);
-}
-
-function onSyncSuccess(): void {
-  consecutiveFailures = 0;
-  backoffUntil = 0;
-}
-
-function onSyncFailure(error: unknown): void {
-  if (isAuthError(error)) {
-    // Token rejected — retrying cannot fix it; hold until re-pairing.
-    pairingInvalidated = true;
-    return;
-  }
-  consecutiveFailures += 1;
-  backoffUntil = Date.now() + syncBackoffState().backoffMs;
-}
-
-function isAuthError(error: unknown): boolean {
-  return error instanceof Error && /\(401\)/.test(error.message);
 }
 
 async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
@@ -265,26 +266,47 @@ async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
   }
 }
 
-async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
+async function fetchJson<T>(url: string, init: RequestInit & { headers?: Record<string, string> }): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
-    const body = (await response.json().catch(() => null)) as
-      | T
-      | { message?: string }
-      | null;
-    if (!response.ok) {
-      const message =
-        body && typeof body === 'object' && 'message' in body
-          ? (body as { message?: string }).message
-          : null;
-      throw new Error(message || `Desktop 요청 실패 (${response.status})`);
+    // Never follow redirects: the pairing token must not be replayed against
+    // a different origin a 30x might point us at. Not every React Native
+    // fetch implementation honors `redirect`, so 3xx responses that do slip
+    // through are rejected below as well.
+    const response = await fetch(url, {
+      ...init,
+      redirect: 'error',
+      signal: controller.signal,
+    });
+    if (response.status >= 300 && response.status < 400) {
+      throw new HttpError('Desktop가 리다이렉트로 응답했습니다.', response.status);
     }
-    if (!body) throw new Error('Desktop 응답이 비어 있습니다.');
-    return body as T;
+    const contentEncoding = response.headers.get('content-encoding');
+    // Error bodies are small; read them as text so both plain and gzipped
+    // success paths share one decoder.
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      const body = text ? (safeParse(text) as { message?: string } | null) : null;
+      const serverMessage = body?.message ?? null;
+      throw new HttpError(
+        serverMessage || `Desktop 요청 실패 (${response.status})`,
+        response.status,
+      );
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length === 0) throw new Error('Desktop 응답이 비어 있습니다.');
+    return parseResponseBody<T>(bytes, contentEncoding);
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function safeParse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
 }
 

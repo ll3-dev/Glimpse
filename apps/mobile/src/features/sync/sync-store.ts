@@ -12,6 +12,7 @@ const DEFAULT_CONFIG: SyncConfig = {
   tailscaleUrl: null,
   lastSyncedAt: null,
   snapshotFingerprint: null,
+  outboundWatermark: null,
 };
 
 type SyncStore = {

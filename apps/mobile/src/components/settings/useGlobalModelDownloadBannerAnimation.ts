@@ -49,6 +49,38 @@ export function useGlobalModelDownloadBannerAnimation({
     shouldShow && isBannerDismissed && downloadStatus === "downloading";
   const isRendered = shouldShow || shouldShowChip;
 
+  // 제스처는 effect보다 먼저 정의한다 — react-hooks/immutability 룰이
+  // "effect에서 사용된 값을 effect 이후에 수정"하는 것을 금지하기 때문.
+  const gesture = Gesture.Pan()
+    .enabled(!reduceMotion)
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value =
+        event.translationY > 0 ? event.translationY : event.translationY * 0.5;
+    })
+    .onEnd((event) => {
+      const shouldDismiss =
+        Math.abs(event.translationX) > 100 ||
+        event.translationY > 80 ||
+        Math.abs(event.velocityX) > 800 ||
+        event.velocityY > 800;
+
+      if (shouldDismiss) {
+        translateX.value = withTiming(event.velocityX > 0 ? 500 : -500, {
+          duration: 200,
+        });
+        translateY.value = withTiming(
+          event.velocityY > 0 ? 200 : -100,
+          { duration: 200 },
+          () => scheduleOnRN(setLocalLLMBannerDismissed, true),
+        );
+        return;
+      }
+
+      translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+      translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
+    });
+
   useEffect(() => {
     if (reduceMotion) {
       translateX.value = 0;
@@ -91,36 +123,6 @@ export function useGlobalModelDownloadBannerAnimation({
     translateX,
     translateY,
   ]);
-
-  const gesture = Gesture.Pan()
-    .enabled(!reduceMotion)
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-      translateY.value =
-        event.translationY > 0 ? event.translationY : event.translationY * 0.5;
-    })
-    .onEnd((event) => {
-      const shouldDismiss =
-        Math.abs(event.translationX) > 100 ||
-        event.translationY > 80 ||
-        Math.abs(event.velocityX) > 800 ||
-        event.velocityY > 800;
-
-      if (shouldDismiss) {
-        translateX.value = withTiming(event.velocityX > 0 ? 500 : -500, {
-          duration: 200,
-        });
-        translateY.value = withTiming(
-          event.velocityY > 0 ? 200 : -100,
-          { duration: 200 },
-          () => scheduleOnRN(setLocalLLMBannerDismissed, true),
-        );
-        return;
-      }
-
-      translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
-      translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
-    });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [

@@ -1,7 +1,6 @@
 import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { Tag, Sparkles, CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface DigestCardProps {
   recommendation: Recommendation;

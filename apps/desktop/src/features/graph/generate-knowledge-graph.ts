@@ -2,8 +2,8 @@ import type { CoreClient, KnowledgeItem, Recommendation } from '@glimpse/shared'
 import { getProviderForFeature } from '@/features/ai/router';
 import { loadSettings } from '@/lib/settings-storage';
 import { parseEdges, type ProposedEdge } from './graph-edge-parser';
+import { selectGraphSourceWindow } from './graph-source-window';
 
-const MAX_ITEMS = 24;
 const MAX_NEW_EDGES = 16;
 
 export interface GraphGenerationResult {
@@ -15,9 +15,7 @@ export async function generateKnowledgeGraph(
   coreClient: CoreClient,
   allItems: KnowledgeItem[],
 ): Promise<GraphGenerationResult> {
-  const items = [...allItems]
-    .sort((left, right) => right.updatedAt - left.updatedAt)
-    .slice(0, MAX_ITEMS);
+  const items = selectGraphSourceWindow(allItems);
   if (items.length < 2) return { createdCount: 0, source: 'unchanged' };
 
   const existing = await coreClient.listRecommendations();
@@ -97,8 +95,11 @@ async function proposeWithDesktopAI(
       maxTokens: 1_200,
       temperature: 0.2,
     });
-    return parseEdges(response.text);
-  } catch {
+    return parseEdges(response.text, {
+      logger: { warn: (message, context) => console.warn(message, context ?? '') },
+    });
+  } catch (error) {
+    console.warn('[graph] AI edge proposal failed:', error);
     return [];
   }
 }

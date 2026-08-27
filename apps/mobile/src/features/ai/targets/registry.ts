@@ -53,7 +53,7 @@ export function listAvailableAITargets(): AITargetDescriptor[] {
       label: `Local: ${model.name}`,
       description: '다운로드된 로컬 모델',
       kind: 'local',
-      available: model.isReady,
+      available: model.isReady === true,
       featureSupport: ['metadata', 'labeling', 'chat'],
     });
   }

@@ -5,10 +5,23 @@ export interface PendingShareData {
   webUrl?: { url: string; meta: string }[];
 }
 
+export interface ProcessShareDataResult {
+  /** Number of entries persisted successfully during this run. */
+  savedCount: number;
+  /** Whether the combined text entry was persisted in this run. */
+  textSaved: boolean;
+  /** URLs persisted successfully during this run (deduped, original order). */
+  savedUrls: string[];
+  /** URLs that failed to persist; callers must keep them pending. */
+  failedUrls: string[];
+}
+
 export interface ProcessShareDataDeps {
   saveKnowledgeItem: (item: KnowledgeItem) => Promise<KnowledgeItem>;
   generateId: () => string;
-  logger?: { info: (message: string, meta?: unknown) => void };
+  // LogContext(Record<string, unknown>) 기반 시그니처 — unknown 매개변수는
+  // 구체적 콜백(LogContext)과 반공변 충돌을 일으켜 TS6부터 할당이 거부된다.
+  logger?: { info: (message: string, context?: Record<string, unknown>) => void };
   now?: () => number;
 }
 
@@ -46,38 +59,68 @@ function createShareItem(
 /**
  * Builds share items from pending Share Extension data and saves them,
  * enrolling each item in the labeling queue (labelStatus 'pending').
+ *
+ * Entries are processed independently: one failure neither aborts the
+ * remaining saves nor discards already-saved entries. The per-entry outcome
+ * is returned so the caller can shrink the pending store accordingly
+ * (idempotent reruns never re-save a persisted entry).
  */
 export function createProcessShareData(deps: ProcessShareDataDeps) {
-  return async function processShareData(data: PendingShareData): Promise<boolean> {
-    let saved = false;
+  return async function processShareData(
+    data: PendingShareData,
+  ): Promise<ProcessShareDataResult> {
+    const result: ProcessShareDataResult = {
+      savedCount: 0,
+      textSaved: false,
+      savedUrls: [],
+      failedUrls: [],
+    };
 
     // Process text share
     if (data.text && data.text.length > 0) {
       const combinedText = data.text.join('\n');
-      await deps.saveKnowledgeItem(
-        createShareItem(deps, { title: null, body: combinedText, url: null }),
-      );
-      deps.logger?.info('[PendingShareProcessor] Saved text share');
-      saved = true;
+      try {
+        await deps.saveKnowledgeItem(
+          createShareItem(deps, { title: null, body: combinedText, url: null }),
+        );
+        result.savedCount += 1;
+        result.textSaved = true;
+        deps.logger?.info('[PendingShareProcessor] Saved text share');
+      } catch (error) {
+        deps.logger?.info('[PendingShareProcessor] Text save failed', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
 
-    // Process URL share
+    // Process URL shares independently of each other
     if (data.webUrl && data.webUrl.length > 0) {
       await Promise.all(
         data.webUrl.map(async (webUrl) => {
-          await deps.saveKnowledgeItem(
-            createShareItem(deps, {
-              title: webUrl.url,
-              body: webUrl.meta || null,
+          try {
+            await deps.saveKnowledgeItem(
+              createShareItem(deps, {
+                title: webUrl.url,
+                body: webUrl.meta || null,
+                url: webUrl.url,
+              }),
+            );
+            result.savedCount += 1;
+            result.savedUrls.push(webUrl.url);
+            deps.logger?.info('[PendingShareProcessor] Saved URL share:', {
               url: webUrl.url,
-            }),
-          );
-          deps.logger?.info('[PendingShareProcessor] Saved URL share:', { url: webUrl.url });
+            });
+          } catch (error) {
+            result.failedUrls.push(webUrl.url);
+            deps.logger?.info('[PendingShareProcessor] URL save failed', {
+              url: webUrl.url,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
         }),
       );
-      saved = true;
     }
 
-    return saved;
+    return result;
   };
 }

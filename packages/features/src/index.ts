@@ -90,3 +90,9 @@ export type {
 } from './recommendation/types';
 export * from './capture';
 export * from './search';
+export * from './labeling';
+export {
+  parseEdges,
+  sanitizeEdges,
+  type ProposedEdge,
+} from './recommendation/edge-parser';

@@ -10,7 +10,7 @@
     "llama.rn"
   ],
   "overrides": {
-    "@expo/metro-runtime": "55.0.12",
+    "@expo/metro-runtime": "~57.0.14",
     "@rustra/types": "0.1.3",
     "@hono/node-server": "1.19.15",
     "@xmldom/xmldom": "0.8.13",
@@ -34,12 +34,13 @@
     "ios": "bun run --cwd apps/mobile ios",
     "web": "bun run --cwd apps/mobile web",
     "web:export": "bun run --cwd apps/mobile web:export",
-    "lint": "bun run --cwd apps/mobile lint",
+    "lint": "bun run --cwd apps/mobile lint && bun run --cwd apps/desktop lint",
     "typecheck": "bun run --cwd apps/mobile typecheck",
     "desktop:dev": "bun run --cwd apps/desktop dev",
     "desktop:build": "bun run --cwd apps/desktop build",
     "desktop:preview": "bun run --cwd apps/desktop preview",
     "desktop:typecheck": "bun run --cwd apps/desktop typecheck",
+    "desktop:lint": "bun run --cwd apps/desktop lint",
     "desktop:tauri:dev": "bun run --cwd apps/desktop tauri:dev",
     "desktop:tauri:build": "bun run --cwd apps/desktop tauri:build",
     "desktop:tauri:dev:llm": "bun run --cwd apps/desktop tauri:dev:llm",
@@ -49,5 +50,8 @@
     "test": "bun run --cwd apps/mobile test",
     "test:coverage": "bun run --cwd apps/mobile test:coverage",
     "audit:critical": "bun audit --audit-level=critical"
+  },
+  "patchedDependencies": {
+    "expo-modules-jsi@57.0.6": "patches/expo-modules-jsi@57.0.6.patch"
   }
 }

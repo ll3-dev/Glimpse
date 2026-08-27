@@ -35,8 +35,8 @@ pub use message::{MessageIo, MessagePatchIo};
 pub(crate) use recommendation_feedback::recommendation_status_from_wire;
 pub use recommendation_feedback::{FeedbackEventIo, RecommendationIo};
 pub use review::{
-    CalculateNextReviewInputIo, CalculateNextReviewOutputIo, CalculateTagOverlapInputIo,
-    CoreKnowledgeItemLikeIo, InitializeReviewScheduleInputIo, InitializeReviewScheduleOutputIo,
+    CalculateTagOverlapInputIo, CoreKnowledgeItemLikeIo, InitializeReviewScheduleInputIo,
+    InitializeReviewScheduleOutputIo,
 };
 
 use glimpse_core::NullablePatch;

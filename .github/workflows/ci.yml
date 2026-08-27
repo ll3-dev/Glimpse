@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # 주간 일요일 18:23 UTC (월요일 새벽 KST) — 네이티브 릴리스 검증·audit high 게이트
+    - cron: "23 18 * * 0"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.6
+          bun-version: 1.4.0
       - uses: actions/cache@v4
         with:
           path: |
@@ -25,10 +29,11 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
       - run: bun install --frozen-lockfile
       - run: bun run lint
+      - run: bun run desktop:lint
       - run: bun run typecheck
       - run: bun run desktop:typecheck
       - run: bun run test:coverage
-      - run: bun test apps/desktop/src
+      - run: bun test packages/features/src apps/desktop/src --coverage
       - run: bun run web:export
       - run: bun run audit:critical
       - uses: actions/upload-artifact@v4
@@ -49,7 +54,7 @@ jobs:
           sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.6
+          bun-version: 1.4.0
       - uses: actions/cache@v4
         with:
           path: |
@@ -67,15 +72,92 @@ jobs:
       - run: cargo test --workspace
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
+      # bundler 직전까지의 "빌드 가능성" 검증 — debug 프로필 캐시를 위 스텝과 공유해 순증가분 최소.
+      # 전체 번들(.deb/.dmg)은 weekly-bundle 잡이 주간으로 대신 검증한다.
+      - name: Tauri debug build validation (no bundle)
+        run: cd apps/desktop && bunx tauri build --debug --no-bundle
 
-  android-release:
-    name: Android Release (arm64 AAB, unsigned validation)
+  audit-high:
+    # transitive advisory(expo/RN/eslint/vite 하위)가 많아 main 레인에 두면 항상 레드.
+    # 주간 스케줄 + 수동 실행에서만 평가하고, 메인 푸시 게이트는 audit:critical만 유지한다.
+    name: Audit (weekly, high)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.6
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun audit --audit-level=high
+
+  paths:
+    # android/ios-release/desktop-smoke를 관련 경로 변경시에만 돌리기 위한 필터(주간 cron엔 무조건 실행).
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      mobile-native: ${{ steps.filter.outputs.mobile-native }}
+      desktop-web: ${{ steps.filter.outputs.desktop-web }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            mobile-native:
+              - 'packages/bridge-rust/**'
+              - 'packages/core-rust/**'
+              - 'apps/mobile/ios/**'
+              - 'apps/mobile/android/**'
+              - 'apps/mobile/modules/**'
+              - 'apps/mobile/package.json'
+              - 'bun.lock'
+            desktop-web:
+              - 'apps/desktop/src/**'
+              - 'apps/desktop/e2e/**'
+              - 'apps/desktop/package.json'
+              - 'packages/shared/**'
+              - 'packages/features/**'
+              - 'packages/hooks/**'
+
+  desktop-smoke:
+    # 브라우저에서 데스크톱 웹 번들이 앱 셸을 렌더링하는지 PR마다 검증한다.
+    # Tauri IPC는 스텁(e2e/smoke-stubs.ts)으로 대체 — 프론트 번들 무결성 게이트.
+    name: Desktop smoke (Chromium)
+    needs: paths
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.paths.outputs.desktop-web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+        working-directory: apps/desktop
+      - run: bun run build && bun run test:e2e
+        working-directory: apps/desktop
+      - name: Smoke duration
+        if: always()
+        run: echo "desktop-smoke job finished"
+
+  android-release:
+    name: Android Release (arm64 AAB, unsigned validation)
+    needs: paths
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.paths.outputs.mobile-native == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -100,16 +182,24 @@ jobs:
 
   ios-release:
     name: iOS Release (simulator, unsigned)
+    needs: paths
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.paths.outputs.mobile-native == 'true'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.6
+          bun-version: 1.4.0
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
       - uses: Swatinem/rust-cache@v2
+      # expo-modules-core 소스의 Swift 동시성 어노테이션이 특정 Xcode와 호환성이 깨진다.
+      # 러너 기본값(Xcode_16.4)은 실패하므로 이미지에 설치된 최신 Xcode로 시도한다(best-effort).
+      - name: Select newest available Xcode
+        run: |
+          ls -d /Applications/Xcode*.app | sort -V | tail -1
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
       - run: bun install --frozen-lockfile
       - run: bun run --cwd apps/mobile build:bridge:ios
       - run: pod install --repo-update
@@ -120,3 +210,27 @@ jobs:
           -destination 'generic/platform=iOS Simulator'
           CODE_SIGNING_ALLOWED=NO build
         working-directory: apps/mobile/ios
+
+  weekly-bundle:
+    # 번들 단계(.deb 아이콘·plist·설정 파일) 검증 — 매 PR 비용 대비 가치가 낮아 주간으로만.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Desktop bundle (weekly, deb)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run desktop:build
+      - run: cd apps/desktop && bunx tauri build --debug --bundles deb

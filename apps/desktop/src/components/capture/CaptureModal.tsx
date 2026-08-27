@@ -104,7 +104,6 @@ export function CaptureModal() {
       return;
     }
 
-    const input = buildInput();
     const content = [form.title, form.body, form.url, form.text, form.sourceUrl]
       .filter(Boolean)
       .join('\n\n');
