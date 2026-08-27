@@ -30,3 +30,16 @@ export {
   usePostponeReviewMutation,
 } from './mutations/useReviewMutations';
 export { useRespondToRecommendationMutation, useLogFeedbackMutation } from './mutations/useRecommendationMutations';
+
+// Search
+export {
+  useSemanticRerank,
+  itemEmbeddingText,
+  embeddingCacheKey,
+  MAX_EMBED_ITEMS,
+  SEMANTIC_RERANK_DEBOUNCE_MS,
+} from './search/useSemanticRerank';
+export type {
+  SemanticEmbedRequest,
+  SemanticEmbedDeps,
+} from './search/useSemanticRerank';

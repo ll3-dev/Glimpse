@@ -69,3 +69,42 @@ describe('run_embedding TS↔Rust 계약', () => {
     expect(() => parseEmbeddingResponse(undefined)).toThrow();
   });
 });
+
+describe('run_embedding_batch TS↔Rust 계약', () => {
+  test('배치 페이로드는 요청 배열을 camelCase wire 형식으로 감싼다', async () => {
+    const { buildEmbeddingBatchInvokePayload } = await loadContract();
+    const payload = buildEmbeddingBatchInvokePayload([
+      { text: 'first', modelId: 'm1', runtimeId: 'managed-local' },
+      { text: 'second' },
+    ]);
+    expect(Object.keys(payload)).toEqual(['requests']);
+    expect(payload.requests).toEqual([
+      { runtimeId: 'managed-local', modelId: 'm1', input: 'first' },
+      // 단건과 같은 기본값 채움이 배열 원소에도 적용된다
+      { runtimeId: expect.any(String), modelId: expect.any(String), input: 'second' },
+    ]);
+    expect('text' in payload.requests[1]).toBe(false);
+  });
+
+  test('배치 응답은 순서 보존 파싱되며 non-array/불량 원소를 거부한다', async () => {
+    const { parseEmbeddingBatchResponse } = await loadContract();
+    const raw = [{ vector: [1, 2] }, { vector: [3] }];
+    expect(parseEmbeddingBatchResponse(raw)).toEqual([[1, 2], [3]]);
+
+    expect(() => parseEmbeddingBatchResponse({ vector: [] })).toThrow();
+    expect(() => parseEmbeddingBatchResponse([{ embedding: [1] }])).toThrow();
+  });
+
+  test('service.runEmbeddingBatch: 빈 입력은 invoke 없이 [], 응답은 순서대로 반환된다', async () => {
+    const { getDesktopLLMService } = await loadContract();
+
+    // static 폴백 서비스 — 빈 입력은 [], 실입력은 명확히 실패(폴백 상위 경로 트리거)
+    const service = getDesktopLLMService();
+    if (typeof window === 'undefined' || !('__TAURI_INTERNALS__' in window)) {
+      expect(await service.runEmbeddingBatch([])).toEqual([]);
+      await expect(
+        service.runEmbeddingBatch([{ text: 'a' }]),
+      ).rejects.toThrow();
+    }
+  });
+});

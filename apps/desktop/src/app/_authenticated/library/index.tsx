@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, useMemo } from 'react';
 import { useKnowledgeItemsQuery } from '@glimpse/hooks';
 import { filterKnowledgeItems } from '@glimpse/features/search';
-import { useSemanticRerank } from '@/features/search/useSemanticRerank';
+import { useDesktopSemanticRerank } from '@/features/search/useSemanticRerank';
 import { SearchBar } from '@/components/library/SearchBar';
 import { KnowledgeItemList } from '@/components/library/KnowledgeItemList';
 
@@ -19,7 +19,7 @@ function LibraryPage() {
 
   // When an embedding model is loaded, keyword matches are re-ranked by
   // semantic similarity; otherwise this is a pass-through.
-  const semantic = useSemanticRerank(keywordMatches, searchQuery);
+  const semantic = useDesktopSemanticRerank(keywordMatches, searchQuery);
   const filteredItems = semantic.items;
 
   return (

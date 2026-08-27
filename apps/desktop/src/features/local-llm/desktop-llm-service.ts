@@ -122,6 +122,7 @@ export interface DesktopLLMService {
   unloadModel(modelId: string): Promise<void>;
   runCompletion(request: CompletionRequest): Promise<CompletionResponse>;
   runEmbedding(request: EmbeddingRequest): Promise<EmbeddingResponse>;
+  runEmbeddingBatch(requests: EmbeddingRequest[]): Promise<EmbeddingResponse[]>;
   getRuntimeHealth(): Promise<RuntimeHealth>;
   onDownloadProgress(callback: (event: DownloadProgressEvent) => void): Promise<() => void>;
   onDownloadDone(callback: (event: DownloadDoneEvent) => void): Promise<() => void>;
@@ -232,6 +233,27 @@ export function parseEmbeddingResponse(response: unknown): number[] {
   return vector;
 }
 
+/**
+ * 배치 와이어 — Rust `Vec<EmbeddingRequest>`는 요청 배열 그대로, 명령 인자
+ * 이름이 `requests`이므로 `{ requests: [...] }`로 감싼다.
+ */
+export function buildEmbeddingBatchInvokePayload(requests: EmbeddingRequest[]): {
+  requests: EmbeddingRequestWire[];
+} {
+  return {
+    requests: requests.map((request) => buildEmbeddingInvokePayload(request).request),
+  };
+}
+
+export function parseEmbeddingBatchResponse(response: unknown): number[][] {
+  if (!Array.isArray(response)) {
+    throw new Error(
+      'run_embedding_batch response violated the TS↔Rust contract: expected { vector }[]',
+    );
+  }
+  return response.map(parseEmbeddingResponse);
+}
+
 function createStaticDesktopLLMService(): DesktopLLMService {
   const models = getDefaultModels();
 
@@ -264,6 +286,12 @@ function createStaticDesktopLLMService(): DesktopLLMService {
     },
     runCompletion: async () => ({ text: '', tokensUsed: 0, modelId: models[0].id }),
     runEmbedding: async () => ({ vector: [] }),
+    // 정적 폴백에는 실추 벡터가 없다 — 빈 입력은 [], 그 외는 계약 위반처럼
+    // 명확히 실패해 상위 폴백(키워드 순서)이 warn-once와 함께 동작하게 한다.
+    runEmbeddingBatch: async (requests) => {
+      if (requests.length === 0) return [];
+      throw new Error('static desktop LLM service does not implement embeddings');
+    },
     getRuntimeHealth: async () => ({
       status: 'healthy',
       loadedModelId: null,
@@ -289,6 +317,14 @@ function createTauriBridge(): DesktopLLMService {
     runEmbedding: async (request): Promise<EmbeddingResponse> => {
       const raw = await invoke<unknown>('run_embedding', buildEmbeddingInvokePayload(request));
       return { vector: parseEmbeddingResponse(raw) };
+    },
+    runEmbeddingBatch: async (requests): Promise<EmbeddingResponse[]> => {
+      if (requests.length === 0) return [];
+      const raw = await invoke<unknown[]>(
+        'run_embedding_batch',
+        buildEmbeddingBatchInvokePayload(requests),
+      );
+      return parseEmbeddingBatchResponse(raw).map((vector) => ({ vector }));
     },
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
     onDownloadProgress: (callback) =>
