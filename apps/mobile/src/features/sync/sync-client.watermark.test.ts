@@ -63,10 +63,8 @@ mock.module('../../features/core', () => ({
 }));
 
 let lastResponseBody: Record<string, unknown> | null = null;
-let nextResponse: SyncResponse | null = null;
 
 function stubDesktopResponse(response: SyncResponse): void {
-  nextResponse = response;
   globalThis.fetch = (async (_url: string, init?: RequestInit) => {
     const raw = init?.body as ArrayBuffer | undefined;
     const text = raw ? new TextDecoder().decode(raw) : '';
