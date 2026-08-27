@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { Message } from '@glimpse/shared';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +13,9 @@ function formatTimestamp(ts: number): string {
   });
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+// memo: 스트리밍 중 토큰마다 ChatView가 재렌더되지만, 확정된 메시지 버블의
+// prop(message 참조)은 불변 — 재렌더를 건너뛰게 한다.
+export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -41,4 +44,4 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </div>
     </div>
   );
-}
+});
