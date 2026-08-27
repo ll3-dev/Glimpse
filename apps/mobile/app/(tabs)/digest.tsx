@@ -41,6 +41,8 @@ export default function DigestScreen() {
         emptyTitle="추천이 없습니다"
         emptyDescription={"더 많은 항목을 저장하면\n연결 추천을 받을 수 있어요"}
         keyExtractor={(rec) => rec.recommendation.id}
+        initialVisibleCount={10}
+        visibleCountIncrement={10}
         renderItem={(rec) => (
           <RecommendationCard
             key={rec.recommendation.id}

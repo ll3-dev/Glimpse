@@ -105,6 +105,8 @@ export default function ReviewScreen() {
         emptyDescription={"새로운 항목을 저장하면\n자동으로 복습 일정이 잡혀요"}
         keyExtractor={(item) => item.id}
         renderItem={renderReviewItem}
+        initialVisibleCount={10}
+        visibleCountIncrement={10}
       />
     </View>
   );
