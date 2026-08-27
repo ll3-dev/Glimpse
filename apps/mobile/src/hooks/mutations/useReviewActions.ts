@@ -15,6 +15,26 @@ import { ensureLabelingBackgroundTaskRegistered } from '@/src/features/labeling'
 import { queryKeys } from '@/src/lib/query-keys';
 
 /**
+ * 복습 액션이 라이브러리에서 바꾸는 것은 이 아이템뿐이다. 리스트 전체
+ * 무효화 대신 캐시에서 해당 아이템만 갱신 결과로 교체해 라이브러리
+ * 목록 refetch를 막는다. 아이템이 캐시에 없으면(마운트된 리스트 없음)
+ * 아무것도 하지 않는다.
+ */
+function patchReviewedItem(
+  queryClient: ReturnType<typeof useQueryClient>,
+  item: KnowledgeItem,
+) {
+  queryClient.setQueryData<KnowledgeItem[]>(queryKeys.knowledgeItems.all, (current) => {
+    if (!current) return current;
+    const index = current.findIndex((entry) => entry.id === item.id);
+    if (index === -1) return current;
+    const next = current.slice();
+    next[index] = item;
+    return next;
+  });
+}
+
+/**
  * Hook to mark an item as reviewed.
  * Automatically invalidates the due items query on success.
  *
@@ -39,9 +59,9 @@ export function useMarkAsReviewedMutation(): UseMutationResult<
       }
       return result.item;
     },
-    onSuccess: () => {
+    onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
-      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+      patchReviewedItem(queryClient, item);
       void ensureLabelingBackgroundTaskRegistered();
     },
   });
@@ -72,9 +92,9 @@ export function usePostponeReviewMutation(): UseMutationResult<
       }
       return result.item;
     },
-    onSuccess: () => {
+    onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
-      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+      patchReviewedItem(queryClient, item);
     },
   });
 }
@@ -102,9 +122,9 @@ export function useMarkAsForgottenMutation(): UseMutationResult<
       }
       return result.item;
     },
-    onSuccess: () => {
+    onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
-      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+      patchReviewedItem(queryClient, item);
     },
   });
 }
