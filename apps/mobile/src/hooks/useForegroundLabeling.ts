@@ -5,6 +5,23 @@ import type { KnowledgeItem } from '@glimpse/shared';
 import { runForegroundLabeling } from '@/src/features/labeling';
 import { queryKeys } from '@/src/lib/query-keys';
 
+/**
+ * 라벨링이 갱신한 아이템만 리스트 캐시에 반영한다. 전체 무효화 대신
+ * 부분 패치로 라이브러리 목록 refetch를 막는다.
+ */
+function patchLabeledItems(
+  queryClient: ReturnType<typeof useQueryClient>,
+  updated: KnowledgeItem[],
+) {
+  if (updated.length === 0) return;
+  const byId = new Map(updated.map((item) => [item.id, item]));
+  queryClient.setQueryData<KnowledgeItem[]>(
+    queryKeys.knowledgeItems.all,
+    (current) =>
+      current?.map((entry) => byId.get(entry.id) ?? entry),
+  );
+}
+
 export function useForegroundLabeling(items: KnowledgeItem[] | undefined) {
   const queryClient = useQueryClient();
   const isRunningRef = useRef(false);
@@ -31,7 +48,7 @@ export function useForegroundLabeling(items: KnowledgeItem[] | undefined) {
           try {
             const result = await runForegroundLabeling(1);
             if (result.success && result.data.processedCount > 0) {
-              queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+              patchLabeledItems(queryClient, result.data.items);
             }
           } finally {
             isRunningRef.current = false;
@@ -44,7 +61,7 @@ export function useForegroundLabeling(items: KnowledgeItem[] | undefined) {
         try {
           const result = await runForegroundLabeling(1);
           if (result.success && result.data.processedCount > 0) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+            patchLabeledItems(queryClient, result.data.items);
           }
         } finally {
           isRunningRef.current = false;
