@@ -37,6 +37,25 @@ import type {
 export * from './types';
 export type { GeneratedRecommendation, RecommendationWithItems };
 
+/**
+ * How long a verdict stays in force. Preferences drift: a pair or tag the
+ * user dismissed months ago deserves another chance instead of being blocked
+ * forever by a stale first impression. Verdicts older than this window are
+ * ignored entirely — expired rejections no longer block pairs, and expired
+ * accepts stop counting toward the tag bar — so both directions age together.
+ */
+const VERDICT_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+function isVerdictExpired(at: number | null | undefined, now: number): boolean {
+  if (at == null) return false;
+  return now - at > VERDICT_WINDOW_MS;
+}
+
+/** Verdict clock for an edge: when the user acted on it, else when it arose. */
+function edgeVerdictAt(edge: { createdAt: number; respondedAt: number | null }): number | null {
+  return edge.respondedAt ?? edge.createdAt;
+}
+
 export async function calculateTagOverlap(
   coreClient: Pick<CoreClient, 'calculateTagOverlap'>,
   left: KnowledgeItem,
@@ -47,9 +66,12 @@ export async function calculateTagOverlap(
 
 export function createGenerateRecommendations(deps: GenerateRecommendationsDeps) {
   return async (
-    input: { since: number; limit?: number } = { since: Date.now() - 7 * 24 * 60 * 60 * 1000 }
+    input: { since: number; limit?: number; now?: number } = {
+      since: Date.now() - 7 * 24 * 60 * 60 * 1000,
+    }
   ): Promise<GenerateRecommendationsDepsResult> => {
     try {
+      const now = input.now ?? Date.now();
       const weeklyItems = await deps.getWeeklyItems(input.since);
       if (weeklyItems.success === false) {
         return { success: false, error: weeklyItems.error };
@@ -58,7 +80,8 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps)
       // Quality feedback loop: never re-propose a pair the user already
       // judged, and let accepted/rejected tags raise/lower the bar for
       // tag-overlap matches. Without this, cadence only changes how often
-      // the same bad suggestions return.
+      // the same bad suggestions return. Verdicts expire after
+      // VERDICT_WINDOW_MS so stale judgments stop shaping new suggestions.
       const existing = deps.coreClient.listRecommendations
         ? await deps.coreClient.listRecommendations()
         : [];
@@ -83,7 +106,12 @@ export function createGenerateRecommendations(deps: GenerateRecommendationsDeps)
       const rejectedPairs = new Set<string>();
       const tagVerdicts = new Map<string, { accepted: number; rejected: number }>();
       for (const edge of existing) {
-        const verdict = statusVerdict(edge.status) ?? verdictByRecommendation.get(edge.id) ?? null;
+        const raw =
+          statusVerdict(edge.status) ?? verdictByRecommendation.get(edge.id) ?? null;
+        // An expired verdict no longer reflects preference: skip it entirely
+        // (neither blocking the pair nor feeding the tag counters).
+        const verdict =
+          raw !== null && !isVerdictExpired(edgeVerdictAt(edge), now) ? raw : null;
         if (verdict === 'rejected') {
           rejectedPairs.add(pairKey(edge.itemA_id, edge.itemB_id));
         }
