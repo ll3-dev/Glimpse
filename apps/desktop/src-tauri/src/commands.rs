@@ -86,13 +86,20 @@ pub async fn delete_model(
     state.delete_model(&model_id)
 }
 
+/// GGUF 로드는 수십 초까지 걸리는 동기 작업이라 메인 스레드가 아닌
+/// blocking 스레드풀에서 실행한다(run_embedding의 spawn_blocking 선례).
 #[tauri::command]
-pub fn load_model(
+pub async fn load_model(
     model_id: String,
     runtime_id: String,
     state: tauri::State<'_, DesktopRuntimeState>,
 ) -> Result<LoadResult, String> {
-    DesktopRuntimeService::load_model(&state, model_id, runtime_id)
+    let state_clone: DesktopRuntimeState = (*state).clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        DesktopRuntimeService::load_model(&state_clone, model_id, runtime_id)
+    })
+    .await
+    .map_err(|e| format!("Load model task failed: {}", e))?
 }
 
 #[tauri::command]
@@ -103,12 +110,20 @@ pub fn unload_model(
     DesktopRuntimeService::unload_model(&state, model_id)
 }
 
+/// 비스트리밍 completion은 최대 수천 토큰의 auto-regressive 디코드를
+/// 동기로 돌린다 — 메인 스레드에서 돌리면 앱 전체가 응답하지 않으므로
+/// blocking 스레드풀에서 실행한다(stream_completion 선례).
 #[tauri::command]
-pub fn run_completion(
+pub async fn run_completion(
     request: CompletionRequest,
     state: tauri::State<'_, DesktopRuntimeState>,
 ) -> Result<CompletionResponse, String> {
-    DesktopRuntimeService::run_completion(&state, request)
+    let state_clone: DesktopRuntimeState = (*state).clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        DesktopRuntimeService::run_completion(&state_clone, request)
+    })
+    .await
+    .map_err(|e| format!("Completion task failed: {}", e))?
 }
 
 /// 임베딩 추론은 수 초 블로킹될 수 있어 메인 스레드가 아닌 blocking
