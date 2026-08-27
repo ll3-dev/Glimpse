@@ -24,11 +24,7 @@ const invokeMock = mock(async (cmd: string, args?: { secret?: string }) => {
 });
 
 // window.__TAURI_INTERNALS__ 감지를 시뮬레이션
-let tauriMode = false;
-const globalAny = globalThis as unknown as { window?: unknown };
-
 function setTauriWindow(present: boolean) {
-  tauriMode = present;
   if (present) {
     (globalThis as Record<string, unknown>).window = {
       __TAURI_INTERNALS__: {},
@@ -36,7 +32,6 @@ function setTauriWindow(present: boolean) {
   } else {
     delete (globalThis as Record<string, unknown>).window;
   }
-  void globalAny;
 }
 
 mock.module('@tauri-apps/api/core', () => ({

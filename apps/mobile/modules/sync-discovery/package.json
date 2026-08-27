@@ -1,0 +1,9 @@
+{
+  "name": "glimpse-sync-discovery",
+  "version": "1.0.0",
+  "description": "Bonjour and Android NSD discovery for Glimpse sync",
+  "main": "src/index.ts",
+  "license": "UNLICENSED",
+  "private": true,
+  "react-native": "src/index.ts"
+}

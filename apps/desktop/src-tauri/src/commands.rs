@@ -111,12 +111,36 @@ pub fn run_completion(
     DesktopRuntimeService::run_completion(&state, request)
 }
 
+/// 임베딩 추론은 수 초 블로킹될 수 있어 메인 스레드가 아닌 blocking
+/// 스레드풀에서 실행한다(stream_completion의 spawn_blocking 선례).
 #[tauri::command]
-pub fn run_embedding(
+pub async fn run_embedding(
     request: EmbeddingRequest,
     state: tauri::State<'_, DesktopRuntimeState>,
 ) -> Result<EmbeddingResponse, String> {
-    DesktopRuntimeService::run_embedding(&state, request)
+    let state_clone: DesktopRuntimeState = (*state).clone();
+    tauri::async_runtime::spawn_blocking(
+        DesktopRuntimeService::run_embedding_blocking(state_clone, request),
+    )
+    .await
+    .map_err(|e| format!("Embedding task failed: {}", e))?
+}
+
+/// 검색 재정렬 등 최대 수십 개 텍스트를 한 번의 IPC 로 처리하는 배치
+/// 임베딩 — 컨텍스트 1회 생성으로 개별 호출 대비 오버헤드를 줄인다.
+/// 빈 requests 는 에러가 아닌 빈 배열을 반환하고, 하나라도 실패하면
+/// 전체가 Err. 응답 순서는 요청 순서를 그대로 보존한다.
+#[tauri::command]
+pub async fn run_embedding_batch(
+    requests: Vec<EmbeddingRequest>,
+    state: tauri::State<'_, DesktopRuntimeState>,
+) -> Result<Vec<EmbeddingResponse>, String> {
+    let state_clone: DesktopRuntimeState = (*state).clone();
+    tauri::async_runtime::spawn_blocking(
+        DesktopRuntimeService::run_embedding_batch_blocking(state_clone, requests),
+    )
+    .await
+    .map_err(|e| format!("Batch embedding task failed: {}", e))?
 }
 
 #[tauri::command]

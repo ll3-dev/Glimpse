@@ -1,0 +1,228 @@
+/**
+ * Parses LLM-proposed knowledge-graph edges from raw completion text.
+ * Shared by desktop graph generation and mobile AI recommendations so both
+ * platforms accept the same response format.
+ */
+
+export interface ProposedEdge {
+  itemAId: string;
+  itemBId: string;
+  reason: string;
+}
+
+export interface ParseLogger {
+  warn: (message: string, context?: Record<string, unknown>) => void;
+}
+
+export interface ParseEdgesOptions {
+  /** Optional sink for parse-failure diagnostics; callers log the cause. */
+  logger?: ParseLogger;
+}
+
+interface ParseOutcome {
+  edges: ProposedEdge[];
+  error?: string;
+}
+
+/**
+ * Extracts the outermost JSON array starting at the first '[' that opens a
+ * real array (not a prose citation like "[1]"). Balances brackets while
+ * respecting string literals. When no closing bracket exists (max_tokens
+ * truncation) returns the rest of the string so complete objects can still
+ * be recovered.
+ */
+function extractArrayCandidate(text: string): { candidate: string | null; truncated: boolean } {
+  const start = text.indexOf('[');
+  if (start < 0) return { candidate: null, truncated: false };
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let lastCompleteEnd = -1;
+
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '[' || char === '{') {
+      depth += 1;
+    } else if (char === ']' || char === '}') {
+      depth -= 1;
+      // Depth returns to zero only when the opening '[' closes.
+      if (depth === 0) {
+        lastCompleteEnd = index;
+        break;
+      }
+    }
+  }
+
+  if (lastCompleteEnd >= 0) {
+    const balanced = text.slice(start, lastCompleteEnd + 1);
+    // Prose citations like "[1]" balance fine but are not object arrays;
+    // skip them and keep scanning for the real array start.
+    if (/^\s*\[\s*[\d\s,]*\s*\]\s*$/.test(balanced)) {
+      const rest = extractArrayCandidate(text.slice(lastCompleteEnd + 1));
+      if (rest.candidate !== null) return rest;
+    }
+    return { candidate: balanced, truncated: false };
+  }
+  // Never balanced again — response was likely cut off mid-array.
+  return { candidate: text.slice(start), truncated: true };
+}
+
+/** Splits a top-level array body into {...} object candidates. */
+function splitObjectCandidates(body: string): string[] {
+  const objects: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{' || char === '[') {
+      depth += 1;
+      if (char === '{' && start < 0) start = index;
+    } else if (char === '}' || char === ']') {
+      depth -= 1;
+      if (char === '}' && depth <= 0 && start >= 0) {
+        objects.push(body.slice(start, index + 1));
+        start = -1;
+        if (depth < 0) depth = 0;
+      }
+    }
+  }
+
+  // Truncated final object is intentionally not recoverable; leading
+  // complete ones were already captured.
+  return objects;
+}
+
+function parseLooseObject(raw: string): ProposedEdge | null {
+  // Tolerate trailing commas before } or ] within the object.
+  const normalized = raw.replace(/,\s*([}\]])/g, '$1');
+  try {
+    const value = JSON.parse(normalized) as unknown;
+    if (!value || typeof value !== 'object') return null;
+    const edge = value as Partial<ProposedEdge>;
+    if (
+      typeof edge.itemAId !== 'string' ||
+      typeof edge.itemBId !== 'string' ||
+      typeof edge.reason !== 'string'
+    ) {
+      return null;
+    }
+    return { itemAId: edge.itemAId, itemBId: edge.itemBId, reason: edge.reason };
+  } catch {
+    return null;
+  }
+}
+
+function runParse(text: string): ParseOutcome {
+  if (typeof text !== 'string' || text.trim().length === 0) {
+    return { edges: [], error: 'empty input' };
+  }
+
+  // Strip code fences so their syntax cannot confuse array extraction; a
+  // fence is dropped entirely rather than sliced around.
+  const withoutFences = text.replace(/```[a-zA-Z]*\n?/g, '');
+
+  const { candidate, truncated } = extractArrayCandidate(withoutFences);
+  if (candidate === null) {
+    return { edges: [], error: 'no JSON array found in response' };
+  }
+
+  // The candidate starts with '['; find its matching segment or use the
+  // whole remainder when truncated.
+  const body = truncated ? candidate.slice(1) : candidate.slice(1, -1);
+
+  const edges: ProposedEdge[] = [];
+  let salvageableCount = 0;
+  for (const raw of splitObjectCandidates(body)) {
+    const parsed = parseLooseObject(raw);
+    if (parsed) {
+      edges.push(parsed);
+      salvageableCount += 1;
+    }
+  }
+
+  if (salvageableCount > 0) {
+    return { edges };
+  }
+
+  const cause = truncated
+    ? `response appears truncated after ${candidate.length} chars and no complete edge object could be recovered`
+    : `array candidate of ${candidate.length} chars contained no parsable edges`;
+  return { edges: [], error: cause };
+}
+
+/**
+ * Parses LLM edge proposals from completion text. Signature note: originally
+ * `parseEdges(text): ProposedEdge[]`; the second options parameter is
+ * optional so existing single-argument call sites keep working.
+ *
+ * Recovery strategy even on failure: any completely parsed objects are
+ * returned (e.g. truncation keeps earlier complete edges).
+ */
+export function parseEdges(text: string, options?: ParseEdgesOptions): ProposedEdge[] {
+  const outcome = runParse(text);
+  if (outcome.error && outcome.edges.length === 0 && options?.logger) {
+    options.logger.warn(`edge parser failed: ${outcome.error}`, {
+      preview: typeof text === 'string' ? text.slice(0, 200) : String(text),
+    });
+  }
+  return outcome.edges;
+}
+
+/** Drops self-loops, unknown ids, and duplicate (unordered) pairs. */
+export function sanitizeEdges(
+  edges: ProposedEdge[],
+  validIds: ReadonlySet<string>,
+  maxEdges: number,
+): ProposedEdge[] {
+  const seen = new Set<string>();
+  const result: ProposedEdge[] = [];
+  for (const edge of edges) {
+    if (edge.itemAId === edge.itemBId) continue;
+    if (!validIds.has(edge.itemAId) || !validIds.has(edge.itemBId)) continue;
+    const key = edge.itemAId < edge.itemBId
+      ? `${edge.itemAId}\u0000${edge.itemBId}`
+      : `${edge.itemBId}\u0000${edge.itemAId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      itemAId: edge.itemAId,
+      itemBId: edge.itemBId,
+      reason: edge.reason.slice(0, 300),
+    });
+    if (result.length >= maxEdges) break;
+  }
+  return result;
+}

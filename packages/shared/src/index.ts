@@ -124,7 +124,7 @@ export interface CoreKnowledgeItemLike {
   createdAt?: number | null;
 }
 
-export type ReviewFeedbackType = 'remembered' | 'postponed';
+export type ReviewFeedbackType = 'remembered' | 'forgotten' | 'postponed';
 
 export interface CalculateTagOverlapInput {
   left: Pick<CoreKnowledgeItemLike, 'tags'>;
@@ -136,11 +136,15 @@ export interface CalculateNextReviewInput {
   nextReviewAt: number | null;
   feedbackType: ReviewFeedbackType;
   now: number;
+  stability?: number | null;
+  difficulty?: number | null;
 }
 
 export interface CalculateNextReviewOutput {
   intervalMs: number;
   nextReviewAt: number;
+  stability: number;
+  difficulty: number;
 }
 
 export interface InitializeReviewScheduleInput {
@@ -209,6 +213,14 @@ export interface CoreClient {
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
   exportData(): Promise<string>;
   importData(dataJson: string): Promise<DataImportSummary>;
+  mergeData(dataJson: string): Promise<DataImportSummary>;
+  /**
+   * Row-wise LWW merge of an incremental sync delta (watermark path).
+   * Unlike {@link CoreClient.mergeData} it never wipes rows the payload omits
+   * and fails closed on FK orphans; implementations without a delta command
+   * fall back to `mergeData`.
+   */
+  mergeDelta?(dataJson: string): Promise<DataImportSummary>;
   deleteAllData(): Promise<void>;
 }
 
@@ -222,3 +234,5 @@ export interface DataImportSummary {
 
 export * from './local-model-registry';
 export * from './diagnostics';
+export * from './backoff';
+export * from './core-client/create-rustra-core-client';

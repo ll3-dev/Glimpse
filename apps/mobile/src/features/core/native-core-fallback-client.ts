@@ -8,12 +8,12 @@ import type {
   Message,
   Recommendation,
 } from '@glimpse/shared';
+import { calculateNextReviewState } from '@glimpse/features';
 
 import { InMemoryStorage } from './native-core-in-memory-storage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const FORGOTTEN_REVIEW_INTERVAL_MS = 4 * 60 * 60 * 1000;
-const DATA_EXPORT_FORMAT_VERSION = 1;
+const DATA_EXPORT_FORMAT_VERSION = 2;
 
 type PortableData = {
   formatVersion: number;
@@ -23,6 +23,7 @@ type PortableData = {
   messages: Message[];
   recommendations: Recommendation[];
   feedbackEvents: FeedbackEvent[];
+  tombstones?: unknown[];
 };
 
 function parsePortableData(dataJson: string): PortableData {
@@ -31,7 +32,11 @@ function parsePortableData(dataJson: string): PortableData {
     throw new Error('가져오기 데이터는 JSON 객체여야 합니다.');
   }
   const data = parsed as Partial<PortableData>;
-  if (data.formatVersion !== DATA_EXPORT_FORMAT_VERSION) {
+  if (
+    typeof data.formatVersion !== 'number' ||
+    data.formatVersion < 1 ||
+    data.formatVersion > DATA_EXPORT_FORMAT_VERSION
+  ) {
     throw new Error(`지원하지 않는 데이터 버전입니다: ${String(data.formatVersion)}`);
   }
   const collections = [
@@ -81,13 +86,17 @@ function calculateTagOverlap(
 function calculateNextReview(
   input: Parameters<CoreClient['calculateNextReview']>[0],
 ): ReturnType<CoreClient['calculateNextReview']> {
-  const intervalMs =
-    input.feedbackType === 'remembered' ? DAY_MS : FORGOTTEN_REVIEW_INTERVAL_MS;
-
-  return Promise.resolve({
-    intervalMs,
-    nextReviewAt: input.now + intervalMs,
-  });
+  // Delegates to the shared @glimpse/features scheduler so the fallback path
+  // (no native core available) schedules identically to mobile review actions
+  // and the desktop review screen — one implementation, three entry points.
+  const decision = calculateNextReviewState(
+    input.lastReviewedAt,
+    input.nextReviewAt,
+    input.feedbackType,
+    input.now,
+    { stabilityDays: input.stability ?? 0.5, difficulty: input.difficulty ?? 5.0 },
+  );
+  return Promise.resolve(decision);
 }
 
 function initializeReviewSchedule(
@@ -273,6 +282,12 @@ export function createFallbackCoreClient(
         recommendations: data.recommendations.length,
         feedbackEvents: data.feedbackEvents.length,
       };
+    },
+
+    async mergeData(dataJson: string): Promise<DataImportSummary> {
+      // The fallback only runs in tests/web preview. Native builds use the
+      // Rust merge implementation with tombstones and deterministic clocks.
+      return this.importData(dataJson);
     },
 
     async deleteAllData(): Promise<void> {

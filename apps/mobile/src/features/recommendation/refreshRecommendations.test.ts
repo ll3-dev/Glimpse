@@ -37,6 +37,45 @@ describe('refreshRecommendations', () => {
     expect(isRecommendationRefreshDue(150, 100, 50)).toBe(true);
   });
 
+  test('merges AI edge proposals on top of tag overlap and falls back when AI yields nothing', async () => {
+    const setLastRefreshAt = mock(() => undefined);
+    const save = mock(async () => ({ success: true } as const));
+    const deps: RecommendationRefreshDeps = {
+      now: () => 1_000,
+      getCadence: () => 100,
+      getLastRefreshAt: () => null,
+      setLastRefreshAt,
+      listRecommendations: async () => [],
+      generate: async () => ({
+        success: true,
+        recommendations: [{ itemAId: 'a', itemBId: 'c', reason: 'Shared 1 tag(s)' }],
+      }),
+      save,
+      listWeeklyItems: async () => [
+        { id: 'a', title: 'A', summary: null, tags: null, body: null },
+        { id: 'b', title: 'B', summary: null, tags: null, body: null },
+      ],
+      proposeEdges: async () => [
+        { itemAId: 'a', itemBId: 'b', reason: 'AI가 찾은 연결' },
+      ],
+    };
+
+    const merged = await createRefreshRecommendations(deps)();
+    expect(merged).toMatchObject({ success: true, skipped: false, createdCount: 2 });
+    expect(save).toHaveBeenCalledWith([
+      { itemAId: 'a', itemBId: 'b', reason: 'AI가 찾은 연결' },
+      { itemAId: 'a', itemBId: 'c', reason: 'Shared 1 tag(s)' },
+    ]);
+
+    // AI empty (no model / failure) → tag overlap alone still refreshes.
+    const fallback = await createRefreshRecommendations({
+      ...deps,
+      setLastRefreshAt: mock(() => undefined),
+      proposeEdges: async () => [],
+    })({ force: true });
+    expect(fallback).toMatchObject({ success: true, createdCount: 1 });
+  });
+
   test('generates, deduplicates, saves, and records a successful refresh', async () => {
     const setLastRefreshAt = mock(() => undefined);
     const save = mock(async () => ({ success: true } as const));

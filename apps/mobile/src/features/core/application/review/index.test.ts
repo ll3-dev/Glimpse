@@ -83,7 +83,12 @@ describe('core review application layer', () => {
   });
 
   test('markAsReviewed persists review timestamps from feedback calculation', async () => {
-    const item = createItem({ id: 'review-me', nextReviewAt: 2_000 });
+    const item = createItem({
+      id: 'review-me',
+      nextReviewAt: 2_000,
+      stability: 1.5,
+      difficulty: 6.0,
+    });
     const updateKnowledgeItem = mock(async (_itemId: string, patch: Partial<KnowledgeItem>) =>
       createItem({
         ...item,
@@ -94,6 +99,8 @@ describe('core review application layer', () => {
     const calculateNextReviewFromFeedback = mock(() => ({
       intervalMs: 500,
       nextReviewAt: 3_000,
+      stability: 2.5,
+      difficulty: 5.5,
     }));
 
     const result = await createMarkAsReviewed({
@@ -109,11 +116,14 @@ describe('core review application layer', () => {
       null,
       2_000,
       'remembered',
-      2_500
+      2_500,
+      { stabilityDays: 1.5, difficulty: 6.0 }
     );
     expect(updateKnowledgeItem).toHaveBeenCalledWith('review-me', {
       lastReviewedAt: 2_500,
       nextReviewAt: 3_000,
+      stability: 2.5,
+      difficulty: 5.5,
       updatedAt: 2_500,
     });
     expect(result).toMatchObject({ success: true });

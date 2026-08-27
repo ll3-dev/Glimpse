@@ -7,6 +7,7 @@
  * Modified for Glimpse: Added direct save functionality using JSON files in App Group.
  * The main app processes these files on launch and saves them to the database.
  */
+import AVFoundation
 import MobileCoreServices
 import Photos
 import Social
@@ -16,6 +17,10 @@ class ShareViewController: UIViewController {
   let hostAppGroupIdentifier = "group.kr.ll3.glimpse"
   let shareProtocol = "ll3.kr"
   let sharedKey = "ll3.krShareKey"
+  /// Dedicated key for URL shares. Text stays on sharedKey (String array);
+  /// keeping the kinds on separate keys prevents one share from clobbering
+  /// another when their stored types differ (Array vs JSON Data).
+  let urlKey = "ll3.krShareUrlKey"
   var sharedMedia: [SharedMediaFile] = []
   var sharedWebUrl: [WebUrl] = []
   var sharedText: [String] = []
@@ -103,8 +108,15 @@ class ShareViewController: UIViewController {
 
   private func handleText(content: NSExtensionItem, attachment: NSItemProvider, index: Int) async {
     Task.detached {
-      if let item = try! await attachment.loadItem(forTypeIdentifier: self.textContentType)
-        as? String
+      // loadItem is async and can throw (provider cancelled, bad UTI...);
+      // surface the failure as user feedback instead of crashing the process.
+      var loaded: Any?
+      do {
+        loaded = try await attachment.loadItem(forTypeIdentifier: self.textContentType)
+      } catch {
+        NSLog("[ERROR] loadItem(text) threw: \(error.localizedDescription)")
+      }
+      if let item = loaded as? String
       {
         Task { @MainActor in
           self.sharedText.append(item)
@@ -135,7 +147,15 @@ class ShareViewController: UIViewController {
 
   private func handleUrl(content: NSExtensionItem, attachment: NSItemProvider, index: Int) async {
     Task.detached {
-      if let item = try! await attachment.loadItem(forTypeIdentifier: self.urlContentType) as? URL {
+      // Same failure policy as handleText: convert provider errors into the
+      // dismiss-with-error path rather than trapping.
+      var loaded: Any?
+      do {
+        loaded = try await attachment.loadItem(forTypeIdentifier: self.urlContentType)
+      } catch {
+        NSLog("[ERROR] loadItem(url) threw: \(error.localizedDescription)")
+      }
+      if let item = loaded as? URL {
         Task { @MainActor in
           self.sharedWebUrl.append(WebUrl(url: item.absoluteString, meta: ""))
 
@@ -166,20 +186,26 @@ class ShareViewController: UIViewController {
     async
   {
     Task.detached {
-      if let item = try! await attachment.loadItem(
-        forTypeIdentifier: self.propertyListType, options: nil)
-        as? NSDictionary
+      var loaded: Any?
+      do {
+        loaded = try await attachment.loadItem(
+          forTypeIdentifier: self.propertyListType, options: nil)
+      } catch {
+        NSLog("[ERROR] loadItem(preprocessing) threw: \(error.localizedDescription)")
+      }
+      if let item = loaded as? NSDictionary
       {
         Task { @MainActor in
 
           if let results = item[NSExtensionJavaScriptPreprocessingResultsKey]
-            as? NSDictionary
+            as? NSDictionary,
+            let baseUri = results["baseURI"] as? String
           {
             NSLog(
               "[DEBUG] NSExtensionJavaScriptPreprocessingResultsKey \(String(describing: results))"
             )
             self.sharedWebUrl.append(
-              WebUrl(url: results["baseURI"] as! String, meta: results["meta"] as! String))
+              WebUrl(url: baseUri, meta: results["meta"] as? String ?? ""))
             // If this is the last item, save sharedText in userDefaults and redirect to host app
             if index == (content.attachments?.count)! - 1 {
               let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
@@ -319,20 +345,17 @@ class ShareViewController: UIViewController {
                 mimeType: mimeType, type: .image))
           }
 
-          // If this is the last item, process the share
+          // If this is the last item, process the share.
+          // Media always uses the legacy redirect path: direct-saving only a
+          // file reference previously stranded the copied image in the App
+          // Group container (no pending record, app could never pick it up)
+          // while still showing a success alert. The host app's capture form
+          // handles media intents via the redirect.
           if index == (content.attachments?.count)! - 1 {
-            if self.enableDirectSave {
-              // Direct save mode: save to JSON file without opening app
-              if let lastMedia = self.sharedMedia.last {
-                self.saveImageDirectly(path: lastMedia.path)
-              }
-            } else {
-              // Legacy mode: save to UserDefaults and open app
-              let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
-              userDefaults?.set(self.toData(data: self.sharedMedia), forKey: self.sharedKey)
-              userDefaults?.synchronize()
-              self.redirectToHostApp(type: .media)
-            }
+            let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
+            userDefaults?.set(self.toData(data: self.sharedMedia), forKey: self.sharedKey)
+            userDefaults?.synchronize()
+            self.redirectToHostApp(type: .media)
           }
         }
       } catch {
@@ -493,7 +516,8 @@ class ShareViewController: UIViewController {
 
   /// Saves text directly without opening the main app
   private func saveTextDirectly(_ text: String) {
-    // Save to UserDefaults (same as legacy mode)
+    // Save to UserDefaults (same record shape as legacy mode). Text keeps the
+    // legacy key; URL records moved to urlKey so they never clobber text.
     let userDefaults = UserDefaults(suiteName: hostAppGroupIdentifier)
     userDefaults?.set([text], forKey: sharedKey)
     userDefaults?.set(true, forKey: "\(sharedKey)_directSave")
@@ -504,21 +528,14 @@ class ShareViewController: UIViewController {
 
   /// Saves URL directly without opening the main app
   private func saveUrlDirectly(_ urlString: String, meta: String? = nil) {
-    // Save to UserDefaults (same as legacy mode)
+    // Stored on a dedicated key (JSON-encoded WebUrl array) so it cannot be
+    // overwritten by a text share written to sharedKey with a different type.
     let userDefaults = UserDefaults(suiteName: hostAppGroupIdentifier)
     let webUrl = WebUrl(url: urlString, meta: meta ?? "")
-    userDefaults?.set(toData(data: [webUrl]), forKey: sharedKey)
+    userDefaults?.set(toData(data: [webUrl]), forKey: urlKey)
     userDefaults?.set(true, forKey: "\(sharedKey)_directSave")
     userDefaults?.synchronize()
     NSLog("[INFO] URL saved directly (will be processed on next app launch)")
-    Task { await showSuccessAndDismiss() }
-  }
-
-  /// Saves image directly without opening the main app
-  private func saveImageDirectly(path: String) {
-    // The image is already saved to App Group container in handleImages
-    // Just save the reference to UserDefaults
-    NSLog("[INFO] Image saved directly to: \(path)")
     Task { await showSuccessAndDismiss() }
   }
 
@@ -526,8 +543,8 @@ class ShareViewController: UIViewController {
   private func showSuccessAndDismiss() async {
     await MainActor.run {
       let alert = UIAlertController(
-        title: "저장 완료",
-        message: "Glimpse에 저장되었습니다.",
+        title: "임시 저장 완료",
+        message: "Glimpse에서 다음에 열릴 때 저장됩니다.",
         preferredStyle: .alert
       )
 

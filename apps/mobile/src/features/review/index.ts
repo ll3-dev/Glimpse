@@ -17,6 +17,7 @@ export { getDueItems, type GetDueItemsOptions, type GetDueItemsResult } from './
 
 export {
   markAsReviewed,
+  markAsForgotten,
   postponeReview,
   DEFAULT_REVIEW_INTERVAL_MS,
   DEFAULT_POSTPONE_INTERVAL_MS,
@@ -25,12 +26,13 @@ export {
 } from './reviewActions';
 
 export {
-  calculateCurrentInterval,
-  clampInterval,
-  calculateAdjustedInterval,
+  calculateNextReviewState,
   calculateNextReviewFromFeedback,
+  clampInterval,
+  toCoreInput,
   MIN_INTERVAL_MS,
   MAX_INTERVAL_MS,
   DEFAULT_INITIAL_INTERVAL_MS as DEFAULT_INTERVAL_MS,
   type ReviewFeedbackType,
 } from './adjustIntervalFromFeedback';
+export type { MemoryState, NextReviewDecision } from '@glimpse/features';

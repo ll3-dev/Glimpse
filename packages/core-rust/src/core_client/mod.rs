@@ -44,11 +44,10 @@ mod tests {
     use crate::error::Error;
     use crate::models::NullablePatch;
     use crate::models::{
-        CalculateNextReviewInput, CalculateTagOverlapInput, Conversation, ConversationPatch,
-        CoreKnowledgeItemLike, FeedbackActionType, FeedbackEvent, GetDueKnowledgeItemsInput,
+        CalculateTagOverlapInput, Conversation, ConversationPatch, CoreKnowledgeItemLike,
+        FeedbackActionType, FeedbackEvent, GetDueKnowledgeItemsInput,
         InitializeReviewScheduleInput, KnowledgeItem, KnowledgeItemPatch, KnowledgeItemType,
         Message, MessagePatch, MessageRole, Recommendation, RecommendationStatus,
-        ReviewFeedbackType,
     };
 
     fn create_test_client() -> CoreClientImpl {
@@ -167,77 +166,6 @@ mod tests {
     }
 
     // ========================================================================
-    // Next Review Tests
-    // ========================================================================
-
-    #[test]
-    fn test_calculate_next_review_remembered() {
-        let client = create_test_client();
-        let one_day = 24 * 60 * 60 * 1000_i64;
-        let now = one_day * 2;
-        let input = CalculateNextReviewInput {
-            last_reviewed_at: Some(0),
-            next_review_at: Some(one_day),
-            feedback_type: ReviewFeedbackType::Remembered,
-            now,
-        };
-
-        let output = client.calculate_next_review(&input);
-        assert_eq!(output.interval_ms, one_day * 2);
-        assert_eq!(output.next_review_at, now + one_day * 2);
-    }
-
-    #[test]
-    fn test_calculate_next_review_postponed() {
-        let client = create_test_client();
-        let one_day = 24 * 60 * 60 * 1000_i64;
-        let now = one_day * 2;
-        let input = CalculateNextReviewInput {
-            last_reviewed_at: Some(0),
-            next_review_at: Some(one_day),
-            feedback_type: ReviewFeedbackType::Postponed,
-            now,
-        };
-
-        let output = client.calculate_next_review(&input);
-        assert_eq!(output.interval_ms, one_day);
-        assert_eq!(output.next_review_at, now + one_day);
-    }
-
-    #[test]
-    fn test_calculate_next_review_first_review() {
-        let client = create_test_client();
-        let now = 1000_i64;
-        let input = CalculateNextReviewInput {
-            last_reviewed_at: None,
-            next_review_at: None,
-            feedback_type: ReviewFeedbackType::Remembered,
-            now,
-        };
-
-        let output = client.calculate_next_review(&input);
-        assert_eq!(
-            output.interval_ms,
-            review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS * 2
-        );
-    }
-
-    #[test]
-    fn test_calculate_next_review_max_interval_cap() {
-        let client = create_test_client();
-        let now = 1000_i64;
-        let input = CalculateNextReviewInput {
-            last_reviewed_at: Some(0),
-            next_review_at: Some(100 * 24 * 60 * 60 * 1000),
-            feedback_type: ReviewFeedbackType::Remembered,
-            now,
-        };
-
-        let output = client.calculate_next_review(&input);
-        assert_eq!(output.interval_ms, review::MAX_REVIEW_INTERVAL_MS);
-    }
-
-    // ========================================================================
     // Initialize Review Schedule Tests
     // ========================================================================
 
@@ -255,8 +183,8 @@ mod tests {
             output.next_review_at,
             created_at + review::DEFAULT_INITIAL_REVIEW_INTERVAL_MS
         );
-        assert!(output.stability.is_none());
-        assert!(output.difficulty.is_none());
+        assert_eq!(output.stability, Some(0.5));
+        assert_eq!(output.difficulty, Some(5.0));
         assert!(output.last_reviewed_at.is_none());
     }
 

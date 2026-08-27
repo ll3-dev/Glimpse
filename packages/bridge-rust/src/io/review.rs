@@ -1,16 +1,15 @@
 //! Review scheduling input/output wire mirrors.
 //!
 //! These wrap glimpse-core's pure calculation models; write paths reject
-//! unknown `feedbackType` enum strings.
+//! unknown enum strings. (Next-interval scheduling moved to the shared TS
+//! scheduler in `@glimpse/features` — only tag overlap and schedule
+//! initialization remain on the bridge.)
 
 use glimpse_core::{
-    CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput,
-    CoreKnowledgeItemLike, InitializeReviewScheduleInput, InitializeReviewScheduleOutput,
+    CalculateTagOverlapInput, CoreKnowledgeItemLike, InitializeReviewScheduleInput,
+    InitializeReviewScheduleOutput,
 };
-use rustra::RustraError;
 use serde::{Deserialize, Serialize};
-
-use super::parse_enum;
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -44,44 +43,6 @@ impl From<CalculateTagOverlapInputIo> for CalculateTagOverlapInput {
         Self {
             left: value.left.into(),
             right: value.right.into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CalculateNextReviewInputIo {
-    pub last_reviewed_at: Option<i64>,
-    pub next_review_at: Option<i64>,
-    pub feedback_type: String,
-    pub now: i64,
-}
-
-impl TryFrom<CalculateNextReviewInputIo> for CalculateNextReviewInput {
-    type Error = RustraError;
-
-    fn try_from(value: CalculateNextReviewInputIo) -> Result<Self, RustraError> {
-        Ok(Self {
-            last_reviewed_at: value.last_reviewed_at,
-            next_review_at: value.next_review_at,
-            feedback_type: parse_enum("feedbackType", value.feedback_type)?,
-            now: value.now,
-        })
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CalculateNextReviewOutputIo {
-    pub interval_ms: i64,
-    pub next_review_at: i64,
-}
-
-impl From<CalculateNextReviewOutput> for CalculateNextReviewOutputIo {
-    fn from(value: CalculateNextReviewOutput) -> Self {
-        Self {
-            interval_ms: value.interval_ms,
-            next_review_at: value.next_review_at,
         }
     }
 }

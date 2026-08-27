@@ -452,21 +452,6 @@ fn review_commands_roundtrip() {
         .expect("calculateTagOverlap should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    let next = pkg
-        .invoke_json(
-            "calculateNextReview",
-            json!({
-                "lastReviewedAt": 1000,
-                "nextReviewAt": 2000,
-                "feedbackType": "remembered",
-                "now": 3000
-            }),
-        )
-        .expect("calculateNextReview should succeed");
-    assert!(next["intervalMs"].as_i64().expect("intervalMs") > 0);
-    assert!(next["nextReviewAt"].as_i64().expect("nextReviewAt") > 3000);
-    assert!(next.get("interval_ms").is_none());
-
     let init = pkg
         .invoke_json(
             "initializeReviewSchedule",
@@ -517,13 +502,15 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 30 commands, including data portability.
+    // schema exposes all 31 commands (calculateNextReview was removed in
+    // favor of the shared TS review scheduler), including deterministic data
+    // merging and incremental delta application (mergeDelta).
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
     assert_eq!(
         commands.len(),
-        30,
-        "unified package must expose 30 commands"
+        31,
+        "unified package must expose 31 commands"
     );
 }
 
@@ -551,8 +538,33 @@ fn data_commands_export_import_and_delete_roundtrip() {
     let exported = pkg
         .invoke_json("exportData", json!({}))
         .expect("data should export");
-    let data_json = exported["dataJson"].as_str().expect("JSON string");
+    let data_json = exported["dataJson"]
+        .as_str()
+        .expect("JSON string")
+        .to_string();
     assert!(data_json.contains("portable"));
+
+    let mut remote: serde_json::Value = serde_json::from_str(&data_json).expect("snapshot JSON");
+    remote["knowledgeItems"][0]["title"] = json!("Merged");
+    remote["knowledgeItems"][0]["updatedAt"] = json!(2);
+    let merged = pkg
+        .invoke_json(
+            "mergeData",
+            json!({ "dataJson": serde_json::to_string(&remote).expect("remote JSON") }),
+        )
+        .expect("newer remote snapshot should merge");
+    assert_eq!(merged["knowledgeItems"], 1);
+    let merged_item = pkg
+        .invoke_json("getKnowledgeItemById", json!({ "itemId": "portable" }))
+        .expect("merged item should read");
+    assert_eq!(merged_item["item"]["title"], "Merged");
+
+    let data_json = pkg
+        .invoke_json("exportData", json!({}))
+        .expect("merged data should export")["dataJson"]
+        .as_str()
+        .expect("JSON string")
+        .to_string();
 
     pkg.invoke_json("deleteAllData", json!({}))
         .expect("data should delete");
