@@ -73,4 +73,28 @@ impl SqliteStorage {
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(events)
     }
+
+    /// Delta-sync slice: rows whose merge clock (`created_at`) is strictly
+    /// newer than `since_clock_ms`. Reuses the schema's
+    /// `idx_feedback_events_created_at` index instead of a full scan.
+    pub(super) fn list_feedback_events_since(&self, since_clock_ms: i64) -> Result<Vec<FeedbackEvent>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT id, recommendation_id, action, created_at
+            FROM feedback_events
+            WHERE created_at > ?1
+            "#,
+        )?;
+        let events = stmt
+            .query_map(params![since_clock_ms], |row| {
+                Ok(FeedbackEvent {
+                    id: row.get(0)?,
+                    recommendation_id: row.get(1)?,
+                    action: parse_json_column(row, 2)?,
+                    created_at: row.get(3)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(events)
+    }
 }

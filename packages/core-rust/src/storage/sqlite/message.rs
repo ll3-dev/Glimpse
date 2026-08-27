@@ -108,6 +108,35 @@ impl SqliteStorage {
         Ok(messages)
     }
 
+    /// Delta-sync slice: rows whose merge clock `COALESCE(deleted_at,
+    /// updated_at, created_at)` (floored at `created_at`) is strictly newer
+    /// than `since_clock_ms`. `max(a, b) > c` decomposes to `a > c OR b > c`,
+    /// matching [`super::sync`] Rust-side clock and reusing the 0004
+    /// `idx_messages_updated_at` index.
+    pub(super) fn list_messages_since(&self, since_clock_ms: i64) -> Result<Vec<Message>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT id, conversation_id, role, content, created_at, updated_at, deleted_at
+            FROM messages
+            WHERE COALESCE(deleted_at, updated_at, created_at) > ?1 OR created_at > ?1
+            "#,
+        )?;
+        let messages = stmt
+            .query_map(params![since_clock_ms], |row| {
+                Ok(Message {
+                    id: row.get(0)?,
+                    conversation_id: row.get(1)?,
+                    role: parse_json_column(row, 2)?,
+                    content: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                    deleted_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(messages)
+    }
+
     pub fn update_message(&self, id: &str, patch: &MessagePatch) -> Result<Message> {
         let existing = self
             .get_message(id)?

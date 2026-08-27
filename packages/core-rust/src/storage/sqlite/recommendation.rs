@@ -73,6 +73,37 @@ impl SqliteStorage {
         Ok(recommendations)
     }
 
+    /// Delta-sync slice: rows whose merge clock `max(COALESCE(responded_at,
+    /// created_at), created_at)` is strictly newer than `since_clock_ms`.
+    /// `max(a, b) > c` decomposes to `a > c OR b > c`, matching
+    /// [`super::sync`] Rust-side clock and reusing the 0004
+    /// `idx_recommendations_responded_at` index.
+    pub(super) fn list_recommendations_since(&self, since_clock_ms: i64) -> Result<Vec<Recommendation>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT id, item_a_id, item_b_id, reason, status, created_at, responded_at
+            FROM recommendations
+            WHERE COALESCE(responded_at, created_at) > ?1 OR created_at > ?1
+            "#,
+        )?;
+
+        let recommendations = stmt
+            .query_map(params![since_clock_ms], |row| {
+                Ok(Recommendation {
+                    id: row.get(0)?,
+                    item_a_id: row.get(1)?,
+                    item_b_id: row.get(2)?,
+                    reason: row.get(3)?,
+                    status: parse_json_column(row, 4)?,
+                    created_at: row.get(5)?,
+                    responded_at: row.get(6)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(recommendations)
+    }
+
     pub fn list_pending_recommendations(&self) -> Result<Vec<Recommendation>> {
         let mut stmt = self.conn.prepare(
             r#"

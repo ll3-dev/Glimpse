@@ -75,17 +75,35 @@ impl SqliteStorage {
     /// delta can never omit a row that would win a full merge. Cursor
     /// guardbands (e.g. `since - 24h`) are the caller's policy; this layer
     /// does a plain strict-greater select.
+    ///
+    /// The cursors are pushed into SQL (`WHERE clock > since`) instead of
+    /// loading each table and filtering in Rust: the delta poll runs on every
+    /// idle sync request while holding the global core mutex, so scanning the
+    /// whole store per poll blocks unrelated core commands. `max(a, b) > c`
+    /// decomposes to `a > c OR b > c`, which is what the WHERE clauses below
+    /// express — 0004's clock indexes make them index-assisted lookups.
     pub fn export_delta(&self, since_clock_ms: i64) -> Result<DataExport> {
-        let mut knowledge_items = self.list_knowledge_items()?;
-        knowledge_items.retain(|item| item.updated_at > since_clock_ms);
-        let mut conversations = self.list_all_conversations()?;
-        conversations.retain(|item| conversation_clock(item) > since_clock_ms);
-        let mut messages = self.list_all_messages()?;
-        messages.retain(|item| message_clock(item) > since_clock_ms);
-        let mut recommendations = self.list_recommendations()?;
-        recommendations.retain(|item| recommendation_clock(item) > since_clock_ms);
-        let mut feedback_events = self.list_all_feedback_events()?;
-        feedback_events.retain(|event| event.created_at > since_clock_ms);
+        let mut knowledge_items = self.list_knowledge_items_since(since_clock_ms)?;
+        let mut conversations = self.list_conversations_since(since_clock_ms)?;
+        let mut messages = self.list_messages_since(since_clock_ms)?;
+        let recommendations = self.list_recommendations_since(since_clock_ms)?;
+        let mut feedback_events = self.list_feedback_events_since(since_clock_ms)?;
+
+        // Per-table ordering must match the full-list readers (list_* use
+        // created_at ASC/DESC) so delta output stays canonically ordered
+        // alongside full exports.
+        knowledge_items.sort_by_key(|b| std::cmp::Reverse(b.created_at));
+        conversations.sort_by_key(|a| a.created_at);
+        messages.sort_by(|a, b| {
+            a.created_at
+                .cmp(&b.created_at)
+                .then_with(|| a.id.cmp(&b.id))
+        });
+        feedback_events.sort_by(|a, b| {
+            a.created_at
+                .cmp(&b.created_at)
+                .then_with(|| a.id.cmp(&b.id))
+        });
 
         Ok(DataExport {
             format_version: DataExport::FORMAT_VERSION,

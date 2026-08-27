@@ -125,6 +125,21 @@ impl SqliteStorage {
         Ok(items)
     }
 
+    /// Delta-sync slice: only rows whose merge clock (`updated_at`) is
+    /// strictly newer than `since_clock_ms`. Uses the 0004
+    /// `idx_knowledge_items_updated_at` index instead of a full scan.
+    pub(super) fn list_knowledge_items_since(&self, since_clock_ms: i64) -> Result<Vec<KnowledgeItem>> {
+        let mut stmt = self.conn.prepare(&format!(
+            "SELECT {} FROM knowledge_items WHERE updated_at > ?1",
+            KNOWLEDGE_ITEM_COLUMNS.trim()
+        ))?;
+
+        let items = stmt
+            .query_map(params![since_clock_ms], parse_knowledge_item)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(items)
+    }
+
     pub fn list_knowledge_items_by_ids(&self, ids: &[String]) -> Result<Vec<KnowledgeItem>> {
         if ids.is_empty() {
             return Ok(Vec::new());
