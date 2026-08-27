@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -33,16 +33,21 @@ export function ConversationEditModal({
 }: ConversationEditModalProps) {
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
+  const [lastConversation, setLastConversation] = useState(conversation);
 
-  useEffect(() => {
-    if (!conversation) return;
-    setTitle(conversation.title ?? '');
-    setIcon(conversation.icon ?? null);
-  }, [conversation]);
+  // prop→state 동기화를 effect 대신 렌더 중 상태 조정으로 처리
+  // (react-hooks/set-state-in-effect — cascading render 회피)
+  if (conversation !== lastConversation) {
+    setLastConversation(conversation);
+    if (conversation) {
+      setTitle(conversation.title ?? '');
+      setIcon(conversation.icon ?? null);
+    }
+  }
 
   const handleClose = () => {
-    setTitle(conversation.title ?? '');
-    setIcon(conversation.icon ?? null);
+    setTitle(conversation?.title ?? '');
+    setIcon(conversation?.icon ?? null);
     onCancel();
   };
 

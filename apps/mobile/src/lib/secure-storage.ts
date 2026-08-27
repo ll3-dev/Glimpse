@@ -137,6 +137,7 @@ export async function migrateLegacyPlaintextKey(
       storage.remove(legacyKey);
       return legacyValue;
     }
+    return null; // 이전할 레거시 키가 없음
   } catch (error) {
     logger.error(`Failed to migrate legacy key ${legacyKey} to ${secureKey}`, error);
     throw error;
