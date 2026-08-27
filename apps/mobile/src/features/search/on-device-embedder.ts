@@ -1,4 +1,3 @@
-import { AppState } from 'react-native';
 import { initLlama, type LlamaContext } from 'llama.rn';
 
 /**
@@ -160,19 +159,4 @@ export function createOnDeviceEmbedder(
   };
 
   return embedder;
-}
-
-/**
- * 앱 생명주기 바인딩 — background에서 suspend, dispose 시 구독 해제.
- * 반환된 cleanup을 useEffect에서 호출한다.
- */
-export function bindAppStateSuspend(
-  embedder: ReturnType<typeof createOnDeviceEmbedder>,
-): () => void {
-  const subscription = AppState.addEventListener('change', (state) => {
-    if (state === 'background') {
-      void embedder.suspend();
-    }
-  });
-  return () => subscription.remove();
 }

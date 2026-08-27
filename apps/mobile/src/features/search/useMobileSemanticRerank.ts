@@ -76,10 +76,17 @@ let activeEmbedderPath: string | null = null;
 /**
  * 온디바이스 경로 — 동일 모델 경로엔 같은 컨텍스트를 돌려주고, 경로가
  * 바뀌면(모델 교체) 기존 것을 폐기한 뒤 새로 만든다.
+ *
+ * 이 함수는 useMemo(=렌더 중)에서 호출된다. 기존 컨텍스트의 네이티브
+ * release는 렌더 도중에 fire하지 않게 매크로태스크로 미룬다 — dispose는
+ * fire-and-forget이므로 새 임베더와 겹칠 일도 없다.
  */
 export function createOnDeviceEmbedDeps(modelPath: string): SemanticEmbedDeps {
   if (!activeEmbedder || activeEmbedderPath !== modelPath) {
-    void activeEmbedder?.dispose();
+    const stale = activeEmbedder;
+    if (stale) {
+      setTimeout(() => void stale.dispose(), 0);
+    }
     const embedder = createOnDeviceEmbedder({
       modelPath,
       modelId: modelPath.split('/').pop() || 'on-device-embedding',
