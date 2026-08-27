@@ -9,7 +9,10 @@ use super::SqliteStorage;
 
 impl SqliteStorage {
     pub fn export_data(&self) -> Result<DataExport> {
-        self.validate_integrity()?;
+        // 무결성 검사는 의도적으로 없다: quick_check는 전체 DB 스캔이라 읽기
+        // 경로(싱크 풀 스냅샷, 백업 내보내기)가 글로벌 코어 뮤텍스를 잡은 채
+        // 수 회씩 지불하게 된다. 검사는 방금 쓴 트랜잭션을 검증하는
+        // replace_all_data/delete_all_data 쪽에 남긴다.
         Ok(DataExport {
             format_version: DataExport::FORMAT_VERSION,
             exported_at: chrono::Utc::now().timestamp_millis(),
