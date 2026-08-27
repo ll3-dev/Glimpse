@@ -11,7 +11,7 @@ function Textarea({
   ...props
 }: TextInputProps & {
   placeholderTextColorClassName?: string;
-  ref?: React.RefObject<TextInput>;
+  ref?: React.RefObject<TextInput | null>;
 }) {
   const placeholderColor = useSemanticColor("appSubtle");
 
