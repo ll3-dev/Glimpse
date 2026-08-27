@@ -91,7 +91,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun audit --audit-level=high
 
-    paths:
+  paths:
     # android/ios-release/desktop-smoke를 관련 경로 변경시에만 돌리기 위한 필터(주간 cron엔 무조건 실행).
     name: Detect changed paths
     runs-on: ubuntu-latest
