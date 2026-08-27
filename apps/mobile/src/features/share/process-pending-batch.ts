@@ -19,7 +19,12 @@ export interface ProcessPendingBatchDeps {
   clearPendingShareData: () => Promise<void>;
   clearPendingShareText: () => Promise<void>;
   removePendingShareUrls: (urls: string[]) => Promise<void>;
-  logger?: { info: (message: string, meta?: unknown) => void; error: (message: string, meta?: unknown) => void };
+  // LogContext(Record<string, unknown>) 기반 시그니처 — unknown 매개변수는
+  // 구체적 콜백(LogContext)과 반공변 충돌을 일으켜 TS6부터 할당이 거부된다.
+  logger?: {
+    info: (message: string, context?: Record<string, unknown>) => void;
+    error: (message: string, context?: Record<string, unknown>) => void;
+  };
 }
 
 /**
@@ -61,7 +66,10 @@ export async function processPendingBatch(
     await deps.clearPendingShareData();
     return 1;
   } catch (error) {
-    deps.logger?.error?.("[PendingShareProcessor] Failed to process share data:", error);
+    deps.logger?.error?.(
+      "[PendingShareProcessor] Failed to process share data:",
+      { error },
+    );
     return 0;
   }
 }
