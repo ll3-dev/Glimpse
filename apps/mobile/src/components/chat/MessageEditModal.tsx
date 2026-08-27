@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Modal,
@@ -25,13 +25,17 @@ export function MessageEditModal({
   onCancel,
 }: MessageEditModalProps) {
   const [content, setContent] = useState(message?.content ?? '');
+  const [lastMessage, setLastMessage] = useState<Message | null>(message);
   const textareaRef = useRef<TextInput>(null);
 
-  useEffect(() => {
-    if (visible && message) {
+  // prop→state 동기화를 effect 대신 렌더 중 상태 조정으로 처리
+  // (react-hooks/set-state-in-effect — cascading render 회피)
+  if (visible && message !== lastMessage) {
+    setLastMessage(message);
+    if (message) {
       setContent(message.content);
     }
-  }, [visible, message]);
+  }
 
   const handleSave = () => {
     if (message && content.trim()) {

@@ -16,7 +16,7 @@ interface UseChatNavigationOptions {
 }
 
 interface UseChatNavigationReturn {
-  scrollViewRef: React.RefObject<ScrollView>;
+  scrollViewRef: React.RefObject<ScrollView | null>;
   showBackDialog: boolean;
   handleBackPress: () => boolean;
   handleConfirmBack: () => Promise<void>;

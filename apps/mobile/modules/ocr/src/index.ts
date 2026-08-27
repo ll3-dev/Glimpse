@@ -20,7 +20,6 @@ export type OcrError = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __glimpseOcr: {
     recognizeText(imageUri: string): Promise<OcrResult>;
   } | undefined;

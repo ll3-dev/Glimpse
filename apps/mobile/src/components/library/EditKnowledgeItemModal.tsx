@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
@@ -28,16 +28,20 @@ export function EditKnowledgeItemModal({
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tagsText, setTagsText] = useState('');
+  const [lastItem, setLastItem] = useState<KnowledgeItem | null>(item);
 
   const { mutate: updateItem, isPending } = useUpdateKnowledgeItemMutation();
 
-  useEffect(() => {
+  // prop→state 동기화를 effect 대신 렌더 중 상태 조정으로 처리
+  // (react-hooks/set-state-in-effect — cascading render 회피)
+  if (item !== lastItem) {
+    setLastItem(item);
     if (item) {
       setTitle(item.title || '');
       setBody(item.body || '');
       setTagsText(item.tags ? item.tags.join(', ') : '');
     }
-  }, [item]);
+  }
 
   if (!item) return null;
 
