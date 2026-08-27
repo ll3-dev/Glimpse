@@ -65,14 +65,287 @@ impl SqliteStorage {
         )?;
         Ok(revision)
     }
+
+    /// Incremental export: only rows whose merge clock is strictly newer than
+    /// `since_clock_ms`, plus every tombstone (cheap, and deletes must never
+    /// be missed). The returned envelope reuses [`DataExport`] so both wire
+    /// paths and merging stay shape-identical.
+    ///
+    /// Clock expressions mirror the ones `merge_exports` uses per table so a
+    /// delta can never omit a row that would win a full merge. Cursor
+    /// guardbands (e.g. `since - 24h`) are the caller's policy; this layer
+    /// does a plain strict-greater select.
+    pub fn export_delta(&self, since_clock_ms: i64) -> Result<DataExport> {
+        let mut knowledge_items = self.list_knowledge_items()?;
+        knowledge_items.retain(|item| item.updated_at > since_clock_ms);
+        let mut conversations = self.list_all_conversations()?;
+        conversations.retain(|item| conversation_clock(item) > since_clock_ms);
+        let mut messages = self.list_all_messages()?;
+        messages.retain(|item| message_clock(item) > since_clock_ms);
+        let mut recommendations = self.list_recommendations()?;
+        recommendations.retain(|item| recommendation_clock(item) > since_clock_ms);
+        let mut feedback_events = self.list_all_feedback_events()?;
+        feedback_events.retain(|event| event.created_at > since_clock_ms);
+
+        Ok(DataExport {
+            format_version: DataExport::FORMAT_VERSION,
+            exported_at: chrono::Utc::now().timestamp_millis(),
+            knowledge_items,
+            conversations,
+            messages,
+            recommendations,
+            feedback_events,
+            tombstones: self.list_sync_tombstones()?,
+        })
+    }
+
+    /// Row-wise merge of an incremental payload: write each carried row with
+    /// LWW semantics instead of wiping the store.
+    ///
+    /// knowledge_items / conversations / messages / feedback_events use
+    /// `INSERT OR REPLACE` by primary key upstream — but a naive replace would
+    /// let a stale delta row clobber a newer local edit, so each table's
+    /// existing rows are compared first via the same [`prefer_candidate`] clock
+    /// rule `merge_exports` uses; only winners are written. Tombstones reuse
+    /// the MAX-merge primitive from the full path. Both directions therefore
+    /// converge to identical state.
+    ///
+    /// Recommendations receive the narrowest treatment: same-id winners are
+    /// row-overwritten in place (their feedback_events must stay attached),
+    /// while a candidate that merely re-proposes an occupied pair under a new
+    /// id loses and waits for the next full snapshot — snapshot-fingerprint
+    /// drift already guarantees that reset happens, so dedup stays the full
+    /// path's job ([`SqliteStorage::merge_data`]).
+    ///
+    /// A delta intentionally relaxes `validate_export`'s referential checks:
+    /// rows arrive in pieces, so parents may already exist locally while their
+    /// children show up later. Integrity is still enforced transactionally via
+    /// [`SqliteStorage::validate_integrity`] before commit.
+    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataExport> {
+        if delta.format_version == 0 || delta.format_version > DataExport::FORMAT_VERSION {
+            return Err(crate::error::Error::InvalidInput(format!(
+                "Unsupported data export version {}; expected 1..={}",
+                delta.format_version,
+                DataExport::FORMAT_VERSION
+            )));
+        }
+
+        self.conn.execute_batch("BEGIN IMMEDIATE")?;
+        // REPLACE'd parent rows (a winning conversation edits its title) are
+        // deleted-then-reinserted mid-transaction while their messages still
+        // reference them; with no ON DELETE CASCADE those deletes trip the
+        // immediate FK check. Deferring the check to COMMIT — where children
+        // from this very delta have arrived — keeps the transient state legal
+        // without weakening the end-of-transaction guarantee below. The
+        // pragma auto-resets on COMMIT/ROLLBACK.
+        self.conn
+            .pragma_update(None, "defer_foreign_keys", true)?;
+        let result = (|| -> Result<()> {
+            let local_items = self.list_knowledge_items()?;
+            let items_by_id: HashMap<&str, &KnowledgeItem> =
+                local_items.iter().map(|item| (item.id.as_str(), item)).collect();
+            for candidate in &delta.knowledge_items {
+                match items_by_id.get(candidate.id.as_str()).copied() {
+                    Some(current)
+                        if !prefer_candidate(current, candidate, &|item: &KnowledgeItem| {
+                            item.updated_at
+                        }) => {}
+                    _ => self.insert_knowledge_item(candidate)?,
+                }
+            }
+
+            let local_conversations = self.list_all_conversations()?;
+            let conversations_by_id: HashMap<&str, &Conversation> = local_conversations
+                .iter()
+                .map(|item| (item.id.as_str(), item))
+                .collect();
+            for candidate in &delta.conversations {
+                match conversations_by_id.get(candidate.id.as_str()).copied() {
+                    Some(current) if !prefer_candidate(current, candidate, &conversation_clock) => {}
+                    _ => self.insert_conversation(candidate)?,
+                }
+            }
+
+            let local_messages = self.list_all_messages()?;
+            let messages_by_id: HashMap<&str, &Message> =
+                local_messages.iter().map(|item| (item.id.as_str(), item)).collect();
+            for candidate in &delta.messages {
+                match messages_by_id.get(candidate.id.as_str()).copied() {
+                    Some(current) if !prefer_candidate(current, candidate, &message_clock) => {}
+                    _ => self.insert_message(candidate)?,
+                }
+            }
+
+            let local_recommendations = self.list_recommendations()?;
+            let recommendations_by_id: HashMap<&str, &Recommendation> = local_recommendations
+                .iter()
+                .map(|item| (item.id.as_str(), item))
+                .collect();
+            for candidate in &delta.recommendations {
+                match recommendations_by_id.get(candidate.id.as_str()).copied() {
+                    Some(current)
+                        if !prefer_candidate(current, candidate, &recommendation_clock) =>
+                    {
+                        continue;
+                    }
+                    Some(_) => {
+                        self.overwrite_recommendation_row(candidate)?;
+                        continue;
+                    }
+                    None => {}
+                }
+                // Fresh id, but another row may already serve this exact pair.
+                let occupied_by_newer = local_recommendations.iter().any(|existing| {
+                    existing.id != candidate.id
+                        && unordered_pair_matches(existing, candidate)
+                        && prefer_candidate(existing, candidate, &recommendation_clock)
+                });
+                if !occupied_by_newer {
+                    self.insert_recommendation(candidate)?;
+                }
+            }
+
+            let local_events = self.list_all_feedback_events()?;
+            let events_by_id: HashMap<&str, &FeedbackEvent> =
+                local_events.iter().map(|item| (item.id.as_str(), item)).collect();
+            for candidate in &delta.feedback_events {
+                match events_by_id.get(candidate.id.as_str()).copied() {
+                    Some(current)
+                        if !prefer_candidate(current, candidate, &|event: &FeedbackEvent| {
+                            event.created_at
+                        }) => {}
+                    _ => self.insert_feedback_event(candidate)?,
+                }
+            }
+
+            for tombstone in &delta.tombstones {
+                self.apply_tombstone_delete(tombstone)?;
+                self.record_sync_tombstone(
+                    &tombstone.entity_type,
+                    &tombstone.entity_id,
+                    tombstone.deleted_at,
+                )?;
+            }
+            self.validate_integrity()?;
+            Ok(())
+        })();
+
+        match result {
+            Ok(()) => {
+                self.conn.execute_batch("COMMIT")?;
+            }
+            Err(error) => {
+                let _ = self.conn.execute_batch("ROLLBACK");
+                return Err(error);
+            }
+        }
+        self.export_data()
+    }
+
+    /// Same-id recommendation update. Only response state moves after creation;
+    /// identity columns stay untouched so dependent feedback rows never dangle.
+    fn overwrite_recommendation_row(&self, recommendation: &Recommendation) -> Result<()> {
+        self.conn.execute(
+            r#"
+            UPDATE recommendations SET
+                reason = ?2, status = ?3, created_at = ?4, responded_at = ?5
+            WHERE id = ?1
+            "#,
+            rusqlite::params![
+                recommendation.id,
+                recommendation.reason,
+                Self::recommendation_status_to_str(&recommendation.status),
+                recommendation.created_at,
+                recommendation.responded_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Applies one incoming tombstone to live rows — the delete half of the
+    /// full path's `apply_tombstones`. A row survives exactly when its merge
+    /// clock strictly postdates the delete (re-created afterwards); anything
+    /// else is removed — identical rule to `merge_exports`.
+    ///
+    /// children go with their parents: this mirrors what a full snapshot
+    /// replace produces for the same delete on the source device, where
+    /// removing a parent takes its messages/feedback along.
+    fn apply_tombstone_delete(&self, tombstone: &SyncTombstone) -> Result<()> {
+        let entity_type = tombstone.entity_type.as_str();
+        let entity_id = tombstone.entity_id.as_str();
+        let deleted_at = tombstone.deleted_at;
+
+        // (clock SQL mirroring conversation_clock/message_clock/
+        // recommendation_clock, child-cleanup DELETE) per entity type.
+        let (clock_sql, child_delete): (&str, Option<(&str, &str)>) = match entity_type {
+            ENTITY_KNOWLEDGE_ITEM => ("SELECT updated_at FROM knowledge_items WHERE id = ?1", None),
+            ENTITY_CONVERSATION => (
+                "SELECT MAX(COALESCE(deleted_at, 0), updated_at) FROM conversations WHERE id = ?1",
+                Some(("messages", "conversation_id")),
+            ),
+            ENTITY_MESSAGE => (
+                "SELECT MAX(COALESCE(deleted_at, COALESCE(updated_at, 0), created_at), created_at) FROM messages WHERE id = ?1",
+                None,
+            ),
+            ENTITY_RECOMMENDATION => (
+                "SELECT MAX(COALESCE(responded_at, 0), created_at) FROM recommendations WHERE id = ?1",
+                Some(("feedback_events", "recommendation_id")),
+            ),
+            ENTITY_FEEDBACK_EVENT => {
+                ("SELECT created_at FROM feedback_events WHERE id = ?1", None)
+            }
+            _ => return Ok(()),
+        };
+
+        let clock: Option<Option<i64>> = self
+            .conn
+            .query_row(clock_sql, params![entity_id], |row| {
+                row.get::<_, Option<i64>>(0)
+            })
+            .map(Some)
+            .unwrap_or(None);
+        // Missing row (outer None / inner None via MAX of absent columns
+        // cannot happen here — the SELECT yields no row at all) behaves like
+        // the full path: nothing live to delete.
+        if clock.flatten().is_none_or(|live_clock| live_clock <= deleted_at) {
+            if let Some((child_table, child_column)) = child_delete {
+                self.conn.execute(
+                    &format!("DELETE FROM {child_table} WHERE {child_column} = ?1"),
+                    params![entity_id],
+                )?;
+            }
+            let table = match entity_type {
+                ENTITY_KNOWLEDGE_ITEM => "knowledge_items",
+                ENTITY_CONVERSATION => "conversations",
+                ENTITY_MESSAGE => "messages",
+                ENTITY_RECOMMENDATION => "recommendations",
+                ENTITY_FEEDBACK_EVENT => "feedback_events",
+                _ => return Ok(()),
+            };
+            self.conn
+                .execute(&format!("DELETE FROM {table} WHERE id = ?1"), params![entity_id])?;
+        }
+        Ok(())
+    }
+}
+
+/// Do two recommendations carry the same unordered item pair?
+fn unordered_pair_matches(a: &Recommendation, b: &Recommendation) -> bool {
+    a.item_a_id == b.item_a_id && a.item_b_id == b.item_b_id
+        || a.item_a_id == b.item_b_id && a.item_b_id == b.item_a_id
 }
 
 /// Strips fields whose values legitimately differ between devices without any
 /// content change: the export envelope and per-record clock columns the merge
 /// treats as volatile (kept in lockstep with `prefer_candidate`'s clocks).
+/// Records are also re-sorted by id: a full-snapshot replace writes rows in
+/// canonical order while a delta appends incrementally, so two storages can
+/// hold byte-identical domain content in different physical row orders — and
+/// the fingerprint must still call them equal.
 fn normalize_for_fingerprint(export: &mut DataExport) {
     export.format_version = 0;
     export.exported_at = 0;
+    sort_records_canonically(export);
     export
         .knowledge_items
         .iter_mut()
@@ -91,6 +364,19 @@ fn normalize_for_fingerprint(export: &mut DataExport) {
     });
     export.feedback_events.iter_mut().for_each(|item| item.created_at = 0);
     export.tombstones.iter_mut().for_each(|item| item.deleted_at = 0);
+}
+
+/// Orders every record set by its primary key so digest input depends only on
+/// content, never on the physical row order a particular write path produced.
+fn sort_records_canonically(export: &mut DataExport) {
+    sort_by_id(&mut export.knowledge_items, |item| &item.id);
+    sort_by_id(&mut export.conversations, |item| &item.id);
+    sort_by_id(&mut export.messages, |item| &item.id);
+    sort_by_id(&mut export.recommendations, |item| &item.id);
+    sort_by_id(&mut export.feedback_events, |item| &item.id);
+    export.tombstones.sort_by(|left, right| {
+        (&left.entity_type, &left.entity_id).cmp(&(&right.entity_type, &right.entity_id))
+    });
 }
 
 fn canonical_snapshot_digest(export: &DataExport) -> Result<String> {
@@ -501,8 +787,8 @@ fn sort_by_id<T>(records: &mut [T], id: impl Fn(&T) -> &String) {
 #[cfg(test)]
 mod tests {
     use crate::models::{
-        DataExport, KnowledgeItem, KnowledgeItemType, Recommendation, RecommendationStatus,
-        SyncTombstone,
+        Conversation, DataExport, KnowledgeItem, KnowledgeItemType, Message,
+        Recommendation, RecommendationStatus, SyncTombstone,
     };
     use crate::storage::sqlite::SqliteStorage;
 
@@ -705,6 +991,240 @@ mod tests {
         )]);
         let final_export = merge_exports(merged, healed);
         assert_eq!(final_export.knowledge_items[0].title.as_deref(), Some("healed"));
+    }
+
+    #[test]
+    fn export_delta_only_carries_rows_newer_than_the_cursor() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        let fixture = snapshot(vec![item("fresh", 500, "fresh"), item("stale", 100, "stale")]);
+        storage
+            .replace_all_data(&fixture)
+            .expect("fixture should import");
+
+        // Tombstones bypass the cursor: deletes must never be under-sent.
+        storage
+            .record_sync_tombstone(ENTITY_KNOWLEDGE_ITEM, "gone", 42)
+            .expect("tombstone should record");
+
+        let delta = storage.export_delta(200).expect("delta should export");
+        assert_eq!(
+            delta
+                .knowledge_items
+                .iter()
+                .map(|row| row.id.as_str())
+                .collect::<Vec<_>>(),
+            ["fresh"],
+            "only rows strictly newer than the cursor travel in the delta"
+        );
+        assert!(
+            delta.tombstones.iter().any(|t| t.entity_id == "gone"),
+            "every tombstone must ride along regardless of age"
+        );
+        drop(fixture);
+    }
+
+    #[test]
+    fn apply_delta_upserts_by_lww_without_resurrecting_stale_local_edits() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        // Local already holds a NEWER edit of item "x" (updated_at 300).
+        storage
+            .replace_all_data(&snapshot(vec![item("x", 300, "local-new")]))
+            .expect("fixture should import");
+
+        // Delta carries a stale copy and a brand-new item.
+        let mut delta = snapshot(vec![item("x", 200, "remote-stale"), item("y", 400, "added")]);
+        delta.exported_at = 1_000;
+        let after = storage.apply_delta(&delta).expect("delta should apply");
+        assert_eq!(
+            after
+                .knowledge_items
+                .iter()
+                .find(|row| row.id == "x")
+                .and_then(|row| row.title.clone()),
+            Some("local-new".into()),
+            "a stale delta row must not clobber a newer local edit"
+        );
+        assert!(after.knowledge_items.iter().any(|row| row.id == "y"));
+
+        // A newer delta row does win.
+        let mut newer = snapshot(vec![item("x", 350, "remote-newer")]);
+        newer.exported_at = 2_000;
+        let after = storage.apply_delta(&newer).expect("delta should apply");
+        assert_eq!(
+            after
+                .knowledge_items
+                .iter()
+                .find(|row| row.id == "x")
+                .and_then(|row| row.title.clone()),
+            Some("remote-newer".into()),
+            "a strictly newer delta row must overwrite the local copy"
+        );
+    }
+
+    #[test]
+    fn apply_delta_tombstones_remove_living_rows_but_not_newer_ones() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        storage
+            .replace_all_data(&snapshot(vec![item("old", 100, "old"), item("new", 900, "new")]))
+            .expect("fixture should import");
+
+        let mut deleted = snapshot(vec![]);
+        deleted.tombstones.push(SyncTombstone {
+            entity_type: ENTITY_KNOWLEDGE_ITEM.into(),
+            entity_id: "old".into(),
+            deleted_at: 500,
+        });
+        // A resurrected copy older than its tombstone rides in too.
+        deleted
+            .knowledge_items
+            .push(item("old", 200, "resurrected-stale"));
+        let after = storage.apply_delta(&deleted).expect("delta should apply");
+        assert!(
+            !after.knowledge_items.iter().any(|row| row.id == "old"),
+            "a tombstone must remove a living local row"
+        );
+        assert!(after.knowledge_items.iter().any(|row| row.id == "new"));
+
+        // The tombstone also guards against later stale arrivals via merge…
+        let via_merge = storage
+            .merge_data(&snapshot(vec![item("old", 300, "still-dead")]))
+            .expect("merge should succeed");
+        assert!(!via_merge.knowledge_items.iter().any(|row| row.id == "old"));
+
+        // …but a strictly newer re-creation is untouched.
+        let reborn = storage
+            .merge_data(&snapshot(vec![item("old", 600, "reborn")]))
+            .expect("merge should succeed");
+        assert_eq!(
+            reborn
+                .knowledge_items
+                .iter()
+                .find(|row| row.id == "old")
+                .and_then(|row| row.title.clone()),
+            Some("reborn".into())
+        );
+    }
+
+    #[test]
+    fn apply_delta_converges_in_both_directions_with_the_full_path() {
+        // Same two-device content merged by apply_delta either direction must
+        // land on the same stored state as the other direction — the property
+        // that lets watermark syncs agree without full snapshots.
+        let mut left_fixture = snapshot(vec![item("shared", 10, "left")]);
+        left_fixture.messages.clear();
+        let storage_left = SqliteStorage::in_memory().expect("storage");
+        storage_left
+            .replace_all_data(&left_fixture)
+            .expect("fixture should import");
+        storage_left
+            .insert_conversation(&Conversation {
+                id: "conv".into(),
+                title: Some("conv".into()),
+                icon: None,
+                context_item_id: None,
+                created_at: 1,
+                updated_at: 10,
+                deleted_at: None,
+            })
+            .expect("conversation should insert");
+        storage_left
+            .insert_message(&Message {
+                id: "msg".into(),
+                conversation_id: "conv".into(),
+                role: crate::models::MessageRole::User,
+                content: "hello".into(),
+                created_at: 5,
+                updated_at: None,
+                deleted_at: None,
+            })
+            .expect("message should insert");
+
+        let right_delta = storage_left.export_delta(0).expect("delta");
+        let storage_right = SqliteStorage::in_memory().expect("storage");
+        storage_right
+            .replace_all_data(&snapshot(vec![item("shared", 20, "right")]))
+            .expect("fixture should import");
+        storage_right
+            .apply_delta(&right_delta)
+            .expect("delta should apply");
+
+        // Reverse direction: the same payload applied back upstream.
+        let reverse_delta = storage_right.export_delta(0).expect("delta");
+        storage_left
+            .apply_delta(&reverse_delta)
+            .expect("reverse delta should apply");
+
+        let print_left = storage_left.snapshot_fingerprint().expect("fingerprint");
+        let print_right = storage_right.snapshot_fingerprint().expect("fingerprint");
+        assert_eq!(
+            print_left, print_right,
+            "bidirectional delta exchange must converge to identical content"
+        );
+    }
+
+    #[test]
+    fn apply_delta_accepts_children_whose_parent_arrives_same_delta_and_rejects_orphans() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        // Parent + child in one delta: FK-safe order inserts parents first.
+        let mut family = snapshot(vec![]);
+        family.conversations.push(Conversation {
+            id: "conv".into(),
+            title: Some("conv".into()),
+            icon: None,
+            context_item_id: None,
+            created_at: 1,
+            updated_at: 10,
+            deleted_at: None,
+        });
+        family.messages.push(Message {
+            id: "msg".into(),
+            conversation_id: "conv".into(),
+            role: crate::models::MessageRole::User,
+            content: "hi".into(),
+            created_at: 5,
+            updated_at: None,
+            deleted_at: None,
+        });
+        let after = storage.apply_delta(&family).expect("family delta applies");
+        assert_eq!(after.conversations.len(), 1);
+        assert_eq!(after.messages.len(), 1);
+
+        // An orphan message (parent nowhere) fails integrity at commit.
+        let mut orphan = snapshot(vec![]);
+        orphan.messages.push(Message {
+            id: "msg-orphan".into(),
+            conversation_id: "nope".into(),
+            role: crate::models::MessageRole::User,
+            content: "orphan".into(),
+            created_at: 6,
+            updated_at: None,
+            deleted_at: None,
+        });
+        assert!(
+            storage.apply_delta(&orphan).is_err(),
+            "an orphan child must roll the whole delta back"
+        );
+        assert!(
+            !storage
+                .list_all_messages()
+                .expect("list after rollback")
+                .iter()
+                .any(|row| row.id == "msg-orphan"),
+            "a failed delta must leave no partial writes behind"
+        );
+    }
+
+    #[test]
+    fn reject_unsupported_delta_format_versions() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        for version in [0_u32, DataExport::FORMAT_VERSION + 1] {
+            let mut bad = snapshot(vec![]);
+            bad.format_version = version;
+            assert!(
+                storage.apply_delta(&bad).is_err(),
+                "format_version {version} must be rejected"
+            );
+        }
     }
 
     #[test]

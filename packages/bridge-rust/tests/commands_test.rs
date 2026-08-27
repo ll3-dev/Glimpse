@@ -502,15 +502,15 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 30 commands (calculateNextReview was removed in
+    // schema exposes all 31 commands (calculateNextReview was removed in
     // favor of the shared TS review scheduler), including deterministic data
-    // merging.
+    // merging and incremental delta application (mergeDelta).
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
     assert_eq!(
         commands.len(),
-        30,
-        "unified package must expose 30 commands"
+        31,
+        "unified package must expose 31 commands"
     );
 }
 

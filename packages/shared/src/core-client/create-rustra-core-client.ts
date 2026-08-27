@@ -65,6 +65,7 @@ import {
   listWeeklyKnowledgeItems,
   logRecommendationFeedback,
   mergeData,
+  mergeDelta,
   respondToRecommendation,
   saveKnowledgeItem,
   saveRecommendations,
@@ -162,6 +163,7 @@ export function createRustraCoreClient(deps: RustraCoreClientDeps): CoreClient {
     exportData: async () => (await exportData({})).dataJson,
     importData: async (dataJson) => importData({ dataJson }),
     mergeData: async (dataJson) => mergeData({ dataJson }),
+    mergeDelta: async (dataJson) => mergeDelta({ dataJson }),
     deleteAllData: async () => {
       await deleteAllData({});
     },

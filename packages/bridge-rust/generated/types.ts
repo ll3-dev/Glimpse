@@ -297,6 +297,18 @@ export type MergeDataOutput = {
   feedbackEvents: number;
 };
 
+export type MergeDeltaInput = {
+  dataJson: string;
+};
+
+export type MergeDeltaOutput = {
+  knowledgeItems: number;
+  conversations: number;
+  messages: number;
+  recommendations: number;
+  feedbackEvents: number;
+};
+
 export type RespondToRecommendationInput = {
   recommendationId: string;
   status: string;

@@ -150,18 +150,27 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   if (candidates.length === 0) {
     candidates = await rediscoverPairedDesktop(config.desktopDeviceId);
   }
-  const snapshot = JSON.parse(await mobileCoreClient.exportData()) as unknown;
+  // Watermark path: when we know how far the desktop has already seen, skip
+  // exporting and shipping the full snapshot — the request is then a few
+  // bytes. Built lazily so the delta path never pays the export cost.
+  const watermark = config.outboundWatermark;
+  const snapshotPromise = watermark == null
+    ? mobileCoreClient.exportData().then((data) => JSON.parse(data) as unknown)
+    : null;
   let lastError: unknown = new Error('연결 가능한 Desktop 주소가 없습니다.');
 
   const attempt = async (baseUrl: string): Promise<boolean> => {
-    // Large snapshots ride gzip: both peers share the tower-http contract.
-    const requestPayload = maybeCompressRequestBody(
-      JSON.stringify({
-        deviceId: getOrCreateSyncDeviceId(),
-        fingerprint: config.snapshotFingerprint,
-        snapshot,
-      }),
-    );
+    const requestBody: Record<string, unknown> = {
+      deviceId: getOrCreateSyncDeviceId(),
+      fingerprint: config.snapshotFingerprint,
+    };
+    if (watermark == null) {
+      requestBody.snapshot = await snapshotPromise;
+    } else {
+      requestBody.sinceWatermark = watermark;
+    }
+    // Large payloads ride gzip: both peers share the tower-http contract.
+    const requestPayload = maybeCompressRequestBody(JSON.stringify(requestBody));
     const response = await fetchJson<SyncResponse>(`${baseUrl}/v1/sync`, {
       method: 'POST',
       headers: {
@@ -176,12 +185,34 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
       ) as ArrayBuffer,
     });
     assertProtocol(response.protocolVersion);
+
+    if (response.delta != null) {
+      // Watermark path succeeded: merge incrementally, advance the
+      // watermark only from the server's own number.
+      const mergedJson = JSON.stringify(response.delta);
+      if (mobileCoreClient.mergeDelta) {
+        await mobileCoreClient.mergeDelta(mergedJson);
+      } else {
+        await mobileCoreClient.mergeData(mergedJson);
+      }
+      config = updateSyncConfig({
+        lastSyncedAt: Date.now(),
+        outboundWatermark: response.newWatermark ?? watermark,
+        tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
+      });
+      return true;
+    }
+
     if (response.snapshot != null) {
+      // Full path (or the server could not serve our watermark): merge and
+      // reset the watermark — the response describes desktop state as of
+      // now, so an existing watermark would under-report future changes.
       await mobileCoreClient.mergeData(JSON.stringify(response.snapshot));
     }
     config = updateSyncConfig({
       lastSyncedAt: Date.now(),
       snapshotFingerprint: response.fingerprint,
+      outboundWatermark: null,
       tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
     });
     return true;

@@ -55,20 +55,42 @@ struct SyncRequest {
     /// never consulted.
     #[allow(dead_code)]
     fingerprint: Option<String>,
-    snapshot: glimpse_core::DataExport,
+    /// Full-snapshot path. Clients that hold a watermark omit this and send
+    /// [`SyncRequest::since_watermark`] instead; a request carrying neither
+    /// fails validation (protocol v1 always sent one of the two).
+    snapshot: Option<glimpse_core::DataExport>,
+    /// Incremental path (protocol v1, additive): desktop returns only rows
+    /// newer than this clock via [`SyncResponse::delta`].
+    since_watermark: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct SyncResponse {
     protocol_version: u32,
-    /// `None` when the received snapshot is content-identical to what we
-    /// already hold: there is nothing to merge in either direction, so we
-    /// skip the rewrite (the common idle-polling case).
+    /// Full snapshot after merging a legacy (watermark-less) sync. `None`
+    /// when there was nothing to merge in either direction — the common
+    /// idle-polling case. Delta-path responses carry
+    /// [`SyncResponse::delta`] instead.
     snapshot: Option<glimpse_core::DataExport>,
-    fingerprint: String,
+    /// Incremental payload (rows newer than the requested watermark) on the
+    /// delta path; `None` on the full path.
+    delta: Option<glimpse_core::DataExport>,
+    /// Server-issued new watermark = highest merge clock the client may now
+    /// treat as synced. The client advances its stored value only from here
+    /// (never optimistically), so resets stay safe.
+    new_watermark: Option<i64>,
+    /// Cached dataset fingerprint after a full-path merge or skip; `None` on
+    /// the delta path (no desktop-side rewrite happens, so no fresh print is
+    /// computed).
+    fingerprint: Option<String>,
     endpoints: PublicEndpoints,
 }
+
+/// Deltas are re-sent generously relative to the caller's watermark: clocks
+/// across devices drift, and an under-asked watermark over-delivers rows that
+/// LWW merging discards anyway, while an over-asked one silently loses them.
+const DELTA_GUARDBAND_MS: i64 = 24 * 60 * 60 * 1000;
 
 #[derive(Debug, Serialize)]
 struct ApiErrorBody {
@@ -265,70 +287,108 @@ async fn sync(
     }
 
     let device_id = request.device_id;
-    let remote_snapshot = request.snapshot;
     let sync_state = state.sync.clone();
-    let (snapshot, fingerprint) = tauri::async_runtime::spawn_blocking(move || {
-        let core = glimpse_bridge::core_state();
-        // Hash the *received* snapshot first — that needs no database access.
-        // An idle poll then skips both the merge AND our own full export+
-        // SHA256 by trusting the cached fingerprint; the storage write-
-        // revision keeps that cache honest (any mutation, local webview edits
-        // included, bumps it and forces a recompute).
-        let remote_fingerprint =
-            glimpse_core::SqliteStorage::fingerprint_of_snapshot(&remote_snapshot);
-        let revision = core
-            .sync_data_revision()
-            .map_err(|error| error.to_string())?;
-        let cached = sync_state.cached_fingerprint_for_revision(revision);
-        let skip = cached.is_some()
-            && remote_fingerprint.is_ok_and(|remote| {
-                remote_snapshot.format_version != 0
-                    && remote_snapshot.format_version <= glimpse_core::DataExport::FORMAT_VERSION
-                    && Some(remote.as_str()) == cached.as_deref()
-            });
-        if skip {
-            return Ok((None, cached.expect("checked above")));
-        }
-        // Cache miss: run the real merge. An unhashable payload fails open
-        // into this path on purpose — an unnecessary merge is cheap next to a
-        // lost change.
-        let merged = core
-            .merge_data(&remote_snapshot)
-            .map_err(|error| error.to_string())?;
-        let fresh_revision = core
-            .sync_data_revision()
-            .map_err(|error| error.to_string())?;
-        match core.snapshot_fingerprint() {
-            Ok(fresh) => sync_state.store_cached_fingerprint(fresh_revision, fresh.clone()),
-            Err(_) => sync_state.invalidate_cached_fingerprint(),
-        }
-        let fingerprint = sync_state
-            .cached_fingerprint_for_revision(fresh_revision)
-            .ok_or_else(|| "fingerprint unavailable after merge".to_string())?;
-        Ok((Some(merged), fingerprint))
-    })
-    .await
-    .map_err(|error| {
-        ApiError(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "sync_join_failed",
-            error.to_string(),
-        )
-    })?
-    .map_err(|message: String| {
-        ApiError(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "sync_merge_failed",
-            message,
-        )
-    })?;
+    let (snapshot, delta, new_watermark, fingerprint) =
+        tauri::async_runtime::spawn_blocking(move || {
+            let core = glimpse_bridge::core_state();
+
+            // --- Delta path: watermark present → incremental exchange. ---
+            if let Some(watermark) = request.since_watermark {
+                let delta = core
+                    .export_delta(watermark.saturating_sub(DELTA_GUARDBAND_MS))
+                    .map_err(|error| error.to_string())?;
+                // The watermark only moves forward: the next ask starts at
+                // max(the client's own watermark, the freshest merge clock in
+                // what we just sent). Rows re-selected by the 24h guardband on
+                // a later poll re-merge harmlessly under LWW.
+                let new_watermark = [
+                    delta.knowledge_items.iter().map(|row| row.updated_at).max(),
+                    delta.conversations.iter().map(|row| {
+                        row.deleted_at.unwrap_or(row.updated_at).max(row.updated_at)
+                    }).max(),
+                    delta.messages.iter().map(|row| {
+                        row.deleted_at
+                            .or(row.updated_at)
+                            .unwrap_or(row.created_at)
+                            .max(row.created_at)
+                    }).max(),
+                    delta.recommendations.iter().map(|row| {
+                        row.responded_at.unwrap_or(row.created_at).max(row.created_at)
+                    }).max(),
+                    delta.feedback_events.iter().map(|row| row.created_at).max(),
+                    delta.tombstones.iter().map(|row| row.deleted_at).max(),
+                ]
+                .into_iter()
+                .flatten()
+                .max()
+                .unwrap_or(watermark)
+                .max(watermark);
+                return Ok((None, Some(delta), Some(new_watermark), None));
+            }
+
+            // --- Full path (protocol v1 unchanged): client sent a snapshot. ---
+            let remote_snapshot = request.snapshot.ok_or_else(|| {
+                "either snapshot or sinceWatermark is required".to_string()
+            })?;
+            let remote_fingerprint =
+                glimpse_core::SqliteStorage::fingerprint_of_snapshot(&remote_snapshot);
+            let revision = core
+                .sync_data_revision()
+                .map_err(|error| error.to_string())?;
+            let cached = sync_state.cached_fingerprint_for_revision(revision);
+            let skip = cached.is_some()
+                && remote_fingerprint.is_ok_and(|remote| {
+                    remote_snapshot.format_version != 0
+                        && remote_snapshot.format_version
+                            <= glimpse_core::DataExport::FORMAT_VERSION
+                        && Some(remote.as_str()) == cached.as_deref()
+                });
+            if skip {
+                return Ok((
+                    None,
+                    None,
+                    None,
+                    Some(cached.expect("checked above")),
+                ));
+            }
+            // Cache miss: run the real merge. An unhashable payload fails open
+            // into this path on purpose — an unnecessary merge is cheap next to
+            // a lost change.
+            let merged = core
+                .merge_data(&remote_snapshot)
+                .map_err(|error| error.to_string())?;
+            let fresh_revision = core
+                .sync_data_revision()
+                .map_err(|error| error.to_string())?;
+            match core.snapshot_fingerprint() {
+                Ok(fresh) => sync_state.store_cached_fingerprint(fresh_revision, fresh.clone()),
+                Err(_) => sync_state.invalidate_cached_fingerprint(),
+            }
+            let fingerprint = sync_state
+                .cached_fingerprint_for_revision(fresh_revision)
+                .ok_or_else(|| "fingerprint unavailable after merge".to_string())?;
+            Ok((Some(merged), None, None, Some(fingerprint)))
+        })
+        .await
+        .map_err(|error| {
+            ApiError(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "sync_join_failed",
+                error.to_string(),
+            )
+        })?
+        .map_err(|message: String| {
+            ApiError(StatusCode::UNPROCESSABLE_ENTITY, "sync_merge_failed", message)
+        })?;
+
     let merged_something = snapshot.is_some();
 
     state.sync.mark_seen(&device_id);
     if merged_something {
         state.sync.take_data_dirty();
         // Graph analysis is driven by this event in the webview; only emit it
-        // when a merge actually changed desktop data.
+        // when a merge actually changed desktop data. A delta response only
+        // changes *the client*; the desktop's own content is untouched.
         let _ = state.app.emit(
             "glimpse://sync-complete",
             serde_json::json!({ "deviceId": device_id }),
@@ -339,6 +399,8 @@ async fn sync(
     Ok(Json(SyncResponse {
         protocol_version: SYNC_PROTOCOL_VERSION,
         snapshot,
+        delta,
+        new_watermark,
         fingerprint,
         endpoints,
     }))
@@ -394,7 +456,7 @@ mod tests {
 
     use glimpse_core::{DataExport, KnowledgeItem, KnowledgeItemType, SqliteStorage};
 
-    use super::{is_allowed_host, should_skip_merge};
+    use super::{is_allowed_host, should_skip_merge, DELTA_GUARDBAND_MS};
 
     const PORT: u16 = 34_129;
     /// Empty advertisement set: only IPs, localhost, and `*.ts.net` apply.
@@ -614,6 +676,116 @@ mod tests {
         assert!(
             !should_skip_merge(&our_fingerprint, &broken),
             "an unhashable/unverifiable snapshot must fall open into a merge"
+        );
+    }
+
+    // --- Watermark delta path ----------------------------------------------
+
+    /// Mirrors the server handler's delta branch against a standalone core:
+    /// guardband the watermark → export_delta.
+    ///
+    /// Timestamps sit at ~day scale (`DELTA_GUARDBAND_MS` is exactly one day)
+    /// so the guarded cursor lands *between* test rows instead of below all
+    /// of them.
+    const T_ANCIENT: i64 = 100_000_000;
+    const T_RECENT: i64 = 200_000_000;
+
+    fn run_delta_flow(desktop: &SqliteStorage, since_watermark: i64) -> DataExport {
+        let cursor = since_watermark.saturating_sub(DELTA_GUARDBAND_MS);
+        let delta = desktop.export_delta(cursor).expect("delta export");
+        assert!(
+            delta.knowledge_items.iter().all(|row| row.updated_at > cursor),
+            "delta must only carry rows strictly newer than the guarded cursor"
+        );
+        delta
+    }
+
+    #[test]
+    fn watermark_request_returns_only_rows_newer_than_guarded_cursor() {
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared
+            .knowledge_items
+            .extend([note("ancient", "ancient", T_ANCIENT), note("recent", "recent", T_RECENT)]);
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        // Guarded cursor: 195M - 86.4M = 108.6M — past "ancient", before "recent".
+        let delta = run_delta_flow(&desktop, 195_000_000);
+        let ids: Vec<&str> = delta
+            .knowledge_items
+            .iter()
+            .map(|row| row.id.as_str())
+            .collect();
+        assert_eq!(ids, vec!["recent"], "guardband is 24h; rows older than watermark-24h stay out");
+    }
+
+    #[test]
+    fn watermark_monotonicity_holds_even_for_empty_deltas() {
+        // The new_watermark rule from the server handler: max(freshest clock in
+        // payload, client's own watermark). An empty delta must not move the
+        // client's watermark backwards.
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared
+            .knowledge_items
+            .push(note("old", "old", T_ANCIENT));
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        let client_watermark = 900_000_000_i64;
+        let delta = run_delta_flow(&desktop, client_watermark);
+        assert!(delta.knowledge_items.is_empty());
+        let fresh_clocks = delta
+            .knowledge_items
+            .iter()
+            .map(|row| row.updated_at)
+            .chain(delta.tombstones.iter().map(|row| row.deleted_at))
+            .max()
+            .unwrap_or(client_watermark);
+        let new_watermark = fresh_clocks.max(client_watermark);
+        assert_eq!(
+            new_watermark, client_watermark,
+            "an empty delta keeps the client's watermark where it was"
+        );
+    }
+
+    #[test]
+    fn delta_apply_on_client_side_converges_with_desktop_content() {
+        // The actual goal of the delta path: a client that starts empty and
+        // applies successive deltas ends up fingerprint-identical to the
+        // device that originated the content.
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared.knowledge_items.extend([
+            note("a", "alpha", 90_000_000),
+            note("b", "beta", 95_000_000),
+            note("c", "gamma", 99_000_000),
+        ]);
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        // First sync from zero carries everything…
+        let first = run_delta_flow(&desktop, 0);
+        let client = SqliteStorage::in_memory().expect("client storage");
+        client.apply_delta(&first).expect("first apply");
+
+        // …then a newer edit lands on the desktop.
+        let mut edited = desktop.export_data().expect("export");
+        edited.knowledge_items.push(note("d", "delta-edit", 300_000_000));
+        desktop.merge_data(&edited).expect("desktop accepts edit");
+
+        // Second sync with watermark=250M → guarded cursor 163.6M: only "d".
+        let second = run_delta_flow(&desktop, 250_000_000);
+        let second_ids: Vec<&str> = second
+            .knowledge_items
+            .iter()
+            .map(|row| row.id.as_str())
+            .collect();
+        assert_eq!(second_ids, vec!["d"], "the incremental sync must not re-send old rows");
+        client.apply_delta(&second).expect("second apply");
+
+        assert_eq!(
+            client.snapshot_fingerprint().expect("client print"),
+            desktop.snapshot_fingerprint().expect("desktop print"),
+            "successive deltas must converge the client to the desktop"
         );
     }
 }
