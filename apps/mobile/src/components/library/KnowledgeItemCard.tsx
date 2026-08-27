@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { FileText, Link, Highlighter, Image, Share2 } from 'lucide-react-native';
@@ -82,7 +83,14 @@ function ItemContent({
   );
 }
 
-export function KnowledgeItemCard({ item, onPress, onSelectTag }: KnowledgeItemCardProps) {
+// memo: 라이브러리 화면은 검색 입력·필터 토글마다 목록 배열을 새로 만들어
+// FlashList의 renderItem을 재실행한다. 카드는 순수 prop 렌더이고 item 참조는
+// 쿼리 캐시가 유지하므로, 내용이 바뀌지 않은 카드는 재렌더를 건너뛴다.
+export const KnowledgeItemCard = memo(function KnowledgeItemCard({
+  item,
+  onPress,
+  onSelectTag,
+}: KnowledgeItemCardProps) {
   const labels = getDisplayLabels(item);
   const tags = item.tags ?? [];
   const showBadges = labels.length > 0 || tags.length > 0;
@@ -98,4 +106,4 @@ export function KnowledgeItemCard({ item, onPress, onSelectTag }: KnowledgeItemC
       </Pressable>
     </Card>
   );
-}
+});
