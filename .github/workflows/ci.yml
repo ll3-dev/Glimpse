@@ -91,12 +91,13 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun audit --audit-level=high
 
-  paths:
-    # android/ios-release를 관련 경로 변경시에만 돌리기 위한 필터(주간 cron엔 무조건 실행).
+    paths:
+    # android/ios-release/desktop-smoke를 관련 경로 변경시에만 돌리기 위한 필터(주간 cron엔 무조건 실행).
     name: Detect changed paths
     runs-on: ubuntu-latest
     outputs:
       mobile-native: ${{ steps.filter.outputs.mobile-native }}
+      desktop-web: ${{ steps.filter.outputs.desktop-web }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -111,6 +112,41 @@ jobs:
               - 'apps/mobile/modules/**'
               - 'apps/mobile/package.json'
               - 'bun.lock'
+            desktop-web:
+              - 'apps/desktop/src/**'
+              - 'apps/desktop/e2e/**'
+              - 'apps/desktop/package.json'
+              - 'packages/shared/**'
+              - 'packages/features/**'
+              - 'packages/hooks/**'
+
+  desktop-smoke:
+    # 브라우저에서 데스크톱 웹 번들이 앱 셸을 렌더링하는지 PR마다 검증한다.
+    # Tauri IPC는 스텁(e2e/smoke-stubs.ts)으로 대체 — 프론트 번들 무결성 게이트.
+    name: Desktop smoke (Chromium)
+    needs: paths
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.paths.outputs.desktop-web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+        working-directory: apps/desktop
+      - run: bun run build && bun run test:e2e
+        working-directory: apps/desktop
+      - name: Smoke duration
+        if: always()
+        run: echo "desktop-smoke job finished"
 
   android-release:
     name: Android Release (arm64 AAB, unsigned validation)
