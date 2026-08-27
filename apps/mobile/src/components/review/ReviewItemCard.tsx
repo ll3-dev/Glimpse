@@ -18,6 +18,7 @@ import {
 import { Text, Pressable, View } from 'react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { Card } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 
 type ReviewItemCardProps = {
   item: KnowledgeItem;
@@ -47,6 +48,8 @@ export function ReviewItemCard({
   onPostpone,
 }: ReviewItemCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  // Destructive semantic token (DESIGN.md: destructive 계열은 app-accent 토큰 사용)
+  const destructiveColor = useSemanticColor('appAccent');
   const displayTitle = item.title || item.body || item.url || '제목 없음';
   const timeAgo = formatDistanceToNow(item.createdAt, { locale: ko, addSuffix: true });
   const typeConfig = getTypeConfig(item.type);
@@ -148,7 +151,7 @@ export function ReviewItemCard({
               className="flex-1 flex-row items-center justify-center py-3 bg-app-surface active:bg-app-bg"
               onPress={() => onForgot(item.id)}
             >
-              <X size={14} color="#d4432e" />
+              <X size={14} color={destructiveColor} />
               <Text className="ml-1.5 text-xs font-semibold text-app-muted">기억 안 남</Text>
             </Pressable>
             <View className="w-px bg-app-border" />

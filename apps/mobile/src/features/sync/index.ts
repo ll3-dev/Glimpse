@@ -18,7 +18,8 @@ export {
 export {
   discoveryBaseUrl,
   endpointCandidates,
-  isAuthErrorMessage,
+  HttpError,
+  isAuthError,
   normalizeBaseUrl,
 } from './sync-url';
 export type { SyncConfig, SyncRuntimeState, SyncRuntimeStatus } from './types';

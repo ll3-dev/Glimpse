@@ -214,6 +214,13 @@ export interface CoreClient {
   exportData(): Promise<string>;
   importData(dataJson: string): Promise<DataImportSummary>;
   mergeData(dataJson: string): Promise<DataImportSummary>;
+  /**
+   * Row-wise LWW merge of an incremental sync delta (watermark path).
+   * Unlike {@link CoreClient.mergeData} it never wipes rows the payload omits
+   * and fails closed on FK orphans; implementations without a delta command
+   * fall back to `mergeData`.
+   */
+  mergeDelta?(dataJson: string): Promise<DataImportSummary>;
   deleteAllData(): Promise<void>;
 }
 
@@ -227,3 +234,5 @@ export interface DataImportSummary {
 
 export * from './local-model-registry';
 export * from './diagnostics';
+export * from './backoff';
+export * from './core-client/create-rustra-core-client';

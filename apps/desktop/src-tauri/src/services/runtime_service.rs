@@ -36,12 +36,34 @@ impl DesktopRuntimeService {
         state.run_completion(request)
     }
 
-    pub fn run_embedding(
-        state: &DesktopRuntimeState,
+    /// 임베딩은 llama.cpp 동기 호출이라 수 초 블로킹할 수 있다. 메인 스레드
+    /// 프리즈를 피하기 위해 command(async fn)에서는 이 헬퍼가 반환하는
+    /// 클로저를 spawn_blocking 위에서 돌린다(뮤텍스는 클로저 내부에서 유지).
+    pub fn run_embedding_blocking(
+        state: DesktopRuntimeState,
         request: EmbeddingRequest,
-    ) -> Result<EmbeddingResponse, String> {
-        let vector = state.run_embedding(&request.input)?;
-        Ok(EmbeddingResponse { vector })
+    ) -> impl FnOnce() -> Result<EmbeddingResponse, String> + Send + 'static {
+        move || {
+            let vector = state.run_embedding(&request.input)?;
+            Ok(EmbeddingResponse { vector })
+        }
+    }
+
+    /// 배치 임베딩도 단건과 같은 블로킹 특성을 가진다 — 요청 전체를
+    /// spawn_blocking 위의 클로저 한 번으로 처리한다.
+    pub fn run_embedding_batch_blocking(
+        state: DesktopRuntimeState,
+        requests: Vec<EmbeddingRequest>,
+    ) -> impl FnOnce() -> Result<Vec<EmbeddingResponse>, String> + Send + 'static {
+        move || {
+            let inputs: Vec<String> =
+                requests.iter().map(|request| request.input.clone()).collect();
+            let vectors = state.run_embedding_batch(&inputs)?;
+            Ok(vectors
+                .into_iter()
+                .map(|vector| EmbeddingResponse { vector })
+                .collect())
+        }
     }
 
     pub fn get_runtime_health(state: &DesktopRuntimeState) -> Result<RuntimeHealth, String> {

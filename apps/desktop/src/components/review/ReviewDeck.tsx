@@ -6,10 +6,11 @@ import { cn } from '@/lib/utils';
 interface ReviewDeckProps {
   items: KnowledgeItem[];
   onRemembered: (item: KnowledgeItem) => Promise<void>;
+  onForgotten?: (item: KnowledgeItem) => Promise<void>;
   onPostponed: (item: KnowledgeItem) => Promise<void>;
 }
 
-export function ReviewDeck({ items, onRemembered, onPostponed }: ReviewDeckProps) {
+export function ReviewDeck({ items, onRemembered, onForgotten, onPostponed }: ReviewDeckProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,12 @@ export function ReviewDeck({ items, onRemembered, onPostponed }: ReviewDeckProps
   const handleRemembered = useCallback(
     (item: KnowledgeItem) => runAction(item, onRemembered),
     [runAction, onRemembered],
+  );
+
+  const handleForgotten = useCallback(
+    (item: KnowledgeItem) =>
+      onForgotten ? runAction(item, onForgotten) : Promise.resolve(),
+    [runAction, onForgotten],
   );
 
   const handlePostponed = useCallback(
@@ -98,6 +105,7 @@ export function ReviewDeck({ items, onRemembered, onPostponed }: ReviewDeckProps
         <ReviewCard
           item={currentItem}
           onRemembered={handleRemembered}
+          onForgotten={onForgotten ? handleForgotten : undefined}
           onPostponed={handlePostponed}
           saving={saving}
         />

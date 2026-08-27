@@ -71,6 +71,7 @@ fn main() {
             commands::run_completion,
             commands::stream_completion,
             commands::run_embedding,
+            commands::run_embedding_batch,
             commands::get_runtime_health,
             secrets::get_secret,
             secrets::set_secret,

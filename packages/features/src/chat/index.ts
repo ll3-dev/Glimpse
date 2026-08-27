@@ -208,6 +208,10 @@ export type ParsedChatMessageContent = {
 const THINK_OPEN_TAG = '<think>';
 const THINK_CLOSE_TAG = '</think>';
 
+const SUMMARY_MAX_LENGTH = 90;
+const SUMMARY_ELLIPSIS_LENGTH = 87;
+const SENTENCE_TERMINATORS = '.!?。';
+
 function summarizeReasoning(reasoning: string | null): string | null {
   if (!reasoning) return null;
 
@@ -218,12 +222,31 @@ function summarizeReasoning(reasoning: string | null): string | null {
 
   if (!normalized) return null;
 
-  const firstSentence = normalized.match(/(.+?[.!?。]|.{1,90})(\s|$)/)?.[1]?.trim() ?? normalized;
-  const summary = firstSentence.length > 90
-    ? `${firstSentence.slice(0, 87).trimEnd()}...`
-    : firstSentence;
+  // Only scan the leading window for a sentence terminator. The previous
+  // regex /(.+?[.!?。]|.{1,90})(\s|$)/ backtracked across the whole buffer and
+  // froze streaming re-parses on delimiter-free input (e.g. Korean reasoning).
+  const window =
+    normalized.length > SUMMARY_MAX_LENGTH
+      ? normalized.slice(0, SUMMARY_MAX_LENGTH)
+      : normalized;
 
-  return summary;
+  let terminatorIndex = -1;
+  for (let i = 0; i < window.length; i += 1) {
+    if (SENTENCE_TERMINATORS.includes(window[i])) {
+      terminatorIndex = i;
+      break;
+    }
+  }
+
+  if (terminatorIndex >= 0) {
+    return window.slice(0, terminatorIndex + 1);
+  }
+
+  if (normalized.length > SUMMARY_MAX_LENGTH) {
+    return `${normalized.slice(0, SUMMARY_ELLIPSIS_LENGTH).trimEnd()}...`;
+  }
+
+  return normalized;
 }
 
 function createParsedContent(

@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { discoveryBaseUrl, endpointCandidates, isAuthErrorMessage, normalizeBaseUrl } from './sync-url';
+import {
+  discoveryBaseUrl,
+  endpointCandidates,
+  HttpError,
+  isAuthError,
+  normalizeBaseUrl,
+} from './sync-url';
 
 describe('sync url helpers', () => {
   test('normalizeBaseUrl trims, strips trailing slashes, and defaults to https', () => {
@@ -31,9 +37,25 @@ describe('sync url helpers', () => {
     ).toEqual(['https://same']);
   });
 
-  test('isAuthErrorMessage matches only 401 status messages', () => {
-    expect(isAuthErrorMessage('Desktop 요청 실패 (401)')).toBe(true);
-    expect(isAuthErrorMessage('Desktop 요청 실패 (500)')).toBe(false);
-    expect(isAuthErrorMessage('연결 시간이 초과되었습니다.')).toBe(false);
+  test('isAuthError reads the response status off an HttpError, not message text', () => {
+    expect(isAuthError(new HttpError('페어링 토큰이 필요합니다.', 401))).toBe(true);
+    // A 401 whose server message happens to look like something else.
+    expect(isAuthError(new HttpError('Desktop 요청 실패 (500)', 401))).toBe(true);
+    expect(isAuthError(new HttpError('서버 오류', 500))).toBe(false);
+    expect(isAuthError(new HttpError('요청 과다', 429))).toBe(false);
+    // Plain errors and non-error values are never auth failures.
+    expect(isAuthError(new Error('Desktop 요청 실패 (401)'))).toBe(false);
+    expect(isAuthError(null)).toBe(false);
+    expect(isAuthError(undefined)).toBe(false);
+    expect(isAuthError('Desktop 요청 실패 (401)')).toBe(false);
+    expect(isAuthError({ status: 401 })).toBe(false);
+  });
+
+  test('HttpError carries the HTTP status for callers that branch on it', () => {
+    const error = new HttpError('토큰 만료', 403);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('HttpError');
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('토큰 만료');
   });
 });

@@ -452,21 +452,6 @@ fn review_commands_roundtrip() {
         .expect("calculateTagOverlap should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    let next = pkg
-        .invoke_json(
-            "calculateNextReview",
-            json!({
-                "lastReviewedAt": 1000,
-                "nextReviewAt": 2000,
-                "feedbackType": "remembered",
-                "now": 3000
-            }),
-        )
-        .expect("calculateNextReview should succeed");
-    assert!(next["intervalMs"].as_i64().expect("intervalMs") > 0);
-    assert!(next["nextReviewAt"].as_i64().expect("nextReviewAt") > 3000);
-    assert!(next.get("interval_ms").is_none());
-
     let init = pkg
         .invoke_json(
             "initializeReviewSchedule",
@@ -517,7 +502,9 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 31 commands, including deterministic data merging.
+    // schema exposes all 31 commands (calculateNextReview was removed in
+    // favor of the shared TS review scheduler), including deterministic data
+    // merging and incremental delta application (mergeDelta).
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
     assert_eq!(

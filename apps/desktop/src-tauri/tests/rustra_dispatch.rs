@@ -83,9 +83,10 @@ fn glimpse_package_dispatches_over_sqlite_file() {
         "message should name the missing item: {serialized}"
     );
 
-    // Command surface — all 25 registered commands resolve. List-style
+    // Command surface — all 24 registered commands resolve. List-style
     // commands accept `{}` and succeed; argument-taking ones fail arg
     // deserialization; either outcome proves the command exists.
+    // (`calculateNextReview`는 데드 명령으로 삭제됐다 — c6e6402.)
     let expected = [
         "saveKnowledgeItem", "listKnowledgeItems", "getKnowledgeItemById",
         "updateKnowledgeItem", "listKnowledgeItemsByIds", "listWeeklyKnowledgeItems",
@@ -95,7 +96,7 @@ fn glimpse_package_dispatches_over_sqlite_file() {
         "updateMessage", "deleteMessage", "saveRecommendations",
         "listRecommendations", "listPendingRecommendations", "respondToRecommendation",
         "listRecentFeedbackEvents", "logRecommendationFeedback",
-        "calculateTagOverlap", "calculateNextReview", "initializeReviewSchedule",
+        "calculateTagOverlap", "initializeReviewSchedule",
     ];
     for name in expected {
         if let Err(err) = package.invoke_json(name, json!({})) {
