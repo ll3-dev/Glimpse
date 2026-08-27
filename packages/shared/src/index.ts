@@ -227,3 +227,4 @@ export interface DataImportSummary {
 
 export * from './local-model-registry';
 export * from './diagnostics';
+export * from './backoff';

@@ -2,14 +2,13 @@ import { useEffect, useRef } from 'react';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCoreClient, useKnowledgeItemsQuery } from '@glimpse/hooks';
+import { backoffDurationMs } from '@glimpse/shared';
 import { generateKnowledgeGraph } from '@/features/graph/generate-knowledge-graph';
+import { computeGraphSourceDigest } from '@/features/graph/graph-source-window';
 
 const GRAPH_DIGEST_KEY = 'glimpse_graph_source_digest_v1';
 const GRAPH_FAILURE_KEY = 'glimpse_graph_failure_backoff_v1';
 const GRAPH_CONSECUTIVE_FAILURES_KEY = 'glimpse_graph_consecutive_failures_v1';
-/** Match generate-knowledge-graph: only the newest MAX_ITEMS feed the graph. */
-const GRAPH_INPUT_ITEMS = 24;
-const FAILURE_BACKOFF_MS = 15 * 60_000;
 /** After this many consecutive failures, stop auto-retrying until manual run. */
 const MAX_CONSECUTIVE_FAILURES = 3;
 
@@ -27,7 +26,11 @@ export function useKnowledgeGraphAutomation() {
     }).then((cleanup) => {
       if (disposed) cleanup();
       else unlisten = cleanup;
-    }).catch(() => undefined);
+    }).catch((error: unknown) => {
+        // A swallowed registration failure would leave graph refresh dead
+        // until the next manual sync — surface it instead.
+        console.error('[graph] failed to subscribe to sync-complete:', error);
+      });
     return () => {
       disposed = true;
       unlisten?.();
@@ -38,24 +41,18 @@ export function useKnowledgeGraphAutomation() {
     if (items.length < 2 || running.current) return;
     // The digest must reflect the exact slice the generator consumes —
     // otherwise edits outside the window trigger pointless recomputation.
-    const windowed = [...items]
-      .sort((left, right) => right.updatedAt - left.updatedAt)
-      .slice(0, GRAPH_INPUT_ITEMS);
-    const digest = windowed
-      .map((item) => `${item.id}:${item.updatedAt}`)
-      .sort()
-      .join('|');
+    const digest = computeGraphSourceDigest(items);
     if (localStorage.getItem(GRAPH_DIGEST_KEY) === digest) return;
-    // After a failed generation, wait out the backoff before retrying the
-    // same input instead of re-running the LLM on every sync tick.
+    // After a failed generation, wait out an exponential backoff before
+    // retrying the same input instead of re-running the LLM on every tick.
     const failedAt = Number(localStorage.getItem(GRAPH_FAILURE_KEY) ?? 0);
-    if (Date.now() - failedAt < FAILURE_BACKOFF_MS) return;
-    // Break endless silent retry loops: after MAX_CONSECUTIVE_FAILURES the
-    // hook stops auto-running. A successful manual generation resets the
-    // counter.
     const consecutiveFailures = Number(
       localStorage.getItem(GRAPH_CONSECUTIVE_FAILURES_KEY) ?? 0,
     );
+    if (failedAt > 0 && Date.now() - failedAt < backoffDurationMs(consecutiveFailures)) return;
+    // Break endless silent retry loops: after MAX_CONSECUTIVE_FAILURES the
+    // hook stops auto-running. A successful manual generation resets the
+    // counter.
     if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
       console.warn(
         `[graph] skipping auto-regeneration after ${consecutiveFailures} consecutive failures; ` +
