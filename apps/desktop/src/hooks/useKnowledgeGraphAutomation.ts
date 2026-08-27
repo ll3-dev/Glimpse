@@ -22,7 +22,15 @@ export function useKnowledgeGraphAutomation() {
     let disposed = false;
     let unlisten: UnlistenFn | undefined;
     void listen('glimpse://sync-complete', () => {
-      void queryClient.invalidateQueries();
+      // A sync merge can touch any synced entity, but LLM/model state is not
+      // synced — refetching it here would defeat the global staleTime for
+      // queries the merge cannot change.
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] !== 'chat' &&
+          query.queryKey[0] !== 'llm' &&
+          query.queryKey[0] !== 'models',
+      });
     }).then((cleanup) => {
       if (disposed) cleanup();
       else unlisten = cleanup;
