@@ -22,18 +22,20 @@ public class OcrModule: Module {
 
   private func installGlobal(appContext: AppContext) {
     // JS global에 설치 — rustra-jsi와 동일한 global 계약 패턴.
-    // ExpoRuntime.eval은 JS 런타임이 준비된 뒤 임의 시점에 호출 가능하다.
-    try? appContext.runtime.eval(
-      """
-      (function () {
-        globalThis.__glimpseOcr = {
-          recognizeText: function (imageUri) {
-            return globalThis.ExpoModules.Ocr.recognizeText(imageUri);
-          }
-        };
-      })();
-      """
-    )
+    // SDK 57에서 eval은 @JavaScriptActor 격리됨 — evalAsync로 hop.
+    Task {
+      try? await appContext.runtime.evalAsync(
+        """
+        (function () {
+          globalThis.__glimpseOcr = {
+            recognizeText: function (imageUri) {
+              return globalThis.ExpoModules.Ocr.recognizeText(imageUri);
+            }
+          };
+        })();
+        """
+      )
+    }
   }
 
   private static func performRecognition(imageUri: String, promise: Promise) {
