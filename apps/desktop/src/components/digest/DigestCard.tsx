@@ -1,5 +1,6 @@
 import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { Tag, Sparkles, CheckCircle, XCircle, SkipForward } from 'lucide-react';
+import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface DigestCardProps {
@@ -62,7 +63,12 @@ function ItemPreview({ item, label }: { item: KnowledgeItem | undefined; label: 
   );
 }
 
-export function DigestCard({
+/**
+ * memo 카드 — 응답 mutation이 recommendations 쿼리를 무효화해도 남은 카드는
+ * 프롭이 동일하므로 재렌더를 건너뛴다. 콜백들은 호출부에서 useCallback으로
+ * 안정화돼 있다.
+ */
+export const DigestCard = memo(function DigestCard({
   recommendation,
   itemA,
   itemB,
@@ -135,4 +141,4 @@ export function DigestCard({
       </div>
     </div>
   );
-}
+});
