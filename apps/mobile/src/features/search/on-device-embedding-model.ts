@@ -7,6 +7,7 @@ import {
   getPreferredEmbeddingModel,
   type ModelInfo,
 } from '@/src/features/ai/model-manager';
+import { disposeOnDeviceEmbedding } from './useMobileSemanticRerank';
 
 /**
  * On-device embedding model state — 검색 재정렬 폴백용 nomic 모델.
@@ -97,6 +98,9 @@ export const onDeviceEmbeddingStore = createStore<OnDeviceEmbeddingState>(
       try {
         await ModelDownloader.deleteModel(registryModel.filename);
       } finally {
+        // 살아있는 임베딩 컨텍스트(수백 MB 네이티브)를 즉시 반납 — 모델
+        // 파일만 지우면 컨텍스트는 다음 background까지 메모리에 잔류한다.
+        await disposeOnDeviceEmbedding();
         storage.remove(StorageKeys.ON_DEVICE_EMBEDDING_MODEL_ID);
         set({ modelPath: null, error: null });
       }

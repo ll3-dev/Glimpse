@@ -16,6 +16,9 @@ import { initLlama, type LlamaContext } from 'llama.rn';
 /** nomic v1.5(Q8_0 ~312MB)에 맞춘 소형 프로파일 — 재정렬 배치는 ≤31문자열. */
 const EMBEDDING_CONTEXT_SIZE = 2048;
 const EMBEDDING_GPU_LAYERS = 0;
+/** initLlama 실패 후 재시도 금지 시간 — 검색 입력마다 수백 MB 로드가
+ * 재시도되는 폭주를 끊는다(손상된 모델 파일 등 영구 실패 대비). */
+const INIT_FAILURE_COOLDOWN_MS = 60_000;
 
 export interface OnDeviceEmbeddingTarget {
   /** 로컬 GGUF 절대 경로 */
@@ -53,6 +56,7 @@ export function createOnDeviceEmbedder(
   let context: LlamaContext | null = null;
   let disposed = false;
   let loading: Promise<LlamaContext> | null = null;
+  let lastInitFailureAt = 0;
 
   // 직렬 큐: 진행 중 embed가 끝나야 다음 요청을 시작한다.
   let queueTail: Promise<unknown> = Promise.resolve();
@@ -62,6 +66,11 @@ export function createOnDeviceEmbedder(
       throw new Error('On-device embedder is disposed');
     }
     if (context) return context;
+    if (Date.now() - lastInitFailureAt < INIT_FAILURE_COOLDOWN_MS) {
+      // 쿨다운 중엔 재초기화를 시도하지 않고 즉시 실패 — 호출부(hook)가
+      // 키워드 폴백으로 흐르고, 검색 입력마다 initLlama가 다시 돌지 않는다.
+      throw new Error('온디바이스 임베딩 모델 로드 쿨다운 중');
+    }
     if (!loading) {
       loading = initLlamaFn({
         model: target.modelPath,
@@ -74,10 +83,12 @@ export function createOnDeviceEmbedder(
         use_mmap: true,
       })
         .then((ctx) => {
+          lastInitFailureAt = 0;
           context = ctx;
           return ctx;
         })
         .catch((error) => {
+          lastInitFailureAt = Date.now();
           throw new Error(`온디바이스 임베딩 모델 로드 실패: ${extractErrorMessage(error)}`);
         })
         .finally(() => {

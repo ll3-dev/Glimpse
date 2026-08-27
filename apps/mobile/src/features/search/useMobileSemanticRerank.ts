@@ -130,6 +130,14 @@ export async function suspendOnDeviceEmbedding(): Promise<void> {
   await activeEmbedder?.suspend();
 }
 
+/** 모델 삭제 등 영구 폐기 — 컨텍스트 release + 인스턴스 참조 정리. */
+export async function disposeOnDeviceEmbedding(): Promise<void> {
+  const embedder = activeEmbedder;
+  activeEmbedder = null;
+  activeEmbedderPath = null;
+  await embedder?.dispose();
+}
+
 const inactiveDeps: SemanticEmbedDeps = {
   async resolveEmbeddingTarget() {
     return null;
