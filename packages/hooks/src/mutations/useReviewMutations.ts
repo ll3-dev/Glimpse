@@ -30,7 +30,27 @@ export function scheduleNextReview(
 
 function invalidateReviewQueries(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: queryKeys.review.dueItems });
-  qc.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+}
+
+/**
+ * 복습 액션이 라이브러리에서 바꾸는 것은 이 아이템의 review 필드뿐이다.
+ * knowledgeItems.all 전체 무효화 대신 캐시된 리스트에서 해당 아이템만
+ * 교체해 라이브러리 목록 전체 refetch를 막는다. 아이템이 캐시에 없으면
+ * 아무것도 하지 않는다(마운트된 리스트가 없다는 뜻).
+ */
+function patchKnowledgeItemInList(
+  qc: ReturnType<typeof useQueryClient>,
+  item: KnowledgeItem,
+  patch: Partial<KnowledgeItem>,
+) {
+  qc.setQueryData<KnowledgeItem[]>(queryKeys.knowledgeItems.all, (current) => {
+    if (!current) return current;
+    const index = current.findIndex((entry) => entry.id === item.id);
+    if (index === -1) return current;
+    const next = current.slice();
+    next[index] = { ...next[index], ...patch };
+    return next;
+  });
 }
 
 export function useMarkAsReviewedMutation() {
@@ -50,8 +70,23 @@ export function useMarkAsReviewedMutation() {
         updatedAt: now,
       } as Partial<KnowledgeItem>);
     },
-    onSuccess: () => invalidateReviewQueries(qc),
+    onSuccess: (_, { item }) => {
+      invalidateReviewQueries(qc);
+      patchKnowledgeItemInList(qc, item, decisionFromItem(item, 'remembered'));
+    },
   });
+}
+
+function decisionFromItem(item: KnowledgeItem, feedback: 'remembered' | 'forgotten') {
+  const decision = scheduleNextReview(item, feedback);
+  const now = decision.nextReviewAt - decision.intervalMs;
+  return {
+    lastReviewedAt: now,
+    nextReviewAt: decision.nextReviewAt,
+    stability: decision.stability,
+    difficulty: decision.difficulty,
+    updatedAt: now,
+  };
 }
 
 export function useMarkAsForgottenMutation() {
@@ -69,7 +104,10 @@ export function useMarkAsForgottenMutation() {
         updatedAt: now,
       } as Partial<KnowledgeItem>);
     },
-    onSuccess: () => invalidateReviewQueries(qc),
+    onSuccess: (_, { item }) => {
+      invalidateReviewQueries(qc);
+      patchKnowledgeItemInList(qc, item, decisionFromItem(item, 'forgotten'));
+    },
   });
 }
 
@@ -86,6 +124,12 @@ export function usePostponeReviewMutation() {
         updatedAt: Date.now(),
       } as Partial<KnowledgeItem>);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.review.dueItems }),
+    onSuccess: (_, { item }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.review.dueItems });
+      const decision = scheduleNextReview(item, 'postponed');
+      patchKnowledgeItemInList(qc, item, {
+        nextReviewAt: decision.nextReviewAt,
+      });
+    },
   });
 }
