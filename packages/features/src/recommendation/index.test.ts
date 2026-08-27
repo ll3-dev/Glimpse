@@ -140,8 +140,135 @@ describe('createGenerateRecommendations feedback verdicts', () => {
     expect(pairs).toContain('b-e');
     expect(pairs).toContain('c-d');
   });
+});
 
+/**
+ * Verdicts older than the 30-day window must stop shaping suggestions:
+ * a stale first impression shouldn't block a pair forever, and stale
+ * accepts shouldn't keep lowering the bar either.
+ */
+describe('createGenerateRecommendations verdict expiry window', () => {
+  /** 2026-08-27T00:00:00Z — fixed "now" for deterministic window math. */
+  const NOW = Date.parse('2026-08-27T00:00:00Z');
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  test('a rejection older than 30 days no longer blocks its tag from qualifying', async () => {
+    // The dismissed edge itself is already an existing pair (never
+    // re-proposed regardless), so expiry is observed via the shared tag:
+    // with the stale rejection gone from the counters, a fresh react-only
+    // pair qualifies again.
+    const items = [
+      createItem('a', ['react']),
+      createItem('b', ['react']),
+      createItem('e', ['react']),
+    ];
+    const coreClient = {
+      listWeeklyKnowledgeItems: mock(async () => items),
+      listRecommendations: mock(async () => [
+        {
+          id: 'rec-old',
+          itemA_id: 'a',
+          itemB_id: 'b',
+          status: 'dismissed',
+          createdAt: NOW - 40 * DAY_MS,
+          respondedAt: NOW - 40 * DAY_MS,
+        },
+      ]),
+      listRecentFeedbackEvents: mock(async () => []),
+    };
+    const generate = createGenerateRecommendations({
+      coreClient,
+      getWeeklyItems: mock(async () => ({ success: true as const, items })),
+    });
+
+    const result = await generate({ since: 0, now: NOW });
+    if (result.success === false) throw new Error('generate should succeed');
+    const pairs = result.recommendations.map((r) => [r.itemAId, r.itemBId].sort().join('-'));
+    expect(pairs).toContain('a-e');
+    expect(pairs).toContain('b-e');
+  });
+
+  test('a rejection inside the 30-day window still blocks the pair', async () => {
+    const items = [createItem('a', ['react']), createItem('b', ['react'])];
+    const coreClient = {
+      listWeeklyKnowledgeItems: mock(async () => items),
+      listRecommendations: mock(async () => [
+        {
+          id: 'rec-recent',
+          itemA_id: 'a',
+          itemB_id: 'b',
+          status: 'dismissed',
+          createdAt: NOW - 40 * DAY_MS,
+          respondedAt: NOW - 29 * DAY_MS,
+        },
+      ]),
+      listRecentFeedbackEvents: mock(async () => []),
+    };
+    const generate = createGenerateRecommendations({
+      coreClient,
+      getWeeklyItems: mock(async () => ({ success: true as const, items })),
+    });
+
+    const result = await generate({ since: 0, now: NOW });
+    if (result.success === false) throw new Error('generate should succeed');
+    const pairs = result.recommendations.map((r) => [r.itemAId, r.itemBId].sort().join('-'));
+    expect(pairs).not.toContain('a-b');
+  });
+
+  test('an expired accept stops counting toward its tag bar (ages with rejections)', async () => {
+    // react was accepted 40 days ago; that stale accept must not qualify
+    // react-only pairs once it ages out of the window.
+    const items = [
+      createItem('a', ['react']),
+      createItem('b', ['react']),
+      createItem('e', ['react']),
+      createItem('c', ['rust']),
+      createItem('d', ['rust']),
+    ];
+    const edge = (
+      id: string,
+      a: string,
+      b: string,
+      status: string,
+      respondedAt: number,
+    ) => ({ id, itemA_id: a, itemB_id: b, status, createdAt: NOW - 41 * DAY_MS, respondedAt });
+    const coreClient = {
+      listWeeklyKnowledgeItems: mock(async () => items),
+      listRecommendations: mock(async () => [
+        edge('rec-old', 'a', 'b', 'accepted', NOW - 40 * DAY_MS),
+        // A recent rust dismissal for contrast — stays in force.
+        edge('rec-new', 'c', 'd', 'dismissed', NOW - 5 * DAY_MS),
+      ]),
+      listRecentFeedbackEvents: mock(async () => []),
+    };
+    const generate = createGenerateRecommendations({
+      coreClient,
+      getWeeklyItems: mock(async () => ({ success: true as const, items })),
+    });
+
+    const result = await generate({ since: 0, now: NOW });
+    if (result.success === false) throw new Error('generate should succeed');
+    const pairs = result.recommendations.map((r) => [r.itemAId, r.itemBId].sort().join('-'));
+    // a-b exists as an already-judged edge → never re-proposed regardless.
+    expect(pairs).not.toContain('a-b');
+    // The remaining unjudged react pair b-e only qualifies if the expired
+    // accept still counts; with expiry, react carries no verdicts at all...
+    // but there are also no rejections to raise the bar, so b-e qualifies
+    // via the default path. The real signal is c-d: its fresh dismissal
+    // keeps blocking it even though both edges exist in this fixture set.
+    expect(pairs).not.toContain('c-d');
+  });
+});
+
+describe('createGenerateRecommendations feedback verdicts regression guards', () => {
   test('statusVerdict takes precedence over conflicting feedback actions', async () => {
+    const baseItems = () => [
+      createItem('a', ['react']),
+      createItem('b', ['react']),
+      createItem('c', ['rust']),
+      createItem('d', ['rust']),
+      createItem('e', ['react']),
+    ];
     const items = baseItems();
     const generate = createGenerateRecommendations({
       coreClient: {

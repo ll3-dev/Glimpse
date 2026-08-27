@@ -4,3 +4,5 @@ src-tauri/target/
 src/**/*.js
 src/**/*.js.map
 .vite/
+test-results/
+playwright-report/

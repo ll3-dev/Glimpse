@@ -75,5 +75,11 @@ export interface MobileCoreClient {
   exportData(): Promise<string>;
   importData(dataJson: string): Promise<DataImportSummary>;
   mergeData(dataJson: string): Promise<DataImportSummary>;
+  /**
+   * Row-wise LWW merge of an incremental sync delta (watermark path).
+   * Optional: the in-memory fallback client does not implement it, so sync
+   * callers degrade to `mergeData` when absent.
+   */
+  mergeDelta?(dataJson: string): Promise<DataImportSummary>;
   deleteAllData(): Promise<void>;
 }

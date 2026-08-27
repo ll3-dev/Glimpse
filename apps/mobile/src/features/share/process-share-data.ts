@@ -19,7 +19,9 @@ export interface ProcessShareDataResult {
 export interface ProcessShareDataDeps {
   saveKnowledgeItem: (item: KnowledgeItem) => Promise<KnowledgeItem>;
   generateId: () => string;
-  logger?: { info: (message: string, meta?: unknown) => void };
+  // LogContext(Record<string, unknown>) 기반 시그니처 — unknown 매개변수는
+  // 구체적 콜백(LogContext)과 반공변 충돌을 일으켜 TS6부터 할당이 거부된다.
+  logger?: { info: (message: string, context?: Record<string, unknown>) => void };
   now?: () => number;
 }
 

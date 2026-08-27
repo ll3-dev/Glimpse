@@ -71,19 +71,18 @@ describe('run_embedding TS↔Rust 계약', () => {
 });
 
 describe('run_embedding_batch TS↔Rust 계약', () => {
-  test('배치 페이로드는 요청 배열을 camelCase wire 형식으로 감싼다', async () => {
+  test('배치 페이로드는 wire 형식 요청 배열을 그대로 {requests}로 감싼다(기본값 채움은 호출부 몫)', async () => {
     const { buildEmbeddingBatchInvokePayload } = await loadContract();
     const payload = buildEmbeddingBatchInvokePayload([
-      { text: 'first', modelId: 'm1', runtimeId: 'managed-local' },
-      { text: 'second' },
+      { runtimeId: 'managed-local', modelId: 'm1', input: 'first' },
+      { runtimeId: 'managed-local', modelId: 'default-embedding', input: 'second' },
     ]);
     expect(Object.keys(payload)).toEqual(['requests']);
     expect(payload.requests).toEqual([
       { runtimeId: 'managed-local', modelId: 'm1', input: 'first' },
-      // 단건과 같은 기본값 채움이 배열 원소에도 적용된다
-      { runtimeId: expect.any(String), modelId: expect.any(String), input: 'second' },
+      { runtimeId: 'managed-local', modelId: 'default-embedding', input: 'second' },
     ]);
-    expect('text' in payload.requests[1]).toBe(false);
+    expect('text' in payload.requests[0]).toBe(false);
   });
 
   test('배치 응답은 순서 보존 파싱되며 non-array/불량 원소를 거부한다', async () => {

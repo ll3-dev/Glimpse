@@ -16,12 +16,35 @@ impl SharedCore {
         self.client().merge_data(data)
     }
 
+    /// Incremental export of rows newer than `since_clock_ms` — see
+    /// [`glimpse_core::SqliteStorage::export_delta`].
+    pub fn export_delta(&self, since_clock_ms: i64) -> Result<DataExport> {
+        self.client().export_delta(since_clock_ms)
+    }
+
+    /// Row-wise LWW merge of an incremental payload — see
+    /// [`glimpse_core::SqliteStorage::apply_delta`].
+    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataExport> {
+        self.client().apply_delta(delta)
+    }
+
+    /// [`Self::apply_delta`] from its JSON wire form.
+    pub fn apply_delta_json(&self, data_json: &str) -> Result<String> {
+        self.client().apply_delta_json(data_json)
+    }
+
     pub fn merge_data_json(&self, data_json: &str) -> Result<DataImportSummary> {
         self.client().merge_data_json(data_json)
     }
 
     pub fn snapshot_fingerprint(&self) -> Result<String> {
         self.client().snapshot_fingerprint()
+    }
+
+    /// Storage write counter backing the sync server's cached-fingerprint
+    /// validation (see [`glimpse_core::SqliteStorage::sync_data_revision`]).
+    pub fn sync_data_revision(&self) -> Result<i64> {
+        self.client().sync_data_revision()
     }
 
     /// Fingerprint of a snapshot we did not necessarily produce ourselves —

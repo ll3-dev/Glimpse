@@ -122,7 +122,7 @@ export interface DesktopLLMService {
   unloadModel(modelId: string): Promise<void>;
   runCompletion(request: CompletionRequest): Promise<CompletionResponse>;
   runEmbedding(request: EmbeddingRequest): Promise<EmbeddingResponse>;
-  runEmbeddingBatch(requests: EmbeddingRequest[]): Promise<EmbeddingResponse[]>;
+  runEmbeddingBatch(requests: EmbeddingRequestWire[]): Promise<EmbeddingResponse[]>;
   getRuntimeHealth(): Promise<RuntimeHealth>;
   onDownloadProgress(callback: (event: DownloadProgressEvent) => void): Promise<() => void>;
   onDownloadDone(callback: (event: DownloadDoneEvent) => void): Promise<() => void>;
@@ -237,11 +237,12 @@ export function parseEmbeddingResponse(response: unknown): number[] {
  * 배치 와이어 — Rust `Vec<EmbeddingRequest>`는 요청 배열 그대로, 명령 인자
  * 이름이 `requests`이므로 `{ requests: [...] }`로 감싼다.
  */
-export function buildEmbeddingBatchInvokePayload(requests: EmbeddingRequest[]): {
+export function buildEmbeddingBatchInvokePayload(requests: EmbeddingRequestWire[]): {
   requests: EmbeddingRequestWire[];
 } {
   return {
-    requests: requests.map((request) => buildEmbeddingInvokePayload(request).request),
+    // batch 입력은 이미 wire 형식(단건 builder의 출력과 동일)이다.
+    requests: requests.map((request) => ({ ...request })),
   };
 }
 

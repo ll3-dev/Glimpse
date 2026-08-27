@@ -27,6 +27,10 @@ export interface GenerateRecommendationsDeps {
         itemA_id: string;
         itemB_id: string;
         status: string;
+        /** When the edge arose — verdict-expiry fallback clock. */
+        createdAt?: number;
+        /** When the user judged it — primary verdict-expiry clock. */
+        respondedAt?: number | null;
       }>
     >;
     listRecentFeedbackEvents?: (

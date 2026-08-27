@@ -116,7 +116,7 @@ impl SqliteStorage {
     }
 
     // Helper functions for RecommendationStatus conversion
-    fn recommendation_status_to_str(status: &RecommendationStatus) -> &'static str {
+    pub(super) fn recommendation_status_to_str(status: &RecommendationStatus) -> &'static str {
         match status {
             RecommendationStatus::Pending => "pending",
             RecommendationStatus::Accepted => "accepted",

@@ -28,6 +28,9 @@ export function buildLoadOptions(modelPath: string, options?: LoadModelOptions) 
     n_gpu_layers: options?.gpuLayers ?? 0,
     flash_attn_type: options?.flashAttention ? ('on' as const) : undefined,
     n_threads: options?.threads,
+    // llama.rn ContextParams — embedding은 bool, pooling_type은 문자열 유니온
+    embedding: options?.embedding ?? false,
+    pooling_type: options?.poolingType,
   };
 }
 

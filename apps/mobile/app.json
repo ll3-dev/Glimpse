@@ -36,7 +36,8 @@
         "com.apple.security.application-groups": [
           "group.kr.ll3.glimpse"
         ]
-      }
+      },
+      "deploymentTarget": "16.4"
     },
     "android": {
       "package": "kr.ll3.glimpse",
@@ -102,9 +103,10 @@
       "expo-font",
       "expo-image",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-splash-screen",
+      "expo-status-bar"
     ],
-    "extra": {
-    }
+    "extra": {}
   }
 }
