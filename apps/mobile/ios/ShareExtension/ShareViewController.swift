@@ -7,6 +7,7 @@
  * Modified for Glimpse: Added direct save functionality using JSON files in App Group.
  * The main app processes these files on launch and saves them to the database.
  */
+import AVFoundation
 import MobileCoreServices
 import Photos
 import Social
@@ -107,8 +108,15 @@ class ShareViewController: UIViewController {
 
   private func handleText(content: NSExtensionItem, attachment: NSItemProvider, index: Int) async {
     Task.detached {
-      if let item = try! await attachment.loadItem(forTypeIdentifier: self.textContentType)
-        as? String
+      // loadItem is async and can throw (provider cancelled, bad UTI...);
+      // surface the failure as user feedback instead of crashing the process.
+      var loaded: Any?
+      do {
+        loaded = try await attachment.loadItem(forTypeIdentifier: self.textContentType)
+      } catch {
+        NSLog("[ERROR] loadItem(text) threw: \(error.localizedDescription)")
+      }
+      if let item = loaded as? String
       {
         Task { @MainActor in
           self.sharedText.append(item)
@@ -139,7 +147,15 @@ class ShareViewController: UIViewController {
 
   private func handleUrl(content: NSExtensionItem, attachment: NSItemProvider, index: Int) async {
     Task.detached {
-      if let item = try! await attachment.loadItem(forTypeIdentifier: self.urlContentType) as? URL {
+      // Same failure policy as handleText: convert provider errors into the
+      // dismiss-with-error path rather than trapping.
+      var loaded: Any?
+      do {
+        loaded = try await attachment.loadItem(forTypeIdentifier: self.urlContentType)
+      } catch {
+        NSLog("[ERROR] loadItem(url) threw: \(error.localizedDescription)")
+      }
+      if let item = loaded as? URL {
         Task { @MainActor in
           self.sharedWebUrl.append(WebUrl(url: item.absoluteString, meta: ""))
 
@@ -170,20 +186,26 @@ class ShareViewController: UIViewController {
     async
   {
     Task.detached {
-      if let item = try! await attachment.loadItem(
-        forTypeIdentifier: self.propertyListType, options: nil)
-        as? NSDictionary
+      var loaded: Any?
+      do {
+        loaded = try await attachment.loadItem(
+          forTypeIdentifier: self.propertyListType, options: nil)
+      } catch {
+        NSLog("[ERROR] loadItem(preprocessing) threw: \(error.localizedDescription)")
+      }
+      if let item = loaded as? NSDictionary
       {
         Task { @MainActor in
 
           if let results = item[NSExtensionJavaScriptPreprocessingResultsKey]
-            as? NSDictionary
+            as? NSDictionary,
+            let baseUri = results["baseURI"] as? String
           {
             NSLog(
               "[DEBUG] NSExtensionJavaScriptPreprocessingResultsKey \(String(describing: results))"
             )
             self.sharedWebUrl.append(
-              WebUrl(url: results["baseURI"] as! String, meta: results["meta"] as! String))
+              WebUrl(url: baseUri, meta: results["meta"] as? String ?? ""))
             // If this is the last item, save sharedText in userDefaults and redirect to host app
             if index == (content.attachments?.count)! - 1 {
               let userDefaults = UserDefaults(suiteName: self.hostAppGroupIdentifier)
