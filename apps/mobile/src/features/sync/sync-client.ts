@@ -226,6 +226,9 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
       // now, so an existing watermark would under-report future changes.
       await mobileCoreClient.mergeData(JSON.stringify(response.snapshot));
     }
+    // A null snapshot on the full path is the fingerprint-skip answer:
+    // desktop content already matches ours, so nothing was merged and the
+    // caller has no reason to refetch every query.
     config = updateSyncConfig({
       lastSyncedAt: Date.now(),
       snapshotFingerprint: response.fingerprint,
@@ -236,15 +239,19 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
       outboundWatermark: response.newWatermark ?? null,
       tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
     });
-    return true;
+    // false = nothing merged locally (fingerprint skip). The auto-sync
+    // caller skips its query invalidations; manual syncs ignore the return.
+    return response.snapshot != null;
   };
 
   for (const baseUrl of candidates) {
     try {
-      await attempt(baseUrl);
+      const changed = await attempt(baseUrl);
       backoff = recordSuccess(backoff);
       setSyncRuntime('synced');
-      return true;
+      // Propagate the merge verdict: false (skip / all-stale delta) lets the
+      // auto-sync caller skip its query invalidations.
+      return changed;
     } catch (error) {
       lastError = error;
       logger.warn('Desktop sync endpoint failed', { baseUrl, error: errorMessage(error) });
@@ -256,10 +263,10 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     const rediscovered = await rediscoverPairedDesktop(config.desktopDeviceId);
     for (const baseUrl of rediscovered.filter((url) => !candidates.includes(url))) {
       try {
-        await attempt(baseUrl);
+        const changed = await attempt(baseUrl);
         backoff = recordSuccess(backoff);
         setSyncRuntime('synced');
-        return true;
+        return changed;
       } catch (error) {
         lastError = error;
         if (isAuthError(error)) break;

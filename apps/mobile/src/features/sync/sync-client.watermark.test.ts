@@ -57,7 +57,14 @@ mock.module('../../features/core', () => ({
     },
     async mergeDelta(dataJson: string): Promise<unknown> {
       calls.mergeDelta.push(dataJson);
-      return {};
+      // Non-zero summary → deltaAppliedSomething sees rows written.
+      return {
+        knowledgeItems: 1,
+        conversations: 0,
+        messages: 0,
+        recommendations: 0,
+        feedbackEvents: 0,
+      };
     },
   },
 }));
@@ -218,6 +225,34 @@ describe('sync-client watermark delta path', () => {
     // Full-path responses reset any watermark and record the fresh print.
     expect(config.outboundWatermark).toBeNull();
     expect(config.snapshotFingerprint).toBe('print-2');
+  });
+
+  test('fingerprint-skip response → false, no merge (auto-sync skips refetch)', async () => {
+    // When the desktop's dataset fingerprint matches the uploaded snapshot it
+    // answers with a null snapshot; nothing was merged, so the caller must
+    // see false and skip its query invalidations.
+    updateSyncConfig({
+      desktopDeviceId: 'desktop-test',
+      lanUrl: 'http://desktop.test:34129',
+      outboundWatermark: null,
+      snapshotFingerprint: 'print-1',
+    });
+    stubDesktopResponse({
+      ...BASE_RESPONSE,
+      snapshot: null,
+      fingerprint: 'print-1',
+      newWatermark: 4_242,
+    });
+
+    const { syncWithDesktop } = await import('./sync-client');
+    const ok = await syncWithDesktop({ force: true });
+    expect(ok).toBe(false);
+    expect(calls.exportData).toBe(1);
+    expect(calls.mergeData).toHaveLength(0);
+    // The skip answer still upgrades the next poll to the delta path.
+    const config = updateSyncConfig({});
+    expect(config.outboundWatermark).toBe(4_242);
+    expect(config.snapshotFingerprint).toBe('print-1');
   });
 
   test('full path with newWatermark → adopted, next poll goes incremental', async () => {
