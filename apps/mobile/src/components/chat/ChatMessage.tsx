@@ -4,7 +4,7 @@
  * Displays a single message bubble in the chat.
  */
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Check, ChevronDown, ChevronUp, Copy, BookmarkPlus, BookmarkCheck } from 'lucide-react-native';
@@ -23,7 +23,7 @@ interface ChatMessageProps {
   isPending?: boolean;
 }
 
-export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessageProps) {
+function ChatMessageImpl({ message, onEdit, onDelete, isPending }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isEdited = message.updatedAt !== null;
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -208,3 +208,17 @@ export function ChatMessage({ message, onEdit, onDelete, isPending }: ChatMessag
     </>
   );
 }
+
+/**
+ * Memoized so a streaming token cannot re-render every past message: each
+ * ChatMessage re-parses markdown on render, so token-frequency re-renders of
+ * the whole list bottleneck generation speed on long conversations.
+ */
+export const ChatMessage = memo(
+  ChatMessageImpl,
+  (prev, next) =>
+    prev.message === next.message &&
+    prev.isPending === next.isPending &&
+    prev.onEdit === next.onEdit &&
+    prev.onDelete === next.onDelete,
+);
