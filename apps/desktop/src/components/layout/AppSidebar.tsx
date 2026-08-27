@@ -6,6 +6,7 @@ import {
   Newspaper,
   Settings,
   Plus,
+  Network,
 } from 'lucide-react';
 
 interface NavItem {
@@ -19,6 +20,7 @@ const navItems: NavItem[] = [
   { label: 'Chat', icon: MessageSquare, path: '/chat' },
   { label: 'Review', icon: RotateCcw, path: '/review' },
   { label: 'Digest', icon: Newspaper, path: '/digest' },
+  { label: 'Graph', icon: Network, path: '/graph' },
   { label: 'Settings', icon: Settings, path: '/settings' },
 ];
 

@@ -18,6 +18,7 @@ impl SqliteStorage {
             messages: self.list_all_messages()?,
             recommendations: self.list_recommendations()?,
             feedback_events: self.list_all_feedback_events()?,
+            tombstones: self.list_sync_tombstones()?,
         })
     }
 
@@ -28,6 +29,7 @@ impl SqliteStorage {
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = (|| -> Result<()> {
             self.delete_all_rows()?;
+            self.replace_sync_tombstones(&data.tombstones)?;
             for item in &data.knowledge_items {
                 self.insert_knowledge_item(item)?;
             }
@@ -62,7 +64,8 @@ impl SqliteStorage {
     pub fn delete_all_data(&self) -> Result<()> {
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         let result = self
-            .delete_all_rows()
+            .record_all_current_rows_deleted_at(chrono::Utc::now().timestamp_millis())
+            .and_then(|_| self.delete_all_rows())
             .and_then(|_| self.validate_integrity());
         match result {
             Ok(()) => {
@@ -90,10 +93,10 @@ impl SqliteStorage {
     }
 }
 
-fn validate_export(data: &DataExport) -> Result<()> {
-    if data.format_version != DataExport::FORMAT_VERSION {
+pub(super) fn validate_export(data: &DataExport) -> Result<()> {
+    if data.format_version == 0 || data.format_version > DataExport::FORMAT_VERSION {
         return Err(Error::InvalidInput(format!(
-            "Unsupported data export version {}; expected {}",
+            "Unsupported data export version {}; expected 1..={}",
             data.format_version,
             DataExport::FORMAT_VERSION
         )));
@@ -280,6 +283,7 @@ mod tests {
                 action: FeedbackActionType::Accept,
                 created_at: 7,
             }],
+            tombstones: vec![],
         }
     }
 

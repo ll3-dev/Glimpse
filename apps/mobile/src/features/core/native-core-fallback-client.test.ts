@@ -33,7 +33,7 @@ describe('fallback core data portability', () => {
     await client.saveKnowledgeItem(item);
 
     const dataJson = await client.exportData();
-    expect(JSON.parse(dataJson).formatVersion).toBe(1);
+    expect(JSON.parse(dataJson).formatVersion).toBe(2);
 
     await client.deleteAllData();
     expect(await client.listKnowledgeItems()).toEqual([]);

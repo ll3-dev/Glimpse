@@ -3,103 +3,47 @@
  *
  * When direct save is enabled, the Share Extension saves data to UserDefaults
  * without opening the app. This module processes those items on app launch.
+ *
+ * The batch logic lives in process-pending-batch (pure core); this file only
+ * wires it to react-native lifecycle, the native store module and the core
+ * client.
+ *
+ * Processing is idempotent: every entry that is saved to the database is
+ * removed from the pending store immediately, so a partially-failed batch
+ * keeps only its unsaved entries and a foreground rerun never re-saves
+ * already-persisted items (previously the whole batch was retried with fresh
+ * ids, duplicating shares on every app foreground).
  */
 
 import { useEffect } from "react";
 import { AppState, Platform, AppStateStatus } from "react-native";
 import { mobileCoreClient } from "@/src/features/core/mobile-core-client";
 import { logger } from "@/src/utils/logger";
-import type { KnowledgeItem, KnowledgeItemType } from "@glimpse/shared";
-import { getPendingShareData, clearPendingShareData } from "@/src/utils/app-group-path";
+import {
+  getPendingShareData,
+  clearPendingShareData,
+} from "@/src/utils/app-group-path";
+import {
+  clearPendingShareText,
+  removePendingShareUrls,
+} from "./pending-share-store";
 import { generateId } from "@/src/lib/id";
+import { processPendingBatch } from "./process-pending-batch";
 
-interface PendingShareData {
-  text?: string[];
-  webUrl?: { url: string; meta: string }[];
-}
+export type { PendingShareData } from "./process-share-data";
 
 let isProcessing = false;
 
-/**
- * Processes pending share data and saves to the database.
- */
-async function processShareData(data: PendingShareData): Promise<boolean> {
-  try {
-    let saved = false;
-
-    // Process text share
-    if (data.text && data.text.length > 0) {
-      const combinedText = data.text.join("\n");
-      const item: KnowledgeItem = {
-        id: generateId(),
-        type: "share" as KnowledgeItemType,
-        title: null,
-        body: combinedText,
-        url: null,
-        summary: null,
-        tags: null,
-        labels: null,
-        provisionalLabels: null,
-        labelStatus: null,
-        labelSource: null,
-        labelVersion: null,
-        labelScore: null,
-        labelRequestedAt: null,
-        labelCompletedAt: null,
-        labelError: null,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        stability: null,
-        difficulty: null,
-        lastReviewedAt: null,
-        nextReviewAt: null,
-      };
-      await mobileCoreClient.saveKnowledgeItem(item);
-      logger.info("[PendingShareProcessor] Saved text share");
-      saved = true;
-    }
-
-    // Process URL share
-    if (data.webUrl && data.webUrl.length > 0) {
-      await Promise.all(
-        data.webUrl.map(async (webUrl) => {
-          const item: KnowledgeItem = {
-            id: generateId(),
-            type: "share" as KnowledgeItemType,
-            title: webUrl.url,
-            body: webUrl.meta || null,
-            url: webUrl.url,
-            summary: null,
-            tags: null,
-            labels: null,
-            provisionalLabels: null,
-            labelStatus: null,
-            labelSource: null,
-            labelVersion: null,
-            labelScore: null,
-            labelRequestedAt: null,
-            labelCompletedAt: null,
-            labelError: null,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            stability: null,
-            difficulty: null,
-            lastReviewedAt: null,
-            nextReviewAt: null,
-          };
-          await mobileCoreClient.saveKnowledgeItem(item);
-          logger.info("[PendingShareProcessor] Saved URL share:", { url: webUrl.url });
-        })
-      );
-      saved = true;
-    }
-
-    return saved;
-  } catch (error) {
-    logger.error("[PendingShareProcessor] Failed to process share data:", error);
-    return false;
-  }
-}
+const batchDeps = {
+  saveKnowledgeItem: (item: Parameters<typeof mobileCoreClient.saveKnowledgeItem>[0]) =>
+    mobileCoreClient.saveKnowledgeItem(item),
+  generateId,
+  getPendingShareData,
+  clearPendingShareData,
+  clearPendingShareText,
+  removePendingShareUrls,
+  logger,
+};
 
 /**
  * Hook to process pending shares when the app becomes active.
@@ -115,15 +59,7 @@ export function useProcessPendingShares() {
       isProcessing = true;
 
       try {
-        const data = await getPendingShareData();
-        if (data) {
-          logger.info("[PendingShareProcessor] Found pending share data, processing...");
-          const success = await processShareData(data);
-          if (success) {
-            await clearPendingShareData();
-            logger.info("[PendingShareProcessor] Pending share data processed and cleared");
-          }
-        }
+        await processPendingBatch(batchDeps);
       } catch (error) {
         logger.error("[PendingShareProcessor] Error processing pending shares:", error);
       } finally {
@@ -150,7 +86,8 @@ export function useProcessPendingShares() {
 
 /**
  * Processes any pending shares immediately.
- * Call this when you want to ensure all pending shares are processed.
+ * Returns 1 only when every pending entry was saved; otherwise failed
+ * entries stay pending for the next run.
  */
 export async function processPendingSharesNow(): Promise<number> {
   if (Platform.OS !== "ios") {
@@ -158,15 +95,7 @@ export async function processPendingSharesNow(): Promise<number> {
   }
 
   try {
-    const data = await getPendingShareData();
-    if (data) {
-      const success = await processShareData(data);
-      if (success) {
-        await clearPendingShareData();
-        return 1;
-      }
-    }
-    return 0;
+    return await processPendingBatch(batchDeps);
   } catch (error) {
     logger.error("[PendingShareProcessor] Error in processPendingSharesNow:", error);
     return 0;

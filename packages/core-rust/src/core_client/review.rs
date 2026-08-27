@@ -1,19 +1,23 @@
-//! Review schedule calculation logic.
+//! Review schedule initialization — FSRS-lite spaced repetition bootstrap.
+//!
+//! Next-interval scheduling from feedback lives in the shared TS package
+//! (`packages/features/src/review`); the core only seeds a new item's
+//! schedule and memory state.
 
 use std::collections::HashSet;
 
 use crate::models::{
-    CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput,
-    InitializeReviewScheduleInput, InitializeReviewScheduleOutput, ReviewFeedbackType,
+    CalculateTagOverlapInput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput,
 };
 
-// Review schedule constants (matching TypeScript implementation)
-pub const DEFAULT_INITIAL_REVIEW_INTERVAL_MS: i64 = 24 * 60 * 60 * 1000; // 1 day
-pub const MIN_REVIEW_INTERVAL_MS: i64 = 24 * 60 * 60 * 1000; // 1 day
-pub const MAX_REVIEW_INTERVAL_MS: i64 = 30 * 24 * 60 * 60 * 1000; // 30 days
+/// Initial interval for a fresh item's review schedule. Interval clamping
+/// itself happens in the shared TS scheduler (`@glimpse/features`).
+pub const DEFAULT_INITIAL_REVIEW_INTERVAL_MS: i64 = 10 * 60 * 1000; // 10 minutes
 
-const FEEDBACK_MULTIPLIER_REMEMBERED: i64 = 2;
-const FEEDBACK_MULTIPLIER_POSTPONED: i64 = 1;
+/// Default FSRS-style memory state for a fresh item (in days for stability,
+/// 1..=10 scale for difficulty).
+const INITIAL_STABILITY_DAYS: f64 = 0.5;
+const INITIAL_DIFFICULTY: f64 = 5.0;
 
 use super::CoreClientImpl;
 
@@ -37,23 +41,6 @@ impl CoreClientImpl {
         left_tags.intersection(&right_tags).count() as i32
     }
 
-    /// Calculates the next review time based on feedback.
-    pub fn calculate_next_review(
-        &self,
-        input: &CalculateNextReviewInput,
-    ) -> CalculateNextReviewOutput {
-        let current_interval =
-            calculate_current_interval(input.last_reviewed_at, input.next_review_at);
-
-        let adjusted_interval = calculate_adjusted_interval(current_interval, input.feedback_type);
-        let next_review_at = input.now + adjusted_interval;
-
-        CalculateNextReviewOutput {
-            interval_ms: adjusted_interval,
-            next_review_at,
-        }
-    }
-
     /// Initializes the review schedule for a new item.
     pub fn initialize_review_schedule(
         &self,
@@ -65,28 +52,50 @@ impl CoreClientImpl {
 
         InitializeReviewScheduleOutput {
             next_review_at: input.created_at + interval_ms,
-            stability: None,
-            difficulty: None,
+            stability: Some(INITIAL_STABILITY_DAYS),
+            difficulty: Some(INITIAL_DIFFICULTY),
             last_reviewed_at: None,
         }
     }
 }
 
-fn calculate_current_interval(last_reviewed_at: Option<i64>, next_review_at: Option<i64>) -> i64 {
-    match (last_reviewed_at, next_review_at) {
-        (Some(last), Some(next)) => next - last,
-        _ => DEFAULT_INITIAL_REVIEW_INTERVAL_MS,
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::CoreKnowledgeItemLike;
+
+    fn client() -> CoreClientImpl {
+        CoreClientImpl::in_memory().expect("in-memory core client")
     }
-}
 
-fn clamp_interval(interval_ms: i64) -> i64 {
-    interval_ms.clamp(MIN_REVIEW_INTERVAL_MS, MAX_REVIEW_INTERVAL_MS)
-}
+    #[test]
+    fn tag_overlap_counts_shared_tags() {
+        let input = CalculateTagOverlapInput {
+            left: CoreKnowledgeItemLike {
+                tags: Some(vec!["rust".to_string(), "react".to_string()]),
+                ..Default::default()
+            },
+            right: CoreKnowledgeItemLike {
+                tags: Some(vec!["rust".to_string(), "vue".to_string()]),
+                ..Default::default()
+            },
+        };
+        assert_eq!(client().calculate_tag_overlap(&input), 1);
+    }
 
-fn calculate_adjusted_interval(current_interval_ms: i64, feedback_type: ReviewFeedbackType) -> i64 {
-    let multiplier = match feedback_type {
-        ReviewFeedbackType::Remembered => FEEDBACK_MULTIPLIER_REMEMBERED,
-        ReviewFeedbackType::Postponed => FEEDBACK_MULTIPLIER_POSTPONED,
-    };
-    clamp_interval(current_interval_ms * multiplier)
+    #[test]
+    fn initialize_seeds_default_stability_and_difficulty() {
+        let created_at = 1_000_000;
+        let output = client().initialize_review_schedule(&InitializeReviewScheduleInput {
+            created_at,
+            interval_ms: None,
+        });
+        assert_eq!(
+            output.next_review_at,
+            created_at + DEFAULT_INITIAL_REVIEW_INTERVAL_MS
+        );
+        assert_eq!(output.stability, Some(0.5));
+        assert_eq!(output.difficulty, Some(5.0));
+        assert!(output.last_reviewed_at.is_none());
+    }
 }

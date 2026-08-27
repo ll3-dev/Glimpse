@@ -99,4 +99,56 @@ describe('createRunForegroundLabeling', () => {
     expect(result.data.processedCount).toBe(0);
     expect(coreClient.updateKnowledgeItem).not.toHaveBeenCalled();
   });
+
+  test('items saved through createSaveKnowledgeItem flow through the pending queue into labeling', async () => {
+    const { createSaveKnowledgeItem } = await import('@glimpse/features');
+
+    const savedItems: KnowledgeItem[] = [];
+    const saveKnowledgeItem = mock(async (item: KnowledgeItem) => {
+      savedItems.push(item);
+      return item;
+    });
+    const saved = await createSaveKnowledgeItem({
+      coreClient: { saveKnowledgeItem },
+      generateMetadata: mock(async () => ({ summary: 'summary', tags: ['tag'] })),
+      initializeReviewSchedule: mock(() => Promise.resolve({
+        nextReviewAt: 123,
+        stability: null,
+        difficulty: null,
+        lastReviewedAt: null,
+      })),
+      logger: { error: mock() },
+      generateId: () => 'saved-1',
+      isIdCollisionError: () => false,
+      maxIdCollisionRetries: 2,
+    })({ type: 'note', body: 'integration note' });
+    expect(saved.success).toBe(true);
+
+    // The pending queue must return exactly what the save path produced.
+    coreClient.listPendingKnowledgeItemsForLabeling.mockImplementation(async () => savedItems);
+    const updatedItem = savedItems[0]
+      ? createItem({
+          ...savedItems[0],
+          provisionalLabels: ['todo', 'project'],
+          labelStatus: 'provisional',
+          labelSource: 'rules',
+          labelVersion: 'rules-v1',
+          labelScore: 0.65,
+          labelCompletedAt: 100,
+          updatedAt: 100,
+        })
+      : createItem();
+    coreClient.updateKnowledgeItem.mockResolvedValue(updatedItem);
+
+    const result = await runForegroundLabeling(1);
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.processedCount).toBe(1);
+    // Queue consumed the saved item and labeled it.
+    expect(coreClient.updateKnowledgeItem).toHaveBeenCalledWith(
+      'saved-1',
+      expect.objectContaining({ labelStatus: 'provisional' })
+    );
+  });
 });

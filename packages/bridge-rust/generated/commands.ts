@@ -1,13 +1,9 @@
-import type { AddMessageInput, AddMessageOutput, CalculateNextReviewInput, CalculateNextReviewOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteAllDataInput, DeleteAllDataOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, ExportDataInput, ExportDataOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, ImportDataInput, ImportDataOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
+import type { AddMessageInput, AddMessageOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteAllDataInput, DeleteAllDataOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, ExportDataInput, ExportDataOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, ImportDataInput, ImportDataOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, MergeDataInput, MergeDataOutput, MergeDeltaInput, MergeDeltaOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
 import { invoke } from '@rustra/types';
 import type { InvokeOptions } from '@rustra/types';
 
 export function addMessage(input: AddMessageInput, options?: InvokeOptions): Promise<AddMessageOutput> {
   return invoke<AddMessageOutput>('addMessage', input, options);
-}
-
-export function calculateNextReview(input: CalculateNextReviewInput, options?: InvokeOptions): Promise<CalculateNextReviewOutput> {
-  return invoke<CalculateNextReviewOutput>('calculateNextReview', input, options);
 }
 
 export function calculateTagOverlap(input: CalculateTagOverlapInput, options?: InvokeOptions): Promise<CalculateTagOverlapOutput> {
@@ -96,6 +92,14 @@ export function listWeeklyKnowledgeItems(input: ListWeeklyKnowledgeItemsInput, o
 
 export function logRecommendationFeedback(input: LogRecommendationFeedbackInput, options?: InvokeOptions): Promise<LogRecommendationFeedbackOutput> {
   return invoke<LogRecommendationFeedbackOutput>('logRecommendationFeedback', input, options);
+}
+
+export function mergeData(input: MergeDataInput, options?: InvokeOptions): Promise<MergeDataOutput> {
+  return invoke<MergeDataOutput>('mergeData', input, options);
+}
+
+export function mergeDelta(input: MergeDeltaInput, options?: InvokeOptions): Promise<MergeDeltaOutput> {
+  return invoke<MergeDeltaOutput>('mergeDelta', input, options);
 }
 
 export function respondToRecommendation(input: RespondToRecommendationInput, options?: InvokeOptions): Promise<RespondToRecommendationOutput> {

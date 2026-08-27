@@ -203,6 +203,7 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation project(":rustra-jsi")
     implementation project(":glimpse-ocr")
+    implementation project(":glimpse-sync-discovery")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

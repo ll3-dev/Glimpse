@@ -3,7 +3,7 @@ import "@/src/lib/init";
 
 import { Stack } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, startTransition, useCallback, useEffect, useState } from "react";
 import { LogBox, Platform, View, Text, Pressable } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AlertTriangle, RefreshCw } from "lucide-react-native";
@@ -14,6 +14,7 @@ import {
   useRecoverLocalModelDownload,
   useReleaseLocalLLMOnPressure,
   useWarmLocalLLM,
+  useAutoSync,
 } from "@/src/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
@@ -28,6 +29,7 @@ import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
 import { useSemanticColor } from "@glimpse/ui";
+import { ensureSyncBackgroundTaskRegistered } from "@/src/features/sync";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
@@ -36,6 +38,7 @@ function RootProviders({ children }: { children: React.ReactNode }) {
   useWarmLocalLLM();
   useReleaseLocalLLMOnPressure();
   useProcessPendingShares();
+  useAutoSync();
   return <>{children}</>;
 }
 
@@ -103,19 +106,24 @@ export default function RootLayout() {
   );
 
   const initCore = useCallback(async () => {
-    try {
-      setCoreInitError(null);
-      // BYOK 키 복원을 부트스트랩 게이트에 병렬 편입 — 코어 초기화와
-      // 함께 기다려 콜드스타트 직후 BYOK 실행이 키 null로 거부되거나
-      // 스텁 타깃으로 폴백하는 레이스를 제거한다. 복원 실패는 게이트를
-      // 깨지 않는다(ensureBYOKHydrated가 내부에서 처리).
-      await Promise.all([initializeCoreClient(), ensureBYOKHydrated()]);
-    } catch (error) {
-      logger.error('Failed to initialize mobile core client', error);
-      setCoreInitError(error instanceof Error ? error : new Error(String(error)));
-    } finally {
+    // BYOK 키 복원을 부트스트랩 게이트에 병렬 편입 — 코어 초기화와
+    // 함께 기다려 콜드스타트 직후 BYOK 실행이 키 null로 거부되거나
+    // 스텁 타깃으로 폴백하는 레이스를 제거한다. 복원 실패는 게이트를
+    // 깨지 않는다(ensureBYOKHydrated가 내부에서 처리).
+    let initError: Error | null = null;
+    await Promise.all([initializeCoreClient(), ensureBYOKHydrated()]).catch(
+      (error) => {
+        logger.error('Failed to initialize mobile core client', error);
+        initError = error instanceof Error ? error : new Error(String(error));
+      },
+    );
+    // setState를 effect 동기 경로 밖(마이크로태스크 후반)으로 밀어
+    // cascading render(set-state-in-effect) 위반을 피한다.
+    // 재시도 성공 시에도 여기서 폴백 UI가 해제된다.
+    startTransition(() => {
+      setCoreInitError(initError);
       setIsCoreReady(true);
-    }
+    });
   }, []);
 
   useEffect(() => {
@@ -124,6 +132,10 @@ export default function RootLayout() {
 
     void ensureLabelingBackgroundTaskRegistered().catch((error) => {
       logger.error('Failed to register labeling background task', error);
+    });
+
+    void ensureSyncBackgroundTaskRegistered().catch((error) => {
+      logger.error('Failed to register desktop sync background task', error);
     });
 
     // iOS simulator can emit noisy CoreHaptics keyboard logs that are not app failures.

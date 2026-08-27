@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Cpu, Download, Loader2, RefreshCw } from 'lucide-react';
+import { Cpu, RefreshCw } from 'lucide-react';
 import { ModelCard } from './ModelCard';
 
 // ── Categories ───────────────────────────────────────────────────────────────
@@ -93,13 +93,11 @@ export function ModelManagerSection({
   // Build a map of installed models for quick lookup
   const installedMap = useMemo(() => {
     const map = new Map<string, ManagedModelRecord>();
-    if (overview?.models) {
-      for (const m of overview.models) {
-        map.set(m.id, m);
-      }
+    for (const m of overview?.models ?? []) {
+      map.set(m.id, m);
     }
     return map;
-  }, [overview?.models]);
+  }, [overview]);
 
   // Currently loaded model id from health
   const activeModelId = overview?.health?.loadedModelId ?? null;

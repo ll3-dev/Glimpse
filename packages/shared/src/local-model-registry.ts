@@ -799,6 +799,16 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["embedding"],
     platform: "both",
     description: "텍스트 임베딩, 768차원",
+    // 검색 재정렬용 온디바이스 임베딩 프로파일 — llama.rn 전용 컨텍스트
+    mobileProfile: {
+      rank: 90,
+      tier: "compact",
+      recommended: true,
+      strengths: ["기기 내 임베딩", "검색 재정렬", "오프라인 동작"],
+      caveat: "채팅이 아닌 검색 의미 재정렬 전용 모델입니다.",
+      runtime: "llama-rn",
+      minRamGb: 4,
+    },
   },
   {
     id: "nomic-embed-text-v2-moe-q8_0",

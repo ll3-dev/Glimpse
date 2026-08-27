@@ -1,7 +1,8 @@
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { BYOKSection } from './BYOKSection';
 import { ModelManagerSection } from './ModelManagerSection';
+import { DesktopSyncSection } from './DesktopSyncSection';
 import { loadSettings, saveSettings, type DesktopSettings } from '@/lib/settings-storage';
 
 type AiProvider = DesktopSettings['aiProvider'];
@@ -9,7 +10,7 @@ type AiProvider = DesktopSettings['aiProvider'];
 const PROVIDER_OPTIONS: { value: AiProvider; label: string; description: string }[] = [
   { value: 'rules', label: 'Rules', description: 'Use rule-based labeling only' },
   { value: 'byok', label: 'BYOK', description: 'Bring your own API key' },
-  { value: 'local-llm', label: 'Local LLM', description: 'Run inference locally (coming soon)' },
+  { value: 'local-llm', label: 'Local LLM', description: 'Run labeling and graph inference on this desktop' },
 ];
 
 export function SettingsPanel() {
@@ -94,6 +95,10 @@ export function SettingsPanel() {
           }
         />
       </section>
+
+      <hr className="border-border" />
+
+      <DesktopSyncSection />
     </div>
   );
 }

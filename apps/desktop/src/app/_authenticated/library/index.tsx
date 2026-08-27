@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, useMemo } from 'react';
 import { useKnowledgeItemsQuery } from '@glimpse/hooks';
 import { filterKnowledgeItems } from '@glimpse/features/search';
+import { useDesktopSemanticRerank } from '@/features/search/useSemanticRerank';
 import { SearchBar } from '@/components/library/SearchBar';
 import { KnowledgeItemList } from '@/components/library/KnowledgeItemList';
 
@@ -10,11 +11,16 @@ function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  const filteredItems = useMemo(() => {
+  const keywordMatches = useMemo(() => {
     if (!items) return [];
     if (!searchQuery) return items;
     return filterKnowledgeItems(items, searchQuery);
   }, [items, searchQuery]);
+
+  // When an embedding model is loaded, keyword matches are re-ranked by
+  // semantic similarity; otherwise this is a pass-through.
+  const semantic = useDesktopSemanticRerank(keywordMatches, searchQuery);
+  const filteredItems = semantic.items;
 
   return (
     <div className="flex h-full flex-col gap-4 p-6">
@@ -22,6 +28,7 @@ function LibraryPage() {
         <h1 className="text-2xl font-bold">Library</h1>
         <span className="text-sm text-muted-foreground">
           {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+          {semantic.active ? ' · 의미 정렬' : ''}
         </span>
       </div>
       <SearchBar onSearch={setSearchQuery} />

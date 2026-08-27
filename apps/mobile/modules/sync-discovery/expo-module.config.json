@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["SyncDiscoveryModule"]
+  },
+  "android": {
+    "modules": ["dev.ll3.glimpse.sync.SyncDiscoveryModule"]
+  }
+}

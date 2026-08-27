@@ -127,6 +127,41 @@ describe('core capture application layer', () => {
     dateNow.mockRestore();
   });
 
+  test('createSaveKnowledgeItem enqueues saved items for labeling with requested timestamp', async () => {
+    const saveKnowledgeItem = mock(async (item: KnowledgeItem) => item);
+    const dateNow = spyOn(Date, 'now');
+    dateNow.mockReturnValue(1_700_000_000_000);
+
+    const result = await createSaveKnowledgeItem({
+      coreClient: { saveKnowledgeItem },
+      generateMetadata: mock(async () => ({ summary: 'summary', tags: ['tag'] })),
+      initializeReviewSchedule: mock(() => Promise.resolve({
+        nextReviewAt: 123,
+        stability: null,
+        difficulty: null,
+        lastReviewedAt: null,
+      })),
+      logger: { error: mock() },
+      generateId: () => 'id-1',
+      isIdCollisionError: () => false,
+      maxIdCollisionRetries: 2,
+    })({
+      type: 'note',
+      body: 'hello',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.item.labelStatus).toBe('pending');
+      expect(result.item.labelRequestedAt).toBe(1_700_000_000_000);
+    }
+    expect(saveKnowledgeItem.mock.calls[0][0]).toMatchObject({
+      labelStatus: 'pending',
+      labelRequestedAt: 1_700_000_000_000,
+    });
+    dateNow.mockRestore();
+  });
+
   test('createSaveKnowledgeItem returns max retries exceeded after repeated collisions', async () => {
     const result = await createSaveKnowledgeItem({
       coreClient: {

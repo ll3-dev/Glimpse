@@ -1,0 +1,25 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    namespace "dev.ll3.glimpse.sync"
+
+    compileSdkVersion safeExtGet("compileSdkVersion", 36)
+
+    defaultConfig {
+        minSdkVersion safeExtGet("minSdkVersion", 24)
+        targetSdkVersion safeExtGet("targetSdkVersion", 36)
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+dependencies {
+    implementation project(':expo-modules-core')
+}

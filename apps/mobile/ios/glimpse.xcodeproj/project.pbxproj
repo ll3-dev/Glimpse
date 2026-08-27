@@ -10,13 +10,13 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1A2B3C4D5E6F789012345678 /* AppGroupModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7890123456789A /* AppGroupModule.swift */; };
 		2B3C4D5E6F7890123456789B /* AppGroupModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F7890123456789ABC /* AppGroupModule.m */; };
-		A11E00000000000000000001 /* AppleIntelligenceModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000003 /* AppleIntelligenceModule.swift */; };
-		A11E00000000000000000002 /* AppleIntelligenceModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000004 /* AppleIntelligenceModule.m */; };
 		3A86FDA75BB24D23BA5C3C53 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A480D10E13C94759BFCEF1C8 /* MainInterface.storyboard */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		43A5854242941AE72B390448 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F81E9C9E5409B127151B7D16 /* ExpoModulesProvider.swift */; };
 		4482F71C0ED04885AF364410 /* ShareExtensionPreprocessor.js in Resources */ = {isa = PBXBuildFile; fileRef = 92207BFF5381453097B13B7E /* ShareExtensionPreprocessor.js */; };
 		4B3E44F46FC30AEDD8DB245E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 399B0A8A11214959934FD020 /* PrivacyInfo.xcprivacy */; };
+		A11E00000000000000000001 /* AppleIntelligenceModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000003 /* AppleIntelligenceModule.swift */; };
+		A11E00000000000000000002 /* AppleIntelligenceModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000004 /* AppleIntelligenceModule.m */; };
 		AA1EDEB2A3764B19B87992DD /* ShareExtension.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = 9284CAF38FE542F5B0D42483 /* ShareExtension.appex */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		CD51CE7FFF654AB39F5461D9 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99C00C2EDFB4B37A928674C /* ShareViewController.swift */; };
@@ -58,12 +58,12 @@
 		2B3C4D5E6F7890123456789A /* AppGroupModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppGroupModule.swift; path = glimpse/AppGroupModule.swift; sourceTree = "<group>"; };
 		399B0A8A11214959934FD020 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3C4D5E6F7890123456789ABC /* AppGroupModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppGroupModule.m; path = glimpse/AppGroupModule.m; sourceTree = "<group>"; };
-		A11E00000000000000000003 /* AppleIntelligenceModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleIntelligenceModule.swift; path = glimpse/AppleIntelligenceModule.swift; sourceTree = "<group>"; };
-		A11E00000000000000000004 /* AppleIntelligenceModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppleIntelligenceModule.m; path = glimpse/AppleIntelligenceModule.m; sourceTree = "<group>"; };
 		62944ACBC99A4DC69186EABB /* ShareExtension.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		92207BFF5381453097B13B7E /* ShareExtensionPreprocessor.js */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ShareExtensionPreprocessor.js; sourceTree = "<group>"; };
 		9284CAF38FE542F5B0D42483 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 9; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9BF637D80CE856D9F82F88F4 /* Pods-glimpse.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-glimpse.release.xcconfig"; path = "Target Support Files/Pods-glimpse/Pods-glimpse.release.xcconfig"; sourceTree = "<group>"; };
+		A11E00000000000000000003 /* AppleIntelligenceModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleIntelligenceModule.swift; path = glimpse/AppleIntelligenceModule.swift; sourceTree = "<group>"; };
+		A11E00000000000000000004 /* AppleIntelligenceModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppleIntelligenceModule.m; path = glimpse/AppleIntelligenceModule.m; sourceTree = "<group>"; };
 		A480D10E13C94759BFCEF1C8 /* MainInterface.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = MainInterface.storyboard; sourceTree = "<group>"; };
 		A99C00C2EDFB4B37A928674C /* ShareViewController.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = glimpse/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -359,6 +359,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-timing/React-timing_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/react-native-blob-util/ReactNativeBlobUtilPrivacyInfo.bundle",
 			);
@@ -373,6 +374,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-timing_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SDWebImage.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ReactNativeBlobUtilPrivacyInfo.bundle",
 			);
@@ -388,6 +390,7 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-glimpse/Pods-glimpse-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoModulesJSI/ExpoModulesJSI.framework/ExpoModulesJSI",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
@@ -396,6 +399,7 @@
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoModulesJSI.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
@@ -485,7 +489,7 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = glimpse/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -530,7 +534,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 88WFD6M5FC;
 				INFOPLIST_FILE = glimpse/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -644,18 +648,23 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-std=gnu++20",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
+				PODFILE_DIR = "$(SRCROOT)";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -705,17 +714,22 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(inherited)",
 					"-std=gnu++20",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
+				PODFILE_DIR = "$(SRCROOT)";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;

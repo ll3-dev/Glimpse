@@ -5,6 +5,7 @@ use rusqlite::{params, OptionalExtension};
 use crate::error::{Error, Result};
 use crate::models::{KnowledgeItem, KnowledgeItemPatch, NullablePatch};
 
+use super::sync::ENTITY_KNOWLEDGE_ITEM;
 use super::{parse_json_column, parse_optional_json_column, SqliteStorage};
 
 // SQL fragments for KnowledgeItem queries
@@ -249,9 +250,28 @@ impl SqliteStorage {
     }
 
     pub fn delete_knowledge_item(&self, id: &str) -> Result<()> {
-        self.conn
-            .execute("DELETE FROM knowledge_items WHERE id = ?1", params![id])?;
-        Ok(())
+        self.conn.execute_batch("BEGIN IMMEDIATE")?;
+        let result = self
+            .record_sync_tombstone(
+                ENTITY_KNOWLEDGE_ITEM,
+                id,
+                chrono::Utc::now().timestamp_millis(),
+            )
+            .and_then(|_| {
+                self.conn
+                    .execute("DELETE FROM knowledge_items WHERE id = ?1", params![id])?;
+                Ok(())
+            });
+        match result {
+            Ok(()) => {
+                self.conn.execute_batch("COMMIT")?;
+                Ok(())
+            }
+            Err(error) => {
+                let _ = self.conn.execute_batch("ROLLBACK");
+                Err(error)
+            }
+        }
     }
 }
 

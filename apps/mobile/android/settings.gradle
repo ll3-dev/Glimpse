@@ -40,4 +40,6 @@ include ':rustra-jsi'
 project(':rustra-jsi').projectDir = new File(rootDir, '../modules/rustra-jsi/android')
 include ':glimpse-ocr'
 project(':glimpse-ocr').projectDir = new File(rootDir, '../modules/ocr/android')
+include ':glimpse-sync-discovery'
+project(':glimpse-sync-discovery').projectDir = new File(rootDir, '../modules/sync-discovery/android')
 includeBuild(expoAutolinking.reactNativeGradlePlugin)

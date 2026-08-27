@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import {
+  markAsForgotten,
   markAsReviewed,
   postponeReview,
   type KnowledgeItem,
@@ -79,6 +80,36 @@ export function usePostponeReviewMutation(): UseMutationResult<
 }
 
 /**
+ * Hook to mark an item as forgotten (recall failed).
+ * Contracts the review interval and records the lapse in memory state.
+ *
+ * @example
+ * const { mutate: forgot } = useMarkAsForgottenMutation();
+ * forgot({ itemId: '123' });
+ */
+export function useMarkAsForgottenMutation(): UseMutationResult<
+  KnowledgeItem,
+  Error,
+  { itemId: string }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemId }: { itemId: string }): Promise<KnowledgeItem> => {
+      const result = await markAsForgotten(itemId);
+      if (result.success === false) {
+        throw new Error(result.error.message);
+      }
+      return result.item;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
+    },
+  });
+}
+
+/**
  * Combined hook that provides both review actions.
  * Convenient for components that need both actions.
  *
@@ -90,14 +121,21 @@ export function usePostponeReviewMutation(): UseMutationResult<
 export function useReviewActionsMutation() {
   const markAsReviewedMutation = useMarkAsReviewedMutation();
   const postponeReviewMutation = usePostponeReviewMutation();
+  const markAsForgottenMutation = useMarkAsForgottenMutation();
 
   return {
     markAsReviewed: markAsReviewedMutation.mutate,
     postponeReview: postponeReviewMutation.mutate,
+    markAsForgotten: markAsForgottenMutation.mutate,
     markAsReviewedAsync: markAsReviewedMutation.mutateAsync,
     postponeReviewAsync: postponeReviewMutation.mutateAsync,
-    isPending: markAsReviewedMutation.isPending || postponeReviewMutation.isPending,
+    markAsForgottenAsync: markAsForgottenMutation.mutateAsync,
+    isPending:
+      markAsReviewedMutation.isPending ||
+      postponeReviewMutation.isPending ||
+      markAsForgottenMutation.isPending,
     markAsReviewedMutation,
     postponeReviewMutation,
+    markAsForgottenMutation,
   };
 }

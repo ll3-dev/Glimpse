@@ -36,6 +36,10 @@ export interface LoadModelOptions {
   useMmap?: boolean;
   flashAttention?: boolean;
   threads?: number;
+  /** llama.cpp `--embedding` — 임베딩 전용 컨텍스트(채팅 컨텍스트와 분리). */
+  embedding?: boolean;
+  /** llama.cpp pooling 전략 — nomic 등 mean pooling이 기본. */
+  poolingType?: 'mean' | 'cls' | 'last' | 'rank' | 'none';
   onProgress?: (progress: number) => void;
 }
 

@@ -75,6 +75,7 @@ pub enum EmbeddingSourceType {
 #[serde(rename_all = "lowercase")]
 pub enum ReviewFeedbackType {
     Remembered,
+    Forgotten,
     Postponed,
 }
 
@@ -271,6 +272,16 @@ pub struct FeedbackEvent {
     pub created_at: i64,
 }
 
+/// A deletion marker carried between devices so an older snapshot cannot
+/// resurrect data that was removed somewhere else.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncTombstone {
+    pub entity_type: String,
+    pub entity_id: String,
+    pub deleted_at: i64,
+}
+
 /// Versioned, portable snapshot of all user-authored Glimpse data.
 ///
 /// Model binaries and API credentials are intentionally excluded: models can
@@ -285,6 +296,8 @@ pub struct DataExport {
     pub messages: Vec<Message>,
     pub recommendations: Vec<Recommendation>,
     pub feedback_events: Vec<FeedbackEvent>,
+    #[serde(default)]
+    pub tombstones: Vec<SyncTombstone>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -298,7 +311,7 @@ pub struct DataImportSummary {
 }
 
 impl DataExport {
-    pub const FORMAT_VERSION: u32 = 1;
+    pub const FORMAT_VERSION: u32 = 2;
 
     pub fn summary(&self) -> DataImportSummary {
         DataImportSummary {
@@ -344,17 +357,28 @@ pub struct CalculateTagOverlapInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CalculateNextReviewInput {
     pub last_reviewed_at: Option<i64>,
     pub next_review_at: Option<i64>,
     pub feedback_type: ReviewFeedbackType,
     pub now: i64,
+    /// FSRS-style per-item memory state. None for legacy items that never
+    /// carried stability/difficulty — the scheduler bootstraps them.
+    #[serde(default)]
+    pub stability: Option<f64>,
+    #[serde(default)]
+    pub difficulty: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CalculateNextReviewOutput {
     pub interval_ms: i64,
     pub next_review_at: i64,
+    /// Updated memory state to persist on the item.
+    pub stability: f64,
+    pub difficulty: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
