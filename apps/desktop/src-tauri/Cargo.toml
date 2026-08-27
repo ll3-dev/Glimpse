@@ -18,7 +18,7 @@ mdns-sd = "0.20.3"
 # Cargo.lock 이 잠근 revision 을 명시해 cargo update 로 인한 조용한
 # 드리프트를 방지한다.
 llama-cpp-2 = { git = "https://github.com/utilityai/llama-cpp-rs", rev = "bed81ad4ab1a6c904b11d425608e50f976d8ea62", optional = true }
-reqwest = { version = "0.12", features = ["json", "stream"] }
+reqwest = { version = "0.13", features = ["json", "stream"] }
 # Pin TS and Rust sides together: the generated client contract hash is
 # coupled to the rustra crate version (see packages/bridge-rust + @rustra/*).
 # 0.1.2 published on crates.io (2026-08-17) — exact pin so a cargo update
