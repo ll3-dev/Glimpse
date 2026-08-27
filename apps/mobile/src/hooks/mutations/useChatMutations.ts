@@ -62,13 +62,31 @@ export function useAddMessageMutation() {
       }
       return result.message;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (message) => {
       // Invalidate messages for this conversation
       queryClient.invalidateQueries({
-        queryKey: queryKeys.chat.messages(variables.conversationId),
+        queryKey: queryKeys.chat.messages(message.conversationId),
       });
-      // Also invalidate conversations list (to update updatedAt)
-      queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations });
+      // 리스트 전체 무효화 대신 로컬 패치: addMessage가 conversation에서
+      // 바꾸는 건 updated_at뿐이고(Rust add_message가 touch), 쿼리는
+      // updated_at DESC 정렬이라 그 순서까지 반영하면 리페치 결과와
+      // 동일하다. 대화 한 번 주고받을 때마다 리스트 전체 리페치를 막는다.
+      queryClient.setQueryData<Conversation[]>(
+        queryKeys.chat.conversations,
+        (current) => {
+          if (!current) return current;
+          const index = current.findIndex(
+            (item) => item.id === message.conversationId,
+          );
+          if (index === -1) return current;
+          const touched = {
+            ...current[index],
+            updatedAt: message.createdAt,
+          };
+          const rest = current.filter((_, i) => i !== index);
+          return [touched, ...rest];
+        },
+      );
     },
   });
 }
