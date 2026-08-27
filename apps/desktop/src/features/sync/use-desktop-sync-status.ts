@@ -43,10 +43,32 @@ export function useDesktopSyncStatus() {
     // Initial fetch rides the same async callback path as the interval ticks
     // so setState only ever happens after an await, not synchronously here.
     const initial = window.setTimeout(() => void refresh(), 0);
-    const interval = window.setInterval(() => void refresh(), 10_000);
+    // Pause polling while the window is hidden — the settings panel can't be
+    // read then, and every tick still costs an IPC round trip.
+    let interval: number | null = null;
+    const startInterval = () => {
+      interval = window.setInterval(() => void refresh(), 10_000);
+    };
+    const stopInterval = () => {
+      if (interval !== null) {
+        window.clearInterval(interval);
+        interval = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopInterval();
+      } else {
+        void refresh();
+        startInterval();
+      }
+    };
+    if (!document.hidden) startInterval();
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.clearTimeout(initial);
-      window.clearInterval(interval);
+      stopInterval();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [refresh]);
 
