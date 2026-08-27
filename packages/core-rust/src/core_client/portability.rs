@@ -52,6 +52,12 @@ impl CoreClientImpl {
         self.storage.sync_data_revision()
     }
 
+    /// Highest merge clock in the dataset — see
+    /// [`SqliteStorage::max_merge_clock`].
+    pub fn max_merge_clock(&self) -> Result<i64> {
+        self.storage.max_merge_clock()
+    }
+
     /// Fingerprint of a snapshot we did not necessarily produce ourselves —
     /// used by the sync server to decide whether an incoming snapshot really
     /// carries new content before paying for a merge.

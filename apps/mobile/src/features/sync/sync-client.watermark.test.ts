@@ -119,6 +119,8 @@ describe('sync-client watermark delta path', () => {
       desktopDeviceId: 'desktop-test',
       lanUrl: 'http://desktop.test:34129',
       outboundWatermark: 500,
+      // Fresh reconciliation: the watermark path may be used.
+      lastSyncedAt: Date.now(),
     });
     stubDesktopResponse({
       ...BASE_RESPONSE,
@@ -133,6 +135,57 @@ describe('sync-client watermark delta path', () => {
     expect(lastResponseBody?.sinceWatermark).toBe(500);
     expect(lastResponseBody?.snapshot).toBeUndefined();
     expect(calls.mergeDelta).toHaveLength(1);
+    const config = updateSyncConfig({});
+    expect(config.outboundWatermark).toBe(900);
+  });
+
+  test('watermark held past the reconciliation window → full snapshot upload', async () => {
+    // The delta request cannot carry mobile-side edits upstream, so every
+    // FULL_SYNC_EVERY_MS the client must fall back to a full snapshot upload
+    // even while a watermark is held.
+    updateSyncConfig({
+      desktopDeviceId: 'desktop-test',
+      lanUrl: 'http://desktop.test:34129',
+      outboundWatermark: 500,
+      lastSyncedAt: Date.now() - 20 * 60 * 1000,
+    });
+    stubDesktopResponse({
+      ...BASE_RESPONSE,
+      snapshot: { formatVersion: 1, knowledgeItems: [] },
+      newWatermark: 900,
+      fingerprint: 'print-r',
+    });
+
+    const { syncWithDesktop } = await import('./sync-client');
+    await syncWithDesktop({ force: true });
+    expect(calls.exportData).toBe(1, 'reconciliation must export the full snapshot');
+    expect(lastResponseBody?.sinceWatermark).toBeUndefined();
+    expect(lastResponseBody?.snapshot).toBeDefined();
+    expect(calls.mergeData).toHaveLength(1);
+    const config = updateSyncConfig({});
+    expect(config.outboundWatermark).toBe(900);
+    expect(config.snapshotFingerprint).toBe('print-r');
+  });
+
+  test('watermark held without a prior sync time → full snapshot upload', async () => {
+    // A watermark recovered without lastSyncedAt (e.g. restored config) has
+    // no recency proof — reconciliation-first is the safe default.
+    updateSyncConfig({
+      desktopDeviceId: 'desktop-test',
+      lanUrl: 'http://desktop.test:34129',
+      outboundWatermark: 500,
+      lastSyncedAt: null,
+    });
+    stubDesktopResponse({
+      ...BASE_RESPONSE,
+      snapshot: { formatVersion: 1, knowledgeItems: [] },
+      newWatermark: 900,
+    });
+
+    const { syncWithDesktop } = await import('./sync-client');
+    await syncWithDesktop({ force: true });
+    expect(calls.exportData).toBe(1);
+    expect(calls.mergeData).toHaveLength(1);
     const config = updateSyncConfig({});
     expect(config.outboundWatermark).toBe(900);
   });
@@ -167,11 +220,48 @@ describe('sync-client watermark delta path', () => {
     expect(config.snapshotFingerprint).toBe('print-2');
   });
 
+  test('full path with newWatermark → adopted, next poll goes incremental', async () => {
+    // A watermark-aware desktop answers the full path with its dataset's
+    // highest merge clock; the client must adopt it so the next poll skips
+    // the snapshot upload entirely instead of looping full exports forever.
+    updateSyncConfig({
+      desktopDeviceId: 'desktop-test',
+      lanUrl: 'http://desktop.test:34129',
+      outboundWatermark: null,
+      snapshotFingerprint: 'print-1',
+    });
+    stubDesktopResponse({
+      ...BASE_RESPONSE,
+      snapshot: { formatVersion: 1, knowledgeItems: [{ id: 'x' }] },
+      newWatermark: 1_234_567,
+      fingerprint: 'print-2',
+    });
+
+    const { syncWithDesktop } = await import('./sync-client');
+    await syncWithDesktop({ force: true });
+    expect(calls.exportData).toBe(1);
+    expect(calls.mergeData).toHaveLength(1);
+    const config = updateSyncConfig({});
+    expect(config.outboundWatermark).toBe(1_234_567);
+
+    // Follow-up poll: watermark held → incremental request, no export.
+    stubDesktopResponse({
+      ...BASE_RESPONSE,
+      delta: { formatVersion: 1, knowledgeItems: [] },
+      newWatermark: 1_234_567,
+    });
+    await syncWithDesktop({ force: true });
+    expect(calls.exportData).toBe(1, 'second sync must not re-export');
+    expect(lastResponseBody?.sinceWatermark).toBe(1_234_567);
+    expect(calls.mergeDelta).toHaveLength(1);
+  });
+
   test('delta-less response on a watermarked client resets the watermark (fallback)', async () => {
     updateSyncConfig({
       desktopDeviceId: 'desktop-test',
       lanUrl: 'http://desktop.test:34129',
       outboundWatermark: 700,
+      lastSyncedAt: Date.now(),
     });
     // An older desktop ignores sinceWatermark entirely and answers with a
     // plain (skipped) full-path response — client must drop its watermark so

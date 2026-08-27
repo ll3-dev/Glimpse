@@ -10,10 +10,13 @@ export type SyncConfig = {
   /** Content fingerprint of the last snapshot the desktop confirmed equal. */
   snapshotFingerprint: string | null;
   /**
-   * Highest merge clock this device has pushed to the desktop. When set,
+   * Highest merge clock this device has confirmed with the desktop. When set,
    * outbound syncs send `sinceWatermark` instead of a full snapshot; only
    * ever advanced from a server-issued `newWatermark`, reset on full-snapshot
-   * fallback or unpair.
+   * fallback or unpair. Every FULL_SYNC_EVERY_MS the client skips the
+   * watermark and uploads a full snapshot anyway — the periodic reconciliation
+   * that carries mobile-side edits upstream (the delta request cannot) and
+   * reseals any clock-skew gap.
    */
   outboundWatermark: number | null;
 };
@@ -53,8 +56,10 @@ export type SyncResponse = {
    */
   delta: unknown | null;
   /**
-   * Server-issued replacement for {@link SyncConfig.outboundWatermark};
-   * only present on the delta path.
+   * Server-issued replacement for {@link SyncConfig.outboundWatermark}.
+   * Set on the delta path (freshest merge clock sent) and, since
+   * watermark-aware desktops, on the full path too (dataset's highest clock)
+   * so the client can adopt the incremental path.
    */
   newWatermark: number | null;
   /** Null on the delta path: no desktop-side rewrite means no fresh print. */

@@ -40,6 +40,17 @@ import type { PairResponse, SyncResponse } from './types';
 const SYNC_PROTOCOL_VERSION = 1;
 const REQUEST_TIMEOUT_MS = 15_000;
 
+/**
+ * How often a watermarked client deliberately skips the incremental path and
+ * uploads a full snapshot anyway. The delta request cannot carry mobile-side
+ * edits upstream — only a snapshot upload merges them into the desktop — so
+ * without this reconciliation round-trip client edits would never leave the
+ * phone while a watermark is held. It also reseals any clock-skew gap the 24h
+ * delta guardband could miss. 10 minutes keeps upstream propagation latency
+ * bounded while 5 of 6 polls stay at KB scale.
+ */
+const FULL_SYNC_EVERY_MS = 10 * 60 * 1000;
+
 let syncPromise: Promise<boolean> | null = null;
 
 /** Module-level backoff state shared across auto-sync invocations.
@@ -150,10 +161,16 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   if (candidates.length === 0) {
     candidates = await rediscoverPairedDesktop(config.desktopDeviceId);
   }
-  // Watermark path: when we know how far the desktop has already seen, skip
-  // exporting and shipping the full snapshot — the request is then a few
-  // bytes. Built lazily so the delta path never pays the export cost.
-  const watermark = config.outboundWatermark;
+  // Watermark path: when we know how far the desktop has already seen — and
+  // the periodic reconciliation window is not due — skip exporting and
+  // shipping the full snapshot; the request is then a few bytes. Built lazily
+  // so the delta path never pays the export cost.
+  const watermark =
+    config.outboundWatermark != null &&
+    config.lastSyncedAt != null &&
+    Date.now() - config.lastSyncedAt < FULL_SYNC_EVERY_MS
+      ? config.outboundWatermark
+      : null;
   const snapshotPromise = watermark == null
     ? mobileCoreClient.exportData().then((data) => JSON.parse(data) as unknown)
     : null;
@@ -212,7 +229,11 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     config = updateSyncConfig({
       lastSyncedAt: Date.now(),
       snapshotFingerprint: response.fingerprint,
-      outboundWatermark: null,
+      // A watermark-aware desktop answers the full path with newWatermark =
+      // its dataset's highest merge clock: adopting it upgrades the next
+      // poll to the incremental path. Legacy desktops omit the field — keep
+      // the reset-to-full-snapshot behavior for them.
+      outboundWatermark: response.newWatermark ?? null,
       tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
     });
     return true;

@@ -344,10 +344,16 @@ async fn sync(
                         && Some(remote.as_str()) == cached.as_deref()
                 });
             if skip {
+                // Identical content: still hand the client a watermark (the
+                // dataset's highest merge clock) so its next poll can take the
+                // incremental path instead of re-uploading full snapshots.
+                let new_watermark = core
+                    .max_merge_clock()
+                    .map_err(|error| error.to_string())?;
                 return Ok((
                     None,
                     None,
-                    None,
+                    Some(new_watermark),
                     Some(cached.expect("checked above")),
                 ));
             }
@@ -367,7 +373,15 @@ async fn sync(
             let fingerprint = sync_state
                 .cached_fingerprint_for_revision(fresh_revision)
                 .ok_or_else(|| "fingerprint unavailable after merge".to_string())?;
-            Ok((Some(merged), None, None, Some(fingerprint)))
+            // The merge just wrote the client's rows into our store, so the
+            // dataset's highest clock already covers everything the client
+            // sent — issuing it as the watermark lets the next poll go
+            // incremental. Everything the desktop changes locally after this
+            // point is picked up by the delta's 24h guardband.
+            let new_watermark = core
+                .max_merge_clock()
+                .map_err(|error| error.to_string())?;
+            Ok((Some(merged), None, Some(new_watermark), Some(fingerprint)))
         })
         .await
         .map_err(|error| {
@@ -676,6 +690,56 @@ mod tests {
         assert!(
             !should_skip_merge(&our_fingerprint, &broken),
             "an unhashable/unverifiable snapshot must fall open into a merge"
+        );
+    }
+
+    // --- Full-path watermark issuance ----------------------------------------
+
+    #[test]
+    fn full_path_issues_a_watermark_covering_everything_synced_so_far() {
+        // Both full-path exits (skip and merge) now answer with newWatermark =
+        // the dataset's highest merge clock, so the mobile client can adopt it
+        // and stop looping full-snapshot uploads. This asserts the value the
+        // handler computes is exactly max_merge_clock of the post-sync store.
+        // Timestamps sit at ~day scale (see the delta-path notes above) so the
+        // guardband check lands between rows.
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared.knowledge_items.push(note("a", "shared", 100_000_000));
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        // Skip exit: identical re-send. The watermark must still cover the
+        // store's freshest clock.
+        assert_eq!(
+            desktop.max_merge_clock().expect("skip-exit watermark"),
+            100_000_000,
+            "a skipped merge still issues the store's highest clock"
+        );
+
+        // Merge exit: a client's newer edit lands; the watermark must move to
+        // cover the incoming rows it just wrote.
+        let mut client_snapshot = desktop.export_data().expect("export");
+        client_snapshot
+            .knowledge_items
+            .push(note("b", "mobile", 195_000_000));
+        assert!(run_server_flow(&desktop, client_snapshot).is_some());
+        assert_eq!(
+            desktop.max_merge_clock().expect("merge-exit watermark"),
+            195_000_000,
+            "the issued watermark covers rows the merge just wrote"
+        );
+
+        // A poll from the issued watermark re-sends nothing older than the
+        // guarded cursor (195M - 86.4M = 108.6M) — only rows the client does
+        // not yet have at that clock, the invariant that makes the next poll
+        // cheap instead of a full re-send.
+        let watermark = desktop.max_merge_clock().expect("cursor");
+        let delta = desktop
+            .export_delta(watermark.saturating_sub(DELTA_GUARDBAND_MS))
+            .expect("delta export");
+        assert!(
+            delta.knowledge_items.iter().all(|row| row.updated_at > watermark - DELTA_GUARDBAND_MS),
+            "a delta from the issued watermark must respect the guarded cursor"
         );
     }
 

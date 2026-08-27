@@ -118,6 +118,38 @@ impl SqliteStorage {
         })
     }
 
+    /// Highest merge clock across every exported table — the SQL twin of the
+    /// per-table clock expressions the sync server folds into
+    /// `new_watermark`. Lets a full-path sync response hand the client a
+    /// starting watermark without materializing a delta, so the next poll can
+    /// take the incremental path instead of re-uploading full snapshots.
+    ///
+    /// Empty tables contribute NULL (filtered by the outer MAX), and an empty
+    /// store yields `Ok(0)`: for watermark purposes "nothing exists yet" is
+    /// equivalent to "everything up to epoch is synced".
+    pub fn max_merge_clock(&self) -> Result<i64> {
+        let clock = self.conn.query_row(
+            r#"
+            SELECT MAX(latest) FROM (
+                SELECT MAX(updated_at) AS latest FROM knowledge_items
+                UNION ALL
+                SELECT MAX(COALESCE(deleted_at, updated_at)) FROM conversations
+                UNION ALL
+                SELECT MAX(COALESCE(deleted_at, updated_at, created_at), created_at) FROM messages
+                UNION ALL
+                SELECT MAX(COALESCE(responded_at, created_at), created_at) FROM recommendations
+                UNION ALL
+                SELECT MAX(created_at) FROM feedback_events
+                UNION ALL
+                SELECT MAX(deleted_at) FROM sync_tombstones
+            )
+            "#,
+            [],
+            |row| row.get::<_, Option<i64>>(0),
+        )?;
+        Ok(clock.unwrap_or(0))
+    }
+
     /// Row-wise merge of an incremental payload: write each carried row with
     /// LWW semantics instead of wiping the store.
     ///
@@ -1069,6 +1101,35 @@ mod tests {
             "every tombstone must ride along regardless of age"
         );
         drop(fixture);
+    }
+
+    #[test]
+    fn max_merge_clock_tracks_the_freshest_clock_across_tables() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        assert_eq!(
+            storage.max_merge_clock().expect("empty store"),
+            0,
+            "an empty store starts the watermark domain at zero"
+        );
+
+        storage
+            .replace_all_data(&snapshot(vec![item("a", 300, "a"), item("b", 500, "b")]))
+            .expect("fixture should import");
+        assert_eq!(
+            storage.max_merge_clock().expect("items only"),
+            500,
+            "the maximum spans every row, not just the first"
+        );
+
+        // A fresher tombstone (a delete) must move the clock forward — the
+        // watermark has to cover deletes too or clients re-send them forever.
+        storage
+            .record_sync_tombstone(ENTITY_KNOWLEDGE_ITEM, "gone", 900)
+            .expect("tombstone should record");
+        assert_eq!(
+            storage.max_merge_clock().expect("tombstone dominates"),
+            900
+        );
     }
 
     #[test]

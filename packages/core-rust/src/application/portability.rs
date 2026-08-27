@@ -48,6 +48,12 @@ impl SharedCore {
         self.client().sync_data_revision()
     }
 
+    /// Highest merge clock in the dataset — the full-path sync response's
+    /// `new_watermark` (see [`glimpse_core::SqliteStorage::max_merge_clock`]).
+    pub fn max_merge_clock(&self) -> Result<i64> {
+        self.client().max_merge_clock()
+    }
+
     /// Fingerprint of a snapshot we did not necessarily produce ourselves —
     /// used by the sync server to decide whether an incoming snapshot really
     /// carries new content before paying for a merge.
