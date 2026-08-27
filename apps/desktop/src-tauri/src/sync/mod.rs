@@ -90,6 +90,9 @@ pub async fn enable_tailscale_sync(
     tauri::async_runtime::spawn_blocking(move || tailscale::enable_tailscale_serve(port))
         .await
         .map_err(|error| error.to_string())??;
+    // Serve config just changed — the per-poll endpoint cache must not keep
+    // serving the previous answer.
+    state.invalidate_cached_endpoints();
     Ok(status(&state))
 }
 

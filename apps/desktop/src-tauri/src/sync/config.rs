@@ -90,6 +90,11 @@ pub struct DesktopSyncStateInner {
     /// Set when a merge changed local data. Incremental-sync work (delta
     /// export scheduling) keys off this signal.
     data_dirty: std::sync::atomic::AtomicBool,
+    /// Short-TTL cache for `public_endpoints()` — its tailscale CLI probes
+    /// spawn subprocesses on every call, and the sync handler answers every
+    /// (60s-idle included) poll with one. Port or serve-config changes call
+    /// [`Self::invalidate_cached_endpoints`].
+    cached_endpoints: Mutex<Option<(Instant, PublicEndpoints)>>,
 }
 
 pub type DesktopSyncState = std::sync::Arc<DesktopSyncStateInner>;
@@ -140,13 +145,18 @@ impl DesktopSyncStateInner {
             mdns_daemon: Mutex::new(None),
             cached_fingerprint: Mutex::new(None),
             data_dirty: std::sync::atomic::AtomicBool::new(false),
+            cached_endpoints: Mutex::new(None),
         })
     }
 
     pub fn set_port(&self, port: u16) {
         if let Ok(mut current) = self.port.lock() {
+            if *current == port {
+                return;
+            }
             *current = port;
         }
+        self.invalidate_cached_endpoints();
     }
 
     pub fn port(&self) -> u16 {
@@ -322,11 +332,45 @@ impl DesktopSyncStateInner {
         self.persist()
     }
 
+    /// Real-time endpoint inspection (tailscale CLI probes). Only the sync
+    /// status UI needs freshness — the per-poll sync handler reads through
+    /// [`Self::public_endpoints_cached`] instead.
     pub fn public_endpoints(&self) -> PublicEndpoints {
         let tailscale = inspect_tailscale(self.port());
         PublicEndpoints {
             local_port: self.port(),
             tailscale_url: tailscale.url,
+        }
+    }
+
+    /// How long a cached endpoint answer stays trustworthy. Tailscale serve
+    /// URLs are stable while the serve config and port are unchanged, and a
+    /// stale entry costs the client one failed dial before refresh.
+    const ENDPOINTS_TTL: Duration = Duration::from_secs(300);
+
+    /// TTL-cached variant for the sync request handler: without it every poll
+    /// (including idle delta polls) would spawn tailscale CLI subprocesses
+    /// for a value that almost never changes between polls.
+    pub fn public_endpoints_cached(&self) -> PublicEndpoints {
+        if let Ok(guard) = self.cached_endpoints.lock() {
+            if let Some((at, endpoints)) = guard.as_ref() {
+                if at.elapsed() < Self::ENDPOINTS_TTL {
+                    return endpoints.clone();
+                }
+            }
+        }
+        let endpoints = self.public_endpoints();
+        if let Ok(mut guard) = self.cached_endpoints.lock() {
+            *guard = Some((Instant::now(), endpoints.clone()));
+        }
+        endpoints
+    }
+
+    /// Drop the cached endpoint answer whenever an input changes (port rebind,
+    /// tailscale serve enable/disable).
+    pub fn invalidate_cached_endpoints(&self) {
+        if let Ok(mut guard) = self.cached_endpoints.lock() {
+            *guard = None;
         }
     }
 

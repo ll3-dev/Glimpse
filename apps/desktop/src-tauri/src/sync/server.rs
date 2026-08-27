@@ -406,11 +406,11 @@ async fn sync(
     }))
 }
 
-/// `public_endpoints()` shells out to the tailscale CLI; never run that on
-/// the async runtime — park it on the blocking pool instead.
+/// `public_endpoints_cached()` shells out to the tailscale CLI on cache miss;
+/// never run that on the async runtime — park it on the blocking pool instead.
 async fn endpoints_via_blocking_pool(state: &ServerState) -> PublicEndpoints {
     let sync = state.sync.clone();
-    tauri::async_runtime::spawn_blocking(move || sync.public_endpoints())
+    tauri::async_runtime::spawn_blocking(move || sync.public_endpoints_cached())
         .await
         .unwrap_or_else(|error| {
             eprintln!("sync endpoint inspection failed: {error}");
