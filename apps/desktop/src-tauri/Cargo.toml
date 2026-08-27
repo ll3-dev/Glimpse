@@ -13,7 +13,7 @@ dirs = "6"
 futures-util = "0.3"
 glimpse-bridge = { path = "../../../packages/bridge-rust" }
 glimpse-core = { path = "../../../packages/core-rust" }
-keyring = "3"
+keyring = "4"
 mdns-sd = "0.20.3"
 # Cargo.lock 이 잠근 revision 을 명시해 cargo update 로 인한 조용한
 # 드리프트를 방지한다.
