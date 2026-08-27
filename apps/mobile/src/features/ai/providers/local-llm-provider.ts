@@ -37,7 +37,7 @@ export interface LocalLLMProviderConfig {
   isReady?: () => boolean;
   /** Get selected model (defaults to getSelectedLocalModel selector) */
   getSelectedModel?: () => LocalModel | null;
-  /** Llama service instance (defaults to new createLlamaService()) */
+  /** Llama service instance (defaults to the shared runtime singleton) */
   llamaService?: LlamaService;
 }
 
