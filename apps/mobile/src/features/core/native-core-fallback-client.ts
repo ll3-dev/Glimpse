@@ -8,11 +8,11 @@ import type {
   Message,
   Recommendation,
 } from '@glimpse/shared';
+import { calculateNextReviewState } from '@glimpse/features';
 
 import { InMemoryStorage } from './native-core-in-memory-storage';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const FORGOTTEN_REVIEW_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const DATA_EXPORT_FORMAT_VERSION = 2;
 
 type PortableData = {
@@ -86,13 +86,17 @@ function calculateTagOverlap(
 function calculateNextReview(
   input: Parameters<CoreClient['calculateNextReview']>[0],
 ): ReturnType<CoreClient['calculateNextReview']> {
-  const intervalMs =
-    input.feedbackType === 'remembered' ? DAY_MS : FORGOTTEN_REVIEW_INTERVAL_MS;
-
-  return Promise.resolve({
-    intervalMs,
-    nextReviewAt: input.now + intervalMs,
-  });
+  // Delegates to the shared @glimpse/features scheduler so the fallback path
+  // (no native core available) schedules identically to mobile review actions
+  // and the desktop review screen — one implementation, three entry points.
+  const decision = calculateNextReviewState(
+    input.lastReviewedAt,
+    input.nextReviewAt,
+    input.feedbackType,
+    input.now,
+    { stabilityDays: input.stability ?? 0.5, difficulty: input.difficulty ?? 5.0 },
+  );
+  return Promise.resolve(decision);
 }
 
 function initializeReviewSchedule(

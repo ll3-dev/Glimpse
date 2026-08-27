@@ -1,3 +1,10 @@
+/**
+ * Global window bridge types for the Tauri desktop shell.
+ *
+ * 과거 이 파일은 삭제된 `@glimpse/core/ai/runtime-registry` 모듈에서 타입을
+ * 가져왔다(skipLibCheck 은폐 하의 데드 참조). 실제 출처인
+ * `features/local-llm/desktop-llm-service`에서 재수출한 타입으로 대체했다.
+ */
 import type {
   CompletionRequest,
   CompletionResponse,
@@ -7,7 +14,7 @@ import type {
   EmbeddingResponse,
   ManagedModelRecord,
   RuntimeHealth,
-} from '@glimpse/core/ai/runtime-registry';
+} from '@/features/local-llm/desktop-llm-service';
 
 declare global {
   interface Window {

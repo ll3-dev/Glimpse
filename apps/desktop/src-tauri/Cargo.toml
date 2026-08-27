@@ -30,6 +30,9 @@ sha2 = "0.10"
 tauri = { version = "2.0.0", features = [] }
 tauri-plugin-updater = "2"
 tokio = { version = "1", features = ["fs", "io-util", "net", "rt-multi-thread", "sync", "time"] }
+# Sync payloads are plain JSON snapshots that compress ~10x; gzip keeps the
+# wire compatible without touching the bridge contract.
+tower-http = { version = "0.6", features = ["compression-gzip", "decompression-gzip"] }
 uuid = { version = "1", features = ["v4"] }
 
 [features]

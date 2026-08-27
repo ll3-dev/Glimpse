@@ -115,18 +115,6 @@ export type AddMessageOutput = {
   message: MessageIo;
 };
 
-export type CalculateNextReviewInput = {
-  lastReviewedAt?: number | null;
-  nextReviewAt?: number | null;
-  feedbackType: string;
-  now: number;
-};
-
-export type CalculateNextReviewOutput = {
-  intervalMs: number;
-  nextReviewAt: number;
-};
-
 export type CalculateTagOverlapInput = {
   left: CoreKnowledgeItemLikeIo;
   right: CoreKnowledgeItemLikeIo;
@@ -302,6 +290,18 @@ export type MergeDataInput = {
 };
 
 export type MergeDataOutput = {
+  knowledgeItems: number;
+  conversations: number;
+  messages: number;
+  recommendations: number;
+  feedbackEvents: number;
+};
+
+export type MergeDeltaInput = {
+  dataJson: string;
+};
+
+export type MergeDeltaOutput = {
   knowledgeItems: number;
   conversations: number;
   messages: number;

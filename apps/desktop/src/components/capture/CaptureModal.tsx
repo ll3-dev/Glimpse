@@ -104,7 +104,6 @@ export function CaptureModal() {
       return;
     }
 
-    const input = buildInput();
     const content = [form.title, form.body, form.url, form.text, form.sourceUrl]
       .filter(Boolean)
       .join('\n\n');
@@ -137,11 +136,11 @@ export function CaptureModal() {
       tags: tagsArray.length > 0 ? tagsArray : metadata.tags,
       labels: null,
       provisionalLabels: null,
-      labelStatus: null,
+      labelStatus: 'pending',
       labelSource: null,
       labelVersion: null,
       labelScore: null,
-      labelRequestedAt: null,
+      labelRequestedAt: now,
       labelCompletedAt: null,
       labelError: null,
       createdAt: now,

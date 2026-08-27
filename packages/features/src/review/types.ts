@@ -17,9 +17,10 @@ export interface ReviewActionsDeps {
   calculateNextReviewFromFeedback: (
     lastReviewedAt: number | null,
     nextReviewAt: number | null,
-    feedbackType: 'remembered' | 'postponed',
+    feedbackType: 'remembered' | 'forgotten' | 'postponed',
     now: number,
-  ) => { intervalMs: number; nextReviewAt: number };
+    memory?: { stabilityDays: number; difficulty: number },
+  ) => { intervalMs: number; nextReviewAt: number; stability: number; difficulty: number };
 }
 
 export interface ReviewActionSuccessResult { success: true; item: KnowledgeItem; }

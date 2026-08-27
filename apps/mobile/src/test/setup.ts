@@ -56,6 +56,10 @@ mock.module("react-native", () => ({
   Platform: {
     OS: 'ios',
     Version: '17.0',
+    select: (options: Record<string, unknown>) => options.ios,
+  },
+  AppState: {
+    addEventListener: () => ({ remove: () => {} }),
   },
   NativeModules: {},
   NativeEventEmitter: class NativeEventEmitter {

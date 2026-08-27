@@ -1,25 +1,12 @@
 import type {
   KnowledgeItem,
   KnowledgeItemLabelSource,
-  KnowledgeItemLabelStatus,
 } from '@glimpse/shared';
+import type { KnowledgeLabel as SharedKnowledgeLabel } from '@glimpse/features';
 
-const LABEL_TAXONOMY = [
-  'todo',
-  'idea',
-  'reference',
-  'learning',
-  'work',
-  'personal',
-  'meeting',
-  'project',
-  'finance',
-  'health',
-  'travel',
-  'inspiration',
-] as const;
-
-export type KnowledgeLabel = (typeof LABEL_TAXONOMY)[number];
+// The taxonomy lives in @glimpse/features so mobile and desktop classify with
+// the same label set; the alias keeps the local type name importable.
+export type KnowledgeLabel = SharedKnowledgeLabel;
 
 export interface LabelingResult {
   labels: KnowledgeLabel[];

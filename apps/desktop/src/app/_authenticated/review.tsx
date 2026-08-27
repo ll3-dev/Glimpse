@@ -1,38 +1,33 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useDueItemsQuery, useMarkAsReviewedMutation, usePostponeReviewMutation } from '@glimpse/hooks';
+import {
+  useDueItemsQuery,
+  useMarkAsForgottenMutation,
+  useMarkAsReviewedMutation,
+  usePostponeReviewMutation,
+} from '@glimpse/hooks';
+import type { KnowledgeItem } from '@glimpse/shared';
 import { Brain } from 'lucide-react';
 import { ReviewDeck } from '@/components/review/ReviewDeck';
-
-function calculateNextInterval(
-  currentInterval: number | null,
-  feedback: 'remembered' | 'postponed',
-): number {
-  const defaultInterval = 24 * 60 * 60 * 1000; // 1 day
-  const base = currentInterval ?? defaultInterval;
-  return feedback === 'remembered' ? base * 2 : base;
-}
 
 function ReviewScreen() {
   const { data: items = [], isLoading, isError, refetch } = useDueItemsQuery();
   const markAsReviewed = useMarkAsReviewedMutation();
+  const markAsForgotten = useMarkAsForgottenMutation();
   const postponeReview = usePostponeReviewMutation();
 
-  const handleRemembered = async (item: typeof items[number]) => {
-    const currentInterval = item.nextReviewAt && item.lastReviewedAt
-      ? item.nextReviewAt - item.lastReviewedAt
-      : null;
-    const nextInterval = calculateNextInterval(currentInterval, 'remembered');
-    const nextReviewAt = Date.now() + nextInterval;
-    await markAsReviewed.mutateAsync({ itemId: item.id, nextReviewAt });
+  // 갈라짐 방지: 간격·안정성·난이도 산출은 @glimpse/features의 공유
+  // 스케줄러(scheduleNextReview)가 훅 내부에서 단일 수행한다. 데스크톱은
+  // 아이템만 넘기고 결정을 받아 저장한다 — 모바일 reviewActions와 동일 경로.
+  const handleRemembered = async (item: KnowledgeItem) => {
+    await markAsReviewed.mutateAsync({ item });
   };
 
-  const handlePostponed = async (item: typeof items[number]) => {
-    const currentInterval = item.nextReviewAt && item.lastReviewedAt
-      ? item.nextReviewAt - item.lastReviewedAt
-      : null;
-    const nextInterval = calculateNextInterval(currentInterval, 'postponed');
-    const nextReviewAt = Date.now() + nextInterval;
-    await postponeReview.mutateAsync({ itemId: item.id, nextReviewAt });
+  const handleForgotten = async (item: KnowledgeItem) => {
+    await markAsForgotten.mutateAsync({ item });
+  };
+
+  const handlePostponed = async (item: KnowledgeItem) => {
+    await postponeReview.mutateAsync({ item });
   };
 
   return (
@@ -83,6 +78,7 @@ function ReviewScreen() {
           <ReviewDeck
             items={items}
             onRemembered={handleRemembered}
+            onForgotten={handleForgotten}
             onPostponed={handlePostponed}
           />
         )}

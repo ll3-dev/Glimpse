@@ -73,7 +73,10 @@ export default function ChatDetailScreen() {
   });
 
   // Navigation & scroll
-  const navigation = useChatNavigation({
+  const {
+    scrollViewRef,
+    ...navigation
+  } = useChatNavigation({
     isGenerating,
     messages,
     streamingText,
@@ -88,7 +91,7 @@ export default function ChatDetailScreen() {
     const didSend = await sendMessage(text);
     if (didSend) {
       setTimeout(() => {
-        navigation.scrollViewRef.current?.scrollToEnd({ animated: true });
+        scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
     return didSend;
@@ -142,7 +145,7 @@ export default function ChatDetailScreen() {
 
         {/* Messages */}
         <ScrollView
-          ref={navigation.scrollViewRef}
+          ref={scrollViewRef}
           className="flex-1"
           contentContainerStyle={{
             paddingHorizontal: 24,
@@ -212,6 +215,7 @@ export default function ChatDetailScreen() {
           messageActions={messageActions}
           navigation={navigation}
         />
+
       </KeyboardAvoidingView>
     </View>
   );

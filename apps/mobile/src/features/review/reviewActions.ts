@@ -1,6 +1,7 @@
 import { logger } from '@/src/utils/logger';
 import { calculateNextReviewFromFeedback } from './adjustIntervalFromFeedback';
 import {
+  createMarkAsForgotten,
   createMarkAsReviewed,
   createPostponeReview,
   type ReviewActionsDeps,
@@ -22,6 +23,7 @@ const defaultDeps: ReviewActionsDeps = {
 };
 
 export const markAsReviewed = createMarkAsReviewed(defaultDeps);
+export const markAsForgotten = createMarkAsForgotten(defaultDeps);
 export const postponeReview = createPostponeReview(defaultDeps);
 
-export { createMarkAsReviewed, createPostponeReview };
+export { createMarkAsForgotten, createMarkAsReviewed, createPostponeReview };

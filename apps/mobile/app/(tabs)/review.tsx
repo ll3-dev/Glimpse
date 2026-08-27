@@ -19,7 +19,7 @@ import { useCallback } from 'react';
 export default function ReviewScreen() {
   const router = useRouter();
   const { data, isLoading, isFetching, error, refetch } = useDueItemsQuery();
-  const { markAsReviewed, postponeReview } = useReviewActionsMutation();
+  const { markAsReviewed, markAsForgotten, postponeReview } = useReviewActionsMutation();
   const insets = useSafeAreaInsets();
 
   const items = data?.items ?? [];
@@ -53,6 +53,20 @@ export default function ReviewScreen() {
     );
   }, [postponeReview]);
 
+  const handleForgot = useCallback((itemId: string) => {
+    markAsForgotten(
+      { itemId },
+      {
+        onSuccess: () => {
+          toast.info('기억이 흐릿했네요 — 곧 다시 볼게요');
+        },
+        onError: (error) => {
+          logger.error('Failed to mark item as forgotten', error, { itemId });
+        },
+      }
+    );
+  }, [markAsForgotten]);
+
   const handleOpenItem = useCallback(
     (itemId: string) => router.push(`/library/${itemId}`),
     [router]
@@ -65,10 +79,11 @@ export default function ReviewScreen() {
         item={item}
         onPress={handleOpenItem}
         onComplete={handleComplete}
+        onForgot={handleForgot}
         onPostpone={handlePostpone}
       />
     ),
-    [handleComplete, handleOpenItem, handlePostpone]
+    [handleComplete, handleForgot, handleOpenItem, handlePostpone]
   );
 
   return (

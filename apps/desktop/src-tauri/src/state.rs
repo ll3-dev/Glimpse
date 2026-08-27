@@ -416,6 +416,18 @@ impl DesktopRuntimeStateInner {
         engine.embedding(input)
     }
 
+    /// 배치 임베딩 — 엔진 컨텍스트를 한 번만 만들도록 락을 한 번 잡고
+    /// 전체 배치를 처리한다. 순서 보존은 엔진 쪽 `embeddings_batch` 가
+    /// 보장하고, 하나라도 실패하면 전체 Err.
+    pub fn run_embedding_batch(&self, inputs: &[String]) -> Result<Vec<Vec<f32>>, String> {
+        let engine = self
+            .llm_engine
+            .lock()
+            .map_err(|_| "llm engine lock poisoned".to_string())?;
+        let texts: Vec<&str> = inputs.iter().map(String::as_str).collect();
+        engine.embeddings_batch(&texts)
+    }
+
     pub fn get_health(&self) -> Result<RuntimeHealth, String> {
         self.health
             .lock()

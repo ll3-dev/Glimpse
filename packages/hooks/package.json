@@ -11,5 +11,10 @@
   },
   "peerDependencies": {
     "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^20.11.8",
+    "@testing-library/react": "^16.3.2",
+    "happy-dom": "^20.11.8"
   }
 }

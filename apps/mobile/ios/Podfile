@@ -72,6 +72,14 @@ target 'glimpse' do
         config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'gnu++20'
         config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
         config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -std=gnu++20'
+
+        # SDK 57: ExpoModulesCore ships Swift-6-mode sources whose strict
+        # concurrency diagnostics don't survive newer Xcode compilers
+        # (EventEmitter 'sending' errors). Pin the Expo pods that opt into
+        # SWIFT_VERSION 6.0 back to 5.x semantics; their code is 5.0-clean.
+        if ['Expo', 'ExpoModulesCore', 'ExpoModulesWorklets', 'ExpoModulesWorkletsAdapter', 'ExpoImage', 'ExpoTaskManager'].include?(target.name)
+          config.build_settings['SWIFT_VERSION'] = '5.10'
+        end
       end
     end
   end

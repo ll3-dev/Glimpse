@@ -40,9 +40,14 @@ export function useDesktopSyncStatus() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    // Initial fetch rides the same async callback path as the interval ticks
+    // so setState only ever happens after an await, not synchronously here.
+    const initial = window.setTimeout(() => void refresh(), 0);
     const interval = window.setInterval(() => void refresh(), 10_000);
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(interval);
+    };
   }, [refresh]);
 
   const runCommand = useCallback(async (command: string, args?: Record<string, unknown>) => {

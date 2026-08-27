@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   BYOKProvider,
   disableBYOK,
@@ -33,24 +33,31 @@ export function useBYOKSectionState() {
   const [modelInput, setModelInput] = useState(storedModel || '');
   const [showKey, setShowKey] = useState(false);
   const [isEditingApiKey, setIsEditingApiKey] = useState(storedApiKey === null);
+  // 외부 스토어(보안 저장소) 값 대비 변경분만 반영하기 위한 추적 상태.
+  // effect에서 setState하는 패턴(react-hooks/set-state-in-effect)을 피하고
+  // 렌더 중 상태 조정으로 동기화한다.
+  const [lastStored, setLastStored] = useState({
+    apiKey: storedApiKey,
+    baseUrl: storedBaseUrl,
+    model: storedModel,
+  });
   const maskedStoredApiKey = maskApiKey(storedApiKey);
-  const hasStoredApiKey = storedApiKey !== null;
 
-  useEffect(() => {
-    if (!storedApiKey) {
-      setIsEditingApiKey(true);
+  if (
+    lastStored.apiKey !== storedApiKey ||
+    lastStored.baseUrl !== storedBaseUrl ||
+    lastStored.model !== storedModel
+  ) {
+    if (lastStored.apiKey !== storedApiKey) {
+      setIsEditingApiKey(!storedApiKey);
+      setApiKeyInput('');
+      setShowKey(false);
     }
-    setApiKeyInput('');
-    setShowKey(false);
-  }, [storedApiKey]);
-
-  useEffect(() => {
     setBaseUrlInput(storedBaseUrl || '');
-  }, [storedBaseUrl]);
-
-  useEffect(() => {
     setModelInput(storedModel || '');
-  }, [storedModel]);
+    setLastStored({ apiKey: storedApiKey, baseUrl: storedBaseUrl, model: storedModel });
+  }
+  const hasStoredApiKey = storedApiKey !== null;
 
   const toggleBYOK = useCallback((): BYOKActionFeedback | null => {
     if (byokEnabled) {

@@ -45,12 +45,32 @@ export default function CaptureScreen() {
       url = trimmedBody;
     }
 
+    if (type === 'link') {
+      saveItem(
+        {
+          type: 'link',
+          title: trimmedTitle || null,
+          body: trimmedBody,
+          url: url ?? trimmedBody,
+        },
+        {
+          onSuccess: () => {
+            toast.success('기록이 저장되었습니다');
+            router.back();
+          },
+          onError: (error) => {
+            Alert.alert('저장 실패', error.message);
+          },
+        },
+      );
+      return;
+    }
+
     saveItem(
       {
         type,
-        title: trimmedTitle || (type === 'link' ? url : undefined),
+        title: trimmedTitle || null,
         body: trimmedBody,
-        url,
       },
       {
         onSuccess: () => {
@@ -60,7 +80,7 @@ export default function CaptureScreen() {
         onError: (error) => {
           Alert.alert('저장 실패', error.message);
         },
-      }
+      },
     );
   };
 

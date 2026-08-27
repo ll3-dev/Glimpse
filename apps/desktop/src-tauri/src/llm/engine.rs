@@ -246,9 +246,20 @@ mod imp {
         }
 
         pub fn embedding(&self, text: &str) -> Result<Vec<f32>, String> {
+            self.embeddings_batch(std::slice::from_ref(&text))
+                .map(|mut vecs| vecs.pop().expect("non-empty slice yields one vector"))
+        }
+
+        /// 배치 임베딩 — 컨텍스트 1회 생성 후 각 텍스트를 순서대로
+        /// decode→embeddings_seq_ith→clear_kv_cache 한다(llama-cpp-2 공식
+        /// embeddings 예제 패턴). 하나라도 실패하면 전체를 Err 로 반환한다.
+        pub fn embeddings_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, String> {
+            if texts.is_empty() {
+                return Ok(Vec::new());
+            }
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
-            // Create context with embeddings enabled
+            // Create context with embeddings enabled (once for the whole batch)
             let ctx_params = LlamaContextParams::default()
                 .with_embeddings(true)
                 .with_n_ctx(std::num::NonZeroU32::new(self.context_length));
@@ -256,29 +267,41 @@ mod imp {
                 .new_context(&self.backend, ctx_params)
                 .map_err(|e| format!("Failed to create context: {}", e))?;
 
-            // Tokenize
-            let tokens = model
-                .str_to_token(text, AddBos::Always)
-                .map_err(|e| format!("Tokenization failed: {}", e))?;
+            // Tokenize all inputs up front so an early failure short-circuits
+            // before any decode work.
+            let tokenized = texts
+                .iter()
+                .map(|text| {
+                    model
+                        .str_to_token(text, AddBos::Always)
+                        .map_err(|e| format!("Tokenization failed: {}", e))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
 
-            // Create and evaluate batch
-            let n_tokens = tokens.len();
-            let mut batch = LlamaBatch::new(n_tokens, 1);
-            for (i, &token) in tokens.iter().enumerate() {
-                batch
-                    .add(token, i as i32, &[0], false)
-                    .map_err(|e| format!("Failed to add token to batch: {}", e))?;
+            let mut out = Vec::with_capacity(texts.len());
+
+            for tokens in &tokenized {
+                // 배치 크기/플래그는 기존 단건 embedding 과 동일하게 유지한다
+                // — 컨텍스트 초과 입력도 기존과 같이 decode 에서 실패한다.
+                let mut batch = LlamaBatch::new(tokens.len(), 1);
+                for (i, &token) in tokens.iter().enumerate() {
+                    batch
+                        .add(token, i as i32, &[0], false)
+                        .map_err(|e| format!("Failed to add token to batch: {}", e))?;
+                }
+
+                ctx.clear_kv_cache();
+                ctx.decode(&mut batch)
+                    .map_err(|e| format!("Decode failed: {}", e))?;
+
+                let embeddings = ctx
+                    .embeddings_seq_ith(0)
+                    .map_err(|e| format!("Failed to get embeddings: {}", e))?;
+
+                out.push(embeddings.to_vec());
             }
 
-            ctx.decode(&mut batch)
-                .map_err(|e| format!("Decode failed: {}", e))?;
-
-            // Get embeddings
-            let embeddings = ctx
-                .embeddings_seq_ith(0)
-                .map_err(|e| format!("Failed to get embeddings: {}", e))?;
-
-            Ok(embeddings.to_vec())
+            Ok(out)
         }
     }
 }
@@ -293,6 +316,19 @@ mod imp {
     /// 스텁 빌드(`llm` feature off)에서 실추론 대신 반환하는 에러 —
     /// 스텁 텍스트/영벡터가 성공으로 소비되는 데이터 오염 경로를 차단한다.
     pub const STUB_UNAVAILABLE: &str = "LLM inference unavailable: this build was compiled without the `llm` feature. Rebuild with --features llm for real inference.";
+
+    /// 배치 명령이 결정론적 벡터를 반환할 수 있도록 입력 바이트에서
+    /// FNV-1a 로 파생한 결정론적 벡터(8차원)를 만든다.
+    fn stub_vector(text: &str) -> Vec<f32> {
+        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+        for byte in text.as_bytes() {
+            hash ^= u64::from(*byte);
+            hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        (0..8)
+            .map(|i| ((hash >> (i * 8)) & 0xff) as f32 / 255.0)
+            .collect()
+    }
 
     pub struct LlmEngine {
         model_path: Option<PathBuf>,
@@ -360,13 +396,24 @@ mod imp {
             Err(STUB_UNAVAILABLE.to_string())
         }
 
-        pub fn embedding(&self, text: &str) -> Result<Vec<f32>, String> {
-            let _ = text;
+        pub fn embedding(&self, _text: &str) -> Result<Vec<f32>, String> {
             if !self.is_loaded() {
                 return Err("No model loaded".to_string());
             }
             // 영벡터를 반환하면 유사도/추천이 조용히 오염된다 — Err 로 차단.
             Err(STUB_UNAVAILABLE.to_string())
+        }
+
+        /// 배치 명령용 스텁 — 테스트가 순서 보존/결정성을 검증할 수 있도록
+        /// 결정론적 벡터를 반환한다(입력 바이트로부터 FNV-1a 파생).
+        pub fn embeddings_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, String> {
+            if texts.is_empty() {
+                return Ok(Vec::new());
+            }
+            if !self.is_loaded() {
+                return Err("No model loaded".to_string());
+            }
+            Ok(texts.iter().map(|t| stub_vector(t)).collect())
         }
     }
 
@@ -409,6 +456,35 @@ mod imp {
                 result.is_err(),
                 "stub must not return Ok — zero vectors silently corrupt similarity"
             );
+        }
+
+        #[test]
+        fn stub_embeddings_batch_preserves_order_with_deterministic_vectors() {
+            let engine = loaded_stub();
+            let out = engine
+                .embeddings_batch(&["alpha", "beta", "alpha"])
+                .expect("stub batch returns deterministic vectors");
+            assert_eq!(out.len(), 3, "one vector per request, order preserved");
+            assert_eq!(out[0], out[2], "same input must yield the same vector");
+            assert_ne!(out[0], out[1], "different inputs must yield distinct vectors");
+        }
+
+        #[test]
+        fn stub_embeddings_batch_empty_input_returns_empty_vec() {
+            let engine = loaded_stub();
+            assert!(
+                engine.embeddings_batch(&[]).unwrap().is_empty(),
+                "empty requests must yield an empty vec, not an error"
+            );
+        }
+
+        #[test]
+        fn stub_embeddings_batch_propagates_error_without_model() {
+            let engine = LlmEngine::new();
+            let err = engine
+                .embeddings_batch(&["text"])
+                .expect_err("batch without a loaded model must fail");
+            assert!(err.contains("No model loaded"));
         }
 
         #[test]

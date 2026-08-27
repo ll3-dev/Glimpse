@@ -79,7 +79,13 @@ describe('reviewActions', () => {
     if (result.success) {
       expect(result.item.id).toBe('k1');
     }
-    expect(deps.calculateNextReviewFromFeedback).toHaveBeenCalledWith(null, null, 'remembered', expect.any(Number));
+    expect(deps.calculateNextReviewFromFeedback).toHaveBeenCalledWith(
+      null,
+      null,
+      'remembered',
+      expect.any(Number),
+      { stabilityDays: 0.5, difficulty: 5.0 },
+    );
   });
 
   test('postponeReview uses default interval when not provided', async () => {
