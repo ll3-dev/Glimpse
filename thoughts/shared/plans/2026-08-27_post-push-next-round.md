@@ -363,7 +363,7 @@ struct SyncResponse { ..., delta: Option<glimpse_core::DataExport> }  // 신규,
 - [x] `cargo test -p glimpse-core`(core-rust) 전체 + 신규 델타 테스트 통과
 - [x] `cargo test -p glimpse-desktop`(src-tauri) 통과
 - [x] `bun test apps/mobile/src/features/sync` 통과
-- [ ] `bun run bridge:generate` 후 generated/ diff 커밋, iOS/Android staticlib 빌드 성공
+- [x] `bun run bridge:generate` 후 generated/ diff 커밋, iOS/Android staticlib 빌드 성공
 - [x] clippy -D warnings, lint 통과
 
 ---
