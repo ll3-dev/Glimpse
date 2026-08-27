@@ -17,7 +17,13 @@ export function useAutoSync(): void {
       timerRef.current = setTimeout(() => {
         void syncWithDesktop()
           .then((changed) => {
-            if (mounted && changed) return queryClient.invalidateQueries();
+            if (!mounted || !changed) return;
+            // A merge can touch any synced entity, but chat lives only on
+            // this device — refetching it on every sync would defeat the
+            // global staleTime for queries the merge cannot change.
+            void queryClient.invalidateQueries({
+              predicate: (query) => query.queryKey[0] !== 'chat',
+            });
           })
           .catch((error) =>
             logger.warn('Automatic desktop sync failed', {

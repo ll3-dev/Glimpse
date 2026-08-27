@@ -8,7 +8,8 @@ use sha2::{Digest, Sha256};
 
 use crate::error::Result;
 use crate::models::{
-    Conversation, DataExport, FeedbackEvent, KnowledgeItem, Message, Recommendation, SyncTombstone,
+    Conversation, DataExport, DataImportSummary, FeedbackEvent, KnowledgeItem, Message,
+    Recommendation, SyncTombstone,
 };
 
 use super::portability::validate_export;
@@ -139,7 +140,10 @@ impl SqliteStorage {
     /// rows arrive in pieces, so parents may already exist locally while their
     /// children show up later. Integrity is still enforced transactionally via
     /// [`SqliteStorage::validate_integrity`] before commit.
-    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataExport> {
+    ///
+    /// Returns a summary of rows actually written (LWW winners), not the
+    /// post-state export — an all-stale delta reports all zeros.
+    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataImportSummary> {
         if delta.format_version == 0 || delta.format_version > DataExport::FORMAT_VERSION {
             return Err(crate::error::Error::InvalidInput(format!(
                 "Unsupported data export version {}; expected 1..={}",
@@ -147,6 +151,18 @@ impl SqliteStorage {
                 DataExport::FORMAT_VERSION
             )));
         }
+
+        // Counts rows this delta actually wrote (LWW winners, including
+        // same-id overwrites). Rows the clock rule skips are not counted, so
+        // an all-stale or empty delta reports zeros — callers use that to skip
+        // pointless refetches.
+        let mut applied = DataImportSummary {
+            knowledge_items: 0,
+            conversations: 0,
+            messages: 0,
+            recommendations: 0,
+            feedback_events: 0,
+        };
 
         self.conn.execute_batch("BEGIN IMMEDIATE")?;
         // REPLACE'd parent rows (a winning conversation edits its title) are
@@ -168,7 +184,10 @@ impl SqliteStorage {
                         if !prefer_candidate(current, candidate, &|item: &KnowledgeItem| {
                             item.updated_at
                         }) => {}
-                    _ => self.insert_knowledge_item(candidate)?,
+                    _ => {
+                        self.insert_knowledge_item(candidate)?;
+                        applied.knowledge_items += 1;
+                    }
                 }
             }
 
@@ -180,7 +199,10 @@ impl SqliteStorage {
             for candidate in &delta.conversations {
                 match conversations_by_id.get(candidate.id.as_str()).copied() {
                     Some(current) if !prefer_candidate(current, candidate, &conversation_clock) => {}
-                    _ => self.insert_conversation(candidate)?,
+                    _ => {
+                        self.insert_conversation(candidate)?;
+                        applied.conversations += 1;
+                    }
                 }
             }
 
@@ -190,7 +212,10 @@ impl SqliteStorage {
             for candidate in &delta.messages {
                 match messages_by_id.get(candidate.id.as_str()).copied() {
                     Some(current) if !prefer_candidate(current, candidate, &message_clock) => {}
-                    _ => self.insert_message(candidate)?,
+                    _ => {
+                        self.insert_message(candidate)?;
+                        applied.messages += 1;
+                    }
                 }
             }
 
@@ -208,6 +233,7 @@ impl SqliteStorage {
                     }
                     Some(_) => {
                         self.overwrite_recommendation_row(candidate)?;
+                        applied.recommendations += 1;
                         continue;
                     }
                     None => {}
@@ -220,6 +246,7 @@ impl SqliteStorage {
                 });
                 if !occupied_by_newer {
                     self.insert_recommendation(candidate)?;
+                    applied.recommendations += 1;
                 }
             }
 
@@ -232,7 +259,10 @@ impl SqliteStorage {
                         if !prefer_candidate(current, candidate, &|event: &FeedbackEvent| {
                             event.created_at
                         }) => {}
-                    _ => self.insert_feedback_event(candidate)?,
+                    _ => {
+                        self.insert_feedback_event(candidate)?;
+                        applied.feedback_events += 1;
+                    }
                 }
             }
 
@@ -251,13 +281,13 @@ impl SqliteStorage {
         match result {
             Ok(()) => {
                 self.conn.execute_batch("COMMIT")?;
+                Ok(applied)
             }
             Err(error) => {
                 let _ = self.conn.execute_batch("ROLLBACK");
-                return Err(error);
+                Err(error)
             }
         }
-        self.export_data()
     }
 
     /// Same-id recommendation update. Only response state moves after creation;
@@ -1054,29 +1084,36 @@ mod tests {
         delta.exported_at = 1_000;
         let after = storage.apply_delta(&delta).expect("delta should apply");
         assert_eq!(
-            after
-                .knowledge_items
+            storage
+                .list_knowledge_items()
+                .expect("list after apply")
                 .iter()
                 .find(|row| row.id == "x")
                 .and_then(|row| row.title.clone()),
             Some("local-new".into()),
             "a stale delta row must not clobber a newer local edit"
         );
-        assert!(after.knowledge_items.iter().any(|row| row.id == "y"));
+        assert_eq!(
+            (after.knowledge_items, after.conversations),
+            (1, 0),
+            "the summary counts rows actually written: only 'y' won"
+        );
 
         // A newer delta row does win.
         let mut newer = snapshot(vec![item("x", 350, "remote-newer")]);
         newer.exported_at = 2_000;
         let after = storage.apply_delta(&newer).expect("delta should apply");
         assert_eq!(
-            after
-                .knowledge_items
+            storage
+                .list_knowledge_items()
+                .expect("list after apply")
                 .iter()
                 .find(|row| row.id == "x")
                 .and_then(|row| row.title.clone()),
             Some("remote-newer".into()),
             "a strictly newer delta row must overwrite the local copy"
         );
+        assert_eq!(after.knowledge_items, 1);
     }
 
     #[test]
@@ -1097,11 +1134,16 @@ mod tests {
             .knowledge_items
             .push(item("old", 200, "resurrected-stale"));
         let after = storage.apply_delta(&deleted).expect("delta should apply");
+        let survivors = storage.list_knowledge_items().expect("list after apply");
         assert!(
-            !after.knowledge_items.iter().any(|row| row.id == "old"),
+            !survivors.iter().any(|row| row.id == "old"),
             "a tombstone must remove a living local row"
         );
-        assert!(after.knowledge_items.iter().any(|row| row.id == "new"));
+        assert!(survivors.iter().any(|row| row.id == "new"));
+        assert_eq!(
+            after.knowledge_items, 1,
+            "the resurrected-stale row won LWW locally (updated_at 200 > 100) and was written once, then removed by the tombstone"
+        );
 
         // The tombstone also guards against later stale arrivals via merge…
         let via_merge = storage
@@ -1204,8 +1246,8 @@ mod tests {
             deleted_at: None,
         });
         let after = storage.apply_delta(&family).expect("family delta applies");
-        assert_eq!(after.conversations.len(), 1);
-        assert_eq!(after.messages.len(), 1);
+        assert_eq!(after.conversations, 1);
+        assert_eq!(after.messages, 1);
 
         // An orphan message (parent nowhere) fails integrity at commit.
         let mut orphan = snapshot(vec![]);

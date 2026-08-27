@@ -23,13 +23,14 @@ impl SharedCore {
     }
 
     /// Row-wise LWW merge of an incremental payload — see
-    /// [`glimpse_core::SqliteStorage::apply_delta`].
-    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataExport> {
+    /// [`glimpse_core::SqliteStorage::apply_delta`]. Returns the summary of
+    /// rows actually written (all zeros when every row was stale).
+    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataImportSummary> {
         self.client().apply_delta(delta)
     }
 
     /// [`Self::apply_delta`] from its JSON wire form.
-    pub fn apply_delta_json(&self, data_json: &str) -> Result<String> {
+    pub fn apply_delta_json(&self, data_json: &str) -> Result<DataImportSummary> {
         self.client().apply_delta_json(data_json)
     }
 

@@ -188,19 +188,19 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
 
     if (response.delta != null) {
       // Watermark path succeeded: merge incrementally, advance the
-      // watermark only from the server's own number.
+      // watermark only from the server's own number. The merge summary counts
+      // rows actually written, so an all-stale delta returns false and the
+      // caller can skip refetching everything.
       const mergedJson = JSON.stringify(response.delta);
-      if (mobileCoreClient.mergeDelta) {
-        await mobileCoreClient.mergeDelta(mergedJson);
-      } else {
-        await mobileCoreClient.mergeData(mergedJson);
-      }
+      const summary = mobileCoreClient.mergeDelta
+        ? await mobileCoreClient.mergeDelta(mergedJson)
+        : await mobileCoreClient.mergeData(mergedJson);
       config = updateSyncConfig({
         lastSyncedAt: Date.now(),
         outboundWatermark: response.newWatermark ?? watermark,
         tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
       });
-      return true;
+      return deltaAppliedSomething(summary);
     }
 
     if (response.snapshot != null) {
@@ -308,6 +308,25 @@ function safeParse(text: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** Whether an applied delta touched any row. The merge summary counts rows
+ * actually written, so an idle poll (empty/all-stale delta) reports false and
+ * useAutoSync skips its global query invalidation. */
+function deltaAppliedSomething(summary: {
+  knowledgeItems: number;
+  conversations: number;
+  messages: number;
+  recommendations: number;
+  feedbackEvents: number;
+}): boolean {
+  return (
+    summary.knowledgeItems > 0 ||
+    summary.conversations > 0 ||
+    summary.messages > 0 ||
+    summary.recommendations > 0 ||
+    summary.feedbackEvents > 0
+  );
 }
 
 function assertProtocol(version: number): void {

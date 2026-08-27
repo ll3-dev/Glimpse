@@ -102,22 +102,21 @@ pub struct MergeDeltaOutput {
 
 /// Merge an incremental sync delta row-by-row with LWW semantics instead of
 /// rewriting the store — the watermark delta path's counterpart to
-/// [`merge_data`]. The counts mirror what the payload carried (the post-state
-/// export `apply_delta` returns), matching [`MergeDataOutput`]'s contract.
+/// [`merge_data`]. The counts are rows this delta actually wrote (LWW
+/// winners); an all-stale or empty delta reports all zeros, letting callers
+/// skip post-sync refetches.
 #[command]
 pub fn merge_delta(input: MergeDeltaInput) -> Result<MergeDeltaOutput> {
     let core = crate::state::core_state();
-    let merged_json = core
+    let summary = core
         .apply_delta_json(&input.data_json)
         .map_err(crate::error::to_rustra_err)?;
-    let merged: glimpse_core::DataExport = serde_json::from_str(&merged_json)
-        .map_err(|_| rustra::RustraError::internal("apply_delta returned an unparseable export"))?;
     Ok(MergeDeltaOutput {
-        knowledge_items: merged.knowledge_items.len(),
-        conversations: merged.conversations.len(),
-        messages: merged.messages.len(),
-        recommendations: merged.recommendations.len(),
-        feedback_events: merged.feedback_events.len(),
+        knowledge_items: summary.knowledge_items,
+        conversations: summary.conversations,
+        messages: summary.messages,
+        recommendations: summary.recommendations,
+        feedback_events: summary.feedback_events,
     })
 }
 

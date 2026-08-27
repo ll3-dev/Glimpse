@@ -27,16 +27,16 @@ impl CoreClientImpl {
     }
 
     /// Row-wise LWW merge of an incremental payload — see
-    /// [`SqliteStorage::apply_delta`].
-    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataExport> {
+    /// [`SqliteStorage::apply_delta`]. Returns the summary of rows actually
+    /// written (all zeros when every row was stale or the payload empty).
+    pub fn apply_delta(&self, delta: &DataExport) -> Result<DataImportSummary> {
         self.storage.apply_delta(delta)
     }
 
-    /// [`Self::apply_delta`] from its JSON wire form; returns the merged
-    /// post-state so callers can re-fingerprint if they need to.
-    pub fn apply_delta_json(&self, data_json: &str) -> Result<String> {
+    /// [`Self::apply_delta`] from its JSON wire form.
+    pub fn apply_delta_json(&self, data_json: &str) -> Result<DataImportSummary> {
         let delta: DataExport = serde_json::from_str(data_json)?;
-        Ok(serde_json::to_string(&self.storage.apply_delta(&delta)?)?)
+        self.storage.apply_delta(&delta)
     }
 
     pub fn merge_data_json(&self, data_json: &str) -> Result<DataImportSummary> {
