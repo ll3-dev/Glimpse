@@ -84,6 +84,11 @@ impl SqliteStorage {
     /// decomposes to `a > c OR b > c`, which is what the WHERE clauses below
     /// express — 0004's clock indexes make them index-assisted lookups.
     pub fn export_delta(&self, since_clock_ms: i64) -> Result<DataExport> {
+        // 삭제 마커는 무한히 쌓이는데, 매 델타 폴링이 테이블 전체를 스캔·직렬화
+        // 한다. 커서 가드밴드(24h)보다 충분히 오래된 톰스톤은 살아있는 클라이언트
+        // 워터마크가 이미 지나갔으므로(삭제를 놓칠 수 없음) 폴링 한 번에 프루닝해도
+        // 안전하다. 보존 기간은 가드밴드 대비 넉넉한 30일.
+        self.prune_old_tombstones()?;
         let mut knowledge_items = self.list_knowledge_items_since(since_clock_ms)?;
         let mut conversations = self.list_conversations_since(since_clock_ms)?;
         let mut messages = self.list_messages_since(since_clock_ms)?;
@@ -466,6 +471,18 @@ fn canonical_snapshot_digest(export: &DataExport) -> Result<String> {
 }
 
 impl SqliteStorage {
+    /// Drop deletion markers past [`TOMBSTONE_RETENTION_MS`]. Called from the
+    /// delta export path, which re-scans the whole table per poll — without
+    /// pruning the table (and thus every idle poll's cost) grows forever.
+    pub(super) fn prune_old_tombstones(&self) -> Result<()> {
+        let cutoff = chrono::Utc::now().timestamp_millis() - TOMBSTONE_RETENTION_MS;
+        self.conn.execute(
+            "DELETE FROM sync_tombstones WHERE deleted_at < ?1",
+            params![cutoff],
+        )?;
+        Ok(())
+    }
+
     pub(super) fn list_sync_tombstones(&self) -> Result<Vec<SyncTombstone>> {
         let mut statement = self.conn.prepare(
             "SELECT entity_type, entity_id, deleted_at FROM sync_tombstones ORDER BY entity_type, entity_id",
@@ -717,6 +734,13 @@ where
 /// in the future cannot be trusted to be "newer", so recency is decided by
 /// content order instead of by the suspicious timestamp.
 const MAX_CLOCK_SKEW_MS: i64 = 24 * 60 * 60 * 1000;
+
+/// Deletion markers older than this are pruned from `sync_tombstones`. The
+/// delta cursor guardband is 24h (`MAX_CLOCK_SKEW_MS`), so any live client's
+/// watermark has already moved past tombstones this old — deleting them can
+/// never re-expose a deleted row. 30 days leaves a wide margin for devices
+/// that stay offline for weeks and then full-snapshot sync from scratch.
+const TOMBSTONE_RETENTION_MS: i64 = 30 * 24 * 60 * 60 * 1000;
 
 fn prefer_candidate<T: Serialize>(current: &T, candidate: &T, clock: &impl Fn(&T) -> i64) -> bool {
     let current_clock = clock(current);
@@ -1082,8 +1106,10 @@ mod tests {
             .expect("fixture should import");
 
         // Tombstones bypass the cursor: deletes must never be under-sent.
+        // (Recent enough to survive export_delta's retention pruning.)
+        let now = chrono::Utc::now().timestamp_millis();
         storage
-            .record_sync_tombstone(ENTITY_KNOWLEDGE_ITEM, "gone", 42)
+            .record_sync_tombstone(ENTITY_KNOWLEDGE_ITEM, "gone", now)
             .expect("tombstone should record");
 
         let delta = storage.export_delta(200).expect("delta should export");
@@ -1101,6 +1127,30 @@ mod tests {
             "every tombstone must ride along regardless of age"
         );
         drop(fixture);
+    }
+
+    #[test]
+    fn export_delta_prunes_tombstones_older_than_the_retention_window() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        let now = chrono::Utc::now().timestamp_millis();
+
+        // Ancient tombstone (well past the 30d retention) vs a fresh one.
+        storage
+            .record_sync_tombstone(ENTITY_KNOWLEDGE_ITEM, "ancient", now - 31 * 24 * 60 * 60 * 1000)
+            .expect("ancient tombstone should record");
+        storage
+            .record_sync_tombstone(ENTITY_KNOWLEDGE_ITEM, "recent", now - 24 * 60 * 60 * 1000)
+            .expect("recent tombstone should record");
+
+        let delta = storage.export_delta(0).expect("delta should export");
+        assert!(
+            !delta.tombstones.iter().any(|t| t.entity_id == "ancient"),
+            "tombstones past retention must be pruned, not re-sent forever"
+        );
+        assert!(
+            delta.tombstones.iter().any(|t| t.entity_id == "recent"),
+            "tombstones inside retention must still ride along"
+        );
     }
 
     #[test]
