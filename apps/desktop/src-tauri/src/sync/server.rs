@@ -92,15 +92,23 @@ impl IntoResponse for ApiError {
 }
 
 pub fn router(state: ServerState) -> Router {
+    use axum::extract::Request;
+    use tower_http::compression::CompressionLayer;
+    use tower_http::decompression::DecompressionLayer;
     let port = state.sync.port();
     let local_names = advertised_host_names(&state.sync);
     Router::new()
         .route("/v1/health", get(health))
         .route("/v1/pair", post(pair))
         .route("/v1/sync", post(sync))
-        .layer(axum::middleware::from_fn(move |request, next| {
+        .layer(axum::middleware::from_fn(move |request: Request, next| {
             reject_foreign_hosts(request, next, port, local_names.clone())
         }))
+        // Snapshots are JSON that compresses ~10x. The mobile client gzips
+        // request bodies above a size threshold (Content-Encoding: gzip) and
+        // advertises Accept-Encoding for compressed responses.
+        .layer(DecompressionLayer::new())
+        .layer(CompressionLayer::new().gzip(true))
         .layer(DefaultBodyLimit::max(64 * 1024 * 1024))
         .with_state(state)
 }
@@ -258,25 +266,46 @@ async fn sync(
 
     let device_id = request.device_id;
     let remote_snapshot = request.snapshot;
+    let sync_state = state.sync.clone();
     let (snapshot, fingerprint) = tauri::async_runtime::spawn_blocking(move || {
         let core = glimpse_bridge::core_state();
-        let fingerprint = core
-            .snapshot_fingerprint()
+        // Hash the *received* snapshot first — that needs no database access.
+        // An idle poll then skips both the merge AND our own full export+
+        // SHA256 by trusting the cached fingerprint; the storage write-
+        // revision keeps that cache honest (any mutation, local webview edits
+        // included, bumps it and forces a recompute).
+        let remote_fingerprint =
+            glimpse_core::SqliteStorage::fingerprint_of_snapshot(&remote_snapshot);
+        let revision = core
+            .sync_data_revision()
             .map_err(|error| error.to_string())?;
-        // Skip the merge only when the received snapshot's *actual content*
-        // matches ours (see `should_skip_merge`). If the payload cannot be
-        // hashed we fail open and merge anyway — an unnecessary merge is
-        // cheap next to a lost change.
-        let skip = should_skip_merge(&fingerprint, &remote_snapshot);
-        let snapshot = if skip {
-            None
-        } else {
-            Some(
-                core.merge_data(&remote_snapshot)
-                    .map_err(|error| error.to_string())?,
-            )
-        };
-        Ok((snapshot, fingerprint))
+        let cached = sync_state.cached_fingerprint_for_revision(revision);
+        let skip = cached.is_some()
+            && remote_fingerprint.is_ok_and(|remote| {
+                remote_snapshot.format_version != 0
+                    && remote_snapshot.format_version <= glimpse_core::DataExport::FORMAT_VERSION
+                    && Some(remote.as_str()) == cached.as_deref()
+            });
+        if skip {
+            return Ok((None, cached.expect("checked above")));
+        }
+        // Cache miss: run the real merge. An unhashable payload fails open
+        // into this path on purpose — an unnecessary merge is cheap next to a
+        // lost change.
+        let merged = core
+            .merge_data(&remote_snapshot)
+            .map_err(|error| error.to_string())?;
+        let fresh_revision = core
+            .sync_data_revision()
+            .map_err(|error| error.to_string())?;
+        match core.snapshot_fingerprint() {
+            Ok(fresh) => sync_state.store_cached_fingerprint(fresh_revision, fresh.clone()),
+            Err(_) => sync_state.invalidate_cached_fingerprint(),
+        }
+        let fingerprint = sync_state
+            .cached_fingerprint_for_revision(fresh_revision)
+            .ok_or_else(|| "fingerprint unavailable after merge".to_string())?;
+        Ok((Some(merged), fingerprint))
     })
     .await
     .map_err(|error| {
@@ -293,9 +322,11 @@ async fn sync(
             message,
         )
     })?;
+    let merged_something = snapshot.is_some();
 
     state.sync.mark_seen(&device_id);
-    if snapshot.is_some() {
+    if merged_something {
+        state.sync.take_data_dirty();
         // Graph analysis is driven by this event in the webview; only emit it
         // when a merge actually changed desktop data.
         let _ = state.app.emit(
@@ -341,13 +372,14 @@ fn bearer_token(headers: &HeaderMap) -> Option<&str> {
 /// Should the incoming snapshot be discarded without merging?
 ///
 /// Only when the payload declares a supported envelope AND hashing its actual
-/// content yields the same fingerprint as our current dataset. An unsupported
-/// or unhashable payload cannot be meaningfully compared, so we fail open and
-/// let the merge (which validates strictly) decide. The `fingerprint` the
-/// client sends is deliberately ignored (deprecated wire field): it echoes a
-/// past desktop fingerprint rather than describing the snapshot payload, and
-/// trusting it silently dropped every client-side change until the desktop
-/// changed on its own.
+/// content yields the same fingerprint as our cached dataset fingerprint. An
+/// unsupported or unhashable payload cannot be meaningfully compared, so we
+/// fail open and let the merge (which validates strictly) decide. The
+/// `fingerprint` the client sends is deliberately ignored (deprecated wire
+/// field): it echoes a past desktop fingerprint rather than describing the
+/// snapshot payload, and trusting it silently dropped every client-side change
+/// until the desktop changed on its own.
+#[cfg(test)]
 fn should_skip_merge(our_fingerprint: &str, remote_snapshot: &glimpse_core::DataExport) -> bool {
     remote_snapshot.format_version != 0
         && remote_snapshot.format_version <= glimpse_core::DataExport::FORMAT_VERSION

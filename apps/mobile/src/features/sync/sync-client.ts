@@ -31,6 +31,10 @@ import {
   isAuthError,
   normalizeBaseUrl,
 } from './sync-url';
+import {
+  maybeCompressRequestBody,
+  parseResponseBody,
+} from './payload-compression';
 import type { PairResponse, SyncResponse } from './types';
 
 const SYNC_PROTOCOL_VERSION = 1;
@@ -150,17 +154,26 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   let lastError: unknown = new Error('연결 가능한 Desktop 주소가 없습니다.');
 
   const attempt = async (baseUrl: string): Promise<boolean> => {
-    const response = await fetchJson<SyncResponse>(`${baseUrl}/v1/sync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
+    // Large snapshots ride gzip: both peers share the tower-http contract.
+    const requestPayload = maybeCompressRequestBody(
+      JSON.stringify({
         deviceId: getOrCreateSyncDeviceId(),
         fingerprint: config.snapshotFingerprint,
         snapshot,
       }),
+    );
+    const response = await fetchJson<SyncResponse>(`${baseUrl}/v1/sync`, {
+      method: 'POST',
+      headers: {
+        ...requestPayload.headers,
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip',
+        Authorization: `Bearer ${token}`,
+      },
+      body: requestPayload.body.buffer.slice(
+        requestPayload.body.byteOffset,
+        requestPayload.body.byteOffset + requestPayload.body.byteLength,
+      ) as ArrayBuffer,
     });
     assertProtocol(response.protocolVersion);
     if (response.snapshot != null) {
@@ -222,7 +235,7 @@ async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
   }
 }
 
-async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
+async function fetchJson<T>(url: string, init: RequestInit & { headers?: Record<string, string> }): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -238,24 +251,31 @@ async function fetchJson<T>(url: string, init: RequestInit): Promise<T> {
     if (response.status >= 300 && response.status < 400) {
       throw new HttpError('Desktop가 리다이렉트로 응답했습니다.', response.status);
     }
-    const body = (await response.json().catch(() => null)) as
-      | T
-      | { message?: string }
-      | null;
+    const contentEncoding = response.headers.get('content-encoding');
+    // Error bodies are small; read them as text so both plain and gzipped
+    // success paths share one decoder.
     if (!response.ok) {
-      const serverMessage =
-        body && typeof body === 'object' && 'message' in body
-          ? ((body as { message?: string }).message ?? null)
-          : null;
+      const text = await response.text().catch(() => '');
+      const body = text ? (safeParse(text) as { message?: string } | null) : null;
+      const serverMessage = body?.message ?? null;
       throw new HttpError(
         serverMessage || `Desktop 요청 실패 (${response.status})`,
         response.status,
       );
     }
-    if (!body) throw new Error('Desktop 응답이 비어 있습니다.');
-    return body as T;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length === 0) throw new Error('Desktop 응답이 비어 있습니다.');
+    return parseResponseBody<T>(bytes, contentEncoding);
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function safeParse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
 }
 

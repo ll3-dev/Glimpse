@@ -24,6 +24,12 @@ impl SharedCore {
         self.client().snapshot_fingerprint()
     }
 
+    /// Storage write counter backing the sync server's cached-fingerprint
+    /// validation (see [`glimpse_core::SqliteStorage::sync_data_revision`]).
+    pub fn sync_data_revision(&self) -> Result<i64> {
+        self.client().sync_data_revision()
+    }
+
     /// Fingerprint of a snapshot we did not necessarily produce ourselves —
     /// used by the sync server to decide whether an incoming snapshot really
     /// carries new content before paying for a merge.

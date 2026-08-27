@@ -29,6 +29,10 @@ impl CoreClientImpl {
         self.storage.snapshot_fingerprint()
     }
 
+    pub fn sync_data_revision(&self) -> Result<i64> {
+        self.storage.sync_data_revision()
+    }
+
     /// Fingerprint of a snapshot we did not necessarily produce ourselves —
     /// used by the sync server to decide whether an incoming snapshot really
     /// carries new content before paying for a merge.

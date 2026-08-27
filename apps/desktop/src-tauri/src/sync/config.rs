@@ -82,6 +82,14 @@ pub struct DesktopSyncStateInner {
     port: Mutex<u16>,
     startup_error: Mutex<Option<String>>,
     mdns_daemon: Mutex<Option<ServiceDaemon>>,
+    /// Cached content fingerprint of our own dataset together with the
+    /// storage write-revision it was computed at. An idle poll trusts it only
+    /// while the live revision is unchanged — any mutation (local webview
+    /// edits included) bumps the counter via triggers and forces a recompute.
+    cached_fingerprint: Mutex<Option<(i64, String)>>,
+    /// Set when a merge changed local data. Incremental-sync work (delta
+    /// export scheduling) keys off this signal.
+    data_dirty: std::sync::atomic::AtomicBool,
 }
 
 pub type DesktopSyncState = std::sync::Arc<DesktopSyncStateInner>;
@@ -130,6 +138,8 @@ impl DesktopSyncStateInner {
             port: Mutex::new(SYNC_PORT),
             startup_error: Mutex::new(startup_error),
             mdns_daemon: Mutex::new(None),
+            cached_fingerprint: Mutex::new(None),
+            data_dirty: std::sync::atomic::AtomicBool::new(false),
         })
     }
 
@@ -268,6 +278,40 @@ impl DesktopSyncStateInner {
             .lock()
             .map(|clients| clients.values().cloned().collect())
             .unwrap_or_default()
+    }
+
+    /// Cached fingerprint still valid for the given live storage revision?
+    /// Returns it only when the revision matches — any database mutation has
+    /// since invalidated the cache.
+    pub fn cached_fingerprint_for_revision(&self, revision: i64) -> Option<String> {
+        let guard = self.cached_fingerprint.lock().ok()?;
+        let (cached_revision, fingerprint) = guard.as_ref()?;
+        (cached_revision == &revision).then(|| fingerprint.clone())
+    }
+
+    pub fn store_cached_fingerprint(&self, revision: i64, fingerprint: String) {
+        if let Ok(mut guard) = self.cached_fingerprint.lock() {
+            *guard = Some((revision, fingerprint));
+        }
+    }
+
+    /// Called after a merge that changed local data (cheap, conservative):
+    /// drops the cache so nothing can serve a stale value even if revision
+    /// bookkeeping were to miss a path. Also raises the dirty signal for
+    /// incremental-sync scheduling.
+    pub fn invalidate_cached_fingerprint(&self) {
+        if let Ok(mut guard) = self.cached_fingerprint.lock() {
+            *guard = None;
+        }
+        self.data_dirty
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Whether any merge changed local data since the last check; reading
+    /// clears the flag (consume-once semantics).
+    pub fn take_data_dirty(&self) -> bool {
+        self.data_dirty
+            .swap(false, std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn forget_client(&self, device_id: &str) -> Result<(), String> {

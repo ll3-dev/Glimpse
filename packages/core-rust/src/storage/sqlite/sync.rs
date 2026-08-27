@@ -50,6 +50,21 @@ impl SqliteStorage {
         normalize_for_fingerprint(&mut normalized);
         canonical_snapshot_digest(&normalized)
     }
+
+    /// Monotonic write counter maintained by triggers on every exported
+    /// table (`0004_delta_sync`). Callers pair it with
+    /// [`SqliteStorage::snapshot_fingerprint`] to cache the fingerprint:
+    /// a revision change proves the dataset moved and forces a recompute,
+    /// while an unchanged revision lets the caller trust the cached value —
+    /// including for local edits that never pass through the sync server.
+    pub fn sync_data_revision(&self) -> Result<i64> {
+        let revision = self.conn.query_row(
+            "SELECT revision FROM sync_data_revision WHERE singleton = 1",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(revision)
+    }
 }
 
 /// Strips fields whose values legitimately differ between devices without any
