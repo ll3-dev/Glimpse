@@ -43,10 +43,12 @@ export function useChatNavigation({
     }
   }, [messages]);
 
-  // Scroll to bottom when streaming text updates
+  // Scroll to bottom when streaming text updates. Flushes are throttled
+  // upstream (~80ms), but animated scrolls would still stack at that rate —
+  // a direct jump is cheaper and reads the same while tokens stream in.
   useEffect(() => {
     if (streamingText) {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      scrollViewRef.current?.scrollToEnd({ animated: false });
     }
   }, [streamingText]);
 

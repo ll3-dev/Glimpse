@@ -31,6 +31,13 @@ interface UseChatResult {
   abortAndSave: () => Promise<void>;
 }
 
+/**
+ * 스트리밍 토큰 플러시 간격. 토큰마다 setState하면 화면 전체가 토큰 속도
+ * (20-60/s)로 재렌더되고 스트리밍 버블이 누적 텍스트 전체를 매번 재파싱해
+ * O(n²) 작업이 된다. ref에 누적하고 이 간격으로만 상태에 반영한다.
+ */
+const STREAMING_FLUSH_INTERVAL_MS = 80;
+
 export function useChat({
   conversationId,
   contextItem,
@@ -42,8 +49,17 @@ export function useChat({
 
   // Use ref to persist streaming text across renders for abort saving
   const streamingTextRef = useRef('');
+  const lastFlushAtRef = useRef(0);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 세대 일련번호 — abort 시 증가시켜 이전 세대의 지연 저장을 무효화한다
   const generationSeqRef = useRef(0);
+
+  const cancelPendingFlush = useCallback(() => {
+    if (flushTimerRef.current !== null) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+  }, []);
 
   const { data: messages } = useMessagesQuery(conversationId);
   const { mutateAsync: addMessage } = useAddMessageMutation();
@@ -58,6 +74,7 @@ export function useChat({
     setIsGenerating(true);
     setStreamingText('');
     streamingTextRef.current = '';
+    lastFlushAtRef.current = 0;
 
     try {
       const target = resolveEffectiveTarget('chat');
@@ -87,8 +104,25 @@ export function useChat({
           contextItems,
           addMessage,
           streamingTextRef,
-          onToken: (token) => {
-            setStreamingText((prev) => prev + token);
+          onToken: () => {
+            // 토큰마다 setState하지 않고 간격을 두고 ref 스냅샷으로 플러시한다.
+            // 리드 타이머로 즉시 반영을 보장하고, 간격 미달 토큰은 후행 타이머로
+            // 마지막 청크를 유실 없이 내보낸다.
+            const now = Date.now();
+            const elapsed = now - lastFlushAtRef.current;
+            if (elapsed >= STREAMING_FLUSH_INTERVAL_MS) {
+              cancelPendingFlush();
+              lastFlushAtRef.current = now;
+              setStreamingText(streamingTextRef.current);
+            } else if (flushTimerRef.current === null) {
+              flushTimerRef.current = setTimeout(() => {
+                flushTimerRef.current = null;
+                if (isCurrent()) {
+                  lastFlushAtRef.current = Date.now();
+                  setStreamingText(streamingTextRef.current);
+                }
+              }, STREAMING_FLUSH_INTERVAL_MS - elapsed);
+            }
           },
           isCurrent,
         });
@@ -120,10 +154,14 @@ export function useChat({
       }
 
       streamingTextRef.current = '';
+      cancelPendingFlush();
       setStreamingText('');
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '응답 생성에 실패했습니다.';
+      // 부분 텍스트는 ref에서 저장하므로, 리셋 후 지연 플러시가 스트리밍
+      // 버블을 되살리지 않게 타이머를 먼저 정리한다.
+      cancelPendingFlush();
       setError(errorMessage);
       logger.error('Chat generation failed', err);
 
@@ -146,7 +184,7 @@ export function useChat({
         setIsGenerating(false);
       }
     }
-  }, [conversationId, contextItem, isGenerating, addMessage, knowledgeItems, messages]);
+  }, [conversationId, contextItem, isGenerating, addMessage, knowledgeItems, messages, cancelPendingFlush]);
 
   /**
    * Abort current generation and save partial response
@@ -156,6 +194,7 @@ export function useChat({
     // 저장을 건너뛰게 한다(이중 저장 방지).
     const generation = ++generationSeqRef.current;
     void generation;
+    cancelPendingFlush();
 
     const runtime = getLocalLLMRuntime();
     await runtime.stopGeneration();
@@ -172,7 +211,7 @@ export function useChat({
     streamingTextRef.current = '';
     setStreamingText('');
     setIsGenerating(false);
-  }, [conversationId, addMessage]);
+  }, [conversationId, addMessage, cancelPendingFlush]);
 
   return {
     sendMessage,
