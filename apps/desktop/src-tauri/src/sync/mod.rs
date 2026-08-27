@@ -115,7 +115,7 @@ fn status(state: &DesktopSyncState) -> SyncStatus {
         pairing_code,
         pairing_code_expires_in_seconds,
         paired_clients: state.paired_clients().into_iter().map(Into::into).collect(),
-        tailscale: tailscale::inspect_tailscale(state.port()),
+        tailscale: state.tailscale_status_cached(),
         startup_error: state.startup_error(),
     }
 }

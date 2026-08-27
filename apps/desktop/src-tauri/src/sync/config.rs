@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use super::tailscale::inspect_tailscale;
+use super::tailscale::{inspect_tailscale, TailscaleStatus};
 use super::{SYNC_PORT, SYNC_PROTOCOL_VERSION};
 
 const PAIRING_CODE_TTL: Duration = Duration::from_secs(10 * 60);
@@ -95,6 +95,10 @@ pub struct DesktopSyncStateInner {
     /// (60s-idle included) poll with one. Port or serve-config changes call
     /// [`Self::invalidate_cached_endpoints`].
     cached_endpoints: Mutex<Option<(Instant, PublicEndpoints)>>,
+    /// Same idea for the settings UI's `get_sync_status` polling: the status
+    /// command runs every 10s while the sync section is mounted, and each
+    /// call would otherwise shell out to `tailscale status --json`.
+    cached_tailscale_status: Mutex<Option<(Instant, TailscaleStatus)>>,
 }
 
 pub type DesktopSyncState = std::sync::Arc<DesktopSyncStateInner>;
@@ -146,6 +150,7 @@ impl DesktopSyncStateInner {
             cached_fingerprint: Mutex::new(None),
             data_dirty: std::sync::atomic::AtomicBool::new(false),
             cached_endpoints: Mutex::new(None),
+            cached_tailscale_status: Mutex::new(None),
         })
     }
 
@@ -157,6 +162,7 @@ impl DesktopSyncStateInner {
             *current = port;
         }
         self.invalidate_cached_endpoints();
+        self.invalidate_cached_tailscale_status();
     }
 
     pub fn port(&self) -> u16 {
@@ -370,6 +376,40 @@ impl DesktopSyncStateInner {
     /// tailscale serve enable/disable).
     pub fn invalidate_cached_endpoints(&self) {
         if let Ok(mut guard) = self.cached_endpoints.lock() {
+            *guard = None;
+        }
+    }
+
+    /// How long the settings UI may reuse a tailscale status answer. The UI
+    /// polls `get_sync_status` every 10s and shows connected/serve state, so
+    /// this stays far shorter than [`Self::ENDPOINTS_TTL`] — a toggle in the
+    /// `tailscale` CLI becomes visible within a poll or two, while the CLI
+    /// subprocess still runs at most once per TTL instead of every poll.
+    const TAILSCALE_STATUS_TTL: Duration = Duration::from_secs(10);
+
+    /// TTL-cached tailscale status for the sync status UI path. `status()`
+    /// runs on every `get_sync_status` command; without the cache each poll
+    /// forks `tailscale status --json`.
+    pub fn tailscale_status_cached(&self) -> TailscaleStatus {
+        if let Ok(guard) = self.cached_tailscale_status.lock() {
+            if let Some((at, status)) = guard.as_ref() {
+                if at.elapsed() < Self::TAILSCALE_STATUS_TTL {
+                    return status.clone();
+                }
+            }
+        }
+        let status = inspect_tailscale(self.port());
+        if let Ok(mut guard) = self.cached_tailscale_status.lock() {
+            *guard = Some((Instant::now(), status.clone()));
+        }
+        status
+    }
+
+    /// Drop the cached status answer whenever an input changes (port rebind).
+    /// Serve enable/disable does not flow through here — [`Self::TAILSCALE_STATUS_TTL`]
+    /// keeps that toggle's visibility lag to one poll.
+    pub fn invalidate_cached_tailscale_status(&self) {
+        if let Ok(mut guard) = self.cached_tailscale_status.lock() {
             *guard = None;
         }
     }
