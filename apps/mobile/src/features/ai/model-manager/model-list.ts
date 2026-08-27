@@ -10,7 +10,7 @@ import type {
   LocalModelDefinition,
   MobileModelProfile,
 } from "@glimpse/shared";
-import { getChatModels } from "@glimpse/shared";
+import { getChatModels, getEmbeddingModels } from "@glimpse/shared";
 import type { LocalLLMModelFamily } from "../local-llm";
 
 /**
@@ -87,6 +87,20 @@ export const RECOMMENDED_MODELS: ModelInfo[] = getChatModels("mobile")
   .filter((model) => model.mobileProfile)
   .sort((a, b) => a.mobileProfile!.rank - b.mobileProfile!.rank)
   .map(toModelInfo);
+
+/**
+ * 온디바이스 임베딩 모델(검색 의미 재정렬용) — 채팅 카탈로그와 분리 관리.
+ * llama.rn 전용 컨텍스트에서 실행되며 Local LLM 선택 대상이 아니다.
+ */
+export const EMBEDDING_MODELS: ModelInfo[] = getEmbeddingModels("mobile")
+  .filter((model) => model.mobileProfile)
+  .sort((a, b) => a.mobileProfile!.rank - b.mobileProfile!.rank)
+  .map(toModelInfo);
+
+/** 기기에 권장되는 단일 임베딩 모델 — 현재는 nomic v1.5 하나. */
+export function getPreferredEmbeddingModel(): ModelInfo | undefined {
+  return EMBEDDING_MODELS[0];
+}
 
 /**
  * Get a model by its ID
