@@ -56,15 +56,14 @@ function RootProviders({ children }: { children: React.ReactNode }) {
  * 다음 발화 본문을 갱신한다. 복습 mutation의 due 쿼리 무효화만으로 반응한다.
  */
 function useAppReviewReminder() {
-  useStore(reviewReminderStore, (state) => state.settings.enabled);
-  const time = useStore(reviewReminderStore, (state) => ({
-    hour: state.settings.hour,
-    minute: state.settings.minute,
-  }));
+  // 원시 값 선택자로만 구독 — 객체 스냅샷을 새로 만드는 선택자는 금지(zustand v5)
+  const enabled = useStore(reviewReminderStore, (state) => state.settings.enabled);
+  const hour = useStore(reviewReminderStore, (state) => state.settings.hour);
+  const minute = useStore(reviewReminderStore, (state) => state.settings.minute);
   const locale = useAppLocale().locale;
   useReviewReminderScheduler(expoReviewReminderScheduler, {
-    enabled: reviewReminderStore.getState().settings.enabled,
-    time,
+    enabled,
+    time: { hour, minute },
     locale: () => locale,
   });
 }
