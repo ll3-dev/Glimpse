@@ -84,3 +84,12 @@ export function useReviewReminderSettings<T>(selector: (settings: ReviewReminder
 export function useReviewReminderSettingsActions() {
   return useStore(reviewReminderStore, (state) => state.actions);
 }
+
+let hydrated = false;
+
+/** 앱 시작 시 1회 저장된 설정을 복원한다(멱등). */
+export function ensureReviewReminderHydrated(): void {
+  if (hydrated) return;
+  hydrated = true;
+  reviewReminderStore.getState().actions.hydrate();
+}

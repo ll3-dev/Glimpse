@@ -16,6 +16,7 @@ import {
   useWarmLocalLLM,
   useAutoSync,
 } from "@/src/hooks";
+import { useReviewReminderScheduler } from "@glimpse/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
@@ -24,11 +25,18 @@ import { ShareIntentNavigator } from "@/src/components/share-intent";
 import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
 import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
 import { ensureBYOKHydrated } from "@/src/stores/settings/byok.store";
+import {
+  ensureReviewReminderHydrated,
+  reviewReminderStore,
+} from "@/src/stores/settings/review-reminder.store";
+import { expoReviewReminderScheduler } from "@/src/features/notifications";
+import { useStore } from "zustand";
 import { useProcessPendingShares } from "@/src/features/share/pending-share-processor";
 import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
 import { useSemanticColor } from "@glimpse/ui";
+import { useAppLocale } from "@/src/localization";
 import { ensureSyncBackgroundTaskRegistered } from "@/src/features/sync";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
@@ -39,7 +47,26 @@ function RootProviders({ children }: { children: React.ReactNode }) {
   useReleaseLocalLLMOnPressure();
   useProcessPendingShares();
   useAutoSync();
+  useAppReviewReminder();
   return <>{children}</>;
+}
+
+/**
+ * 복습 리마인더 훅 마운트 — 저장된 설정으로 예약을 복원하고 due 캐시 변화에
+ * 다음 발화 본문을 갱신한다. 복습 mutation의 due 쿼리 무효화만으로 반응한다.
+ */
+function useAppReviewReminder() {
+  useStore(reviewReminderStore, (state) => state.settings.enabled);
+  const time = useStore(reviewReminderStore, (state) => ({
+    hour: state.settings.hour,
+    minute: state.settings.minute,
+  }));
+  const locale = useAppLocale().locale;
+  useReviewReminderScheduler(expoReviewReminderScheduler, {
+    enabled: reviewReminderStore.getState().settings.enabled,
+    time,
+    locale: () => locale,
+  });
 }
 
 function CoreInitErrorFallback({
@@ -129,6 +156,7 @@ export default function RootLayout() {
   useEffect(() => {
     installGlobalErrorTraceLogger();
     void initCore();
+    ensureReviewReminderHydrated();
 
     void ensureLabelingBackgroundTaskRegistered().catch((error) => {
       logger.error('Failed to register labeling background task', error);
