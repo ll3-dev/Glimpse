@@ -66,13 +66,15 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
   }
 
   func netServiceDidResolveAddress(_ sender: NetService) {
-    guard let host = sender.hostName?.trimmingCharacters(in: CharacterSet(charactersIn: ".")),
-          sender.port > 0 else { return }
+    guard sender.port > 0 else { return }
     let txt = NetService.dictionary(fromTXTRecord: sender.txtRecordData() ?? Data())
     let deviceId = txt["deviceId"].flatMap { String(data: $0, encoding: .utf8) }
     let protocolVersion = txt["protocol"]
       .flatMap { String(data: $0, encoding: .utf8) }
       .flatMap(Int.init) ?? 1
+    let host = Self.primaryAddress(of: sender)
+      ?? sender.hostName?.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+    guard let host, !host.isEmpty else { return }
     let key = deviceId ?? "\(host):\(sender.port)"
     results[key] = [
       "name": sender.name,
@@ -81,6 +83,24 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
       "deviceId": deviceId,
       "protocolVersion": protocolVersion,
     ]
+  }
+
+  /// Prefers the resolved IPv4 address: a numeric IP is more reliable than
+  /// re-resolving the mDNS hostname, which can fail on simulators.
+  private static func primaryAddress(of service: NetService) -> String? {
+    let addresses = (service.addresses ?? []).compactMap { data -> String? in
+      data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) -> String? in
+        guard let base = raw.baseAddress,
+              base.assumingMemoryBound(to: sockaddr.self).pointee.sa_family
+                == sa_family_t(AF_INET) else { return nil }
+        var addr = raw.load(as: sockaddr_in.self)
+        var buffer = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+        guard inet_ntop(AF_INET, &addr.sin_addr, &buffer, socklen_t(INET_ADDRSTRLEN)) != nil
+        else { return nil }
+        return String(cString: buffer)
+      }
+    }
+    return addresses.first
   }
 
   func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
