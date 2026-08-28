@@ -91,6 +91,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     let addresses = (service.addresses ?? []).compactMap { data -> String? in
       data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) -> String? in
         guard let base = raw.baseAddress,
+              raw.count >= MemoryLayout<sockaddr_in>.size,
               base.assumingMemoryBound(to: sockaddr.self).pointee.sa_family
                 == sa_family_t(AF_INET) else { return nil }
         var addr = raw.load(as: sockaddr_in.self)
