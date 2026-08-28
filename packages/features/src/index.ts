@@ -89,6 +89,12 @@ export type {
   RecommendationWithItems as RecommendationWithItemsType,
 } from './recommendation/types';
 export * from './capture';
+export {
+  buildSummaryPreview,
+  MAX_PREVIEW_LENGTH,
+  shouldShowStubNoticeOnce,
+  resetStubNoticeForTests,
+} from './capture';
 export * from './search';
 export * from './labeling';
 export {
