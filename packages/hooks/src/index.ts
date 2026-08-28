@@ -14,6 +14,7 @@ export { useDueItemsQuery } from './queries/useDueItems';
 export { useRecommendationsQuery } from './queries/useRecommendations';
 export { useReviewReminderScheduler } from './queries/useReviewReminder';
 export { useLabelingBackfill } from './queries/useLabelingBackfill';
+export type { LabelingBackfillStorage } from './queries/useLabelingBackfill';
 
 // Mutations
 export { useSaveKnowledgeItemMutation, useUpdateKnowledgeItemMutation } from './mutations/useKnowledgeItemMutations';

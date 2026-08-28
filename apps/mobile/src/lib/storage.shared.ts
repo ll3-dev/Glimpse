@@ -51,6 +51,8 @@ export const StorageKeys = {
   REVIEW_REMINDER_ENABLED: 'review_reminder_enabled',
   REVIEW_REMINDER_HOUR: 'review_reminder_hour',
   REVIEW_REMINDER_MINUTE: 'review_reminder_minute',
+  // Labeling backfill (one-time version flag)
+  LABELING_BACKFILL_VERSION: 'labeling_backfill_version',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

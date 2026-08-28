@@ -33,6 +33,8 @@ import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
 import { useSemanticColor } from "@glimpse/ui";
 import { ensureSyncBackgroundTaskRegistered } from "@/src/features/sync";
+import { useLabelingBackfill } from "@glimpse/hooks";
+import { mobileBackfillStorage } from "@/src/features/labeling/backfill-storage";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
   useAppForegroundLabeling();
@@ -43,6 +45,8 @@ function RootProviders({ children }: { children: React.ReactNode }) {
   useProcessPendingShares();
   useAutoSync();
   useAppReviewReminder();
+  // CoreClientContext.Provider(nativeCoreClient) 안에서 실행된다
+  useLabelingBackfill(mobileBackfillStorage);
   return <>{children}</>;
 }
 
