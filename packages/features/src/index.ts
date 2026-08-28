@@ -110,3 +110,9 @@ export type {
   ReviewReminderControllerDeps,
   ReviewReminderController,
 } from './review-reminder';
+export {
+  LABELING_BACKFILL_VERSION,
+  runLabelingBackfill,
+  selectItemsForBackfill,
+} from './labeling/backfill';
+export type { LabelingBackfillDeps } from './labeling/backfill';
