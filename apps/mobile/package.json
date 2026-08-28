@@ -81,7 +81,7 @@
     "expo-task-manager": "~57.0.14",
     "expo-web-browser": "~57.0.2",
     "llama.rn": "^0.12.9",
-    "lucide-react-native": "^0.563.0",
+    "lucide-react-native": "^1.34.0",
     "pako": "^3.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
