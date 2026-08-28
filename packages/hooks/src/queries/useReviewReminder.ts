@@ -51,17 +51,21 @@ export function useReviewReminderScheduler(
       logger: consoleLogger,
     });
     controllerRef.current = controller;
-    if (enabledRef.current) {
-      void controller
-        .enable(timeRef.current)
-        .catch((error: unknown) => consoleLogger.error('review-reminder: 활성화 실패', error));
-    }
     return () => {
       controllerRef.current = null;
     };
     // scheduler/coreClient 변경시에만 재생성
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduler, coreClient]);
+
+  // enabled 전이에 반응 — 저장된 설정이 마운트 후 hydrate되는 복원 경로도 커버한다.
+  // 마운트 시점에 이미 enabled면 생성 effect 이후 이 effect가 활성화를 담당한다.
+  useEffect(() => {
+    if (!options.enabled) return;
+    void controllerRef.current
+      ?.enable(timeRef.current)
+      .catch((error: unknown) => consoleLogger.error('review-reminder: 활성화 실패', error));
+  }, [options.enabled, scheduler, coreClient]);
 
   useEffect(() => {
     const isDueItemsEvent = (event: QueryCacheNotifyEvent) => {
