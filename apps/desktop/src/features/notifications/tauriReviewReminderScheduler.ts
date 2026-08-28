@@ -3,9 +3,29 @@ import {
   requestPermission,
   sendNotification,
 } from '@tauri-apps/plugin-notification';
-import { computeNextFireAt, type ReviewReminderScheduler } from '@glimpse/features';
+import { computeNextFireAt, type ReminderTime, type ReviewReminderScheduler } from '@glimpse/features';
 
 let timerId: ReturnType<typeof setTimeout> | null = null;
+/** 재무장에 필요한 마지막 예약 정보 — 발화 콜백이 같은 예약을 다음 날로 이어간다. */
+let lastArmed: { time: ReminderTime; body: string } | null = null;
+
+function armDailyTimer(time: ReminderTime, body: string): void {
+  if (timerId) clearTimeout(timerId);
+  const delay = Math.max(0, computeNextFireAt(Date.now(), time.hour, time.minute) - Date.now());
+  timerId = setTimeout(() => {
+    timerId = null;
+    void (async () => {
+      // 발화 시점에 권한이 유지되어 있을 때만 보낸다
+      if (await isPermissionGranted()) {
+        await sendNotification({ title: 'Glimpse', body });
+      }
+    })().catch(() => undefined);
+    // 상시 실행 앱 — 발화 후 같은 예약을 다음 날로 재무장한다(cancel 전까지 매일 반복)
+    if (lastArmed) {
+      armDailyTimer(lastArmed.time, lastArmed.body);
+    }
+  }, delay);
+}
 
 /**
  * 데스크톱은 상시 실행 앱이므로 scheduleDaily를 "다음 발화 시각까지 대기 후
@@ -18,19 +38,11 @@ export const tauriReviewReminderScheduler: ReviewReminderScheduler = {
     return (await requestPermission()) === 'granted';
   },
   async scheduleDaily(time, body) {
-    if (timerId) clearTimeout(timerId);
-    const delay = Math.max(0, computeNextFireAt(Date.now(), time.hour, time.minute) - Date.now());
-    timerId = setTimeout(() => {
-      timerId = null;
-      void (async () => {
-        // 발화 시점에 권한이 유지되어 있을 때만 보낸다
-        if (await isPermissionGranted()) {
-          await sendNotification({ title: 'Glimpse', body });
-        }
-      })();
-    }, delay);
+    lastArmed = { time, body };
+    armDailyTimer(time, body);
   },
   async cancel() {
+    lastArmed = null;
     if (timerId) clearTimeout(timerId);
     timerId = null;
   },

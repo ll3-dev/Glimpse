@@ -16,7 +16,7 @@ export interface ReviewReminderSettings {
   minute: number; // 0-59
 }
 
-export const DEFAULT_REVIEW_REMINDER_SETTINGS: ReviewReminderSettings = {
+const DEFAULT_REVIEW_REMINDER_SETTINGS: ReviewReminderSettings = {
   enabled: false,
   hour: DEFAULT_REMINDER_TIME.hour,
   minute: DEFAULT_REMINDER_TIME.minute,
@@ -67,19 +67,16 @@ export const reviewReminderStore = createStore<{
 }>((set) => ({
   settings: loadPersistedSettings(),
   setEnabled: (enabled) => {
-    set((state) => {
-      const next = { ...state.settings, enabled };
-      persistSettings(next);
-      return { settings: next };
-    });
+    // 저장은 set() 밖에서 — updater는 순수하게 유지한다
+    const next = { ...reviewReminderStore.getState().settings, enabled };
+    persistSettings(next);
+    set({ settings: next });
   },
   setTime: (hour, minute) => {
-    set((state) => {
-      const time = sanitizeReminderTime(hour, minute);
-      const next = { ...state.settings, hour: time.hour, minute: time.minute };
-      persistSettings(next);
-      return { settings: next };
-    });
+    const time = sanitizeReminderTime(hour, minute);
+    const next = { ...reviewReminderStore.getState().settings, hour: time.hour, minute: time.minute };
+    persistSettings(next);
+    set({ settings: next });
   },
 }));
 
