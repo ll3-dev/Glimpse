@@ -10,6 +10,7 @@ export {
 } from './sync-client';
 export {
   getSyncConfig,
+  getSyncRuntime,
   resetSyncConfig,
   setSyncRuntime,
   updateSyncConfig,

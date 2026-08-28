@@ -27,7 +27,9 @@ export type SyncRuntimeStatus =
   | 'pairing'
   | 'syncing'
   | 'synced'
-  | 'error';
+  | 'error'
+  /** The native discovery module is absent on this device (e.g. Expo Go). */
+  | 'unavailable';
 
 export type SyncRuntimeState = {
   status: SyncRuntimeStatus;

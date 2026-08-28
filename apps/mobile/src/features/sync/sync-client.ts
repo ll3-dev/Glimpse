@@ -1,5 +1,10 @@
 import * as Device from 'expo-device';
-import { discoverSyncDesktops, type DiscoveredSyncDesktop } from '../../../modules/sync-discovery/src';
+import {
+  discoverSyncDesktops,
+  discoveryUnavailableError,
+  isSyncDiscoveryAvailable,
+  type DiscoveredSyncDesktop,
+} from '../../../modules/sync-discovery/src';
 import { mobileCoreClient } from '@/src/features/core';
 import { generateId } from '@/src/lib/id';
 import { storage, StorageKeys } from '@/src/lib/storage';
@@ -71,6 +76,13 @@ export function getOrCreateSyncDeviceId(): string {
 }
 
 export async function discoverDesktops(): Promise<DiscoveredSyncDesktop[]> {
+  // Distinguish "module missing" from "nothing found" up front: without the
+  // native module a discovery round-trip can never succeed, so the UI must
+  // see an explicit unavailable state instead of an empty result.
+  if (!isSyncDiscoveryAvailable()) {
+    setSyncRuntime('unavailable', discoveryUnavailableError);
+    throw new Error(discoveryUnavailableError);
+  }
   setSyncRuntime('discovering');
   try {
     const discovered = await discoverSyncDesktops();
@@ -281,6 +293,10 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
 }
 
 async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
+  // Without the native module every attempt is doomed; skip silently (and
+  // without a discovery round-trip) so background auto-sync does not keep
+  // retrying the impossible.
+  if (!isSyncDiscoveryAvailable()) return [];
   try {
     const found = await discoverSyncDesktops(1_500);
     setDiscoveredSyncDesktops(found);

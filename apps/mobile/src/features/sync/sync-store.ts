@@ -59,6 +59,10 @@ export function resetSyncConfig(): void {
   });
 }
 
+export function getSyncRuntime(): SyncRuntimeState {
+  return syncStore.getState().runtime;
+}
+
 export function setSyncRuntime(status: SyncRuntimeStatus, error: string | null = null): void {
   syncStore.setState((state) => ({
     runtime: { ...state.runtime, status, error },
