@@ -1,5 +1,5 @@
 import { buildReminderMessage, type ReminderLocale } from './message';
-import { DEFAULT_REMINDER_TIME, shouldReschedule, type ReminderTime } from './schedule';
+import { shouldReschedule, type ReminderTime } from './schedule';
 import type { ReviewReminderControllerDeps, ReviewReminderScheduler } from './types';
 
 export interface ReviewReminderController {
@@ -15,7 +15,6 @@ export function createReviewReminderController(deps: ReviewReminderControllerDep
   const getLocale = deps.locale ?? ((): ReminderLocale => 'ko');
   const logger = deps.logger;
   let disabled = false;
-  let time: ReminderTime = { ...DEFAULT_REMINDER_TIME };
   // 이전 예약과 동일하면 scheduleDaily 재호출을 건너뛰기 위한 추적
   let lastScheduled: { time: ReminderTime; body: string } | null = null;
   // disable/enable로 세대를 올려 대기 중이던 갱신이 예약을 부활시키지 못하게 한다
@@ -24,7 +23,6 @@ export function createReviewReminderController(deps: ReviewReminderControllerDep
   /** 현재 due 개수로 예약을 다시 잡는다. enable과 refresh가 공유한다. */
   const scheduleCurrent = async (next: ReminderTime): Promise<void> => {
     const gen = generation;
-    time = next;
     if (disabled) return;
     try {
       const count = await getDueCount();
@@ -41,11 +39,12 @@ export function createReviewReminderController(deps: ReviewReminderControllerDep
         return; // 동일 예약 — 중복 scheduleDaily 생략
       }
       await scheduler.scheduleDaily(next, body);
-      if (gen !== generation || disabled) {
-        // 예약 직후 disable되었다면 해제 (레이스 정리)
+      if (disabled) {
+        // 예약 직후 disable되었다면 해제. 세대만 바뀐 경우(새 enable)엔 그 세대가
+        // 스케줄러 상태를 소유하므로 건드리지 않는다.
         await scheduler.cancel();
-        return;
       }
+      if (gen !== generation || disabled) return;
       lastScheduled = { time: next, body };
     } catch (error) {
       logger?.error('review-reminder: 스케줄 갱신 실패', error);
@@ -56,7 +55,6 @@ export function createReviewReminderController(deps: ReviewReminderControllerDep
     async enable(next) {
       generation += 1;
       disabled = false;
-      time = next;
       const granted = await scheduler.requestPermission();
       if (!granted) return false;
       await scheduleCurrent(next);

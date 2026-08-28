@@ -93,6 +93,52 @@ describe('createReviewReminderController', () => {
     expect(fake.scheduledBody).toBeNull();
   });
 
+  it('세대 전환 중 예약 정리가 새 enable의 예약을 지우지 않는다', async () => {
+    const calls: string[] = [];
+    let scheduled = false;
+    let resolveStaleSchedule!: () => void;
+    let gateFirstSchedule = true;
+    const scheduler: ReviewReminderScheduler = {
+      requestPermission: async () => {
+        calls.push('permission');
+        return true;
+      },
+      scheduleDaily: async (_time, body) => {
+        calls.push(`schedule:${body}`);
+        scheduled = true;
+        if (gateFirstSchedule) {
+          // 첫 호출(refresh)만 발화 시각까지 대기시킨다
+          gateFirstSchedule = false;
+          await new Promise<void>((resolve) => {
+            resolveStaleSchedule = resolve;
+          });
+        }
+      },
+      cancel: async () => {
+        calls.push('cancel');
+        scheduled = false;
+      },
+      getStatus: async () => ({ scheduled }),
+    };
+    const controller = createReviewReminderController({
+      scheduler,
+      getDueCount: async () => 3,
+    });
+
+    // refresh(gen A)가 scheduleDaily 안에서 대기 → disable(gen B) → enable(gen C)이 새로 예약
+    const refreshPromise = controller.refresh({ hour: 21, minute: 0 });
+    // refresh가 scheduleDaily 진입까지 진행했음을 보장 (getDueCount 마이크로태스크 플러시)
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await controller.disable();
+    await controller.enable({ hour: 8, minute: 30 });
+    resolveStaleSchedule();
+    await refreshPromise;
+
+    expect(await scheduler.getStatus()).toEqual({ scheduled: true });
+    expect(calls[calls.length - 1]).not.toBe('cancel');
+    expect(calls.filter((c) => c === 'cancel').length).toBe(1); // disable 때만
+  });
+
   it('scheduleDaily 실패 시 logger.error로 기록하고 전파하지 않는다', async () => {
     const errors: [string, unknown][] = [];
     const fake = fakeScheduler();
