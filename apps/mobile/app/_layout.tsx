@@ -17,7 +17,7 @@ import {
   useWarmLocalLLM,
   useAutoSync,
 } from "@/src/hooks";
-import { CoreClientContext } from "@glimpse/hooks";
+import { CoreClientContext, useLabelingBackfill } from "@glimpse/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
@@ -33,7 +33,6 @@ import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
 import { useSemanticColor } from "@glimpse/ui";
 import { ensureSyncBackgroundTaskRegistered } from "@/src/features/sync";
-import { useLabelingBackfill } from "@glimpse/hooks";
 import { mobileBackfillStorage } from "@/src/features/labeling/backfill-storage";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
