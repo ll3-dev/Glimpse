@@ -14,6 +14,7 @@ use tauri::Manager;
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .manage(state::DesktopRuntimeStateInner::from_defaults())
         // rustra bridge: the managed package backing `rustra_dispatch`.
         // `rustra::tauri_support::register` cannot be used here because it
