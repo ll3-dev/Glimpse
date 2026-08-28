@@ -108,3 +108,25 @@
 - 항목별 정시 알림 — 하루 1회 요약형으로 충분
 - 배치 라벨링 파이프라인 — 기존 큐 점진 소화 재사용
 - 스텁 타겟 제거 — "기본 자동 정리"라는 정직한 이름으로 유지, 안내만 추가
+
+## 실행 결과 (2026-08-28)
+
+### 구현 완료 (커밋 c2cbf5c ~ cd3513a, main)
+
+- **파트 A — 복습 리마인더**: 공유 코어(`packages/features/src/review-reminder/` — 발화 시각 계산·메시지 빌더·세대 가드 컨트롤러), 공유 훅(`useReviewReminderScheduler`), 모바일 expo-notifications 어댑터+설정 섹션(토글·시간 스테퍼·권한 처리), 데스크톱 Tauri notification 어댑터(타이머 일일 재무장)+설정 섹션. 모바일은 재시작 간 알림 중복을 막기 위해 OS 예약 상태와 재동기화. 리뷰 라운드에서 disable/enable 세대 레이스 2건·모바일 CoreClient 컨텍스트 부재 크래시·크로스런치 중복 알림 모두 수리.
+- **파트 B — 라벨링 백필**: `selectItemsForBackfill` + `runLabelingBackfill`(버전 플래그 게이트, 부분 실패 시 플래그 미기록→다음 시작 재시도), 공유 훅 + 양앱 시작 마운트. 기존 pending 큐가 점진 소화.
+- **파트 C — AI 미설정 경험**: 공유 `buildSummaryPreview`(첫 완결 문장 추출, 140자 문장/공백 경계 절단), 모바일·데스크톱 스텁 요약 교체, 모바일 저장 시 세션당 1회 AI 연결 안내 토스트. 데스크톱 안내는 스킵 — 데스크톱 라우터 폴백 체인상 rules가 항상 available이라 스텁 도달 불가(rules-provider `isAvailable()` 항상 true, 'stub'은 유효 설정값 아님) 검증됨.
+
+### 자동 게이트
+
+- `bun test`: 747 pass / 0 fail (116 파일) — 이번 작업에서 신규 추가 약 40건 포함
+- `bun run lint`: 0 오류 / 0 경고
+- mobile `tsc --noEmit -p tsconfig.typecheck.json`: exit 0 / desktop `tsc --noEmit`: exit 0
+- `cargo check`(src-tauri): 경고 없음 / `cargo check --locked` 확인
+- 웹 스모크(`bun run web`): SSR 번들링은 성공하나 `Metro error: Cannot read properties of undefined (reading 'get')` — **베이스라인(b6d5378, 이번 작업 이전)에서 동일 재현** 확인. 이번 변경과 무관한 기존 웹 SSR 이슈.
+
+### 수동 검증 잔여 (외부 증거 필요)
+
+- iOS/Android 실기기: 알림 권한 프롬프트, 지정 시각 실제 발화, 설정 변경 반영, 백그라운드 복귀 시 재스케줄
+- 데스크톱: OS 알림 권한, 발화 시각 도달 시 알림 표시, 24시간 이상 상시 실행에서 일일 재발화
+- 백필: 라벨링 활성화 이전 데이터가 있는 실제 DB에서 시작 → pending 전환 → 라벨링 큐 소화 확인
