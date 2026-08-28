@@ -16,7 +16,7 @@ import {
   useWarmLocalLLM,
   useAutoSync,
 } from "@/src/hooks";
-import { useReviewReminderScheduler } from "@glimpse/hooks";
+import { CoreClientContext, useReviewReminderScheduler } from "@glimpse/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
@@ -24,6 +24,7 @@ import { ShareIntentProvider } from "expo-share-intent";
 import { ShareIntentNavigator } from "@/src/components/share-intent";
 import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModelDownloadBanner";
 import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
+import { nativeCoreClient } from "@/src/features/core/native-core-client";
 import { ensureBYOKHydrated } from "@/src/stores/settings/byok.store";
 import {
   ensureReviewReminderHydrated,
@@ -189,7 +190,8 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <ShareIntentProvider>
             <QueryClientProvider client={queryClient}>
-              <RootProviders>
+              <CoreClientContext.Provider value={nativeCoreClient}>
+                <RootProviders>
                 <Suspense fallback={<SuspenseFallback />}>
                   <ShareIntentNavigator />
                   <Stack
@@ -205,7 +207,8 @@ export default function RootLayout() {
                   </Stack>
                   <GlobalModelDownloadBanner />
                 </Suspense>
-              </RootProviders>
+                </RootProviders>
+              </CoreClientContext.Provider>
             </QueryClientProvider>
           </ShareIntentProvider>
           <Toast />

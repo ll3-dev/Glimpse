@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient, type QueryCacheNotifyEvent } from '@tanstack/react-query';
-import { useCoreClient } from '../core-client-context';
+import { useOptionalCoreClient } from '../core-client-context';
 import { queryKeys } from '../query-keys';
 import {
   createReviewReminderController,
@@ -30,7 +30,7 @@ export function useReviewReminderScheduler(
     locale?: () => 'ko' | 'en';
   },
 ) {
-  const coreClient = useCoreClient();
+  const coreClient = useOptionalCoreClient();
   const queryClient = useQueryClient();
   const controllerRef = useRef<ReviewReminderController | null>(null);
   const enabledRef = useRef(options.enabled);
@@ -40,7 +40,7 @@ export function useReviewReminderScheduler(
   timeRef.current = options.time;
 
   useEffect(() => {
-    if (!scheduler) return;
+    if (!scheduler || !coreClient) return;
     const controller = createReviewReminderController({
       scheduler,
       getDueCount: async () => {
