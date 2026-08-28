@@ -12,6 +12,7 @@ import { DataManagementSection } from '@/src/components/settings/DataManagementS
 import { LocalLLMSection } from '@/src/components/settings/LocalLLMSection';
 import { LanguageSection } from '@/src/components/settings/LanguageSection';
 import { DesktopSyncSection } from '@/src/components/settings/DesktopSyncSection';
+import { ReviewReminderSection } from '@/src/components/settings/ReviewReminderSection';
 import { useDataManagementActions, useSettingsScreenState } from '@/src/hooks';
 import { useAppLocale } from '@/src/localization';
 
@@ -164,6 +165,8 @@ export default function SettingsScreen() {
         <BYOKSectionContainer />
 
         <SemanticSearchSection />
+
+        <ReviewReminderSection />
 
         <LanguageSection />
 

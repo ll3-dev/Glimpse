@@ -47,6 +47,10 @@ export const StorageKeys = {
   SEMANTIC_RERANK_ENABLED: 'semantic_rerank_enabled',
   /** 온디바이스 임베딩 모델 id(레지스트리) — 검색 재정렬 폴백용. */
   ON_DEVICE_EMBEDDING_MODEL_ID: 'on_device_embedding_model_id',
+  // Review reminder settings
+  REVIEW_REMINDER_ENABLED: 'review_reminder_enabled',
+  REVIEW_REMINDER_HOUR: 'review_reminder_hour',
+  REVIEW_REMINDER_MINUTE: 'review_reminder_minute',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

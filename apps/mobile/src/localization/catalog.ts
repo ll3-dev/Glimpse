@@ -31,6 +31,11 @@ export const messages = {
       unknownError: '알 수 없는 오류가 발생했습니다.',
       importedSummary: (knowledgeItems: number, conversations: number, itemMessages: number) =>
         `보관함 ${knowledgeItems}개, 대화 ${conversations}개, 메시지 ${itemMessages}개를 복원했습니다.`,
+      reviewReminderTitle: '복습 알림',
+      reviewReminderFooter: '매일 지정한 시간에 복습할 항목 수를 알려드립니다',
+      reviewReminderEnable: '매일 알려드리기',
+      reviewReminderTime: '알림 시간',
+      reviewReminderDenied: '알림 권한이 꺼져 있어요. 시스템 설정에서 허용해 주세요',
     },
     data: {
       title: '데이터 관리',
@@ -76,6 +81,11 @@ export const messages = {
       unknownError: 'An unknown error occurred.',
       importedSummary: (knowledgeItems: number, conversations: number, itemMessages: number) =>
         `Restored ${knowledgeItems} library items, ${conversations} chats, and ${itemMessages} messages.`,
+      reviewReminderTitle: 'Review reminders',
+      reviewReminderFooter: 'Daily digest of items due for review at your chosen time',
+      reviewReminderEnable: 'Notify me daily',
+      reviewReminderTime: 'Reminder time',
+      reviewReminderDenied: 'Notifications are blocked. Enable them in system settings',
     },
     data: {
       title: 'Data management',
