@@ -5,8 +5,11 @@
  */
 
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
+import { shouldShowStubNoticeOnce } from '@glimpse/features';
 import { saveKnowledgeItem, type KnowledgeItemInput } from '@/src/features/capture';
 import { mobileCoreClient } from '@/src/features/core';
+import { resolveEffectiveTarget } from '@/src/features/ai/targets/registry';
+import { toast } from '@/src/stores/toast.store';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { queryKeys } from '@/src/lib/query-keys';
 
@@ -53,8 +56,19 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
     onSuccess: (item) => {
       patchKnowledgeItems(queryClient, (current) => [item, ...current]);
       queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      notifyStubQualityOnce();
     },
   });
+}
+
+/**
+ * 스텁 타겟(기본 자동 정리)으로 저장됐을 때 세션당 1회 AI 연결 안내.
+ * 캡 로직은 모듈 수준이라 여러 화면에서 훅을 써도 세션당 1회가 유지된다.
+ */
+function notifyStubQualityOnce() {
+  if (resolveEffectiveTarget('metadata').kind !== 'stub') return;
+  if (!shouldShowStubNoticeOnce()) return;
+  toast.info('지금은 미리보기 품질로 저장돼요 — 설정에서 더 나은 AI를 연결할 수 있어요');
 }
 
 /**
