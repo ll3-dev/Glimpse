@@ -5,22 +5,17 @@
  * only a local preview and heuristic tags.
  */
 
+import { buildSummaryPreview } from '@glimpse/features';
+
 /**
  * Generates a local preview for the given content.
+ * 공유 미리보기 빌더(첫 완결 문장, 140자 경계 절단)에 위임한다.
  *
  * @param content - The content to summarize
  * @returns A truncated content preview
  */
 export function generateSummaryStub(content: string): string {
-  // Return empty string for empty content
-  if (!content || content.trim().length === 0) {
-    return '';
-  }
-
-  // Extract first 100 characters as a preview (simple stub behavior)
-  const preview = content.trim().substring(0, 100);
-
-  return `${preview}${content.trim().length > 100 ? '...' : ''}`;
+  return buildSummaryPreview(content);
 }
 
 /**

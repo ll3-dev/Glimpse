@@ -6,11 +6,15 @@ describe('capture stubs', () => {
     expect(generateSummaryStub('   ')).toBe('');
   });
 
-  test('generateSummaryStub returns a preview and truncates long content', () => {
-    const long = 'a'.repeat(120);
+  test('generateSummaryStub extracts the first complete sentence', () => {
+    expect(generateSummaryStub('첫 문장입니다. 둘째 문장은 잘립니다.')).toBe('첫 문장입니다.');
+    expect(generateSummaryStub('First sentence. Second one.')).toBe('First sentence.');
+  });
+
+  test('generateSummaryStub truncates long content at the boundary', () => {
+    const long = 'a'.repeat(200);
     const summary = generateSummaryStub(long);
-    expect(summary.startsWith('a'.repeat(100))).toBe(true);
-    expect(summary).not.toContain('Stub');
+    expect(summary.length).toBeLessThanOrEqual(140);
     expect(summary.endsWith('...')).toBe(true);
   });
 
