@@ -96,3 +96,17 @@ export {
   sanitizeEdges,
   type ProposedEdge,
 } from './recommendation/edge-parser';
+export {
+  DEFAULT_REMINDER_TIME,
+  computeNextFireAt,
+  shouldReschedule,
+  buildReminderMessage,
+  createReviewReminderController,
+} from './review-reminder';
+export type {
+  ReminderTime,
+  ReminderLocale,
+  ReviewReminderScheduler,
+  ReviewReminderControllerDeps,
+  ReviewReminderController,
+} from './review-reminder';
