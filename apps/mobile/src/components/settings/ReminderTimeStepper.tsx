@@ -2,11 +2,11 @@ import { Pressable, View } from 'react-native';
 import { Minus, Plus } from 'lucide-react-native';
 import { Text } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
+import { useAppLocale } from '@/src/localization';
 
 type ReminderTimeStepperProps = {
   label: string;
   value: number;
-  unit: string;
   minValue: number;
   maxValue: number;
   onChange: (next: number) => void;
@@ -16,11 +16,11 @@ type ReminderTimeStepperProps = {
 export function ReminderTimeStepper({
   label,
   value,
-  unit,
   minValue,
   maxValue,
   onChange,
 }: ReminderTimeStepperProps) {
+  const { messages } = useAppLocale();
   const appText = useSemanticColor('appText');
   const appMuted = useSemanticColor('appMuted');
 
@@ -32,7 +32,7 @@ export function ReminderTimeStepper({
       <View className="flex-row items-center gap-1">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 감소`}
+          accessibilityLabel={`${label} ${messages.settings.reviewReminderDecrease}`}
           onPress={() => onChange(clamp(value - 1))}
           disabled={value <= minValue}
           className="min-h-11 min-w-11 items-center justify-center rounded-lg active:opacity-70"
@@ -41,15 +41,14 @@ export function ReminderTimeStepper({
         </Pressable>
         <Text
           accessibilityRole="text"
-          accessibilityLabel={`${label} ${value}${unit}`}
+          accessibilityLabel={`${label} ${value}`}
           className="min-w-14 text-center text-base font-semibold text-app-text"
         >
           {String(value).padStart(2, '0')}
-          {unit}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${label} 증가`}
+          accessibilityLabel={`${label} ${messages.settings.reviewReminderIncrease}`}
           onPress={() => onChange(clamp(value + 1))}
           disabled={value >= maxValue}
           className="min-h-11 min-w-11 items-center justify-center rounded-lg active:opacity-70"

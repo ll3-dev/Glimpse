@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { Text, Switch } from '@glimpse/ui/primitives';
@@ -6,7 +6,11 @@ import { useSemanticColor } from '@glimpse/ui';
 import { useReviewReminderScheduler } from '@glimpse/hooks';
 import { SettingsSection } from './SettingsSection';
 import { ReminderTimeStepper } from './ReminderTimeStepper';
-import { expoReviewReminderScheduler } from '@/src/features/notifications';
+import {
+  configureReminderChannel,
+  expoReviewReminderScheduler,
+  isNotificationSupported,
+} from '@/src/features/notifications';
 import {
   useReviewReminderSettings,
   useReviewReminderSettingsActions,
@@ -26,29 +30,44 @@ export function ReviewReminderSection() {
   const appMuted = useSemanticColor('appMuted');
   const [busy, setBusy] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  // 마운트 동기화 중에는 OS 상태가 토글을 덮어쓰지 않도록 잠근다
+  const syncLockedRef = useRef(true);
 
-  const scheduler = useReviewReminderScheduler(expoReviewReminderScheduler, {
-    enabled,
-    time: { hour, minute },
-    locale: useCallback(() => locale, [locale]),
-  });
+  // 웹 등 미지원 환경에서는 scheduler를 null로 주입해 토글이 스스로 무력화된다
+  const supported = isNotificationSupported();
+  const scheduler = useReviewReminderScheduler(
+    supported ? expoReviewReminderScheduler : null,
+    {
+      enabled,
+      time: { hour, minute },
+      locale: useCallback(() => locale, [locale]),
+    },
+  );
 
-  // 마운트 직후 OS 예약 상태를 반영(스토어 enabled과 무관하게 표시 동기화)
+  useEffect(() => {
+    configureReminderChannel(messages.settings.reviewReminderTitle);
+  }, [messages]);
+
   useEffect(() => {
     void scheduler
       .getStatus()
       .then((status) => {
         if (status.scheduled && !enabled) {
+          // 마지막 세션의 OS 예약이 남아 있다 — 설정을 실제 상태로 되돌린다
           persistEnabled(true);
         }
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        syncLockedRef.current = false;
+      });
     // 최초 마운트 1회만
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleToggle = (next: boolean) => {
-    if (busy) return;
+    if (busy || syncLockedRef.current) return;
+    if (!supported) return;
     setBusy(true);
     setPermissionDenied(false);
     void scheduler
@@ -72,7 +91,7 @@ export function ReviewReminderSection() {
   const handleTimeChange = (nextHour: number, nextMinute: number) => {
     setTime(nextHour, nextMinute);
     if (enabled) {
-      // 예약 갱신은 훅의 due 캐시 이펙트가 처리하지만, 시각 변경은 즉시 반영한다
+      // 시각 변경은 예약을 즉시 다시 잡는다 (due 캐시 변화와 무관)
       void scheduler.setEnabled(true, { hour: nextHour, minute: nextMinute }).catch(() => undefined);
     }
   };
@@ -106,17 +125,15 @@ export function ReviewReminderSection() {
             {messages.settings.reviewReminderTime}
           </Text>
           <ReminderTimeStepper
-            label="H"
+            label={messages.settings.reviewReminderHour}
             value={hour}
-            unit=""
             minValue={0}
             maxValue={23}
             onChange={(next) => handleTimeChange(next, minute)}
           />
           <ReminderTimeStepper
-            label="M"
+            label={messages.settings.reviewReminderMinute}
             value={minute}
-            unit=""
             minValue={0}
             maxValue={59}
             onChange={(next) => handleTimeChange(hour, next)}

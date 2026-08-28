@@ -33,10 +33,8 @@ export function useReviewReminderScheduler(
   const coreClient = useOptionalCoreClient();
   const queryClient = useQueryClient();
   const controllerRef = useRef<ReviewReminderController | null>(null);
-  const enabledRef = useRef(options.enabled);
   const timeRef = useRef(options.time);
 
-  enabledRef.current = options.enabled;
   timeRef.current = options.time;
 
   useEffect(() => {

@@ -13,6 +13,7 @@ export { useConversationActions } from './chat/useConversationActions';
 export { useChatNavigation } from './chat/useChatNavigation';
 export * from './useAppForegroundLabeling';
 export * from './useAppForegroundRecommendations';
+export * from './useAppReviewReminder';
 export * from './useAutoSync';
 export * from './useDesktopSyncSettings';
 export * from './useForegroundLabeling';

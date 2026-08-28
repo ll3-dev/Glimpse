@@ -11,12 +11,13 @@ import { AlertTriangle, RefreshCw } from "lucide-react-native";
 import {
   useAppForegroundLabeling,
   useAppForegroundRecommendations,
+  useAppReviewReminder,
   useRecoverLocalModelDownload,
   useReleaseLocalLLMOnPressure,
   useWarmLocalLLM,
   useAutoSync,
 } from "@/src/hooks";
-import { CoreClientContext, useReviewReminderScheduler } from "@glimpse/hooks";
+import { CoreClientContext } from "@glimpse/hooks";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ensureLabelingBackgroundTaskRegistered } from "@/src/features/labeling";
 import { installGlobalErrorTraceLogger, logger } from "@/src/utils/logger";
@@ -26,18 +27,11 @@ import { GlobalModelDownloadBanner } from "@/src/components/settings/GlobalModel
 import { initializeCoreClient } from "@/src/features/core/initialize-core-client";
 import { nativeCoreClient } from "@/src/features/core/native-core-client";
 import { ensureBYOKHydrated } from "@/src/stores/settings/byok.store";
-import {
-  ensureReviewReminderHydrated,
-  reviewReminderStore,
-} from "@/src/stores/settings/review-reminder.store";
-import { expoReviewReminderScheduler } from "@/src/features/notifications";
-import { useStore } from "zustand";
 import { useProcessPendingShares } from "@/src/features/share/pending-share-processor";
 import { ErrorBoundary } from "@/src/components/common/ErrorBoundary";
 import { SuspenseFallback } from "@/src/components/common/SuspenseFallback";
 import { Toast } from "@/src/components/common/Toast";
 import { useSemanticColor } from "@glimpse/ui";
-import { useAppLocale } from "@/src/localization";
 import { ensureSyncBackgroundTaskRegistered } from "@/src/features/sync";
 
 function RootProviders({ children }: { children: React.ReactNode }) {
@@ -50,23 +44,6 @@ function RootProviders({ children }: { children: React.ReactNode }) {
   useAutoSync();
   useAppReviewReminder();
   return <>{children}</>;
-}
-
-/**
- * 복습 리마인더 훅 마운트 — 저장된 설정으로 예약을 복원하고 due 캐시 변화에
- * 다음 발화 본문을 갱신한다. 복습 mutation의 due 쿼리 무효화만으로 반응한다.
- */
-function useAppReviewReminder() {
-  // 원시 값 선택자로만 구독 — 객체 스냅샷을 새로 만드는 선택자는 금지(zustand v5)
-  const enabled = useStore(reviewReminderStore, (state) => state.settings.enabled);
-  const hour = useStore(reviewReminderStore, (state) => state.settings.hour);
-  const minute = useStore(reviewReminderStore, (state) => state.settings.minute);
-  const locale = useAppLocale().locale;
-  useReviewReminderScheduler(expoReviewReminderScheduler, {
-    enabled,
-    time: { hour, minute },
-    locale: () => locale,
-  });
 }
 
 function CoreInitErrorFallback({
@@ -156,7 +133,6 @@ export default function RootLayout() {
   useEffect(() => {
     installGlobalErrorTraceLogger();
     void initCore();
-    ensureReviewReminderHydrated();
 
     void ensureLabelingBackgroundTaskRegistered().catch((error) => {
       logger.error('Failed to register labeling background task', error);
@@ -192,21 +168,21 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <CoreClientContext.Provider value={nativeCoreClient}>
                 <RootProviders>
-                <Suspense fallback={<SuspenseFallback />}>
-                  <ShareIntentNavigator />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      freezeOnBlur: true,
-                    }}
-                  >
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
-                    <Stack.Screen name="local-models" />
-                    <Stack.Screen name="library/[id]" />
-                  </Stack>
-                  <GlobalModelDownloadBanner />
-                </Suspense>
+                  <Suspense fallback={<SuspenseFallback />}>
+                    <ShareIntentNavigator />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        freezeOnBlur: true,
+                      }}
+                    >
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="capture" options={{ presentation: 'modal' }} />
+                      <Stack.Screen name="local-models" />
+                      <Stack.Screen name="library/[id]" />
+                    </Stack>
+                    <GlobalModelDownloadBanner />
+                  </Suspense>
                 </RootProviders>
               </CoreClientContext.Provider>
             </QueryClientProvider>

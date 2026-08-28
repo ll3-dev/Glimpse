@@ -36,6 +36,10 @@ export const messages = {
       reviewReminderEnable: '매일 알려드리기',
       reviewReminderTime: '알림 시간',
       reviewReminderDenied: '알림 권한이 꺼져 있어요. 시스템 설정에서 허용해 주세요',
+      reviewReminderHour: '시간',
+      reviewReminderMinute: '분',
+      reviewReminderIncrease: '증가',
+      reviewReminderDecrease: '감소',
     },
     data: {
       title: '데이터 관리',
@@ -86,6 +90,10 @@ export const messages = {
       reviewReminderEnable: 'Notify me daily',
       reviewReminderTime: 'Reminder time',
       reviewReminderDenied: 'Notifications are blocked. Enable them in system settings',
+      reviewReminderHour: 'Hour',
+      reviewReminderMinute: 'Minute',
+      reviewReminderIncrease: 'Increase',
+      reviewReminderDecrease: 'Decrease',
     },
     data: {
       title: 'Data management',
