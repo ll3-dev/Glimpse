@@ -23,7 +23,6 @@ export function ReminderTimeStepper({
 }: ReminderTimeStepperProps) {
   const appText = useSemanticColor('appText');
   const appMuted = useSemanticColor('appMuted');
-  const appAccent = useSemanticColor('appAccent');
 
   const clamp = (next: number) => Math.min(maxValue, Math.max(minValue, next));
 

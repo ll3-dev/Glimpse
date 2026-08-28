@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { Text, Switch } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
-import { DEFAULT_REMINDER_TIME } from '@glimpse/features';
 import { useReviewReminderScheduler } from '@glimpse/hooks';
 import { SettingsSection } from './SettingsSection';
 import { ReminderTimeStepper } from './ReminderTimeStepper';
