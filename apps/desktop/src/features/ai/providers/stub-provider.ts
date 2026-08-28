@@ -4,6 +4,7 @@
  * Echo-based provider for development and testing. Always available.
  */
 
+import { buildSummaryPreview } from '@glimpse/features';
 import type { AIProvider, CompletionRequest, CompletionResponse, MetadataOutput } from '../types';
 
 export const stubProvider: AIProvider = {
@@ -26,12 +27,10 @@ export const stubProvider: AIProvider = {
 
   async generateMetadata(content: string, title?: string | null): Promise<MetadataOutput> {
     const combined = title ? `${title}\n\n${content}` : content;
-    const preview = combined.length > 100
-      ? combined.slice(0, 100) + '...'
-      : combined;
 
     return {
-      summary: `[Stub Summary] ${preview}`,
+      // 공유 미리보기 빌더(첫 완결 문장, 140자 경계 절단)로 스텁 품질 개선
+      summary: buildSummaryPreview(combined),
       tags: ['stub'],
     };
   },
