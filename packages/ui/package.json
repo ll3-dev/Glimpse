@@ -9,7 +9,7 @@
     "@rn-primitives/separator": "^1.2.0",
     "@rn-primitives/slot": "^1.2.0",
     "@rn-primitives/tabs": "^1.2.0",
-    "@rn-primitives/tooltip": "~1.2.0",
+    "@rn-primitives/tooltip": "~1.5.2",
     "class-variance-authority": "^0.7.0"
   },
   "main": "./src/index.ts",
