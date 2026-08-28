@@ -88,7 +88,7 @@
     "react-native": "0.86.3",
     "react-native-blob-util": "^0.24.7",
     "react-native-calendars": "^1.1313.0",
-    "react-native-gesture-handler": "~2.32.0",
+    "react-native-gesture-handler": "~3.2.1",
     "react-native-mmkv": "^4.3.2",
     "react-native-nitro-buffer": "^0.2.2",
     "react-native-nitro-crypto": "^0.3.2",
