@@ -13,6 +13,10 @@ import {
 /** due 캐시 연속 변경을 하나의 refresh로 합치기 위한 trailing debounce. */
 const DUE_CHANGE_DEBOUNCE_MS = 2000;
 
+const consoleLogger = {
+  error: (message: string, meta?: unknown) => console.error(message, meta),
+};
+
 /**
  * 복습 리마인더 공유 훅. 플랫폼 어댑터(scheduler)를 주입받아 사용.
  * - mount 시 저장된 설정으로 상태 복원
@@ -44,10 +48,13 @@ export function useReviewReminderScheduler(
         return items.length;
       },
       locale: options.locale,
+      logger: consoleLogger,
     });
     controllerRef.current = controller;
     if (enabledRef.current) {
-      void controller.enable(timeRef.current).catch(() => undefined);
+      void controller
+        .enable(timeRef.current)
+        .catch((error: unknown) => consoleLogger.error('review-reminder: 활성화 실패', error));
     }
     return () => {
       controllerRef.current = null;
@@ -73,7 +80,9 @@ export function useReviewReminderScheduler(
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        void controllerRef.current?.refresh(timeRef.current).catch(() => undefined);
+        void controllerRef.current
+          ?.refresh(timeRef.current)
+          .catch((error: unknown) => consoleLogger.error('review-reminder: 갱신 실패', error));
       }, DUE_CHANGE_DEBOUNCE_MS);
     });
     return () => {
@@ -90,5 +99,10 @@ export function useReviewReminderScheduler(
     return true;
   }, []);
 
-  return { setEnabled, defaultTime: DEFAULT_REMINDER_TIME };
+  /** 현재 예약 상태 (설정 UI hydrate용). */
+  const getStatus = useCallback(async () => {
+    return scheduler?.getStatus() ?? { scheduled: false as const };
+  }, [scheduler]);
+
+  return { setEnabled, getStatus, defaultTime: DEFAULT_REMINDER_TIME };
 }

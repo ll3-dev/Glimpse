@@ -28,6 +28,14 @@ describe('computeNextFireAt', () => {
     expect([d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([8, 1, 8, 0]);
     expect(fire - now).toBe(10 * HOUR);
   });
+
+  it('rolls to tomorrow when now is exactly on the slot', () => {
+    const now = new Date(2026, 7, 28, 21, 0, 0).getTime();
+    const fire = computeNextFireAt(now, 21, 0);
+    const d = new Date(fire);
+    expect([d.getDate(), d.getHours(), d.getMinutes()]).toEqual([29, 21, 0]);
+    expect(fire - now).toBe(24 * HOUR);
+  });
 });
 
 describe('shouldReschedule', () => {

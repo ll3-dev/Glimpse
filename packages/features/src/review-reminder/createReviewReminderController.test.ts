@@ -60,15 +60,53 @@ describe('createReviewReminderController', () => {
     expect(fake.calls).toContain('cancel');
   });
 
-  it('refresh: 기존 예약을 현재 due 개수로 갱신', async () => {
+  it('refresh: 시간·본문이 모두 같으면 재예약을 건너뛰고, 바뀌면 갱신한다', async () => {
     const fake = fakeScheduler();
+    let count = 3;
     const controller = createReviewReminderController({
       scheduler: fake.scheduler,
-      getDueCount: async () => 3,
+      getDueCount: async () => count,
     });
     await controller.refresh({ hour: 21, minute: 0 });
     await controller.refresh({ hour: 21, minute: 0 });
+    expect(fake.calls.filter((c) => c.startsWith('schedule')).length).toBe(1);
+    count = 5;
+    await controller.refresh({ hour: 21, minute: 0 });
     expect(fake.calls.filter((c) => c.startsWith('schedule')).length).toBe(2);
+  });
+
+  it('disable 중 대기 중이던 refresh는 예약을 부활시키지 않는다', async () => {
+    const fake = fakeScheduler();
+    let resolveDueCount!: (count: number) => void;
+    const blocked = new Promise<number>((resolve) => {
+      resolveDueCount = resolve;
+    });
+    const controller = createReviewReminderController({
+      scheduler: fake.scheduler,
+      getDueCount: () => blocked,
+    });
+    const refreshPromise = controller.refresh({ hour: 21, minute: 0 });
+    await controller.disable();
+    resolveDueCount(3);
+    await refreshPromise;
+    expect(fake.calls).toEqual(['cancel']);
+    expect(fake.scheduledBody).toBeNull();
+  });
+
+  it('scheduleDaily 실패 시 logger.error로 기록하고 전파하지 않는다', async () => {
+    const errors: [string, unknown][] = [];
+    const fake = fakeScheduler();
+    fake.scheduler.scheduleDaily = async () => {
+      throw new Error('boom');
+    };
+    const controller = createReviewReminderController({
+      scheduler: fake.scheduler,
+      getDueCount: async () => 3,
+      logger: { error: (message, meta) => errors.push([message, meta]) },
+    });
+    await expect(controller.refresh({ hour: 21, minute: 0 })).resolves.toBeUndefined();
+    expect(errors.length).toBe(1);
+    expect(errors[0][1]).toBeInstanceOf(Error);
   });
 
   it('disable: 취소 호출', async () => {
