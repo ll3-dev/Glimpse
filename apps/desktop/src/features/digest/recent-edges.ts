@@ -38,8 +38,8 @@ export function selectRecentEdges(
       edgeId: edge.id,
       itemIdA: edge.itemA_id,
       itemIdB: edge.itemB_id,
-      titleA: itemA.title ?? '(제목 없음)',
-      titleB: itemB.title ?? '(제목 없음)',
+      titleA: itemA.title ?? '제목 없음',
+      titleB: itemB.title ?? '제목 없음',
       reason: edge.reason,
     });
   }

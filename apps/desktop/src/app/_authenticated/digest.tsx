@@ -6,6 +6,7 @@ import {
   useKnowledgeItemsQuery,
   useRespondToRecommendationMutation,
   useCoreClient,
+  queryKeys,
 } from '@glimpse/hooks';
 import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 import { Sparkles } from 'lucide-react';
@@ -19,7 +20,7 @@ function DigestScreen() {
   const respondMutation = useRespondToRecommendationMutation();
   const coreClient = useCoreClient();
   const { data: allEdges = [] } = useQuery({
-    queryKey: ['recommendations', 'graph'],
+    queryKey: queryKeys.recommendations.graph,
     queryFn: () => coreClient.listRecommendations(),
   });
 

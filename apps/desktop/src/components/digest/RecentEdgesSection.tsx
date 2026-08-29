@@ -1,5 +1,5 @@
 import type { RecentEdgeView } from '@/features/digest/recent-edges';
-import { Link2, ArrowRight } from 'lucide-react';
+import { Link2, ArrowLeftRight } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 
 /**
@@ -28,9 +28,7 @@ export function RecentEdgesSection({ edges }: { edges: RecentEdgeView[] }) {
             >
               {edge.titleA}
             </Link>
-            <span className="flex shrink-0 items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <ArrowRight className="h-3 w-3" />
-            </span>
+            <ArrowLeftRight className="h-3 w-3 shrink-0 text-muted-foreground" />
             <Link
               to="/library/$itemId"
               params={{ itemId: edge.itemIdB }}

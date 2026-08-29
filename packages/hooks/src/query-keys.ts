@@ -13,8 +13,10 @@ export const queryKeys = {
       [...queryKeys.review.dueItems, options] as const,
   },
   recommendations: {
+    all: ['recommendations'] as const,
     pending: ['recommendations', 'pending'] as const,
     weekly: ['recommendations', 'weekly'] as const,
+    graph: ['recommendations', 'graph'] as const,
   },
   chat: {
     all: ['chat'] as const,

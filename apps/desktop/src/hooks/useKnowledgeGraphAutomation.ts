@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCoreClient, useKnowledgeItemsQuery } from '@glimpse/hooks';
+import { useCoreClient, useKnowledgeItemsQuery, queryKeys } from '@glimpse/hooks';
 import { backoffDurationMs } from '@glimpse/shared';
 import { generateKnowledgeGraph } from '@/features/graph/generate-knowledge-graph';
 import { computeGraphSourceDigest } from '@/features/graph/graph-source-window';
@@ -76,7 +76,7 @@ export function useKnowledgeGraphAutomation() {
           localStorage.setItem(GRAPH_DIGEST_KEY, digest);
           localStorage.removeItem(GRAPH_FAILURE_KEY);
           localStorage.removeItem(GRAPH_CONSECUTIVE_FAILURES_KEY);
-          return queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+          return queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
         })
         .catch((error: unknown) => {
           console.error('[graph] knowledge graph generation failed:', error);

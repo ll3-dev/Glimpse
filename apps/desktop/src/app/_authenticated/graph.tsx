@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useCoreClient, useKnowledgeItemsQuery } from '@glimpse/hooks';
+import { useCoreClient, useKnowledgeItemsQuery, queryKeys } from '@glimpse/hooks';
 import { Network } from 'lucide-react';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
 
@@ -8,7 +8,7 @@ function GraphScreen() {
   const coreClient = useCoreClient();
   const items = useKnowledgeItemsQuery();
   const recommendations = useQuery({
-    queryKey: ['recommendations', 'graph'],
+    queryKey: queryKeys.recommendations.graph,
     queryFn: () => coreClient.listRecommendations(),
   });
 

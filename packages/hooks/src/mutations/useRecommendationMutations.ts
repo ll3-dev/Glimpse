@@ -16,7 +16,8 @@ export function useRespondToRecommendationMutation() {
       status: RecommendationStatus;
       feedbackEvent: FeedbackEvent;
     }) => coreClient.respondToRecommendation(recommendationId, status, feedbackEvent),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.recommendations.pending }),
+    // pending 목록뿐 아니라 그래프 키(digest 최근 연결 섹션·그래프 뷰)까지 함께 갱신.
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.recommendations.all }),
   });
 }
 
