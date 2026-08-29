@@ -17,6 +17,7 @@
 		4B3E44F46FC30AEDD8DB245E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 399B0A8A11214959934FD020 /* PrivacyInfo.xcprivacy */; };
 		A11E00000000000000000001 /* AppleIntelligenceModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000003 /* AppleIntelligenceModule.swift */; };
 		A11E00000000000000000002 /* AppleIntelligenceModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A11E00000000000000000004 /* AppleIntelligenceModule.m */; };
+		A11F00000000000000000001 /* CaptureQuickNoteIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11F00000000000000000003 /* CaptureQuickNoteIntent.swift */; };
 		AA1EDEB2A3764B19B87992DD /* ShareExtension.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = 9284CAF38FE542F5B0D42483 /* ShareExtension.appex */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		CD51CE7FFF654AB39F5461D9 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99C00C2EDFB4B37A928674C /* ShareViewController.swift */; };
@@ -64,6 +65,7 @@
 		9BF637D80CE856D9F82F88F4 /* Pods-glimpse.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-glimpse.release.xcconfig"; path = "Target Support Files/Pods-glimpse/Pods-glimpse.release.xcconfig"; sourceTree = "<group>"; };
 		A11E00000000000000000003 /* AppleIntelligenceModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleIntelligenceModule.swift; path = glimpse/AppleIntelligenceModule.swift; sourceTree = "<group>"; };
 		A11E00000000000000000004 /* AppleIntelligenceModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AppleIntelligenceModule.m; path = glimpse/AppleIntelligenceModule.m; sourceTree = "<group>"; };
+		A11F00000000000000000003 /* CaptureQuickNoteIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CaptureQuickNoteIntent.swift; path = glimpse/CaptureQuickNoteIntent.swift; sourceTree = "<group>"; };
 		A480D10E13C94759BFCEF1C8 /* MainInterface.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = MainInterface.storyboard; sourceTree = "<group>"; };
 		A99C00C2EDFB4B37A928674C /* ShareViewController.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = glimpse/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				3C4D5E6F7890123456789ABC /* AppGroupModule.m */,
 				A11E00000000000000000003 /* AppleIntelligenceModule.swift */,
 				A11E00000000000000000004 /* AppleIntelligenceModule.m */,
+				A11F00000000000000000003 /* CaptureQuickNoteIntent.swift */,
 				F11748442D0722820044C1D9 /* glimpse-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -451,6 +454,7 @@
 				2B3C4D5E6F7890123456789B /* AppGroupModule.m in Sources */,
 				A11E00000000000000000001 /* AppleIntelligenceModule.swift in Sources */,
 				A11E00000000000000000002 /* AppleIntelligenceModule.m in Sources */,
+				A11F00000000000000000001 /* CaptureQuickNoteIntent.swift in Sources */,
 				43A5854242941AE72B390448 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
