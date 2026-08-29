@@ -3,3 +3,7 @@ export * from './KnowledgeItemCard';
 export * from './LibraryFilterBar';
 export * from './LibrarySearchInput';
 export * from './EditKnowledgeItemModal';
+export * from './KnowledgeItemDetailCard';
+export * from './LibraryDetailHeaderActions';
+export * from './LibrarySortPicker';
+export * from './LibraryActiveFilterBar';

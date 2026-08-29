@@ -6,6 +6,7 @@ import { Text, Pressable, View } from 'react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { formatKnowledgeLabel, getDisplayLabels } from '@/src/features/labeling';
 import { Card } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 
 type KnowledgeItemCardProps = {
   item: KnowledgeItem;
@@ -34,6 +35,7 @@ function ItemContent({
   showBadges: boolean;
   onSelectTag?: (tag: string) => void;
 }) {
+  const appMuted = useSemanticColor('appMuted');
   const displayTitle = item.title || item.body || item.url || '제목 없음';
   const timeAgo = formatDistanceToNow(item.createdAt, { locale: ko, addSuffix: true });
   const typeConfig = getTypeConfig(item.type);
@@ -43,24 +45,24 @@ function ItemContent({
   return (
     <>
       <View className="mr-4">
-        <typeConfig.Icon size={18} color="#787774" />
+        <typeConfig.Icon size={18} color={appMuted} />
       </View>
       <View className="flex-1">
         <Text className="text-base font-semibold text-app-text" numberOfLines={1}>
           {displayTitle}
         </Text>
-        <Text className="mt-0.5 text-[10px] text-app-muted font-medium tracking-tight">
+        <Text className="mt-1 text-xs text-app-muted font-medium">
           {typeConfig.label} · {timeAgo}
         </Text>
         {showBadges ? (
-          <View className="mt-2 flex-row flex-wrap gap-1.5">
+          <View className="mt-2.5 flex-row flex-wrap gap-1.5">
             {labels.map((label) => (
               <Pressable
                 key={label}
                 onPress={() => onSelectTag?.(label)}
                 className="rounded bg-tag-mint-bg/60 px-2 py-0.5"
               >
-                <Text className="text-[10px] font-medium text-tag-mint-text">
+                <Text className="text-[11px] font-medium text-tag-mint-text">
                   {formatKnowledgeLabel(label)}
                 </Text>
               </Pressable>
@@ -71,7 +73,7 @@ function ItemContent({
                 onPress={() => onSelectTag?.(tag)}
                 className="rounded bg-app-border/40 px-2 py-0.5"
               >
-                <Text className="text-[10px] font-medium text-app-muted">
+                <Text className="text-[11px] font-medium text-app-muted">
                   #{tag}
                 </Text>
               </Pressable>

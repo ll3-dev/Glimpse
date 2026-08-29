@@ -1,40 +1,35 @@
-import { View, Pressable, Text } from "react-native";
-import { FlashList, type ListRenderItem } from "@shopify/flash-list";
-import { useCallback, useState, useMemo } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Settings, ArrowUpDown, X } from 'lucide-react-native';
+import { View, Pressable } from 'react-native';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
+import { useCallback, useState, useMemo } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Settings } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { Plus } from "@glimpse/ui/icons";
+import { Plus } from '@glimpse/ui/icons';
 import {
   EmptyLibraryState,
   KnowledgeItemCard,
   LibraryFilterBar,
   LibrarySearchInput,
-} from "@/src/components/library";
-import { resolveLibrarySearch } from "@/src/features/library";
-import { useMobileSemanticRerank } from "@/src/features/search/useMobileSemanticRerank";
-import { useForegroundLabeling, useKnowledgeItemsQuery } from "@/src/hooks";
-import { ScreenHeader } from "@glimpse/ui/primitives";
-import { getDisplayLabels } from "@/src/features/labeling";
-import type { KnowledgeItem } from "@glimpse/shared";
+  LibraryActiveFilterBar,
+  type SortOrder,
+} from '@/src/components/library';
+import { resolveLibrarySearch } from '@/src/features/library';
+import { useMobileSemanticRerank } from '@/src/features/search/useMobileSemanticRerank';
+import { useForegroundLabeling, useKnowledgeItemsQuery } from '@/src/hooks';
+import { ScreenHeader } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
+import { getDisplayLabels } from '@/src/features/labeling';
+import type { KnowledgeItem } from '@glimpse/shared';
 import type { LibraryFilterType } from '@/src/components/library/LibraryFilterBar';
 
-type SortOrder = 'latest' | 'oldest' | 'title';
-
-const SORT_OPTIONS: { order: SortOrder; label: string }[] = [
-  { order: 'latest', label: '최신순' },
-  { order: 'oldest', label: '과거순' },
-  { order: 'title', label: '가나다순' },
-];
-
 export default function LibraryScreen() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<LibraryFilterType>("all");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<LibraryFilterType>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
-  const [showSortPicker, setShowSortPicker] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const appText = useSemanticColor('appText');
 
   const { data: items } = useKnowledgeItemsQuery();
   useForegroundLabeling(items);
@@ -85,7 +80,6 @@ export default function LibraryScreen() {
         const titleB = b.title || b.body || b.url || '';
         return titleA.localeCompare(titleB, 'ko');
       }
-      // default 'latest'
       return b.createdAt - a.createdAt;
     });
 
@@ -104,8 +98,6 @@ export default function LibraryScreen() {
     };
   }, [items, searchQuery, selectedType, selectedTag, sortOrder]);
 
-  // BYOK 옵트인 시 키워드 매치를 의미 유사도로 재정렬(오프/자격 미비는
-  // pass-through). 필터·정렬 뒤가 아니라 검색 직후 순위에만 개입한다.
   const semantic = useMobileSemanticRerank(filteredItems, searchQuery);
   const rerankedItems = useMemo(
     () => (semantic.active ? sortPreservingRank(filteredItems, semantic.items) : filteredItems),
@@ -114,14 +106,20 @@ export default function LibraryScreen() {
 
   const hasActiveFilters = selectedType !== 'all' || selectedTag !== null || Boolean(searchQuery.trim());
 
-  // semantic.items는 상위 MAX_EMBED_ITEMS까지만 재정렬된 부분집합일 수 있다.
-  // 미포함 항목은 기존 순서 뒤에 붙여 "재정렬된 것 우선"을 보존한다.
   function sortPreservingRank(base: KnowledgeItem[], ranked: KnowledgeItem[]): KnowledgeItem[] {
     const rank = new Map(ranked.map((item, index) => [item.id, index]));
     return [...base].sort(
       (a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
     );
   }
+
+  const handleCycleSortOrder = useCallback(() => {
+    setSortOrder((prev) => {
+      if (prev === 'latest') return 'oldest';
+      if (prev === 'oldest') return 'title';
+      return 'latest';
+    });
+  }, []);
 
   const handleResetFilters = useCallback(() => {
     setSearchQuery('');
@@ -151,82 +149,36 @@ export default function LibraryScreen() {
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
       <ScreenHeader
         title="보관함"
-        subtitle={`${items?.length || 0}개의 지식`}
+        subtitle={items && items.length > 0 ? `${items.length}개의 지식` : undefined}
         rightElement={
-          <View className="flex-row items-center gap-1">
-            <Pressable
-              className="p-2 active:opacity-70"
-              onPress={() => setShowSortPicker((prev) => !prev)}
-              accessibilityLabel="정렬"
-            >
-              <ArrowUpDown size={20} color={sortOrder !== 'latest' ? '#2383e2' : '#37352f'} />
-            </Pressable>
-            <Pressable
-              className="p-2 -mr-2 active:opacity-70"
-              onPress={() => router.push('/settings')}
-            >
-              <Settings size={24} color="#37352f" />
-            </Pressable>
-          </View>
+          <Pressable
+            className="p-2 -mr-2 active:opacity-70"
+            onPress={() => router.push('/settings')}
+            accessibilityRole="button"
+            accessibilityLabel="설정"
+          >
+            <Settings size={22} color={appText} />
+          </Pressable>
         }
       />
       <LibrarySearchInput value={searchQuery} onChangeText={setSearchQuery} />
-
-      {/* Sort options bar (when toggled) */}
-      {showSortPicker && (
-        <View className="px-6 pb-2.5 flex-row items-center gap-2">
-          <Text className="text-xs font-semibold text-app-muted mr-1">정렬:</Text>
-          {SORT_OPTIONS.map((opt) => {
-            const isActive = sortOrder === opt.order;
-            return (
-              <Pressable
-                key={opt.order}
-                onPress={() => {
-                  setSortOrder(opt.order);
-                  setShowSortPicker(false);
-                }}
-                className={`px-2.5 py-1 rounded-md border ${
-                  isActive
-                    ? 'bg-app-text border-app-text'
-                    : 'bg-app-surface border-app-border'
-                }`}
-              >
-                <Text
-                  className={`text-xs font-medium ${
-                    isActive ? 'text-white' : 'text-app-muted'
-                  }`}
-                >
-                  {opt.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
 
       <LibraryFilterBar
         selectedType={selectedType}
         selectedTag={selectedTag}
         availableTags={availableTags}
+        sortOrder={sortOrder}
         onSelectType={setSelectedType}
         onSelectTag={setSelectedTag}
+        onCycleSortOrder={handleCycleSortOrder}
       />
 
-      {/* Active Filter Indicator & Reset */}
       {hasActiveFilters && (
-        <View className="px-6 pb-2 flex-row items-center justify-between">
-          <Text className="text-xs text-app-muted">
-            {filteredItems.length}개 항목 표시 중
-            {selectedTag ? ` · #${selectedTag}` : ''}
-          </Text>
-          <Pressable
-            onPress={handleResetFilters}
-            className="flex-row items-center py-0.5 px-2 rounded bg-app-border/40"
-          >
-            <X size={11} color="#787774" className="mr-1" />
-            <Text className="text-[11px] font-medium text-app-muted">필터 초기화</Text>
-          </Pressable>
-        </View>
+        <LibraryActiveFilterBar
+          itemCount={filteredItems.length}
+          selectedTag={selectedTag}
+          onResetFilters={handleResetFilters}
+        />
       )}
 
       <View className="flex-1 px-6">
@@ -241,8 +193,8 @@ export default function LibraryScreen() {
       </View>
 
       <Pressable
-        onPress={() => router.push("/capture")}
-        className="absolute right-6 w-14 h-14 rounded-full bg-black items-center justify-center shadow-lg"
+        onPress={() => router.push('/capture')}
+        className="absolute right-6 w-14 h-14 rounded-full bg-app-text items-center justify-center shadow-lg active:opacity-90"
         style={{ bottom: insets.bottom + 16 }}
       >
         <Plus color="white" size={30} />

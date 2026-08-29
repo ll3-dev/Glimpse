@@ -13,6 +13,7 @@ import { X, Check } from 'lucide-react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { useUpdateKnowledgeItemMutation } from '@/src/hooks';
 import { toast } from '@/src/stores/toast.store';
+import { useSemanticColor } from '@glimpse/ui';
 
 interface EditKnowledgeItemModalProps {
   visible: boolean;
@@ -29,6 +30,8 @@ export function EditKnowledgeItemModal({
   const [body, setBody] = useState('');
   const [tagsText, setTagsText] = useState('');
   const [lastItem, setLastItem] = useState<KnowledgeItem | null>(item);
+  const appMuted = useSemanticColor('appMuted');
+  const appSubtle = useSemanticColor('appSubtle');
 
   const { mutate: updateItem, isPending } = useUpdateKnowledgeItemMutation();
 
@@ -87,7 +90,7 @@ export function EditKnowledgeItemModal({
           {/* Modal Header */}
           <View className="flex-row items-center justify-between px-6 py-4 border-b border-app-border">
             <Pressable onPress={onClose} className="p-1 -ml-1">
-              <X size={22} color="#787774" />
+              <X size={22} color={appMuted} />
             </Pressable>
             <Text className="text-base font-semibold text-app-text">기록 수정</Text>
             <Pressable
@@ -111,7 +114,7 @@ export function EditKnowledgeItemModal({
               value={title}
               onChangeText={setTitle}
               placeholder="제목을 입력하세요..."
-              placeholderTextColor="#9b9a97"
+              placeholderTextColor={appSubtle}
               className="bg-app-bg border border-app-border rounded-md px-3 py-2.5 text-sm text-app-text mb-5 font-medium"
             />
 
@@ -123,7 +126,7 @@ export function EditKnowledgeItemModal({
               value={body}
               onChangeText={setBody}
               placeholder="내용을 입력하세요..."
-              placeholderTextColor="#9b9a97"
+              placeholderTextColor={appSubtle}
               multiline
               numberOfLines={6}
               textAlignVertical="top"
@@ -138,7 +141,7 @@ export function EditKnowledgeItemModal({
               value={tagsText}
               onChangeText={setTagsText}
               placeholder="예: 아이디어, 독서, 업무"
-              placeholderTextColor="#9b9a97"
+              placeholderTextColor={appSubtle}
               className="bg-app-bg border border-app-border rounded-md px-3 py-2.5 text-sm text-app-text mb-8"
             />
           </ScrollView>
