@@ -2474,6 +2474,87 @@
       }
     },
     {
+      "name": "syncDiscover",
+      "commandId": 34,
+      "inputType": "SyncDiscoverInput",
+      "outputType": "SyncDiscoverOutput",
+      "inputSchema": {
+        "title": "SyncDiscoverInput",
+        "type": "object",
+        "required": [
+          "timeoutMs"
+        ],
+        "properties": {
+          "timeoutMs": {
+            "description": "How long to browse before returning (clamped to [100, 5000] ms).",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "SyncDiscoverOutput",
+        "type": "object",
+        "required": [
+          "peers"
+        ],
+        "properties": {
+          "peers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/DiscoveredPeer"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "DiscoveredPeer": {
+          "description": "One discoverable desktop sync server (mDNS SRV + TXT resolved).",
+          "type": "object",
+          "required": [
+            "addresses",
+            "deviceId",
+            "host",
+            "name",
+            "port",
+            "protocolVersion"
+          ],
+          "properties": {
+            "name": {
+              "description": "Instance name — the desktop's user-facing device name.",
+              "type": "string"
+            },
+            "host": {
+              "description": "mDNS hostname with trailing dot (e.g. `glimpse-ab12cd34.local.`).",
+              "type": "string"
+            },
+            "port": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            },
+            "addresses": {
+              "description": "Resolved IPv4/IPv6 addresses observed during browse.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "deviceId": {
+              "description": "TXT `deviceId` — stable identity for dedupe/pairing.",
+              "type": "string"
+            },
+            "protocolVersion": {
+              "description": "TXT `protocol` — sync wire protocol version.",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "updateConversation",
       "commandId": 3,
       "inputType": "UpdateConversationInput",

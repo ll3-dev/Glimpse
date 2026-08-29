@@ -70,6 +70,23 @@ export type FeedbackEventIo = {
   createdAt: number;
 };
 
+/**
+ * One discoverable desktop sync server (mDNS SRV + TXT resolved).
+ */
+export type DiscoveredPeer = {
+  /** Instance name — the desktop's user-facing device name. */
+  name: string;
+  /** mDNS hostname with trailing dot (e.g. `glimpse-ab12cd34.local.`). */
+  host: string;
+  port: number;
+  /** Resolved IPv4/IPv6 addresses observed during browse. */
+  addresses: string[];
+  /** TXT `deviceId` — stable identity for dedupe/pairing. */
+  deviceId: string;
+  /** TXT `protocol` — sync wire protocol version. */
+  protocolVersion: number;
+};
+
 export type ConversationPatchIo = {
   title?: unknown;
   icon?: unknown;
@@ -343,6 +360,15 @@ export type SyncDataRevisionInput = Record<string, unknown>;
 
 export type SyncDataRevisionOutput = {
   revision: number;
+};
+
+export type SyncDiscoverInput = {
+  /** How long to browse before returning (clamped to [100, 5000] ms). */
+  timeoutMs: number;
+};
+
+export type SyncDiscoverOutput = {
+  peers: DiscoveredPeer[];
 };
 
 export type UpdateConversationInput = {

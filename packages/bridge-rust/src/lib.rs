@@ -16,6 +16,7 @@ pub mod message;
 pub mod recommendation;
 pub mod review;
 pub mod state;
+pub mod sync_discovery;
 
 pub use conversation::conversation_package;
 pub use data::data_package;
@@ -54,6 +55,7 @@ pub fn glimpse_package() -> rustra::Package {
                 .pipe(recommendation::register_commands)
                 .pipe(review::register_commands)
                 .pipe(state::register_commands)
+                .pipe(sync_discovery::backend::register_commands)
                 // (이벤트 계약) LLM 스트리밍/모델 다운로드 이벤트 — payload
                 // 타입을 schema.json `events` 섹션 + 계약 해시에 포함시켜
                 // 코드젠 산출물이 이벤트 와이어도 커버하게 한다.
