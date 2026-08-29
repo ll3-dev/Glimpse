@@ -3,7 +3,9 @@ import { useMessagesQuery, useAddMessageMutation } from '@glimpse/hooks';
 import type { Message } from '@glimpse/shared';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
-import { generateResponse } from '@/features/ai/chat-generation';
+import type { ChatReference } from './ReferenceChips';
+import { generateResponseWithKnowledge, type ChatKnowledgeDeps } from '@/features/ai/chat-generation';
+import { loadSettings } from '@/lib/settings-storage';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
@@ -49,12 +51,26 @@ interface ChatViewProps {
   conversationId: string;
 }
 
+/**
+ * RAG 비활성 시 주입하는 빈 지식 deps — 라이브러리가 비어 지식 검색·임베딩을
+ * 건너뛰고 원본 히스토리로만 생성된다(참조도 빈 배열).
+ */
+const RAG_DISABLED_DEPS: ChatKnowledgeDeps = {
+  loadLibrary: async () => [],
+  embed: async () => null,
+};
+
 export function ChatView({ conversationId }: ChatViewProps) {
   const { data: messages, isLoading } = useMessagesQuery(conversationId);
   const addMessage = useAddMessageMutation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  // 메시지 id → 참조한 노트 목록. 응답 완료 시 한 번 기록되며 이후 불변으로
+  // 유지되므로 MessageBubble의 memo를 깨지 않는다.
+  const [referencesByMessage, setReferencesByMessage] = useState<Map<string, ChatReference[]>>(
+    new Map()
+  );
   // Streamed tokens land in a ref and are broadcast to the StreamingBubble
   // leaf; ChatView itself never re-renders per token.
   const streamingListenersRef = useRef(new Set<(text: string) => void>());
@@ -90,6 +106,10 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
   const handleSend = useCallback(
     async (content: string) => {
+      // 설정은 동기 로드 — RAG 토글이 꺼져 있으면 빈 지식 deps를 주입해
+      // 지식 검색·임베딩을 아예 건너뛴다(래퍼에 ragEnabled 플래그는 없다).
+      const ragEnabled = loadSettings().chat.ragEnabled;
+
       const now = Date.now();
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -103,21 +123,30 @@ export function ChatView({ conversationId }: ChatViewProps) {
 
       await addMessage.mutateAsync(userMessage);
 
+      // 어시스턴트 id를 생성 전에 정해 둔다 — 응답 완료 시 참조 목록을 이 id에
+      // 묻어 둔다. 빈 내용 전송은 ChatInput에서 이미 막혀 있으므로 빈 히스토리
+      // 래퍼 가드 차이는 여기까지 오지 않는다.
+      const assistantId = crypto.randomUUID();
+
       setIsGenerating(true);
       streamingTextRef.current = '';
       broadcastStreaming('');
       try {
         const currentMessages = messages ?? [];
         const history = buildMessageHistory([...currentMessages, userMessage]);
-        const response = await generateResponse(history, {
-          onToken: (token) => {
-            streamingTextRef.current += token;
-            broadcastStreaming(streamingTextRef.current);
+        const { text: response, references } = await generateResponseWithKnowledge(
+          history,
+          {
+            onToken: (token) => {
+              streamingTextRef.current += token;
+              broadcastStreaming(streamingTextRef.current);
+            },
           },
-        });
+          ragEnabled ? undefined : RAG_DISABLED_DEPS
+        );
 
         const assistantMessage: Message = {
-          id: crypto.randomUUID(),
+          id: assistantId,
           conversationId,
           role: 'assistant',
           content: response || '응답을 생성하지 못했습니다.',
@@ -126,6 +155,15 @@ export function ChatView({ conversationId }: ChatViewProps) {
           deletedAt: null,
         };
         await addMessage.mutateAsync(assistantMessage);
+
+        if (references.length > 0) {
+          const refs: ChatReference[] = references.map((entry) => ({
+            itemId: entry.item.id,
+            title: entry.item.title ?? '',
+            score: entry.score,
+          }));
+          setReferencesByMessage((prev) => new Map(prev).set(assistantId, refs));
+        }
       } catch (err) {
         console.error('Chat response generation failed:', err);
         // Tauri invoke 실패는 문자열로 reject되고 provider 에러는
@@ -201,7 +239,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
           ) : (
             <>
               {activeMessages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  references={referencesByMessage.get(message.id)}
+                />
               ))}
               {/* Streaming response bubble — a leaf holding its own token
                   state, so per-token updates skip the bubbles above. It also

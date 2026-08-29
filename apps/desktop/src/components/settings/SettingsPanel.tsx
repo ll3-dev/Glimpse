@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import { Settings as SettingsIcon, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, Sparkles, BookOpen } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { BYOKSection } from './BYOKSection';
 import { ModelManagerSection } from './ModelManagerSection';
 import { DesktopSyncSection } from './DesktopSyncSection';
@@ -102,6 +104,45 @@ export function SettingsPanel() {
             })
           }
         />
+      </section>
+
+      <hr className="border-border/60" />
+
+      {/* Chat RAG Section */}
+      <section>
+        <div className="mb-3 flex items-center gap-1.5">
+          <BookOpen className="h-4 w-4 text-app-primary" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+            채팅 지식 참조 (RAG)
+          </h2>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-card-foreground">
+                채팅에서 저장한 지식 참조 (RAG)
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                대화 시 관련 노트를 자동으로 찾아 답변에 반영합니다. 임베딩 모델이 로드되어 있을 때만 동작합니다.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Label htmlFor="chat-rag-toggle" className="text-xs font-semibold text-foreground cursor-pointer">
+                {settings.chat.ragEnabled ? '켜짐' : '꺼짐'}
+              </Label>
+              <Switch
+                id="chat-rag-toggle"
+                checked={settings.chat.ragEnabled}
+                onCheckedChange={(v) =>
+                  handleSettingsChange({
+                    ...settings,
+                    chat: { ...settings.chat, ragEnabled: v },
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
       <hr className="border-border/60" />

@@ -15,6 +15,10 @@ export interface DesktopSettings {
     enabled: boolean;
     selectedModel: string | null;
   };
+  chat: {
+    /** 채팅 응답에 저장한 지식을 자동 참조(RAG)할지 여부 */
+    ragEnabled: boolean;
+  };
 }
 
 const DEFAULT_SETTINGS: DesktopSettings = {
@@ -28,6 +32,9 @@ const DEFAULT_SETTINGS: DesktopSettings = {
   localLlm: {
     enabled: false,
     selectedModel: null,
+  },
+  chat: {
+    ragEnabled: true,
   },
 };
 
@@ -72,6 +79,7 @@ export function loadSettings(): DesktopSettings {
       apiKey: '', // 키는 키체인 전용
     },
     localLlm: { ...DEFAULT_SETTINGS.localLlm, ...parsed.localLlm },
+    chat: { ...DEFAULT_SETTINGS.chat, ...parsed.chat },
   };
 }
 
@@ -100,6 +108,7 @@ async function migrateLegacyApiKey(explicitKey?: string): Promise<void> {
         aiProvider: parsed.aiProvider ?? DEFAULT_SETTINGS.aiProvider,
         byok: { ...DEFAULT_SETTINGS.byok, ...parsed.byok, apiKey: '' },
         localLlm: { ...DEFAULT_SETTINGS.localLlm, ...parsed.localLlm },
+        chat: { ...DEFAULT_SETTINGS.chat, ...parsed.chat },
       };
       localStorage.setItem(SETTINGS_KEY_V1, JSON.stringify(sanitized));
     }

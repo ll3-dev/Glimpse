@@ -67,6 +67,7 @@ describe('settings-storage 키 분리', () => {
         model: 'gpt-4o-mini',
       },
       localLlm: { enabled: false, selectedModel: null },
+      chat: { ragEnabled: true },
     });
 
     // 키체인에 저장됨
@@ -91,6 +92,7 @@ describe('settings-storage 키 분리', () => {
       aiProvider: 'rules',
       byok: { provider: 'openai', apiKey: '', baseUrl: '', model: '' },
       localLlm: { enabled: false, selectedModel: null },
+      chat: { ragEnabled: true },
     });
 
     expect(invokeMock.mock.calls.some((c) => c[0] === 'delete_secret')).toBe(true);
@@ -152,5 +154,44 @@ describe('settings-storage 키 분리', () => {
     expect(storage.has('glimpse-desktop-settings')).toBe(false);
 
     setTauriWindow(false);
+  });
+});
+
+describe('settings-storage chat.ragEnabled', () => {
+  beforeEach(() => {
+    storage.clear();
+    keychain.clear();
+    invokeMock.mockClear();
+  });
+
+  test('기본값은 true, 저장된 false는 로드 후에도 유지된다', async () => {
+    setTauriWindow(false); // 웹 프리뷰 경로 — localStorage 직접 검증
+    const { loadSettings } = await import('./settings-storage');
+
+    // 저장된 값이 없으면 기본값 true
+    expect(loadSettings().chat.ragEnabled).toBe(true);
+
+    // chat 없이 저장된 구설정에서도 기본값 true로 병합된다
+    storage.set(
+      'glimpse_desktop_settings_v1',
+      JSON.stringify({
+        aiProvider: 'rules',
+        byok: { provider: 'openai', apiKey: '', baseUrl: '', model: '' },
+        localLlm: { enabled: false, selectedModel: null },
+      }),
+    );
+    expect(loadSettings().chat.ragEnabled).toBe(true);
+
+    // 저장된 false는 유지된다
+    storage.set(
+      'glimpse_desktop_settings_v1',
+      JSON.stringify({
+        aiProvider: 'rules',
+        byok: { provider: 'openai', apiKey: '', baseUrl: '', model: '' },
+        localLlm: { enabled: false, selectedModel: null },
+        chat: { ragEnabled: false },
+      }),
+    );
+    expect(loadSettings().chat.ragEnabled).toBe(false);
   });
 });
