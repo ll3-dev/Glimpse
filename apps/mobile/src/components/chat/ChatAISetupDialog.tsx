@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 
 type ChatAISetupDialogProps = {
   open: boolean;
@@ -35,6 +36,7 @@ export function ChatAISetupDialog({
   onBack,
 }: ChatAISetupDialogProps) {
   const readyModels = models.filter((model) => model.isReady);
+  const appText = useSemanticColor('appText');
 
   return (
     <AlertDialog open={open}>
@@ -53,7 +55,7 @@ export function ChatAISetupDialog({
 
         {isCheckingOptions ? (
           <View className="py-6 items-center">
-            <ActivityIndicator size="small" color="#37352f" />
+            <ActivityIndicator size="small" color={appText} />
             <Text className="mt-3 text-sm text-app-muted">사용 가능한 모델을 확인하는 중...</Text>
           </View>
         ) : readyModels.length > 0 ? (

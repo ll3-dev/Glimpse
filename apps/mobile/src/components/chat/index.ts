@@ -17,5 +17,7 @@ export {
   DeleteConversationDialog,
 } from './ChatDialogs';
 export { MessageActionDialogs } from './MessageActionDialogs';
+export { ChatMessageReasoning } from './ChatMessageReasoning';
+export { ChatMessageActions } from './ChatMessageActions';
 export { ChatDetailDialogs } from './ChatDetailDialogs';
 export { ChatAISetupDialog } from './ChatAISetupDialog';

@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Plus, MessageCircle } from 'lucide-react-native';
 import { useConversationsQuery, useCreateConversationMutation } from '@/src/hooks';
 import { ScreenHeader, Skeleton } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import { ConversationList } from '@/src/components/chat';
 import { FlashList } from "@shopify/flash-list";
 import { useCallback } from 'react';
@@ -18,6 +19,7 @@ import type { Conversation } from '@glimpse/shared';
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const appMuted = useSemanticColor('appMuted');
 
   const { data: conversations, isLoading } = useConversationsQuery();
   const { mutate: createConversation, isPending: isCreating } = useCreateConversationMutation();
@@ -63,7 +65,7 @@ export default function ChatScreen() {
         rightElement={
           showData ? (
             <Pressable
-              className="flex-row items-center bg-black px-3 py-1.5 rounded-full"
+              className="flex-row items-center bg-app-text px-3 py-1.5 rounded-full active:opacity-80"
               onPress={handleCreateConversation}
               disabled={isCreating}
             >
@@ -111,7 +113,7 @@ export default function ChatScreen() {
       {showEmpty && (
         <View className="flex-1 items-center justify-center py-24 px-6">
           <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-app-border/40">
-            <MessageCircle size={24} color="#787774" />
+            <MessageCircle size={24} color={appMuted} />
           </View>
           <Text className="mb-2 text-base font-semibold text-app-text tracking-tight text-center">
             새 대화를 시작하세요

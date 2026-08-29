@@ -8,6 +8,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Button, Text, Textarea } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import type { Message } from '@glimpse/shared';
 import { X } from 'lucide-react-native';
 
@@ -27,6 +28,7 @@ export function MessageEditModal({
   const [content, setContent] = useState(message?.content ?? '');
   const [lastMessage, setLastMessage] = useState<Message | null>(message);
   const textareaRef = useRef<TextInput>(null);
+  const appMuted = useSemanticColor('appMuted');
 
   // prop→state 동기화를 effect 대신 렌더 중 상태 조정으로 처리
   // (react-hooks/set-state-in-effect — cascading render 회피)
@@ -71,7 +73,7 @@ export function MessageEditModal({
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">메시지 수정</Text>
               <Pressable onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
-                <X size={16} color="#787774" />
+                <X size={16} color={appMuted} />
               </Pressable>
             </View>
 

@@ -11,6 +11,7 @@ import {
   Input,
   Text,
 } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import type { Conversation } from '@glimpse/shared';
 import { CHAT_CONVERSATION_ICONS } from './chatConversationIcons';
 import { cn } from '@/src/lib/utils';
@@ -34,6 +35,8 @@ export function ConversationEditModal({
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState<string | null>(null);
   const [lastConversation, setLastConversation] = useState(conversation);
+  const appMuted = useSemanticColor('appMuted');
+  const appAccent = useSemanticColor('appAccent');
 
   // prop→state 동기화를 effect 대신 렌더 중 상태 조정으로 처리
   // (react-hooks/set-state-in-effect — cascading render 회피)
@@ -83,7 +86,7 @@ export function ConversationEditModal({
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">대화 설정</Text>
               <Pressable onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
-                <X size={16} color="#787774" />
+                <X size={16} color={appMuted} />
               </Pressable>
             </View>
 
@@ -131,7 +134,7 @@ export function ConversationEditModal({
                 className="flex-1 h-11 rounded-md active:bg-app-accent/10" 
                 onPress={handleDeletePress}
               >
-                <Trash2 size={14} color="#eb5757" className="mr-1" />
+                <Trash2 size={14} color={appAccent} className="mr-1" />
                 <Text className="text-xs font-semibold text-app-accent">삭제</Text>
               </Button>
               <Button variant="default" className="flex-[3] h-11 rounded-md" onPress={handleSave} disabled={!title.trim()}>
