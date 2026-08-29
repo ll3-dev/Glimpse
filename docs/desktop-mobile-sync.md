@@ -29,10 +29,14 @@ Simulator notes:
 
 ## Automatic sync
 
-- Mobile syncs on launch, app resume, once per minute while active, and at operating-system background opportunities.
+- Sync is bidirectional and incremental in both directions. Mobile changes (captures, chats, review actions) ship to the desktop as an upstream delta attached to each watermark poll and merge within one round-trip; desktop changes flow down via the watermark delta. The client's upstream cursor (`lastAckedUpstreamClock`) advances only after the server confirms the merge (`upstreamAck`), so a failed transfer re-sends the same rows — LWW merging makes retries idempotent.
+- Mobile syncs on launch, app resume, once per minute while active (backing off to once per 5 minutes when both sides are idle), immediately after local changes (debounced 2 seconds), and at operating-system background opportunities.
+- An upstream delta larger than 10 MB is not attached to polls; it falls back to the periodic full-snapshot upload instead.
+- Every 30 minutes a watermarked client deliberately uploads a full snapshot anyway — the reconciliation that reseals clock-skew gaps beyond the 24h delta guardband and repairs any drift.
+- Before every merge (full snapshot or upstream delta) the desktop copies its database to `backups/pre-sync/` (rolling, 5 kept, WAL/SHM included) as a file-level restore point. Backup failure never blocks the sync.
 - iOS decides when background work runs. Android's minimum background interval is 15 minutes; neither platform guarantees an exact execution time.
 - Desktop must be running for its local sync server and graph worker to receive work. Tailscale Serve remains configured, but cannot proxy while the desktop app is stopped.
-- A completed sync emits `glimpse://sync-complete`; the desktop webview invalidates its queries and queues graph analysis.
+- A completed sync emits `glimpse://sync-complete`; the desktop webview invalidates its queries and queues graph analysis. The event also fires when an upstream merge wrote rows.
 
 ## Merge rules
 
