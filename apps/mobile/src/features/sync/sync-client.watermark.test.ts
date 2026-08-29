@@ -154,7 +154,9 @@ describe('sync-client watermark delta path', () => {
       desktopDeviceId: 'desktop-test',
       lanUrl: 'http://desktop.test:34129',
       outboundWatermark: 500,
-      lastSyncedAt: Date.now() - 20 * 60 * 1000,
+      // Far past any reasonable reconciliation window (30 min), without
+      // pinning the test to the exact constant.
+      lastSyncedAt: Date.now() - 40 * 60 * 1000,
     });
     stubDesktopResponse({
       ...BASE_RESPONSE,

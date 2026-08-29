@@ -47,14 +47,14 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
  * How often a watermarked client deliberately skips the incremental path and
- * uploads a full snapshot anyway. The delta request cannot carry mobile-side
- * edits upstream — only a snapshot upload merges them into the desktop — so
- * without this reconciliation round-trip client edits would never leave the
- * phone while a watermark is held. It also reseals any clock-skew gap the 24h
- * delta guardband could miss. 10 minutes keeps upstream propagation latency
- * bounded while 5 of 6 polls stay at KB scale.
+ * uploads a full snapshot anyway. Upstream deltas now carry mobile-side edits
+ * within one round-trip (ack-cursor based, see `lastAckedUpstreamClock`), so
+ * reconciliation is a pure safety net: it reseals clock-skew gaps beyond the
+ * 24h delta guardband, repairs any delta-path drift, and covers legacy
+ * desktops without `upstreamAck`. 30 minutes bounds that residual risk while
+ * keeping the vast majority of polls at KB scale.
  */
-const FULL_SYNC_EVERY_MS = 10 * 60 * 1000;
+const FULL_SYNC_EVERY_MS = 30 * 60 * 1000;
 
 /**
  * Byte ceiling for the upstream delta attachment. A delta that outgrows this
