@@ -16,7 +16,8 @@
     "build:bridge:ios": "zsh ./scripts/build-bridge-rust-ios.sh",
     "build:bridge:android": "zsh ./scripts/build-bridge-rust-android.sh",
     "test": "bun test",
-    "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov"
+    "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov",
+    "sync:e2e": "bun scripts/sync-headless-e2e.ts"
   },
   "expo": {
     "autolinking": {

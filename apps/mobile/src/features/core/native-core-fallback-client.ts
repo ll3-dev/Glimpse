@@ -340,6 +340,33 @@ export function createFallbackCoreClient(
       return this.importData(dataJson);
     },
 
+    async mergeDelta(dataJson: string): Promise<DataImportSummary> {
+      // Row-wise LWW merge — the fallback twin of SqliteStorage::apply_delta.
+      // Without this, sync-client degrades the incremental path to mergeData
+      // (a full-store replace), which would wipe rows the delta did not carry.
+      const delta = parsePortableData(dataJson);
+      let written = 0;
+      const existing = new Map(
+        (await this.listKnowledgeItems()).map((item) => [item.id, item]),
+      );
+      for (const candidate of delta.knowledgeItems) {
+        const current = existing.get(candidate.id);
+        if (!current || current.updatedAt <= candidate.updatedAt) {
+          existing.set(candidate.id, candidate);
+          storage.updateKnowledgeItem(candidate.id, candidate) ??
+            storage.addKnowledgeItem(candidate);
+          written += 1;
+        }
+      }
+      return {
+        knowledgeItems: written,
+        conversations: 0,
+        messages: 0,
+        recommendations: 0,
+        feedbackEvents: 0,
+      };
+    },
+
     async deleteAllData(): Promise<void> {
       storage.clear();
     },

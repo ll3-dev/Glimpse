@@ -56,6 +56,11 @@ export const nativeCoreClient: CoreClient = {
   listRecentFeedbackEvents: (limit) => getDelegate().listRecentFeedbackEvents(limit),
   logRecommendationFeedback: (event) => getDelegate().logRecommendationFeedback(event),
   exportData: () => getDelegate().exportData(),
+  exportDelta: (sinceClockMs) =>
+    getDelegate().exportDelta?.(sinceClockMs) ?? Promise.reject(
+      new Error('exportDelta is not available on this client'),
+    ),
+  syncDataRevision: () => getDelegate().syncDataRevision?.() ?? Promise.resolve(null),
   importData: (dataJson) => getDelegate().importData(dataJson),
   mergeData: (dataJson) => getDelegate().mergeData(dataJson),
   deleteAllData: () => getDelegate().deleteAllData(),
