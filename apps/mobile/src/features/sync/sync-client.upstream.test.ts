@@ -81,7 +81,6 @@ mock.module('../../features/core', () => ({
 }));
 
 let lastResponseBody: Record<string, unknown> | null = null;
-let desktopUnreachable = false;
 
 function stubDesktopResponse(response: SyncResponse): void {
   globalThis.fetch = (async (_url: string, init?: RequestInit) => {
@@ -97,7 +96,6 @@ function stubDesktopResponse(response: SyncResponse): void {
 
 function stubUnreachableDesktop(): void {
   globalThis.fetch = (async () => {
-    desktopUnreachable = true;
     throw new Error('network down');
   }) as unknown as typeof fetch;
 }
@@ -119,7 +117,6 @@ describe('sync-client upstream delta path', () => {
     calls.mergeData.length = 0;
     calls.mergeDelta.length = 0;
     lastResponseBody = null;
-    desktopUnreachable = false;
     await setSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN, 'test-token');
     updateSyncConfig({
       desktopDeviceId: 'desktop-test',
