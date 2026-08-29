@@ -75,6 +75,9 @@ pub struct DesktopSyncStateInner {
     pub device_id: String,
     pub device_name: String,
     config_path: PathBuf,
+    /// App data directory — the pre-sync backup module derives its rolling
+    /// `backups/pre-sync/` folder (and locates `glimpse-core.db`) from here.
+    pub app_data_dir: PathBuf,
     clients: Mutex<HashMap<String, PairedClient>>,
     pairing_code: Mutex<PairingCode>,
     pair_attempts: Mutex<HashMap<IpAddr, VecDeque<Instant>>>,
@@ -140,6 +143,7 @@ impl DesktopSyncStateInner {
             device_id,
             device_name: format!("Glimpse Desktop {suffix}"),
             config_path,
+            app_data_dir: app_data_dir.to_path_buf(),
             clients: Mutex::new(clients),
             pairing_code: Mutex::new(new_pairing_code()),
             pair_attempts: Mutex::new(HashMap::new()),

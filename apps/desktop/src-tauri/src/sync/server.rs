@@ -311,6 +311,17 @@ async fn sync(
         tauri::async_runtime::spawn_blocking(move || {
             let core = glimpse_bridge::core_state();
 
+            // --- Pre-merge safety net: a file-level restore point BEFORE any
+            // merge touches the store. Best-effort — SQLite transactions are
+            // the primary guarantee, so a backup failure logs and continues.
+            if request.upstream_delta.is_some() || request.snapshot.is_some() {
+                if let Err(error) =
+                    super::backup::backup_db_before_sync(&sync_state.app_data_dir)
+                {
+                    eprintln!("pre-sync backup skipped: {error}");
+                }
+            }
+
             // --- Upstream first: merge the client's delta before computing
             // the downstream payload, so the response describes post-merge
             // state and the acked cursor covers rows we just wrote. ---
