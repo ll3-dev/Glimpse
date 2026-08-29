@@ -69,12 +69,23 @@ describe('buildKnowledgeContext', () => {
     expect(result.entries[0].item.id).toBe('a');
   });
 
-  test('요청 벡터가 비면 빈 결과 — 주입 생략 신호', () => {
-    const result = buildKnowledgeContext([item({ id: 'a' })], {
-      queryEmbedding: [],
-      itemEmbeddings: new Map(),
+  test('아이템 벡터가 맵에 없으면 제외된다 — 미임베딩 분기', () => {
+    const result = buildKnowledgeContext([item({ id: 'a', title: 'A' })], {
+      queryEmbedding: [1, 0], // 비지 않음 — 조기 반환 대신 필터 분기를 실행
+      itemEmbeddings: new Map(), // 'a' 없음
     });
     expect(result.entries).toHaveLength(0);
     expect(result.contextMessages).toHaveLength(0);
+  });
+
+  test('임베딩된 아이템만 선별되고 나머지는 제외된다', () => {
+    const items = [item({ id: 'a', title: '임베딩됨' }), item({ id: 'b', title: '벡터 없음' })];
+    const result = buildKnowledgeContext(items, {
+      queryEmbedding: [1, 0],
+      itemEmbeddings: new Map([['a', [1, 0]]]),
+    });
+    expect(result.entries.map((e) => e.item.id)).toEqual(['a']);
+    expect(result.contextMessages).toHaveLength(1);
+    expect(result.contextMessages[0].content).not.toContain('벡터 없음');
   });
 });

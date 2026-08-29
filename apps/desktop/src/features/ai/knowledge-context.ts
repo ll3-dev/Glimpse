@@ -31,7 +31,8 @@ export interface KnowledgeContextResult {
 }
 
 function itemExcerpt(item: KnowledgeItem): string {
-  const parts = [item.title, item.summary, item.body?.slice(0, EXCERPT_LENGTH)]
+  // 제목은 섹션 헤더 `[N] 제목`에 이미 있다 — 발췌에서 중복하지 않는다.
+  const parts = [item.summary, item.body?.slice(0, EXCERPT_LENGTH)]
     .filter((part): part is string => Boolean(part));
   return parts.join('\n');
 }
