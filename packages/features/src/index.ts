@@ -32,6 +32,7 @@ export {
   toCoreInput,
   MIN_INTERVAL_MS,
   MAX_INTERVAL_MS,
+  sortDueItemsByEdgePriority,
 } from './review';
 export type {
   MemoryState,
