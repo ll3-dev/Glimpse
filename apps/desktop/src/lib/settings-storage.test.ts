@@ -101,7 +101,7 @@ describe('settings-storage 키 분리', () => {
 
   test('레거시 localStorage 평문 키는 이관 대상이 된다', async () => {
     setTauriWindow(true);
-    // 레거시 상태 시딩
+    // 레거시 상태 시딩 — chat 필드가 없는 구포맷(마이그레이션 rebuild 병합 커버)
     storage.set(
       'glimpse_desktop_settings_v1',
       JSON.stringify({
@@ -117,11 +117,16 @@ describe('settings-storage 키 분리', () => {
     // 로드된 설정에서 키는 제거되어 있다
     expect(loaded.byok.apiKey).toBe('');
 
+    // chat 없는 구포맷도 rebuild 병합에서 기본값 true로 채워진다
+    expect(loaded.chat.ragEnabled).toBe(true);
+
     // 이관(fire-and-forget)이 실행됐을 때 원문 키는 사라진다 —
     // 마이그레이션 완료를 기다렸다 확인
     await new Promise((r) => setTimeout(r, 20));
     const raw = storage.get('glimpse_desktop_settings_v1') ?? '';
     expect(raw).not.toContain('sk-legacy-plain');
+    // rebuild 병합(settings-storage.ts 의 sanitized)이 chat 기본값을 채워 저장했다
+    expect(raw).toContain('"ragEnabled":true');
     expect(invokeMock.mock.calls.some((c) => c[0] === 'set_secret')).toBe(true);
 
     setTauriWindow(false);
