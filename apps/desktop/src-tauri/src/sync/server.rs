@@ -62,6 +62,12 @@ struct SyncRequest {
     /// Incremental path (protocol v1, additive): desktop returns only rows
     /// newer than this clock via [`SyncResponse::delta`].
     since_watermark: Option<i64>,
+    /// Upstream (client→desktop) incremental payload, additive to protocol
+    /// v1: legacy clients omit it. Merged with LWW semantics BEFORE the
+    /// downstream payload is computed so the response describes post-merge
+    /// state. Mutually exclusive with [`SyncRequest::snapshot`] (the full
+    /// snapshot already carries every row the delta would).
+    upstream_delta: Option<glimpse_core::DataExport>,
 }
 
 #[derive(Debug, Serialize)]
@@ -80,6 +86,11 @@ struct SyncResponse {
     /// treat as synced. The client advances its stored value only from here
     /// (never optimistically), so resets stay safe.
     new_watermark: Option<i64>,
+    /// Highest merge clock the server confirmed merging from this request's
+    /// [`SyncRequest::upstream_delta`]. Clients advance their ack cursor only
+    /// from this value; `None` (legacy semantics / no upstream payload)
+    /// keeps the client cursor frozen.
+    upstream_ack: Option<i64>,
     /// Cached dataset fingerprint after a full-path merge or skip; `None` on
     /// the delta path (no desktop-side rewrite happens, so no fresh print is
     /// computed).
@@ -288,9 +299,37 @@ async fn sync(
 
     let device_id = request.device_id;
     let sync_state = state.sync.clone();
-    let (snapshot, delta, new_watermark, fingerprint) =
+    if request.upstream_delta.is_some() && request.snapshot.is_some() {
+        return Err(ApiError(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "sync_protocol_conflict",
+            "upstreamDelta과 snapshot은 동시에 전송할 수 없습니다.".into(),
+        ));
+    }
+
+    let (snapshot, delta, new_watermark, fingerprint, upstream_ack, upstream_merged) =
         tauri::async_runtime::spawn_blocking(move || {
             let core = glimpse_bridge::core_state();
+
+            // --- Upstream first: merge the client's delta before computing
+            // the downstream payload, so the response describes post-merge
+            // state and the acked cursor covers rows we just wrote. ---
+            let mut upstream_ack = None;
+            let mut upstream_merged = false;
+            if let Some(upstream) = request.upstream_delta {
+                let summary = core
+                    .apply_delta(&upstream)
+                    .map_err(|error| error.to_string())?;
+                upstream_merged = summary.knowledge_items
+                    + summary.conversations
+                    + summary.messages
+                    + summary.recommendations
+                    + summary.feedback_events
+                    > 0;
+                // Ack with the dataset's highest clock: everything the delta
+                // carried (and anything else already here) is now confirmed.
+                upstream_ack = Some(core.max_merge_clock().map_err(|e| e.to_string())?);
+            }
 
             // --- Delta path: watermark present → incremental exchange. ---
             if let Some(watermark) = request.since_watermark {
@@ -323,7 +362,7 @@ async fn sync(
                 .max()
                 .unwrap_or(watermark)
                 .max(watermark);
-                return Ok((None, Some(delta), Some(new_watermark), None));
+                return Ok((None, Some(delta), Some(new_watermark), None, upstream_ack, upstream_merged));
             }
 
             // --- Full path (protocol v1 unchanged): client sent a snapshot. ---
@@ -355,6 +394,8 @@ async fn sync(
                     None,
                     Some(new_watermark),
                     Some(cached.expect("checked above")),
+                    upstream_ack,
+                    upstream_merged,
                 ));
             }
             // Cache miss: run the real merge. An unhashable payload fails open
@@ -381,7 +422,14 @@ async fn sync(
             let new_watermark = core
                 .max_merge_clock()
                 .map_err(|error| error.to_string())?;
-            Ok((Some(merged), None, Some(new_watermark), Some(fingerprint)))
+            Ok((
+                Some(merged),
+                None,
+                Some(new_watermark),
+                Some(fingerprint),
+                upstream_ack,
+                upstream_merged,
+            ))
         })
         .await
         .map_err(|error| {
@@ -395,14 +443,14 @@ async fn sync(
             ApiError(StatusCode::UNPROCESSABLE_ENTITY, "sync_merge_failed", message)
         })?;
 
-    let merged_something = snapshot.is_some();
+    let merged_something = snapshot.is_some() || upstream_merged;
 
     state.sync.mark_seen(&device_id);
     if merged_something {
         state.sync.take_data_dirty();
         // Graph analysis is driven by this event in the webview; only emit it
-        // when a merge actually changed desktop data. A delta response only
-        // changes *the client*; the desktop's own content is untouched.
+        // when a merge actually changed desktop data. A delta-only response
+        // still counts when the upstream merge wrote rows.
         let _ = state.app.emit(
             "glimpse://sync-complete",
             serde_json::json!({ "deviceId": device_id }),
@@ -415,6 +463,7 @@ async fn sync(
         snapshot,
         delta,
         new_watermark,
+        upstream_ack,
         fingerprint,
         endpoints,
     }))
@@ -850,6 +899,99 @@ mod tests {
             client.snapshot_fingerprint().expect("client print"),
             desktop.snapshot_fingerprint().expect("desktop print"),
             "successive deltas must converge the client to the desktop"
+        );
+    }
+
+    // --- Upstream delta path (client → desktop) -----------------------------
+
+    /// Mirrors the server handler's upstream branch against a standalone
+    /// core: apply_delta → ack = max_merge_clock of the post-merge store,
+    /// exactly what the handler acks with.
+    fn run_upstream_flow(
+        desktop: &SqliteStorage,
+        upstream: DataExport,
+    ) -> (i64, usize) {
+        let summary = desktop.apply_delta(&upstream).expect("upstream apply");
+        let written = summary.knowledge_items
+            + summary.conversations
+            + summary.messages
+            + summary.recommendations
+            + summary.feedback_events;
+        let ack = desktop.max_merge_clock().expect("post-merge clock");
+        (ack, written)
+    }
+
+    #[test]
+    fn upstream_delta_merges_client_rows_and_acks_post_merge_clock() {
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut shared = empty_export();
+        shared.knowledge_items.push(note("a", "shared", 100_000_000));
+        desktop.replace_all_data(&shared).expect("seed desktop");
+
+        // Client-only row, newer than anything on the desktop.
+        let mut upstream = desktop.export_data().expect("export");
+        upstream.knowledge_items.push(note("b", "mobile-only", 195_000_000));
+
+        let (ack, written) = run_upstream_flow(&desktop, upstream);
+        assert_eq!(written, 1, "the client-only row must be written");
+        assert_eq!(
+            ack, 195_000_000,
+            "the ack must cover rows the merge just wrote"
+        );
+        let titles: Vec<_> = desktop
+            .export_data()
+            .expect("export")
+            .knowledge_items
+            .iter()
+            .filter_map(|item| item.title.clone())
+            .collect();
+        assert!(
+            titles.contains(&"mobile-only".into()),
+            "mobile edit must survive on the desktop, got {titles:?}"
+        );
+    }
+
+    #[test]
+    fn upstream_retransmission_is_idempotent() {
+        // A client that never got its ack (dropped response) re-sends the
+        // same delta. LWW merging must report zero new rows and keep the
+        // dataset unchanged.
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let upstream = empty_export();
+        desktop.replace_all_data(&upstream).expect("seed empty");
+
+        let mut delta = empty_export();
+        delta.knowledge_items.push(note("b", "mobile-only", 195_000_000));
+
+        let (ack_first, written_first) = run_upstream_flow(&desktop, delta.clone());
+        assert_eq!(written_first, 1);
+
+        let (ack_second, written_second) = run_upstream_flow(&desktop, delta);
+        assert_eq!(written_second, 0, "re-sent rows must be stale, not rewritten");
+        assert_eq!(
+            ack_first, ack_second,
+            "an idempotent retransmission must not move the ack backwards"
+        );
+    }
+
+    #[test]
+    fn upstream_ack_never_regresses_on_older_payloads() {
+        // A delta carrying only stale rows (e.g. after another device already
+        // synced newer content) must still ack with the store's highest
+        // clock, never one derived from the stale payload.
+        let desktop = SqliteStorage::in_memory().expect("desktop storage");
+        let mut fresh = empty_export();
+        fresh.knowledge_items.push(note("fresh", "fresh", 300_000_000));
+        desktop.replace_all_data(&fresh).expect("seed desktop");
+
+        let mut stale = empty_export();
+        stale.knowledge_items.push(note("stale", "stale", 100_000_000));
+
+        let (ack, written) = run_upstream_flow(&desktop, stale);
+        assert_eq!(written, 1, "first sight of a row is a write even when stale");
+        assert_eq!(
+            ack, 300_000_000,
+            "the ack is the dataset's highest clock, not the payload's"
         );
     }
 }
