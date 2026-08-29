@@ -12,6 +12,21 @@ Glimpse keeps mobile and desktop data in separate local SQLite databases and exc
 
 mDNS is LAN-only. Remote reconnection uses the paired desktop's Tailscale MagicDNS/Serve URL instead of trying to relay multicast discovery over the tailnet.
 
+## Manual verification (simulator)
+
+The pairing and sync loop can be exercised end-to-end without a physical device. These steps were used to verify the flow on the iOS simulator (2026-08):
+
+1. Run Glimpse Desktop (`bun run desktop:dev`) and confirm the sync server is healthy: `curl localhost:34129/v1/health` returns `pairingRequired: true`.
+2. Boot the app against Metro (`bun run ios`), open **Settings**, scroll to **DESKTOP 동기화**, and tap **같은 네트워크에서 찾기**. The desktop appears as a selectable entry (`Glimpse Desktop xxxxxx`) and selecting it fills the address field.
+3. Enter the six-digit code displayed in Desktop settings and tap **페어링하고 동기화**. The section switches to the paired state showing the desktop name and **마지막 동기화**.
+4. Verify pairing on the desktop: `curl localhost:34129/v1/health` now returns `pairingRequired: false`, and `sync-config.json` in the desktop app-data directory gains a `pairedClients` entry.
+5. Tap **지금 동기화** (or relaunch the app) and confirm **마지막 동기화** updates; the desktop's `pairedClients[].lastSeenAt` should advance at the same time.
+
+Simulator notes:
+
+- The simulator shares the host network, so the desktop is reachable both via the host's LAN IP (from mDNS) and via `127.0.0.1`. If the host's application firewall blocks non-loopback interfaces, the client automatically falls back from the discovered LAN URL to the loopback URL.
+- The six-digit code rotates after every successful pairing and expires after ten minutes — use the code currently displayed by Desktop.
+
 ## Automatic sync
 
 - Mobile syncs on launch, app resume, once per minute while active, and at operating-system background opportunities.
