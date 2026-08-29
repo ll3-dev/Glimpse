@@ -1,18 +1,32 @@
 import { useMemo, useCallback } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import {
   useRecommendationsQuery,
   useKnowledgeItemsQuery,
   useRespondToRecommendationMutation,
+  useCoreClient,
 } from '@glimpse/hooks';
 import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 import { Sparkles } from 'lucide-react';
 import { DigestList } from '@/components/digest/DigestList';
+import { RecentEdgesSection } from '@/components/digest/RecentEdgesSection';
+import { selectRecentEdges } from '@/features/digest/recent-edges';
 
 function DigestScreen() {
   const { data: recommendations = [], isLoading: recsLoading } = useRecommendationsQuery();
   const { data: items = [], isLoading: itemsLoading } = useKnowledgeItemsQuery();
   const respondMutation = useRespondToRecommendationMutation();
+  const coreClient = useCoreClient();
+  const { data: allEdges = [] } = useQuery({
+    queryKey: ['recommendations', 'graph'],
+    queryFn: () => coreClient.listRecommendations(),
+  });
+
+  const recentEdges = useMemo(
+    () => selectRecentEdges(allEdges.filter((edge) => edge.status === 'accepted'), items),
+    [allEdges, items],
+  );
 
   const itemMap = useMemo(() => {
     const map = new Map<string, (typeof items)[number]>();
@@ -69,6 +83,9 @@ function DigestScreen() {
             저장된 지식 간의 숨겨진 연결과 추천을 발견하고 검토합니다.
           </p>
         </div>
+
+        {/* Recent accepted connections */}
+        <RecentEdgesSection edges={recentEdges} />
 
         {/* Content */}
         <DigestList
