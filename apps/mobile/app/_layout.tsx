@@ -62,8 +62,8 @@ function CoreInitErrorFallback({
   return (
     <View className="flex-1 bg-app-bg items-center justify-center p-6">
       <View className="w-full max-w-sm rounded-2xl border border-app-border bg-app-card p-6 shadow-sm">
-        <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-tag-rose-bg/60 border border-tag-rose-text/20">
-          <AlertTriangle size={24} color={appAccent} />
+        <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-app-bg border border-app-border">
+          <AlertTriangle size={22} color={appAccent} />
         </View>
 
         <Text className="text-app-text text-lg font-semibold tracking-tight mb-1">
@@ -75,7 +75,7 @@ function CoreInitErrorFallback({
 
         {__DEV__ && (
           <View className="max-h-24 mb-4 rounded-lg bg-app-bg p-3 border border-app-border">
-            <Text className="text-tag-rose-text text-xs font-mono">
+            <Text className="text-app-accent text-xs font-mono">
               {error.message}
             </Text>
           </View>

@@ -15,8 +15,8 @@ export function EmptyLibraryState({
 
   return (
     <View className="flex-1 items-center justify-center py-24 px-6">
-      <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-app-border/40">
-        <BookOpen size={24} color={appMuted} />
+      <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-app-surface border border-app-border">
+        <BookOpen size={20} color={appMuted} />
       </View>
       <Text className="text-base font-semibold text-app-text text-center tracking-tight">
         {title}

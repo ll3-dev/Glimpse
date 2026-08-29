@@ -21,12 +21,13 @@ export function DesktopSyncSection() {
   return (
     <SettingsSection
       title="Desktop 동기화"
-      footer="같은 Wi-Fi에서는 자동 탐색하고, Tailscale에서는 페어링된 MagicDNS 주소로 다시 연결합니다. iOS 백그라운드 실행 시점은 시스템이 결정합니다."
+      icon={<MonitorSmartphone size={18} color={appMuted} />}
+      footer="같은 Wi-Fi에서는 자동 탐색하고, Tailscale에서는 페어링된 MagicDNS 주소로 다시 연결합니다."
     >
       {paired ? (
         <View className="gap-4">
           <View className="flex-row items-start gap-3">
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-tag-mint-bg">
+            <View className="h-9 w-9 items-center justify-center rounded-lg bg-app-bg border border-app-border">
               <Check size={17} color={appText} />
             </View>
             <View className="flex-1">
@@ -54,7 +55,7 @@ export function DesktopSyncSection() {
           </View>
 
           {sync.runtime.error && (
-            <Text className="rounded-md bg-tag-rose-bg px-3 py-2 text-xs text-tag-rose-text">
+            <Text className="rounded-lg bg-app-bg border border-app-border px-3 py-2 text-xs text-app-accent">
               {sync.runtime.error}
             </Text>
           )}
@@ -115,7 +116,7 @@ export function DesktopSyncSection() {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
                 onPress={() => sync.selectDesktop(url)}
-                className={`min-h-11 rounded-md border px-3 py-2 ${selected ? 'border-app-text bg-app-bg' : 'border-app-border bg-app-surface'}`}
+                className={`min-h-11 rounded-lg border px-3.5 py-2 ${selected ? 'border-app-text bg-app-bg' : 'border-transparent bg-app-bg/50'}`}
               >
                 <Text className="text-sm font-semibold text-app-text">{desktop.name}</Text>
                 <Text className="text-[11px] text-app-muted">{url}</Text>
@@ -146,7 +147,7 @@ export function DesktopSyncSection() {
           />
 
           {sync.runtime.error && (
-            <Text className="rounded-md bg-tag-rose-bg px-3 py-2 text-xs text-tag-rose-text">
+            <Text className="rounded-lg bg-app-bg border border-app-border px-3 py-2 text-xs text-app-accent">
               {sync.runtime.error}
             </Text>
           )}

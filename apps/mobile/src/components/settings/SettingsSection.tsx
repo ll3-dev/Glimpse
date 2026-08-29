@@ -10,15 +10,15 @@ type SettingsSectionProps = {
 
 export function SettingsSection({ title, icon, children, footer }: SettingsSectionProps) {
   return (
-    <View className="mb-8">
-      <View className="flex-row items-center mb-3">
+    <View className="mb-6">
+      <View className="flex-row items-center mb-2.5 px-0.5">
         {icon && <View className="mr-2">{icon}</View>}
-        <Text className="text-sm font-bold text-app-muted uppercase tracking-tight">
+        <Text className="text-xs font-bold text-app-muted uppercase tracking-wider">
           {title}
         </Text>
       </View>
 
-      <Card className="p-4">
+      <Card className="p-4 border border-app-border bg-app-surface">
         {children}
       </Card>
 

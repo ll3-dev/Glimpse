@@ -5,14 +5,14 @@ import { ALTERNATIVE_RUNTIME_MODELS } from "./alternative-runtime-models";
 import { useSemanticColor } from "@glimpse/ui";
 
 export function AlternativeRuntimeModels() {
-  const lavenderText = useSemanticColor("tagLavenderText");
+  const appMuted = useSemanticColor("appMuted");
   const appText = useSemanticColor("appText");
 
   return (
     <View className="mt-10">
       <View className="mb-3 flex-row items-start gap-3">
-        <View className="bg-tag-lavender-bg h-9 w-9 items-center justify-center rounded-xl">
-          <Cpu size={18} color={lavenderText} />
+        <View className="bg-app-bg border border-app-border h-9 w-9 items-center justify-center rounded-xl">
+          <Cpu size={18} color={appMuted} />
         </View>
         <View className="flex-1">
           <Text className="text-app-text text-sm font-bold tracking-tight">
@@ -32,7 +32,7 @@ export function AlternativeRuntimeModels() {
             className="border-app-border bg-app-card rounded-xl border p-4"
           >
             <View className="flex-row flex-wrap items-center gap-1.5">
-              <Badge variant="lavender">
+              <Badge variant="secondary">
                 <BadgeText>{model.runtime}</BadgeText>
               </Badge>
               <Badge variant="neutral">

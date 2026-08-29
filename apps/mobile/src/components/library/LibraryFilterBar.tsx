@@ -47,7 +47,7 @@ export function LibraryFilterBar({
   onCycleSortOrder,
 }: LibraryFilterBarProps) {
   const appMuted = useSemanticColor('appMuted');
-  const appPrimary = useSemanticColor('appPrimary');
+  const appText = useSemanticColor('appText');
 
   const currentSortLabel = SORT_OPTIONS.find((s) => s.order === sortOrder)?.label ?? '정렬';
 
@@ -81,9 +81,9 @@ export function LibraryFilterBar({
         return (
           <Pressable
             onPress={onCycleSortOrder}
-            className={`flex-row items-center rounded-md border px-2.5 py-1.5 active:bg-app-bg ${
+            className={`flex-row items-center rounded-lg border px-2.5 py-1.5 active:opacity-70 ${
               isCustomSort
-                ? 'border-app-primary/40 bg-tag-sky-bg/40'
+                ? 'border-app-text bg-app-surface'
                 : 'border-app-border bg-app-surface'
             }`}
             accessibilityRole="button"
@@ -91,12 +91,12 @@ export function LibraryFilterBar({
           >
             <ArrowUpDown
               size={12}
-              color={isCustomSort ? appPrimary : appMuted}
-              className="mr-1"
+              color={isCustomSort ? appText : appMuted}
+              style={{ marginRight: 4 }}
             />
             <Text
-              className={`text-xs font-medium ${
-                isCustomSort ? 'text-app-primary font-semibold' : 'text-app-muted'
+              className={`text-xs ${
+                isCustomSort ? 'text-app-text font-semibold' : 'text-app-muted font-medium'
               }`}
             >
               {item.label}
@@ -122,7 +122,7 @@ export function LibraryFilterBar({
             onSelectTag(isActive ? null : item.value);
             onSelectType('all');
           }}
-          className={`rounded-md border px-3 py-1.5 ${
+          className={`rounded-lg border px-3 py-1.5 ${
             isActive
               ? 'border-app-text bg-app-text'
               : 'border-app-border bg-app-surface active:bg-app-bg'
@@ -132,7 +132,7 @@ export function LibraryFilterBar({
         >
           <Text
             className={`text-xs font-medium tracking-tight ${
-              isActive ? 'text-white' : 'text-app-muted'
+              isActive ? 'text-white font-semibold' : 'text-app-muted'
             }`}
           >
             {item.label}
@@ -140,7 +140,7 @@ export function LibraryFilterBar({
         </Pressable>
       );
     },
-    [appMuted, appPrimary, onCycleSortOrder, onSelectTag, onSelectType, selectedTag, selectedType, sortOrder]
+    [appMuted, appText, onCycleSortOrder, onSelectTag, onSelectType, selectedTag, selectedType, sortOrder]
   );
 
   return (

@@ -15,7 +15,7 @@ export function ChatMessageActions({ content }: ChatMessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const appMuted = useSemanticColor('appMuted');
-  const tagMintText = useSemanticColor('tagMintText');
+  const appText = useSemanticColor('appText');
   const { mutate: saveItem, isPending: isSaving } = useSaveKnowledgeItemMutation();
 
   const handleSaveToKnowledge = () => {
@@ -52,21 +52,21 @@ export function ChatMessageActions({ content }: ChatMessageActionsProps) {
   };
 
   return (
-    <View className="mt-2.5 pt-2 border-t border-app-border/40 flex-row items-center justify-end gap-1.5">
+    <View className="mt-2.5 pt-2 border-t border-app-border/60 flex-row items-center justify-end gap-1.5">
       <Pressable
         onPress={handleSaveToKnowledge}
         disabled={isSaving}
-        className="flex-row items-center rounded px-2 py-1 active:bg-app-bg"
+        className="flex-row items-center rounded-md px-2 py-1 active:bg-app-bg"
         accessibilityLabel="보관함에 저장"
       >
         {saved ? (
-          <BookmarkCheck size={12} color={tagMintText} />
+          <BookmarkCheck size={12} color={appText} />
         ) : (
           <BookmarkPlus size={12} color={appMuted} />
         )}
         <Text
           className={`ml-1 text-[11px] font-medium ${
-            saved ? 'text-tag-mint-text' : 'text-app-muted'
+            saved ? 'text-app-text font-semibold' : 'text-app-muted'
           }`}
         >
           {saved ? '저장됨' : isSaving ? '저장 중' : '저장'}
@@ -75,17 +75,17 @@ export function ChatMessageActions({ content }: ChatMessageActionsProps) {
 
       <Pressable
         onPress={handleCopy}
-        className="flex-row items-center rounded px-2 py-1 active:bg-app-bg"
+        className="flex-row items-center rounded-md px-2 py-1 active:bg-app-bg"
         accessibilityLabel="복사"
       >
         {copied ? (
-          <Check size={12} color={tagMintText} />
+          <Check size={12} color={appText} />
         ) : (
           <Copy size={12} color={appMuted} />
         )}
         <Text
           className={`ml-1 text-[11px] font-medium ${
-            copied ? 'text-tag-mint-text' : 'text-app-muted'
+            copied ? 'text-app-text font-semibold' : 'text-app-muted'
           }`}
         >
           {copied ? '복사됨' : '복사'}

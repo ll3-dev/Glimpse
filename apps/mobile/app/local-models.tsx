@@ -20,7 +20,6 @@ export default function LocalModelsScreen() {
   const { state, actions } = useSettingsScreenState();
   const appText = useSemanticColor("appText");
   const appMuted = useSemanticColor("appMuted");
-  const tagPeachText = useSemanticColor("tagPeachText");
   const selectedModel = state.localLLMModels.find(
     (model) => model.id === state.localLLMSelectedModelId,
   );
@@ -54,8 +53,8 @@ export default function LocalModelsScreen() {
       >
         <Card className="mb-7 p-4">
           <View className="flex-row items-start gap-3">
-            <View className="bg-tag-peach-bg h-10 w-10 items-center justify-center rounded-xl">
-              <Smartphone size={20} color={tagPeachText} />
+            <View className="bg-app-bg border border-app-border h-10 w-10 items-center justify-center rounded-xl">
+              <Smartphone size={20} color={appMuted} />
             </View>
             <View className="flex-1">
               <Text className="text-app-text text-base font-semibold tracking-tight">

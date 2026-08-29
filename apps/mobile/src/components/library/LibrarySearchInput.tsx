@@ -13,8 +13,8 @@ export function LibrarySearchInput({ value, onChangeText }: LibrarySearchInputPr
 
   return (
     <View className="px-6 pb-3">
-      <View className="flex-row items-center rounded-md bg-app-border/40 px-3 py-2">
-        <Search size={16} color={appSubtle} />
+      <View className="flex-row items-center rounded-lg border border-app-border bg-app-surface px-3.5 py-2">
+        <Search size={15} color={appSubtle} />
         <TextInput
           className="ml-2.5 flex-1 text-sm text-app-text"
           placeholder="기록 검색..."

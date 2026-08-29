@@ -1,4 +1,6 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { HardDrive } from 'lucide-react-native';
+import { useSemanticColor } from '@glimpse/ui';
 import { SettingsSection } from './SettingsSection';
 import type { DataAction } from '@/src/hooks/useDataManagementActions';
 import { useAppLocale } from '@/src/localization';
@@ -66,10 +68,12 @@ export function DataManagementSection({
   onDelete,
 }: DataManagementSectionProps) {
   const { messages } = useAppLocale();
+  const appMuted = useSemanticColor('appMuted');
 
   return (
     <SettingsSection
       title={messages.data.title}
+      icon={<HardDrive size={18} color={appMuted} />}
       footer={messages.data.footer}
     >
       <ActionRow

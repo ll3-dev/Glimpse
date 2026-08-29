@@ -18,9 +18,8 @@ const TIER_LABELS: Record<MobileModelTier, string> = {
 };
 
 function getCompatibilityVariant(status: ModelCompatibility["status"]) {
-  if (status === "recommended") return "mint" as const;
   if (status === "blocked") return "rose" as const;
-  return "peach" as const;
+  return "default" as const;
 }
 
 export function ModelCardBadges({
@@ -31,6 +30,16 @@ export function ModelCardBadges({
 }: ModelCardBadgesProps) {
   return (
     <View className="mb-2 flex-row flex-wrap items-center gap-1.5">
+      {isSelected && (
+        <Badge variant="outline" className="border-app-text bg-app-text">
+          <BadgeText className="text-white font-semibold">사용 중</BadgeText>
+        </Badge>
+      )}
+      {isCompleted && !isSelected && (
+        <Badge variant="secondary">
+          <BadgeText>다운로드됨</BadgeText>
+        </Badge>
+      )}
       {model.mobileProfile.recommended && (
         <Badge variant="peach">
           <BadgeText>추천</BadgeText>
@@ -39,36 +48,12 @@ export function ModelCardBadges({
       <Badge variant={getCompatibilityVariant(compatibility.status)}>
         <BadgeText>{compatibility.label}</BadgeText>
       </Badge>
-      {model.mobileProfile.experimental && (
-        <Badge variant="lavender">
-          <BadgeText>실험적</BadgeText>
-        </Badge>
-      )}
       <Badge variant="secondary">
         <BadgeText>{TIER_LABELS[model.mobileProfile.tier]}</BadgeText>
       </Badge>
-      {model.releasedAt && (
-        <Badge
-          variant={model.releasedAt.startsWith("2026") ? "sky" : "neutral"}
-        >
-          <BadgeText>{model.releasedAt}</BadgeText>
-        </Badge>
-      )}
-      {model.ggufSource && (
-        <Badge variant={model.ggufSource === "publisher" ? "mint" : "lavender"}>
-          <BadgeText>
-            {model.ggufSource === "publisher" ? "공식 GGUF" : "커뮤니티 GGUF"}
-          </BadgeText>
-        </Badge>
-      )}
-      {isSelected && (
+      {model.mobileProfile.experimental && (
         <Badge variant="neutral">
-          <BadgeText>사용 중</BadgeText>
-        </Badge>
-      )}
-      {isCompleted && !isSelected && (
-        <Badge variant="mint">
-          <BadgeText>다운로드됨</BadgeText>
+          <BadgeText>실험적</BadgeText>
         </Badge>
       )}
     </View>

@@ -83,7 +83,7 @@ export function LocalModelCatalog({
       />
 
       {downloadError && (
-        <Text className="bg-tag-rose-bg/60 text-tag-rose-text rounded-lg p-3 text-xs">
+        <Text className="bg-app-bg border border-app-border text-app-accent rounded-lg p-3 text-xs">
           {downloadError}
         </Text>
       )}

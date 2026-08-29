@@ -29,16 +29,16 @@
   --color-destructive-foreground: #ffffff;
   --color-popover-foreground: var(--color-app-text);
 
-  --color-tag-mint-bg: #d9f3e1;
-  --color-tag-mint-text: #1a7f37;
-  --color-tag-peach-bg: #ffe8d4;
-  --color-tag-peach-text: #a04100;
-  --color-tag-sky-bg: #dcecfa;
-  --color-tag-sky-text: #0969da;
-  --color-tag-lavender-bg: #e6e0f5;
-  --color-tag-lavender-text: #6e3ab7;
-  --color-tag-rose-bg: #fde0ec;
-  --color-tag-rose-text: #cf222e;
+  --color-tag-mint-bg: #edf7f0;
+  --color-tag-mint-text: #24663b;
+  --color-tag-peach-bg: #fcf2e8;
+  --color-tag-peach-text: #8a5020;
+  --color-tag-sky-bg: #eef5fb;
+  --color-tag-sky-text: #255d88;
+  --color-tag-lavender-bg: #f3effa;
+  --color-tag-lavender-text: #584578;
+  --color-tag-rose-bg: #faebeb;
+  --color-tag-rose-text: #9c3838;
   --color-tag-neutral-bg: #f0eeec;
-  --color-tag-neutral-text: #787774;
+  --color-tag-neutral-text: #64625d;
 }

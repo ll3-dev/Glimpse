@@ -193,8 +193,8 @@ export default function ChatDetailScreen() {
         {/* Error */}
         {error && (
           <View className="px-6 pb-2">
-            <View className="rounded-md bg-tag-rose-bg/60 border border-tag-rose-text/20 px-3 py-2">
-              <Text className="text-sm text-tag-rose-text">{error}</Text>
+            <View className="rounded-lg bg-app-surface border border-app-border px-3.5 py-2.5">
+              <Text className="text-xs text-app-accent font-medium">{error}</Text>
             </View>
           </View>
         )}

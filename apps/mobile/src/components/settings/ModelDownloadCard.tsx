@@ -98,7 +98,7 @@ export function ModelDownloadCard({
         <Text
           className={`mt-1 text-[11px] leading-4 ${
             compatibility.status === "blocked"
-              ? "text-tag-rose-text"
+              ? "text-app-accent"
               : "text-app-muted"
           }`}
         >
@@ -116,9 +116,9 @@ export function ModelDownloadCard({
       )}
 
       {hasError && errorMessage && (
-        <View className="bg-tag-rose-bg/60 mt-3 flex-row items-start gap-1.5 rounded-lg p-2.5">
+        <View className="bg-app-bg border border-app-border mt-3 flex-row items-start gap-1.5 rounded-lg p-2.5">
           <AlertCircle size={14} color={appAccent} />
-          <Text className="text-tag-rose-text flex-1 text-xs">
+          <Text className="text-app-accent flex-1 text-xs">
             {errorMessage}
           </Text>
         </View>

@@ -14,7 +14,6 @@ export function DeviceCompatibilitySummary({
   compatibleCount,
   totalCount,
 }: DeviceCompatibilitySummaryProps) {
-  const mintText = useSemanticColor("tagMintText");
   const appMuted = useSemanticColor("appMuted");
   const deviceName = device.modelName ?? "현재 기기";
   const memoryLabel =
@@ -23,8 +22,8 @@ export function DeviceCompatibilitySummary({
   return (
     <View className="border-app-border bg-app-card rounded-xl border p-4">
       <View className="flex-row items-center gap-3">
-        <View className="bg-tag-mint-bg h-10 w-10 items-center justify-center rounded-xl">
-          <Smartphone size={19} color={mintText} />
+        <View className="bg-app-bg border border-app-border h-10 w-10 items-center justify-center rounded-xl">
+          <Smartphone size={19} color={appMuted} />
         </View>
         <View className="flex-1">
           <Text className="text-app-text text-sm font-semibold">

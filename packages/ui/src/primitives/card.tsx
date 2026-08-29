@@ -7,8 +7,8 @@ import { cn } from "../lib/cn";
 const cardVariants = cva("border bg-app-surface", {
   variants: {
     variant: {
-      default: "rounded-md border-app-border",
-      muted: "rounded-md border-transparent bg-app-bg",
+      default: "rounded-xl border-app-border",
+      muted: "rounded-xl border-transparent bg-app-bg",
       elevated: "rounded-2xl border-app-border shadow-sm shadow-black/5",
     },
   },

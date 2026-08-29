@@ -1,18 +1,15 @@
-import { Alert, Pressable, ScrollView, View, Text } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { ScreenHeader, Card } from '@glimpse/ui/primitives';
+import { ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
-import { AITargetSettingsSection } from '@/src/components/settings/AITargetSettingsSection';
-import { AppleIntelligenceSection } from '@/src/components/settings/AppleIntelligenceSection';
-import { BYOKSectionContainer } from '@/src/components/settings/BYOKSectionContainer';
-import { SemanticSearchSection } from '@/src/components/settings/SemanticSearchSection';
-import { DataManagementSection } from '@/src/components/settings/DataManagementSection';
-import { LocalLLMSection } from '@/src/components/settings/LocalLLMSection';
+import { SettingsOverviewCard } from '@/src/components/settings/SettingsOverviewCard';
+import { UnifiedAISettingsSection } from '@/src/components/settings/UnifiedAISettingsSection';
+import { ReviewReminderSection } from '@/src/components/settings/ReviewReminderSection';
 import { LanguageSection } from '@/src/components/settings/LanguageSection';
 import { DesktopSyncSection } from '@/src/components/settings/DesktopSyncSection';
-import { ReviewReminderSection } from '@/src/components/settings/ReviewReminderSection';
+import { DataManagementSection } from '@/src/components/settings/DataManagementSection';
 import { useDataManagementActions, useSettingsScreenState } from '@/src/hooks';
 import { useAppLocale } from '@/src/localization';
 
@@ -27,24 +24,6 @@ export default function SettingsScreen() {
   const dataActions = useDataManagementActions();
   const { messages } = useAppLocale();
   const appText = useSemanticColor('appText');
-
-  const handleToggleAppleIntelligence = (value: boolean) => {
-    const feedback = actions.toggleAppleIntelligence(value);
-    if (feedback) {
-      Alert.alert(feedback.title, feedback.message);
-    }
-  };
-
-  const handleToggleLocalLLM = (value: boolean) => {
-    const feedback = actions.toggleLocalLLM(value);
-    if (feedback) {
-      Alert.alert(feedback.title, feedback.message);
-    }
-  };
-
-  const handleOpenLocalModels = () => {
-    router.push('/local-models');
-  };
 
   const handleExportData = async () => {
     try {
@@ -131,10 +110,12 @@ export default function SettingsScreen() {
         }
       />
 
-      <ScrollView
-        className="flex-1 px-6 pt-4"
-      >
-        <AITargetSettingsSection
+      <ScrollView className="flex-1 px-6 pt-2" showsVerticalScrollIndicator={false}>
+        {/* Active AI Profile Overview Banner */}
+        <SettingsOverviewCard />
+
+        {/* Group 1: AI & Intelligence */}
+        <UnifiedAISettingsSection
           defaultTargetId={state.aiTargetSettings.defaultTargetId}
           metadataTargetId={state.aiTargetSettings.metadataTargetId}
           labelingTargetId={state.aiTargetSettings.labelingTargetId}
@@ -148,30 +129,12 @@ export default function SettingsScreen() {
           onSelectLabelingTarget={actions.selectLabelingTarget}
         />
 
-        <LocalLLMSection
-          enabled={state.localLLMEnabled}
-          ready={state.localLLMReady}
-          models={state.localLLMModels}
-          selectedModelId={state.localLLMSelectedModelId}
-          onToggle={handleToggleLocalLLM}
-          onManageModels={handleOpenLocalModels}
-        />
-
-        <AppleIntelligenceSection
-          config={state.appleConfig}
-          onToggle={handleToggleAppleIntelligence}
-        />
-
-        <BYOKSectionContainer />
-
-        <SemanticSearchSection />
-
+        {/* Group 2: General & Notifications */}
         <ReviewReminderSection />
-
         <LanguageSection />
 
+        {/* Group 3: Sync & Data */}
         <DesktopSyncSection />
-
         <DataManagementSection
           busyAction={dataActions.busyAction}
           onExport={() => void handleExportData()}
@@ -179,11 +142,6 @@ export default function SettingsScreen() {
           onDelete={handleDeleteAllData}
         />
 
-        <Card variant="muted" className="p-4 border-0">
-          <Text className="text-[10px] leading-4 text-app-muted font-medium">
-            {messages.settings.secureStorageNote}
-          </Text>
-        </Card>
         <View style={{ height: insets.bottom + 40 }} />
       </ScrollView>
     </View>

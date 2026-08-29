@@ -34,19 +34,19 @@ export function ConversationList({ conversation, onPress }: ConversationListProp
 
   return (
     <Pressable
-      className="flex-row items-center p-3.5 bg-app-surface border border-app-border rounded-md mb-2 active:opacity-80"
+      className="flex-row items-center p-3.5 bg-app-surface border border-app-border rounded-xl mb-2.5 active:opacity-75 shadow-xs"
       onPress={() => onPress(conversation.id)}
     >
-      <View className="w-9 h-9 rounded-md bg-app-border/40 items-center justify-center mr-3">
+      <View className="w-9 h-9 rounded-lg bg-app-bg items-center justify-center mr-3">
         {hasCustomIcon ? (
-          <Text className="text-lg">{conversation.icon}</Text>
+          <Text className="text-base">{conversation.icon}</Text>
         ) : (
-          <Text className="text-sm font-bold text-app-muted">
+          <Text className="text-xs font-bold text-app-muted">
             {getInitialLetter(conversation.title)}
           </Text>
         )}
       </View>
-      <View className="flex-1">
+      <View className="flex-1 min-w-0">
         <Text
           className="text-sm font-semibold text-app-text tracking-tight"
           numberOfLines={1}

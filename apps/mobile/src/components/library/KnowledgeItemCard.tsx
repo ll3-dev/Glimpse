@@ -32,25 +32,25 @@ function ItemContent({
 
   return (
     <>
-      <View className="mr-4">
-        <typeConfig.Icon size={18} color={appMuted} />
+      <View className="mr-3.5 h-8 w-8 items-center justify-center rounded-lg bg-app-bg">
+        <typeConfig.Icon size={16} color={appMuted} />
       </View>
-      <View className="flex-1">
-        <Text className="text-base font-semibold text-app-text" numberOfLines={1}>
+      <View className="flex-1 min-w-0">
+        <Text className="text-sm font-semibold text-app-text leading-5" numberOfLines={2}>
           {displayTitle}
         </Text>
-        <Text className="mt-1 text-xs text-app-muted font-medium">
+        <Text className="mt-1 text-[11px] text-app-muted font-medium">
           {typeConfig.label} · {timeAgo}
         </Text>
         {showBadges ? (
-          <View className="mt-2.5 flex-row flex-wrap gap-1.5">
+          <View className="mt-2 flex-row flex-wrap gap-1.5">
             {labels.map((label) => (
               <Pressable
                 key={label}
                 onPress={() => onSelectTag?.(label)}
-                className="rounded bg-tag-mint-bg/60 px-2 py-0.5"
+                className="rounded-md bg-app-bg border border-app-border/60 px-2 py-0.5 active:opacity-70"
               >
-                <Text className="text-[11px] font-medium text-tag-mint-text">
+                <Text className="text-[11px] font-medium text-app-muted">
                   {formatKnowledgeLabel(label)}
                 </Text>
               </Pressable>
@@ -59,9 +59,9 @@ function ItemContent({
               <Pressable
                 key={tag}
                 onPress={() => onSelectTag?.(tag)}
-                className="rounded bg-app-border/40 px-2 py-0.5"
+                className="rounded-md bg-app-bg border border-app-border/60 px-2 py-0.5 active:opacity-70"
               >
-                <Text className="text-[11px] font-medium text-app-muted">
+                <Text className="text-[11px] font-medium text-app-subtle">
                   #{tag}
                 </Text>
               </Pressable>
@@ -86,9 +86,9 @@ export const KnowledgeItemCard = memo(function KnowledgeItemCard({
   const showBadges = labels.length > 0 || tags.length > 0;
 
   return (
-    <Card className="mb-2 overflow-hidden">
+    <Card className="mb-2 overflow-hidden border border-app-border bg-app-surface">
       <Pressable
-        className="flex-row items-center p-4 active:opacity-80"
+        className="flex-row items-start p-3.5 active:opacity-75"
         onPress={() => onPress?.(item.id)}
         disabled={!onPress}
       >

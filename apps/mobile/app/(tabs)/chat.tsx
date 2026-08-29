@@ -112,8 +112,8 @@ export default function ChatScreen() {
       {/* Empty state */}
       {showEmpty && (
         <View className="flex-1 items-center justify-center py-24 px-6">
-          <View className="mb-4 h-14 w-14 items-center justify-center rounded-full bg-app-border/40">
-            <MessageCircle size={24} color={appMuted} />
+          <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-app-surface border border-app-border">
+            <MessageCircle size={20} color={appMuted} />
           </View>
           <Text className="mb-2 text-base font-semibold text-app-text tracking-tight text-center">
             새 대화를 시작하세요
@@ -122,7 +122,7 @@ export default function ChatScreen() {
             AI와 자유롭게 대화하거나{"\n"}보관함 항목에 대해 질문해 보세요
           </Text>
           <Pressable
-            className="flex-row items-center rounded-md bg-app-text px-5 py-2.5 active:opacity-90"
+            className="flex-row items-center rounded-lg bg-app-text px-5 py-2.5 active:opacity-90"
             onPress={handleCreateConversation}
             disabled={isCreating}
           >

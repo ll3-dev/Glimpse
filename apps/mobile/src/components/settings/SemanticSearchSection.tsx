@@ -20,13 +20,17 @@ import {
  * 재정렬한다. 프라이버시 문구는 접히지 않는 본문에 항상 노출된다.
  */
 
-export function SemanticSearchSection() {
+type SemanticSearchSectionProps = {
+  embedded?: boolean;
+};
+
+export function SemanticSearchSection({ embedded = false }: SemanticSearchSectionProps) {
   const [enabled, setEnabled] = useSemanticRerankEnabled();
   const provider = useBYOKConfig((config) => config.provider);
   const credentialsConfigured = useBYOKCredentialsConfigured();
   const appMuted = useSemanticColor('appMuted');
+  const appText = useSemanticColor('appText');
   const appAccent = useSemanticColor('appAccent');
-  const tagRoseText = useSemanticColor('tagRoseText');
   const {
     modelInfo,
     modelPath,
@@ -49,23 +53,14 @@ export function SemanticSearchSection() {
     : !credentialsConfigured
       ? 'BYOK API 키 또는 기기 내 임베딩 모델을 준비해주세요.'
       : '현재 Provider는 embedding을 지원하지 않습니다. OpenAI 계열 키를 사용하거나 기기 내 모델을 다운로드해주세요.';
-  const modeLabel = modelPath
-    ? byokEligible
-      ? 'BYOK 우선 · 대기: 기기 내 처리'
-      : '기기 내 처리 · 외부 전송 없음'
-    : undefined;
 
-  return (
-    <SettingsSection
-      title="의미 검색"
-      icon={<Sparkles size={18} color={appMuted} />}
-      footer={enabled && disabledReason ? disabledReason : undefined}
-    >
+  const content = (
+    <View>
       <View className="flex-row items-center justify-between">
         <View className="flex-1 pr-4">
-          <Text className="text-base font-semibold text-app-text">의미 재정렬</Text>
+          <Text className="text-sm font-semibold text-app-text">스마트 의미 검색</Text>
           <Text className="text-xs text-app-muted mt-0.5">
-            검색 결과를 의미 유사도로 다시 정렬합니다
+            단어가 달라도 문맥과 의미 유사도로 검색합니다
           </Text>
         </View>
         <Switch
@@ -77,7 +72,7 @@ export function SemanticSearchSection() {
 
       {/* 온디바이스 임베딩 모델 — BYOK 없이 기기 내 처리를 위한 최소 진입점 */}
       {modelInfo && (
-        <View className="border-app-border bg-app-card mt-3 rounded-xl border p-3">
+        <View className="bg-app-bg/50 mt-2.5 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
             <View className="flex-1 pr-3">
               <Text className="text-app-text text-sm font-semibold">
@@ -86,12 +81,11 @@ export function SemanticSearchSection() {
               <Text className="text-app-muted mt-0.5 text-xs">
                 {modelInfo.name}
                 {modelInfo.displaySize ? ` · ${modelInfo.displaySize}` : ''}
-                {modeLabel ? `\n${modeLabel}` : ''}
               </Text>
             </View>
             {downloading ? (
               <View className="flex-row items-center gap-2">
-                <ActivityIndicator size="small" color={appAccent} />
+                <ActivityIndicator size="small" color={appText} />
                 <Text className="text-app-muted text-xs">
                   {progressPercentage != null ? `${progressPercentage}%` : ''}
                 </Text>
@@ -102,7 +96,7 @@ export function SemanticSearchSection() {
                 onPress={() => void remove()}
                 className="p-2"
               >
-                <Trash2 size={18} color={tagRoseText} />
+                <Trash2 size={18} color={appAccent} />
               </Pressable>
             ) : (
               <Pressable
@@ -110,7 +104,7 @@ export function SemanticSearchSection() {
                 onPress={() => void download()}
                 className="p-2"
               >
-                <Download size={18} color={appAccent} />
+                <Download size={18} color={appText} />
               </Pressable>
             )}
           </View>
@@ -122,14 +116,14 @@ export function SemanticSearchSection() {
           )}
           {modelPath && (
             <View className="flex-row items-center gap-1 mt-2">
-              <Check size={12} color={appAccent} />
+              <Check size={12} color={appText} />
               <Text className="text-app-muted text-[11px]">
                 준비됨 — BYOK이 없으면 이 모델로 재정렬합니다
               </Text>
             </View>
           )}
           {downloadError && (
-            <Text className="text-tag-rose-text mt-2 text-[11px]">
+            <Text className="text-app-accent mt-2 text-[11px]">
               {downloadError}
             </Text>
           )}
@@ -138,14 +132,27 @@ export function SemanticSearchSection() {
 
       {/* 프라이버시 문구 — 옵트인 상태와 무관하게 항상 노출 */}
       <View className="mt-3">
-        <Text className="text-xs text-app-muted leading-5">
+        <Text className="text-[11px] text-app-muted leading-4">
           {modelPath
             ? '온디바이스 모드에서는 모든 임베딩이 기기 내부에서 처리되며 외부로 전송되지 않습니다. '
             : ''}
-          BYOK 임베딩을 켜면 검색어와 검색 중인 항목의 내용(제목·요약·본문 일부)이
-          설정한 외부 임베딩 API(OpenAI 호환)로 전송됩니다. 기본값은 꺼짐입니다.
+          BYOK 임베딩을 켜면 검색어와 검색 중인 항목의 내용이 설정한 외부 임베딩 API로 전송됩니다.
         </Text>
       </View>
+    </View>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <SettingsSection
+      title="의미 검색"
+      icon={<Sparkles size={18} color={appMuted} />}
+      footer={enabled && disabledReason ? disabledReason : undefined}
+    >
+      {content}
     </SettingsSection>
   );
 }

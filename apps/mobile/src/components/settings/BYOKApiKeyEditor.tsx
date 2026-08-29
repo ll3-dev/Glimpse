@@ -46,7 +46,7 @@ export function BYOKApiKeyEditor({
           API 키
         </Text>
         {hasStoredApiKey && !isEditingApiKey ? (
-          <View className="rounded-md border border-app-border bg-app-surface px-3 py-3">
+          <View className="rounded-lg bg-app-bg/50 px-3.5 py-3">
             <Text className="text-xs text-app-subtle font-medium mb-3">
               저장된 키: {maskedStoredApiKey}
             </Text>

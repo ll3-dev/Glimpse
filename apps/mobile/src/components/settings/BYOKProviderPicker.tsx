@@ -25,10 +25,10 @@ export function BYOKProviderPicker({
             accessibilityRole="radio"
             accessibilityLabel={`${provider} Provider`}
             accessibilityState={{ checked: selectedProvider === provider }}
-            className={`min-h-11 justify-center px-3 py-1.5 rounded-md border active:opacity-80 ${
+            className={`min-h-11 justify-center px-3.5 py-1.5 rounded-lg border active:opacity-80 ${
               selectedProvider === provider
                 ? 'bg-app-text border-app-text'
-                : 'bg-app-surface border-app-border'
+                : 'bg-app-bg/60 border-transparent'
             }`}
             onPress={() => onSelect(provider)}
           >

@@ -99,7 +99,7 @@ export function LocalLLMSection({
       )}
 
       {loadError && (
-        <Text className="mt-3 rounded-lg bg-tag-rose-bg/60 p-3 text-xs text-tag-rose-text">
+        <Text className="mt-3 rounded-lg bg-app-bg border border-app-border p-3 text-xs text-app-accent">
           {loadError}
         </Text>
       )}
