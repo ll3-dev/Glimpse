@@ -15,8 +15,8 @@
         "@glimpse/features": "workspace:*",
         "@glimpse/hooks": "workspace:*",
         "@glimpse/shared": "workspace:*",
-        "@rustra/tauri": "0.1.3",
-        "@rustra/types": "0.1.3",
+        "@rustra/tauri": "0.4.0",
+        "@rustra/types": "0.4.0",
         "@tailwindcss/vite": "^4.2.2",
         "@tanstack/react-query": "^5.95.2",
         "@tanstack/react-router": "^1.168.7",
@@ -61,8 +61,8 @@
         "@react-navigation/bottom-tabs": "^7.3.10",
         "@react-navigation/elements": "^2.5.2",
         "@react-navigation/native": "^7.1.6",
-        "@rustra/react-native": "0.1.3",
-        "@rustra/types": "0.1.3",
+        "@rustra/react-native": "0.4.0",
+        "@rustra/types": "0.4.0",
         "@shopify/flash-list": "2.0.2",
         "@tanstack/react-query": "^5.83.0",
         "@toss/hangul": "^1.7.1",
@@ -195,7 +195,7 @@
   "overrides": {
     "@expo/metro-runtime": "~57.0.14",
     "@hono/node-server": "1.19.15",
-    "@rustra/types": "0.1.3",
+    "@rustra/types": "0.4.0",
     "@xmldom/xmldom": "0.8.13",
     "fast-uri": "3.1.5",
     "flatted": "3.4.4",
@@ -784,11 +784,11 @@
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
 
-    "@rustra/react-native": ["@rustra/react-native@0.1.3", "", { "dependencies": { "@rustra/types": "^0.1.3" } }, "sha512-x2EsWdpL8oLEWUDnj2WxLIjYA1Bpi2RbCZGfJtkI+7RhpE4UXBHZOB/mB27CX93w2utso6VKG2FWLti0OGJgzw=="],
+    "@rustra/react-native": ["@rustra/react-native@0.4.0", "", { "dependencies": { "@rustra/types": "^0.4.0" }, "peerDependencies": { "react-native": ">=0.76" }, "optionalPeers": ["react-native"] }, "sha512-FM8RQEoAvddEXg/nbRBtzRugdDH/thTm8hFBJv3pjzLIelimhLzwRUGZb5CBFdU8OIxSBNNammNlSG+EzWsD7w=="],
 
-    "@rustra/tauri": ["@rustra/tauri@0.1.3", "", { "dependencies": { "@rustra/types": "^0.1.3" } }, "sha512-2cy2El8mkabj4TPNkQD2zHpaz+mX7mlsH737k1EmdzHR5wJlhCGnwWUgneGz34bSSOjtCiHEQhaaciRsxbQzoA=="],
+    "@rustra/tauri": ["@rustra/tauri@0.4.0", "", { "dependencies": { "@rustra/types": "^0.4.0" } }, "sha512-4iX8kNYg+04qWNbL2sfCtrxnDwC0PxTMHP6tzvcWLKkpb91hVTG6CZeXyMsCHXkL30j3084nOi2fHHJRpLBEOQ=="],
 
-    "@rustra/types": ["@rustra/types@0.1.3", "", {}, "sha512-tPv0oNWaFQnJOooKm80IOfrAw3Neanguvu83zyYEN6K2u79ecfru4iKq0usa12cpQtuiFk37J8fn5Rii4y5luw=="],
+    "@rustra/types": ["@rustra/types@0.4.0", "", {}, "sha512-7rE7bCsgTHhl+tuGoZzZoK/MVDXfvFA7FK9dKiuP+HpAcM7OmnMVuLS8ASAWYi4o9+INYbO88+R1fw7tjx7i1Q=="],
 
     "@sec-ant/readable-stream": ["@sec-ant/readable-stream@0.4.1", "", {}, "sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg=="],
 
