@@ -1,4 +1,5 @@
 import { ScrollView, TextInput, View, Text } from 'react-native';
+import { useSemanticColor } from '@glimpse/ui';
 
 type HighlightFormProps = {
   text: string;
@@ -15,6 +16,8 @@ export function HighlightForm({
   onChangeText,
   onChangeSource,
 }: HighlightFormProps) {
+  const appSubtle = useSemanticColor('appSubtle');
+
   return (
     <ScrollView
       className="flex-1"
@@ -35,7 +38,7 @@ export function HighlightForm({
           value={text}
           onChangeText={onChangeText}
           placeholder="발췌한 구절을 입력하세요..."
-          placeholderTextColor="#9b9a97"
+          placeholderTextColor={appSubtle}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
@@ -51,7 +54,7 @@ export function HighlightForm({
           value={source}
           onChangeText={onChangeSource}
           placeholder="책 제목, URL 등..."
-          placeholderTextColor="#9b9a97"
+          placeholderTextColor={appSubtle}
           multiline={false}
         />
       </View>

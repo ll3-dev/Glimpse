@@ -3,18 +3,18 @@ import {
   ScrollView,
   TextInput,
   View,
-  Text,
   Pressable,
-  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
-import { ImagePlus, X, Clipboard as ClipboardIcon, Globe } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { fetchWebMetadata } from '@/src/features/capture/webMetadata';
 import { toast } from '@/src/stores/toast.store';
 import { logger } from '@/src/utils/logger';
 import { useOcrExtraction } from '@/src/hooks/useOcrExtraction';
+import { useSemanticColor } from '@glimpse/ui';
+import { UnifiedCaptureAssistantBar } from './UnifiedCaptureAssistantBar';
 
 export type UnifiedCaptureFormState = {
   title: string;
@@ -41,6 +41,7 @@ export function UnifiedCaptureForm({
   const [clipboardText, setClipboardText] = useState<string | null>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const { ocrState, extract, reset: resetOcr } = useOcrExtraction();
+  const appSubtle = useSemanticColor('appSubtle');
 
   useEffect(() => {
     async function checkClipboard() {
@@ -84,7 +85,6 @@ export function UnifiedCaptureForm({
   const runOcrForImage = async (uri: string) => {
     const text = await extract(uri);
     if (text) {
-      // OCR 텍스트를 본문에 자동 삽입 — 사용자가 이어서 편집할 수 있다.
       if (!body) {
         onChangeBody(text);
       } else {
@@ -92,8 +92,6 @@ export function UnifiedCaptureForm({
       }
       toast.success('스크린샷에서 텍스트를 추출했습니다');
     }
-    // no_text/error는 조용히 넘긴다 — 텍스트 없는 스크린샷도 유효한 저장이고
-    // 에러 toast는 매 선택마다 과도하다. 사용자는 본문이 비었음을 바로 본다.
   };
 
   const handlePasteClipboard = () => {
@@ -145,56 +143,17 @@ export function UnifiedCaptureForm({
       contentInset={{ bottom: bottomInset }}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Quick Assistant Bar */}
-      <View className="mb-4 flex-row flex-wrap items-center gap-2">
-        {clipboardText && !body && (
-          <Pressable
-            onPress={handlePasteClipboard}
-            className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
-          >
-            <ClipboardIcon size={12} color="#787774" className="mr-1.5" />
-            <Text className="text-xs font-medium text-app-muted">
-              클립보드 붙여넣기
-            </Text>
-          </Pressable>
-        )}
-
-        <Pressable
-          onPress={handlePickImage}
-          className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
-        >
-          <ImagePlus size={12} color="#787774" className="mr-1.5" />
-          <Text className="text-xs font-medium text-app-muted">
-            {imageUri ? '사진 변경' : '사진 첨부'}
-          </Text>
-        </Pressable>
-
-        {hasUrl && (
-          <Pressable
-            onPress={() => handleFetchMetadata()}
-            disabled={isFetchingMetadata}
-            className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
-          >
-            {isFetchingMetadata ? (
-              <ActivityIndicator size="small" color="#2383e2" className="mr-1.5" />
-            ) : (
-              <Globe size={12} color="#2383e2" className="mr-1.5" />
-            )}
-            <Text className="text-xs font-medium text-app-primary">
-              {isFetchingMetadata ? '가져오는 중...' : '웹 제목 자동 추출'}
-            </Text>
-          </Pressable>
-        )}
-
-        {ocrState === 'running' && (
-          <View className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5">
-            <ActivityIndicator size="small" color="#787774" className="mr-1.5" />
-            <Text className="text-xs font-medium text-app-muted">
-              텍스트 인식 중...
-            </Text>
-          </View>
-        )}
-      </View>
+      <UnifiedCaptureAssistantBar
+        clipboardText={clipboardText}
+        hasBody={Boolean(body)}
+        hasUrl={hasUrl}
+        hasImage={Boolean(imageUri)}
+        isFetchingMetadata={isFetchingMetadata}
+        ocrRunning={ocrState === 'running'}
+        onPasteClipboard={handlePasteClipboard}
+        onPickImage={handlePickImage}
+        onFetchMetadata={() => handleFetchMetadata()}
+      />
 
       {/* Image Preview if Attached */}
       {imageUri && (
@@ -222,7 +181,7 @@ export function UnifiedCaptureForm({
         value={title}
         onChangeText={onChangeTitle}
         placeholder="제목 없음"
-        placeholderTextColor="#9b9a97"
+        placeholderTextColor={appSubtle}
         multiline={false}
       />
 
@@ -233,7 +192,7 @@ export function UnifiedCaptureForm({
           value={body}
           onChangeText={onChangeBody}
           placeholder="자유롭게 생각이나 링크, 메모를 기록하세요..."
-          placeholderTextColor="#9b9a97"
+          placeholderTextColor={appSubtle}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}

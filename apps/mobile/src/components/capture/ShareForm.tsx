@@ -4,6 +4,7 @@ import { Effect } from 'effect';
 import { appError, tryPromise } from '@/src/lib/effect-result';
 import { logger } from '@/src/utils/logger';
 import { Link, FileText, Image as ImageIcon } from '@glimpse/ui/icons';
+import { useSemanticColor } from '@glimpse/ui';
 import { type SharedContent } from '@/src/features/capture';
 
 type ShareFormProps = {
@@ -23,6 +24,8 @@ export function ShareForm({
   onChangeTitle,
   onChangeBody,
 }: ShareFormProps) {
+  const appMuted = useSemanticColor('appMuted');
+  const appSubtle = useSemanticColor('appSubtle');
   const hasContent =
     sharedContent.text || sharedContent.url || sharedContent.imageUri;
 
@@ -76,7 +79,7 @@ export function ShareForm({
       {!hasContent ? (
         <View className="items-center justify-center py-12">
           <View className="mb-4 rounded-md bg-app-border/30 p-4">
-            <Link size={32} color="#787774" />
+            <Link size={32} color={appMuted} />
           </View>
           <Text className="mb-2 text-lg font-bold text-app-text">
             공유 대기 중
@@ -137,7 +140,7 @@ export function ShareForm({
               value={editedTitle}
               onChangeText={onChangeTitle}
               placeholder="제목을 입력하세요..."
-              placeholderTextColor="#9b9a97"
+              placeholderTextColor={appSubtle}
               multiline={false}
             />
           </View>
@@ -152,7 +155,7 @@ export function ShareForm({
               value={editedBody}
               onChangeText={onChangeBody}
               placeholder="내용을 편집하세요..."
-              placeholderTextColor="#9b9a97"
+              placeholderTextColor={appSubtle}
               multiline
               textAlignVertical="top"
               scrollEnabled={false}

@@ -10,6 +10,7 @@ import {
   type UnifiedCaptureFormState,
 } from '@/src/components/capture';
 import { ScreenHeader } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import { toast } from '@/src/stores/toast.store';
 import type { KnowledgeItemType } from '@glimpse/shared';
 
@@ -22,6 +23,7 @@ export default function CaptureScreen() {
   const { mutate: saveItem, isPending } = useSaveKnowledgeItemMutation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const appText = useSemanticColor('appText');
 
   const handleSave = () => {
     if (isPending) return;
@@ -99,7 +101,7 @@ export default function CaptureScreen() {
           title="새 기록"
           leftElement={
             <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-              <X size={24} color="#37352f" />
+              <X size={24} color={appText} />
             </Pressable>
           }
           rightElement={

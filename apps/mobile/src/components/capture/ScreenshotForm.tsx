@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { appError, tryPromise } from '@/src/lib/effect-result';
 import { logger } from '@/src/utils/logger';
 import { ImagePlus, X } from '@glimpse/ui/icons';
+import { useSemanticColor } from '@glimpse/ui';
 
 type ScreenshotFormProps = {
   extractedText: string;
@@ -25,6 +26,8 @@ export function ScreenshotForm({
   bottomInset,
 }: ScreenshotFormProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const appMuted = useSemanticColor('appMuted');
+  const appSubtle = useSemanticColor('appSubtle');
 
   const pickImage = async () => {
     const program = Effect.gen(function* () {
@@ -80,7 +83,7 @@ export function ScreenshotForm({
           className="min-h-40 items-center justify-center rounded-md border-2 border-dashed border-app-border bg-app-surface active:opacity-80"
         >
           <View className="items-center">
-            <ImagePlus size={32} color="#787774" className="mb-2" />
+            <ImagePlus size={32} color={appMuted} className="mb-2" />
             <Text className="text-sm font-semibold text-app-muted">
               스크린샷 선택
             </Text>
@@ -117,7 +120,7 @@ export function ScreenshotForm({
               ? '스크린샷에 관한 메모나 텍스트를 입력하세요.'
               : '이미지를 선택하거나 메모를 입력하세요...'
           }
-          placeholderTextColor="#9b9a97"
+          placeholderTextColor={appSubtle}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}

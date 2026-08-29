@@ -11,6 +11,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Clipboard as ClipboardIcon, Globe } from 'lucide-react-native';
 import { fetchWebMetadata } from '@/src/features/capture/webMetadata';
 import { toast } from '@/src/stores/toast.store';
+import { useSemanticColor } from '@glimpse/ui';
 import type { KnowledgeItemType } from '@glimpse/shared';
 
 type CaptureFormProps = {
@@ -34,6 +35,9 @@ export function CaptureForm({
 }: CaptureFormProps) {
   const [clipboardContent, setClipboardContent] = useState<string | null>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
+  const appMuted = useSemanticColor('appMuted');
+  const appPrimary = useSemanticColor('appPrimary');
+  const appSubtle = useSemanticColor('appSubtle');
 
   // Check clipboard on mount
   useEffect(() => {
@@ -109,7 +113,7 @@ export function CaptureForm({
             onPress={handlePasteClipboard}
             className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
           >
-            <ClipboardIcon size={12} color="#787774" className="mr-1.5" />
+            <ClipboardIcon size={12} color={appMuted} className="mr-1.5" />
             <Text className="text-xs font-medium text-app-muted" numberOfLines={1}>
               클립보드 붙여넣기
             </Text>
@@ -123,9 +127,9 @@ export function CaptureForm({
             className="flex-row items-center rounded-md border border-app-border bg-app-surface px-2.5 py-1.5 active:bg-app-bg"
           >
             {isFetchingMetadata ? (
-              <ActivityIndicator size="small" color="#2383e2" className="mr-1.5" />
+              <ActivityIndicator size="small" color={appPrimary} className="mr-1.5" />
             ) : (
-              <Globe size={12} color="#2383e2" className="mr-1.5" />
+              <Globe size={12} color={appPrimary} className="mr-1.5" />
             )}
             <Text className="text-xs font-medium text-app-primary">
               {isFetchingMetadata ? '가져오는 중...' : '웹 제목 자동 추출'}
@@ -139,7 +143,7 @@ export function CaptureForm({
         value={title}
         onChangeText={onChangeTitle}
         placeholder={isLink ? '링크 제목 (선택)' : '제목 없음'}
-        placeholderTextColor="#9b9a97"
+        placeholderTextColor={appSubtle}
         multiline={false}
       />
 
@@ -149,7 +153,7 @@ export function CaptureForm({
           value={body}
           onChangeText={onChangeBody}
           placeholder={placeholder}
-          placeholderTextColor="#9b9a97"
+          placeholderTextColor={appSubtle}
           multiline
           textAlignVertical="top"
           scrollEnabled={false}
