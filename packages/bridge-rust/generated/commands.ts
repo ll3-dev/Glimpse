@@ -1,4 +1,4 @@
-import type { AddMessageInput, AddMessageOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteAllDataInput, DeleteAllDataOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, ExportDataInput, ExportDataOutput, ExportDeltaInput, ExportDeltaOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, ImportDataInput, ImportDataOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, MergeDataInput, MergeDataOutput, MergeDeltaInput, MergeDeltaOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, SyncDataRevisionInput, SyncDataRevisionOutput, SyncDiscoverInput, SyncDiscoverOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
+import type { AddMessageInput, AddMessageOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteAllDataInput, DeleteAllDataOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput, EndpointCandidatesInput, EndpointCandidatesOutput, ExportDataInput, ExportDataOutput, ExportDeltaInput, ExportDeltaOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, ImportDataInput, ImportDataOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, IsHoldingOffInput, IsHoldingOffOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, MergeDataInput, MergeDataOutput, MergeDeltaInput, MergeDeltaOutput, NormalizeBaseUrlInput, NormalizeBaseUrlOutput, RecordFailureInput, RecordFailureOutput, RecordSuccessInput, RecordSuccessOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, SyncDataRevisionInput, SyncDataRevisionOutput, SyncDiscoverInput, SyncDiscoverOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
 import { createGeneratedFields2, invokeGenerated, invokeGeneratedFields1 } from '@rustra/types';
 import type { InvokeOptions } from '@rustra/types';
 
@@ -30,6 +30,13 @@ export function deleteKnowledgeItem(input: DeleteKnowledgeItemInput, options?: I
 deleteKnowledgeItem.commandId = 'deleteKnowledgeItem';
 
 export const deleteMessage = createGeneratedFields2<DeleteMessageInput, DeleteMessageOutput>(26, 'deleteMessage', "messageId", "deletedAt", 'deleteMessage');
+
+export const discoveryBaseUrl = createGeneratedFields2<DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput>(37, 'discoveryBaseUrl', "host", "port", 'discoveryBaseUrl');
+
+export function endpointCandidates(input: EndpointCandidatesInput, options?: InvokeOptions): Promise<EndpointCandidatesOutput> {
+  return invokeGenerated<EndpointCandidatesOutput>(35, 'endpointCandidates', input, options);
+}
+endpointCandidates.commandId = 'endpointCandidates';
 
 export function exportData(input: ExportDataInput, options?: InvokeOptions): Promise<ExportDataOutput> {
   return invokeGenerated<ExportDataOutput>(5, 'exportData', input, options);
@@ -65,6 +72,11 @@ export function initializeReviewSchedule(input: InitializeReviewScheduleInput, o
   return invokeGenerated<InitializeReviewScheduleOutput>(32, 'initializeReviewSchedule', input, options);
 }
 initializeReviewSchedule.commandId = 'initializeReviewSchedule';
+
+export function isHoldingOff(input: IsHoldingOffInput, options?: InvokeOptions): Promise<IsHoldingOffOutput> {
+  return invokeGenerated<IsHoldingOffOutput>(40, 'isHoldingOff', input, options);
+}
+isHoldingOff.commandId = 'isHoldingOff';
 
 export function listConversationMessages(input: ListConversationMessagesInput, options?: InvokeOptions): Promise<ListConversationMessagesOutput> {
   return invokeGeneratedFields1<ListConversationMessagesOutput>(23, 'listConversationMessages', input, input["conversationId"], options);
@@ -125,6 +137,21 @@ export function mergeDelta(input: MergeDeltaInput, options?: InvokeOptions): Pro
   return invokeGeneratedFields1<MergeDeltaOutput>(9, 'mergeDelta', input, input["dataJson"], options);
 }
 mergeDelta.commandId = 'mergeDelta';
+
+export function normalizeBaseUrl(input: NormalizeBaseUrlInput, options?: InvokeOptions): Promise<NormalizeBaseUrlOutput> {
+  return invokeGeneratedFields1<NormalizeBaseUrlOutput>(36, 'normalizeBaseUrl', input, input["value"], options);
+}
+normalizeBaseUrl.commandId = 'normalizeBaseUrl';
+
+export function recordSyncFailure(input: RecordFailureInput, options?: InvokeOptions): Promise<RecordFailureOutput> {
+  return invokeGenerated<RecordFailureOutput>(38, 'recordSyncFailure', input, options);
+}
+recordSyncFailure.commandId = 'recordSyncFailure';
+
+export function recordSyncSuccess(input: RecordSuccessInput, options?: InvokeOptions): Promise<RecordSuccessOutput> {
+  return invokeGenerated<RecordSuccessOutput>(39, 'recordSyncSuccess', input, options);
+}
+recordSyncSuccess.commandId = 'recordSyncSuccess';
 
 export function respondToRecommendation(input: RespondToRecommendationInput, options?: InvokeOptions): Promise<RespondToRecommendationOutput> {
   return invokeGenerated<RespondToRecommendationOutput>(30, 'respondToRecommendation', input, options);

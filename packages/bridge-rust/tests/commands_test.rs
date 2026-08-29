@@ -502,17 +502,19 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 34 commands (calculateNextReview was removed in
+    // schema exposes all 40 commands (calculateNextReview was removed in
     // favor of the shared TS review scheduler), including deterministic data
     // merging and incremental delta application (mergeDelta), the
-    // upstream delta path (exportDelta, syncDataRevision), and LAN peer
-    // discovery (syncDiscover).
+    // upstream delta path (exportDelta, syncDataRevision), LAN peer
+    // discovery (syncDiscover), and the shared sync planning decisions
+    // (endpointCandidates, normalizeBaseUrl, discoveryBaseUrl,
+    // recordSyncFailure, recordSyncSuccess, isHoldingOff).
     let schema = pkg.live_schema();
     let commands = schema["commands"].as_array().expect("commands array");
     assert_eq!(
         commands.len(),
-        34,
-        "unified package must expose 34 commands"
+        40,
+        "unified package must expose 40 commands"
     );
 }
 

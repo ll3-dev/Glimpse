@@ -53,6 +53,15 @@ export type KnowledgeItemIo = {
   nextReviewAt?: number | null;
 };
 
+export type BackoffState = {
+  /** Consecutive failures so far (reset to 0 on success). */
+  failures: number;
+  /** True once an auth rejection made retrying pointless until re-pairing. */
+  invalidated: boolean;
+  /** Timestamp (ms) until which auto-sync should hold off. */
+  holdUntil: number;
+};
+
 export type RecommendationIo = {
   id: string;
   itemA_id: string;
@@ -173,6 +182,24 @@ export type DeleteMessageInput = {
 
 export type DeleteMessageOutput = Record<string, unknown>;
 
+export type DiscoveryBaseUrlInput = {
+  host: string;
+  port: number;
+};
+
+export type DiscoveryBaseUrlOutput = {
+  url: string;
+};
+
+export type EndpointCandidatesInput = {
+  tailscaleUrl?: string | null;
+  lanUrl?: string | null;
+};
+
+export type EndpointCandidatesOutput = {
+  endpoints: string[];
+};
+
 export type ExportDataInput = Record<string, unknown>;
 
 export type ExportDataOutput = {
@@ -236,6 +263,16 @@ export type InitializeReviewScheduleOutput = {
   stability?: number | null;
   difficulty?: number | null;
   lastReviewedAt?: number | null;
+};
+
+export type IsHoldingOffInput = {
+  state: BackoffState;
+  now: number;
+  force?: boolean;
+};
+
+export type IsHoldingOffOutput = {
+  holdingOff: boolean;
 };
 
 export type ListConversationMessagesInput = {
@@ -332,6 +369,32 @@ export type MergeDeltaOutput = {
   messages: number;
   recommendations: number;
   feedbackEvents: number;
+};
+
+export type NormalizeBaseUrlInput = {
+  value: string;
+};
+
+export type NormalizeBaseUrlOutput = {
+  url: string;
+};
+
+export type RecordFailureInput = {
+  state: BackoffState;
+  now: number;
+  authRejected?: boolean;
+};
+
+export type RecordFailureOutput = {
+  state: BackoffState;
+};
+
+export type RecordSuccessInput = {
+  state: BackoffState;
+};
+
+export type RecordSuccessOutput = {
+  state: BackoffState;
 };
 
 export type RespondToRecommendationInput = {
