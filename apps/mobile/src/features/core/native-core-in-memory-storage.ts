@@ -17,8 +17,18 @@ export class InMemoryStorage {
   private recommendations = new Map<string, Recommendation>();
   private feedbackEvents: FeedbackEvent[] = [];
 
+  /** Monotonic write counter — the in-memory twin of the Rust
+   * `sync_data_revision` sync-table trigger counter, consumed by
+   * useAutoSync's local-change detection. */
+  dataRevision = 0;
+
+  private touch(): void {
+    this.dataRevision += 1;
+  }
+
   addKnowledgeItem(item: KnowledgeItem): void {
     this.knowledgeItems.set(item.id, item);
+    this.touch();
   }
 
   getKnowledgeItem(id: string): KnowledgeItem | undefined {
@@ -36,16 +46,20 @@ export class InMemoryStorage {
     }
     const updated = { ...item, ...patch };
     this.knowledgeItems.set(id, updated);
+    this.touch();
     return updated;
   }
 
   deleteKnowledgeItem(id: string): boolean {
-    return this.knowledgeItems.delete(id);
+    const removed = this.knowledgeItems.delete(id);
+    if (removed) this.touch();
+    return removed;
   }
 
   addConversation(conversation: Conversation): void {
     this.conversations.set(conversation.id, conversation);
     this.messages.set(conversation.id, []);
+    this.touch();
   }
 
   getAllConversations(): Conversation[] {
@@ -59,18 +73,21 @@ export class InMemoryStorage {
     }
     const updated = { ...conversation, ...patch };
     this.conversations.set(id, updated);
+    this.touch();
     return updated;
   }
 
   deleteConversation(id: string): void {
-    this.conversations.delete(id);
+    const removed = this.conversations.delete(id);
     this.messages.delete(id);
+    if (removed) this.touch();
   }
 
   addMessage(conversationId: string, message: Message): void {
     const messages = this.messages.get(conversationId);
     if (messages) {
       messages.push(message);
+      this.touch();
     }
   }
 
@@ -82,12 +99,17 @@ export class InMemoryStorage {
     return Array.from(this.messages.values()).flat();
   }
 
+  getAllMessagesForConversation(): Message[][] {
+    return Array.from(this.messages.values());
+  }
+
   updateMessage(messageId: string, patch: Partial<Message>): Message | undefined {
     for (const messages of this.messages.values()) {
       const index = messages.findIndex((message) => message.id === messageId);
       if (index !== -1) {
         const updated = { ...messages[index], ...patch };
         messages[index] = updated;
+        this.touch();
         return updated;
       }
     }
@@ -99,6 +121,7 @@ export class InMemoryStorage {
       const index = messages.findIndex((message) => message.id === messageId);
       if (index !== -1) {
         messages.splice(index, 1);
+        this.touch();
         return;
       }
     }
@@ -106,6 +129,7 @@ export class InMemoryStorage {
 
   addRecommendation(recommendation: Recommendation): void {
     this.recommendations.set(recommendation.id, recommendation);
+    this.touch();
   }
 
   getAllRecommendations(): Recommendation[] {
@@ -119,11 +143,13 @@ export class InMemoryStorage {
     }
     const updated = { ...recommendation, ...patch };
     this.recommendations.set(id, updated);
+    this.touch();
     return updated;
   }
 
   addFeedbackEvent(event: FeedbackEvent): void {
     this.feedbackEvents.push(event);
+    this.touch();
   }
 
   getRecentFeedbackEvents(limit: number): FeedbackEvent[] {
@@ -140,5 +166,6 @@ export class InMemoryStorage {
     this.messages.clear();
     this.recommendations.clear();
     this.feedbackEvents = [];
+    this.touch();
   }
 }

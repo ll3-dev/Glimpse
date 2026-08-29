@@ -26,6 +26,32 @@ type PortableData = {
   tombstones?: unknown[];
 };
 
+/** Merge clock of a single exported row — mirrors the SQL expressions the
+ * Rust `max_merge_clock`/`export_delta` use per table, so the fallback's
+ * deltas can never omit a row that would win a full merge. */
+function rowClock(row: PortableData['knowledgeItems'][number]): number;
+function rowClock(row: PortableData['conversations'][number]): number;
+function rowClock(row: PortableData['messages'][number]): number;
+function rowClock(row: PortableData['recommendations'][number]): number;
+function rowClock(row: PortableData['feedbackEvents'][number]): number;
+function rowClock(
+  row:
+    | PortableData['knowledgeItems'][number]
+    | PortableData['conversations'][number]
+    | PortableData['messages'][number]
+    | PortableData['recommendations'][number]
+    | PortableData['feedbackEvents'][number],
+): number {
+  const record = row as unknown as Record<string, unknown>;
+  const deletedAt = typeof record.deletedAt === 'number' ? record.deletedAt : null;
+  const respondedAt = typeof record.respondedAt === 'number' ? record.respondedAt : null;
+  const updatedAt = typeof record.updatedAt === 'number' ? record.updatedAt : null;
+  const createdAt = record.createdAt as number;
+  return (
+    deletedAt ?? respondedAt ?? updatedAt ?? createdAt
+  );
+}
+
 function parsePortableData(dataJson: string): PortableData {
   const parsed: unknown = JSON.parse(dataJson);
   if (!parsed || typeof parsed !== 'object') {
@@ -263,6 +289,30 @@ export function createFallbackCoreClient(
         feedbackEvents: storage.getAllFeedbackEvents(),
       };
       return JSON.stringify(data, null, 2);
+    },
+
+    async exportDelta(sinceClockMs: number): Promise<string> {
+      // Fallback twin of SqliteStorage::export_delta: strict-greater select
+      // per table against the same row clocks the full merge compares. All
+      // tombstones ride along (deletes must never be missed) — the fallback
+      // store keeps none, so a full-merge pass elsewhere reconciles deletes.
+      const newerThan = <T>(rows: T[]): T[] =>
+        rows.filter((row) => rowClock(row as PortableData['knowledgeItems'][number]) > sinceClockMs);
+      const data: PortableData = {
+        formatVersion: DATA_EXPORT_FORMAT_VERSION,
+        exportedAt: Date.now(),
+        knowledgeItems: newerThan(storage.getAllKnowledgeItems()),
+        conversations: newerThan(storage.getAllConversations()),
+        messages: newerThan(storage.getAllMessages()),
+        recommendations: newerThan(storage.getAllRecommendations()),
+        feedbackEvents: newerThan(storage.getAllFeedbackEvents()),
+        tombstones: [],
+      };
+      return JSON.stringify(data);
+    },
+
+    async syncDataRevision(): Promise<number> {
+      return storage.dataRevision;
     },
 
     async importData(dataJson: string): Promise<DataImportSummary> {
