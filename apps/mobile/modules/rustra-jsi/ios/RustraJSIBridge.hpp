@@ -16,6 +16,13 @@ uint8_t* rustra_ffi_invoke(
     const uint8_t* payload, size_t payload_len, size_t* out_len);
 uint8_t* rustra_ffi_invoke_json(
     const uint8_t* payload, size_t payload_len, size_t* out_len);
+// Caller-buffer JSON 변형 — buf=null이면 size-probe(반환 0, out_len=필요
+// 크기), non-null이면 buf에 직접 기록(반환=기록 바이트 수). capacity 부족은
+// SIZE_MAX 반환 + 필요 크기 기록; probe 결과는 코어가 thread_local 캐시로
+// 재제공하므로 비멱등 핸들러도 정확히 1회만 실행된다.
+size_t rustra_ffi_invoke_json_into(
+    const uint8_t* payload, size_t payload_len, uint8_t* buf,
+    size_t capacity, size_t* out_len);
 uint8_t* rustra_ffi_invoke_postcard(
     const uint8_t* payload, size_t payload_len, size_t* out_len);
 uint8_t* rustra_ffi_get_schema(size_t* out_len);

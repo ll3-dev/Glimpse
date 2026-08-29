@@ -1,76 +1,84 @@
-#import <React/RCTBridge+Private.h>
 #import <React/RCTBridgeModule.h>
 #import <React/RCTLog.h>
 #import <ReactCommon/CallInvoker.h>
 #import <ReactCommon/RCTTurboModule.h>
+#import <ReactCommon/RCTTurboModuleWithJSIBindings.h>
+#import <ReactCommon/RCTInteropTurboModule.h>
 #import <jsi/jsi.h>
 
 #include <exception>
+#include <mutex>
 
 #import "RustraJSIBridge.hpp"
 
-@interface RustraJSI : NSObject <RCTBridgeModule>
+// Expo SDK 57 (RN 0.86) runs bridgeless — `[RCTBridge currentBridge]` is nil
+// there, so the install path must not depend on a bridge. Instead the module
+// adopts RCTTurboModule (+ RCTTurboModuleWithJSIBindings): the manager only
+// takes the TurboModule branch (where installJSIBindings is invoked) for
+// classes conforming to RCTTurboModule — conformsToProtocol: is the
+// classifier (RCTTurboModuleManager isTurboModuleClass). getTurboModule:
+// returns an ObjCInteropTurboModule so the manager (a) wraps our
+// RCT_EXPORT_METHOD `install` promise and (b) invokes
+// installJSIBindingsWithRuntime right after.
+@interface RustraJSI : NSObject <RCTBridgeModule, RCTTurboModule, RCTTurboModuleWithJSIBindings>
 @end
 
-@implementation RustraJSI
+@implementation RustraJSI {
+  bool _didInstall;
+  NSString *_Nullable _installError;
+  std::mutex _mutex;
+}
 
 RCT_EXPORT_MODULE(RustraJSI)
 
-RCT_REMAP_METHOD(install,
-                  installWithResolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
-  @try {
-    // In new arch, self.bridge may not be set.
-    // Get the bridge through the RN shared infrastructure.
-    RCTBridge *bridge = [RCTBridge currentBridge];
-    if (!bridge) {
-      reject(@"ERR_NO_BRIDGE", @"[RCTBridge currentBridge] returned nil", nil);
-      return;
-    }
-
-    // JS 스레드 CallInvoker — 이벤트 푸시 drain을 JS 런타임 스레드로 마샬링.
-    // RCTTurboModule 카테고리(RCTBridge (RCTTurboModule))의 jsCallInvoker 접근자는
-    // RCTCxxBridge 구현이 제공한다 — shared_ptr<CallInvoker>를 값으로 반환한다.
-    RCTCxxBridge *cxxBridge = (RCTCxxBridge *)bridge;
-    std::shared_ptr<facebook::react::CallInvoker> jsCallInvoker =
-        [cxxBridge jsCallInvoker];
-    if (!jsCallInvoker) {
-      reject(@"ERR_NO_CALL_INVOKER", @"JS CallInvoker is unavailable", nil);
-      return;
-    }
-
-    // TurboModule 메서드는 com.meta.react.turbomodulemanager.queue에서 호출될
-    // 수 있다. 그 큐에서 jsi::Runtime을 직접 건드리면 Hermes GC와 경합해
-    // 힙이 손상되므로 설치 전체를 JS 런타임 스레드로 마샬링한다.
-    auto typeErasedCallInvoker =
-        std::static_pointer_cast<void>(jsCallInvoker);
-    RCTPromiseResolveBlock resolveBlock = [resolve copy];
-    RCTPromiseRejectBlock rejectBlock = [reject copy];
-    jsCallInvoker->invokeAsync(
-        [typeErasedCallInvoker = std::move(typeErasedCallInvoker),
-         resolveBlock,
-         rejectBlock](facebook::jsi::Runtime& runtime) {
-          @try {
-            try {
-              rustra::installRustraJSIWithInvoker(
-                  runtime, typeErasedCallInvoker);
-              RCTLogInfo(@"[RustraJSI] JSI bindings installed successfully");
-              resolveBlock(@(YES));
-            } catch (const std::exception& exception) {
-              NSString *message = [NSString stringWithUTF8String:exception.what()];
-              rejectBlock(@"ERR_INSTALL", message ?: @"Unknown C++ error", nil);
-            } catch (...) {
-              rejectBlock(@"ERR_INSTALL", @"Unknown C++ error", nil);
-            }
-          } @catch (NSException *exception) {
-            rejectBlock(@"ERR_INSTALL",
-                        exception.reason ?: @"Unknown Objective-C error",
-                        nil);
-          }
-        });
-  } @catch (NSException *exception) {
-    reject(@"ERR_INSTALL", exception.reason ?: @"Unknown error", nil);
+// TurboModuleManager가 런타임 생성 시(리로드마다) 호출한다 — bridgeless에서도
+// 동작한다. CallInvoker도 함께 주입되므로 이벤트 drain 마샬링에 쓴다.
+- (void)installJSIBindingsWithRuntime:(facebook::jsi::Runtime &)runtime
+                          callInvoker:(const std::shared_ptr<facebook::react::CallInvoker> &)callInvoker {
+  if (!callInvoker) {
+    RCTLogWarn(@"[RustraJSI] install skipped — CallInvoker is null");
+    return;
   }
+  auto typeErased = std::static_pointer_cast<void>(callInvoker);
+  try {
+    rustra::installRustraJSIWithInvoker(runtime, typeErased);
+    std::lock_guard<std::mutex> lock(_mutex);
+    _didInstall = true;
+    _installError = nil;
+    RCTLogInfo(@"[RustraJSI] JSI bindings installed successfully");
+  } catch (const std::exception &exception) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _didInstall = false;
+    _installError = [NSString stringWithUTF8String:exception.what()];
+    RCTLogError(@"[RustraJSI] install failed: %@", _installError);
+  } catch (...) {
+    std::lock_guard<std::mutex> lock(_mutex);
+    _didInstall = false;
+    _installError = @"Unknown C++ error";
+    RCTLogError(@"[RustraJSI] install failed: %@", _installError);
+  }
+}
+
+// JS 진입점 — JSI 바인딩이 이미 떠 있는지 보고한다. 실제 설치는
+// installJSIBindingsWithRuntime:가 담당하므로 이 메서드는 결과만 전달한다.
+RCT_REMAP_METHOD(install,
+                 installWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  if (_didInstall) {
+    resolve(@(YES));
+  } else {
+    reject(@"ERR_INSTALL",
+           _installError ?: @"installJSIBindingsWithRuntime: was not called",
+           nil);
+  }
+}
+
+// interop 모듈로 감싸 RCT_EXPORT_METHOD(install)가 그대로 동작하게 하고,
+// 매니저가 installJSIBindingsWithRuntime:을 호출하는 분기를 타게 한다.
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params {
+  return std::make_shared<facebook::react::ObjCInteropTurboModule>(params);
 }
 
 @end

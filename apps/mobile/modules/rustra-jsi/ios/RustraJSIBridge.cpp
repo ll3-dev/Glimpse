@@ -28,6 +28,15 @@ static Value createArrayBuffer(Runtime& rt, const uint8_t* data, size_t size) {
   return ab;
 }
 
+/// caller-buffer 2단계 경로 전용 — 필요 크기의 (미초기화) ArrayBuffer를
+/// 만들어 Rust가 직접 기록하게 한다. 복사 0회.
+static Value createArrayBufferUninitialized(Runtime& rt, size_t size) {
+  Function arrayBufferCtor =
+      rt.global().getPropertyAsFunction(rt, "ArrayBuffer");
+  return arrayBufferCtor.callAsConstructor(rt, static_cast<double>(size))
+      .getObject(rt);
+}
+
 static std::pair<const uint8_t*, size_t> extractBytes(
     Runtime& rt, const Value& value) {
   auto obj = value.asObject(rt);
@@ -186,9 +195,65 @@ size_t EventDispatcher::pendingCount() {
 // ── HostObject with cached functions ───────────────────────
 
 using InvokeFn = uint8_t* (*)(const uint8_t*, size_t, size_t*);
+using InvokeIntoFn = size_t (*)(const uint8_t*, size_t, uint8_t*, size_t,
+                                size_t*);
 using QueryFn = uint8_t* (*)(size_t*);
 
 RustraHostObject::RustraHostObject(Runtime& rt) {
+  // caller-buffer JSON 경로(rustra 0.4.0 계약): allocate-return
+  // (malloc→복사→memcpy 3중 복사) 대신 probe→JSI 버퍼→write 2단계로 응답을
+  // 한 번만 쓴다. 크기 프로브는 코어가 thread_local 캐시로 응답을 재제공하므로
+  // 비멘등 명령(예: initializeCore)도 정확히 1회 실행된다. 512B 스택 버퍼로
+  // 대부분의 응답이 FFI 2회(작은 응답) 안에 끝난다.
+  auto makeInvokeInto = [&](const char* name, InvokeIntoFn fn,
+                            InvokeFn fallback, const char* err) {
+    auto propNameId = PropNameID::forAscii(rt, name);
+    auto hostFn = Function::createFromHostFunction(
+        rt, propNameId, 1,
+        [fn, fallback, err](Runtime& rt, const Value&, const Value* args,
+                            size_t count) -> Value {
+          if (count < 1) {
+            throw JSError(rt, std::string("RustraJSI: requires 1 argument — ") +
+                              err);
+          }
+          auto [data, size] = extractBytes(rt, args[0]);
+          size_t outLen = 0;
+          // 1단계: 스택 버퍼로 바로 dispatch+write — 프로브 FFI 횡단 생략.
+          // write 단계가 필요 크기를 out_len에 쓰므로 재프로브가 없다.
+          constexpr size_t kStackCap = 512;
+          uint8_t stackBuf[kStackCap];
+          size_t n = fn(data, size, stackBuf, kStackCap, &outLen);
+          if (n != static_cast<size_t>(-1) && n > 0 && outLen <= kStackCap) {
+            return createArrayBuffer(rt, stackBuf, outLen);
+          }
+          // 2단계: 부족(SIZE_MAX). 코어가 out_len에 필요 크기를 쓰고 같은
+          // 응답을 캐시해 두므로, 정확한 크기의 JSI 버퍼에 재호출 1회로
+          // 끝난다 — 핸들러는 여전히 1회만 실행된다.
+          if (n == static_cast<size_t>(-1) && outLen > 0) {
+            auto returnValue = createArrayBufferUninitialized(rt, outLen);
+            ArrayBuffer buf = returnValue.asObject(rt).getArrayBuffer(rt);
+            if (buf.data(rt) != nullptr && buf.size(rt) >= outLen) {
+              size_t written =
+                  fn(data, size, buf.data(rt), buf.size(rt), &outLen);
+              if (written != static_cast<size_t>(-1) && written > 0) {
+                return returnValue;
+              }
+            }
+          }
+          // 폴백: allocate-return 경로(0.4.0에서도 유지됨). caller-buffer
+          // 계약이 예상과 다르게 응답하면 여기서 처리한다.
+          uint8_t* result = fallback(data, size, &outLen);
+          if (!result) {
+            throw JSError(rt, std::string("RustraJSI: ") + err);
+          }
+          auto returnValue = createArrayBuffer(rt, result, outLen);
+          rustra_ffi_free(result, outLen);
+          return returnValue;
+        });
+    cache_[name] = std::make_unique<CachedFunction>(
+        CachedFunction{std::move(propNameId), std::move(hostFn)});
+  };
+
   auto makeInvoke = [&](const char* name, InvokeFn fn, const char* err) {
     auto propNameId = PropNameID::forAscii(rt, name);
     auto hostFn = Function::createFromHostFunction(
@@ -234,8 +299,13 @@ RustraHostObject::RustraHostObject(Runtime& rt) {
   // ── Generic FFI paths (default=json on glimpse-bridge) ──
   // `invoke` matches createReactNativeEngine()'s JSON wire format:
   // request {command,args} → response {ok,result,error}.
-  makeInvoke("invoke", rustra_ffi_invoke, "Rust returned null");
-  makeInvoke("invokeJson", rustra_ffi_invoke_json, "Rust json returned null");
+  // JSON 경로는 rustra 0.4.0의 caller-buffer 변형을 fast path로 쓰고,
+  // allocate-return을 폴백으로 남긴다. glimpse_package()가 FfiFormat::Json
+  // 디폴트로 고정하므로 `invoke` ≡ `invokeJson` — 같은 `_into` 심볼을 쓴다.
+  makeInvokeInto("invoke", rustra_ffi_invoke_json_into, rustra_ffi_invoke,
+                 "Rust returned null");
+  makeInvokeInto("invokeJson", rustra_ffi_invoke_json_into,
+                 rustra_ffi_invoke_json, "Rust json returned null");
   makeInvoke("invokePostcardFFI", rustra_ffi_invoke_postcard,
              "Rust postcard FFI returned null");
 

@@ -11,6 +11,7 @@
 import { configureRustraEngine } from '@glimpse/bridge-generated';
 import { getRustraNative, installRustraJSI } from '../../../modules/rustra-jsi/src';
 import { createRustraJsonEngine } from './rustra-json-engine';
+import { logger } from '@/src/utils/logger';
 
 let bootstrapPromise: Promise<boolean> | null = null;
 
@@ -24,10 +25,13 @@ export function bootstrapRustraEngine(): Promise<boolean> {
       await installRustraJSI();
       configureRustraEngine(createRustraJsonEngine(getRustraNative()));
       return true;
-    } catch {
+    } catch (error) {
       // Expo Go / unbundled JS / broken native link — the caller falls back
-      // to the existing core client path. Logged by the caller so the reason
-      // surfaces in app logs rather than being swallowed here.
+      // to the existing core client path. Log the reason here (the caller's
+      // warning is generic) so diagnosis doesn't require a re-run.
+      logger.warn('RustraJSI bootstrap failed', {
+        reason: error instanceof Error ? error.message : String(error),
+      });
       bootstrapPromise = null;
       return false;
     }
