@@ -10,6 +10,7 @@ import {
 } from 'lucide-react-native';
 import type { KnowledgeItem, Recommendation, RecommendationStatus } from '@glimpse/shared';
 import { Card } from '@glimpse/ui/primitives';
+import { useSemanticColor } from '@glimpse/ui';
 import { cn } from '@/src/lib/utils';
 
 type RecommendationCardProps = {
@@ -75,6 +76,8 @@ export function RecommendationCard({
   onDismiss,
 }: RecommendationCardProps) {
   const isResponded = recommendation.status !== 'pending';
+  const appMuted = useSemanticColor('appMuted');
+  const tagRoseText = useSemanticColor('tagRoseText');
 
   const typeConfigA = getTypeConfig(itemA.type);
   const IconA = typeConfigA.Icon;
@@ -98,7 +101,7 @@ export function RecommendationCard({
         className="mb-2 flex-row items-center rounded-md p-2 -mx-2 bg-app-surface border border-transparent active:bg-app-bg active:border-app-border"
       >
         <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-app-border/40">
-          <IconA size={16} color="#787774" />
+          <IconA size={16} color={appMuted} />
         </View>
         <View className="flex-1">
           <Text className="text-[10px] font-semibold text-app-muted uppercase tracking-tight">
@@ -111,10 +114,10 @@ export function RecommendationCard({
       </Pressable>
 
       {/* Connector */}
-      <View className="flex-row items-center gap-2 py-1 pl-2">
-        <View className="h-px flex-1 bg-app-border" />
-        <Text className="text-[10px] font-semibold text-app-subtle uppercase">연결 추천</Text>
-        <View className="h-px flex-1 bg-app-border" />
+      <View className="flex-row items-center gap-2 py-0.5 px-1 my-1">
+        <View className="h-px flex-1 bg-app-border/80" />
+        <Text className="text-[10px] font-bold text-app-subtle tracking-wider uppercase">연결 추천</Text>
+        <View className="h-px flex-1 bg-app-border/80" />
       </View>
 
       {/* Item B */}
@@ -124,7 +127,7 @@ export function RecommendationCard({
         className="mb-3 flex-row items-center rounded-md p-2 -mx-2 bg-app-surface border border-transparent active:bg-app-bg active:border-app-border"
       >
         <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-app-border/40">
-          <IconB size={16} color="#787774" />
+          <IconB size={16} color={appMuted} />
         </View>
         <View className="flex-1">
           <Text className="text-[10px] font-semibold text-app-muted uppercase tracking-tight">
@@ -158,7 +161,7 @@ export function RecommendationCard({
             onPress={onIgnore}
             className="flex-1 flex-row items-center justify-center gap-1.5 rounded-md bg-tag-rose-bg border border-tag-rose-text/20 py-2.5 active:opacity-80"
           >
-            <X size={14} color="#cf222e" />
+            <X size={14} color={tagRoseText} />
             <Text className="text-xs font-semibold text-tag-rose-text">거절</Text>
           </Pressable>
 

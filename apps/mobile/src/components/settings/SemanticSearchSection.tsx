@@ -26,7 +26,6 @@ export function SemanticSearchSection() {
   const credentialsConfigured = useBYOKCredentialsConfigured();
   const appMuted = useSemanticColor('appMuted');
   const appAccent = useSemanticColor('appAccent');
-  const appText = useSemanticColor('appText');
   const tagRoseText = useSemanticColor('tagRoseText');
   const {
     modelInfo,
@@ -81,7 +80,7 @@ export function SemanticSearchSection() {
         <View className="border-app-border bg-app-card mt-3 rounded-xl border p-3">
           <View className="flex-row items-center justify-between">
             <View className="flex-1 pr-3">
-              <Text className="text-sm font-semibold" style={{ color: appText }}>
+              <Text className="text-app-text text-sm font-semibold">
                 기기 내 임베딩 모델
               </Text>
               <Text className="text-app-muted mt-0.5 text-xs">
@@ -93,7 +92,7 @@ export function SemanticSearchSection() {
             {downloading ? (
               <View className="flex-row items-center gap-2">
                 <ActivityIndicator size="small" color={appAccent} />
-                <Text className="text-xs" style={{ color: appMuted }}>
+                <Text className="text-app-muted text-xs">
                   {progressPercentage != null ? `${progressPercentage}%` : ''}
                 </Text>
               </View>
@@ -124,13 +123,13 @@ export function SemanticSearchSection() {
           {modelPath && (
             <View className="flex-row items-center gap-1 mt-2">
               <Check size={12} color={appAccent} />
-              <Text className="text-[11px]" style={{ color: appMuted }}>
+              <Text className="text-app-muted text-[11px]">
                 준비됨 — BYOK이 없으면 이 모델로 재정렬합니다
               </Text>
             </View>
           )}
           {downloadError && (
-            <Text className="mt-2 text-[11px]" style={{ color: tagRoseText }}>
+            <Text className="text-tag-rose-text mt-2 text-[11px]">
               {downloadError}
             </Text>
           )}
