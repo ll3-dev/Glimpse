@@ -6,6 +6,6 @@
 
 export { useKnowledgeItemsQuery } from './useKnowledgeItems';
 export { useDueItemsQuery } from './useDueItems';
-export { useRecommendationsQuery } from './useRecommendations';
+export { useRecommendationsQuery, useAllRecommendationsQuery } from './useRecommendations';
 export { useConversationsQuery } from './useChat';
 export { useMessagesQuery } from './useMessages';

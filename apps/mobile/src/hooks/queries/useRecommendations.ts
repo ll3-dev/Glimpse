@@ -5,11 +5,13 @@
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import type { Recommendation } from '@glimpse/shared';
 import {
   getPendingRecommendations,
   refreshRecommendations,
   type RecommendationWithItems,
 } from '@/src/features/recommendation';
+import { mobileCoreClient } from '@/src/features/core';
 import { queryKeys } from '@/src/lib/query-keys';
 
 /**
@@ -32,5 +34,18 @@ export function useRecommendationsQuery(): UseQueryResult<RecommendationWithItem
       return result.recommendations;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * All recommendation edges (any status) — read-only consumers like the
+ * library detail "연결된 노트" section. Edges are generated on desktop and
+ * arrive via sync, so a long staleTime is fine.
+ */
+export function useAllRecommendationsQuery(): UseQueryResult<Recommendation[], Error> {
+  return useQuery({
+    queryKey: queryKeys.recommendations.all,
+    queryFn: () => mobileCoreClient.listRecommendations(),
+    staleTime: 1000 * 60 * 5,
   });
 }

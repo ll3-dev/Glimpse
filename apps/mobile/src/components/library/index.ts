@@ -5,5 +5,6 @@ export * from './LibrarySearchInput';
 export * from './EditKnowledgeItemModal';
 export * from './KnowledgeItemDetailCard';
 export * from './LibraryDetailHeaderActions';
+export * from './ConnectedNotesSection';
 export * from './library-sort-options';
 export * from './LibraryActiveFilterBar';

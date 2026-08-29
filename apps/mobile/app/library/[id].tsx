@@ -14,6 +14,7 @@ import {
   useKnowledgeItemsQuery,
   useDeleteKnowledgeItemMutation,
   useCreateConversationMutation,
+  useAllRecommendationsQuery,
 } from '@/src/hooks';
 import { getDisplayLabels } from '@/src/features/labeling';
 import { ScreenHeader } from '@glimpse/ui/primitives';
@@ -22,6 +23,7 @@ import {
   EditKnowledgeItemModal,
   KnowledgeItemDetailCard,
   LibraryDetailHeaderActions,
+  ConnectedNotesSection,
 } from '@/src/components/library';
 import { toast } from '@/src/stores/toast.store';
 
@@ -42,6 +44,7 @@ export default function LibraryDetailScreen() {
   const appText = useSemanticColor('appText');
 
   const { data: items, isLoading } = useKnowledgeItemsQuery();
+  const { data: recommendations } = useAllRecommendationsQuery();
   const { mutate: deleteItem, isPending: isDeleting } = useDeleteKnowledgeItemMutation();
   const { mutate: createConversation, isPending: isCreatingChat } = useCreateConversationMutation();
 
@@ -157,6 +160,12 @@ export default function LibraryDetailScreen() {
           contentInset={{ bottom: insets.bottom }}
         >
           <KnowledgeItemDetailCard item={item} displayLabels={displayLabels} />
+
+          <ConnectedNotesSection
+            itemId={item.id}
+            edges={recommendations ?? []}
+            items={items ?? []}
+          />
 
           {/* AI Chat Action CTA */}
           <Pressable
