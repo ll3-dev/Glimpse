@@ -54,6 +54,7 @@ interface ChatViewProps {
 /**
  * RAG 비활성 시 주입하는 빈 지식 deps — 라이브러리가 비어 지식 검색·임베딩을
  * 건너뛰고 원본 히스토리로만 생성된다(참조도 빈 배열).
+ * embed는 도달하지 않음 — 타입 충족용.
  */
 const RAG_DISABLED_DEPS: ChatKnowledgeDeps = {
   loadLibrary: async () => [],

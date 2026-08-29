@@ -154,35 +154,3 @@ async function generateText(
   }
   return generateChatResponse(history);
 }
-
-/**
- * 기존 단일 진입점. 지식 주입은 아직 어떤 호출부도 기대하지 않으므로(작업 4에서
- * ChatView를 전환), 행동 변화 0을 위해 라우터로 직접 위임하는 현재 동작을
- * 그대로 유지한다 — 빈 deps를 주입한 knowledge 래퍼로 돌리는 대신.
- */
-export async function generateResponse(
-  messages: { role: string; content: string }[],
-  options?: { onToken?: (token: string) => void },
-): Promise<string> {
-  if (messages.length === 0) return '[No message received.]';
-
-  // If the caller wants streaming tokens, use the streaming path.
-  if (options?.onToken) {
-    let fullText = '';
-    return generateChatStreamResponse(messages, {
-      onToken: (token) => {
-        fullText += token;
-        options.onToken?.(token);
-      },
-      onDone: () => {
-        // Streaming complete; fullText already accumulated
-      },
-      onError: () => {
-        // Error already handled upstream; the caller gets the thrown error
-      },
-    }).then((text) => text || fullText);
-  }
-
-  // Non-streaming fallback
-  return generateChatResponse(messages);
-}
