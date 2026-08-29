@@ -55,13 +55,16 @@ export function AppSidebar() {
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-border bg-sidebar select-none">
       {/* Top Window Drag & Action Bar (Notion Style) */}
+      {/* `deep`: 하위 트리 전체가 드래그 존 — bare attr은 target이 자기 자신일
+          때만 동작해 자식 요소로 덮인 헤더에서는 빈 공간만 드래그됐다. 버튼 등
+          클릭 요소는 Tauri가 자동으로 제외하므로 액션도 그대로 동작한다. */}
       <div
-        data-tauri-drag-region
+        data-tauri-drag-region="deep"
         onMouseDown={triggerWindowDrag}
         className="flex h-11 w-full shrink-0 items-center justify-between border-b border-border/80 px-3 cursor-grab active:cursor-grabbing"
       >
         {/* Traffic Light Clearance Zone */}
-        <div className="h-full w-20 shrink-0" data-tauri-drag-region />
+        <div className="h-full w-20 shrink-0" data-tauri-drag-region="deep" />
 
         {/* Quick Top Actions */}
         <div className="flex items-center gap-1">

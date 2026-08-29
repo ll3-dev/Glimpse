@@ -30,14 +30,16 @@ export function MainPanel({ children }: MainPanelProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
       {/* Notion-style Top Window Header & Drag Region */}
+      {/* `deep`: 하위 트리 전체가 드래그 존 — 자식으로 덮인 헤더에서도 여백
+          없이 끌 수 있다. 버튼·링크는 Tauri가 자동 제외한다. */}
       <header
-        data-tauri-drag-region
+        data-tauri-drag-region="deep"
         onMouseDown={triggerWindowDrag}
         className="flex h-11 w-full shrink-0 items-center justify-between border-b border-border/80 bg-background/95 px-4 select-none backdrop-blur-xs cursor-grab active:cursor-grabbing"
       >
         {/* Left: Navigation History & Breadcrumbs */}
-        <div className="flex items-center gap-2" data-tauri-drag-region>
-          <div className="flex items-center gap-0.5" data-tauri-drag-region>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => window.history.back()}
@@ -58,23 +60,23 @@ export function MainPanel({ children }: MainPanelProps) {
             </button>
           </div>
 
-          <div className="h-3.5 w-px bg-border/70" data-tauri-drag-region />
+          <div className="h-3.5 w-px bg-border/70" />
 
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-tauri-drag-region>
-            <span className="font-medium text-muted-foreground/80" data-tauri-drag-region>Glimpse</span>
-            <ChevronRight className="h-3 w-3 text-muted-foreground/50" data-tauri-drag-region />
-            <span className="font-semibold text-foreground" data-tauri-drag-region>{currentLabel}</span>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="font-medium text-muted-foreground/80">Glimpse</span>
+            <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
+            <span className="font-semibold text-foreground">{currentLabel}</span>
           </div>
         </div>
 
         {/* Center: Visible Draggable Grip Capsule */}
         <div
-          data-tauri-drag-region
+         
           className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-0.8 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground cursor-grab active:cursor-grabbing shadow-2xs"
           title="클릭하고 드래그하여 창을 이동할 수 있습니다"
         >
-          <GripHorizontal className="h-3.5 w-3.5 opacity-60" data-tauri-drag-region />
-          <span className="select-none text-[11px]" data-tauri-drag-region>창 이동</span>
+          <GripHorizontal className="h-3.5 w-3.5 opacity-60" />
+          <span className="select-none text-[11px]">창 이동</span>
         </div>
 
         {/* Right: Quick Window Action Pills */}
