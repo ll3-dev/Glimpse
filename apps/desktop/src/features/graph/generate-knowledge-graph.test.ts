@@ -151,7 +151,7 @@ describe('증분 사이클', () => {
 
     const result = await generateKnowledgeGraph(coreClient, items);
 
-    expect(result).toEqual({ createdCount: 0, source: 'unchanged' });
+    expect(result).toEqual({ createdCount: 0, source: 'unchanged', remainingBacklog: 0 });
     expect(saved).toHaveLength(0);
   });
 });

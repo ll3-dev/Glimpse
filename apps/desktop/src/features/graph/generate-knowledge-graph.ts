@@ -10,6 +10,8 @@ import { selectGraphSourceWindow } from './graph-source-window';
 export interface GraphGenerationResult {
   createdCount: number;
   source: 'desktop-ai' | 'tag-overlap' | 'unchanged';
+  /** 배치 상한으로 이번 사이클을 못 건너뛴 남은 백로그 크기 */
+  remainingBacklog: number;
 }
 
 /**
@@ -26,8 +28,10 @@ export async function generateKnowledgeGraph(
   allItems: KnowledgeItem[],
 ): Promise<GraphGenerationResult> {
   const existing = await coreClient.listRecommendations();
-  const { toAnalyze, analyzedPool } = planIncrementalCycle(allItems, existing);
-  if (toAnalyze.length === 0) return { createdCount: 0, source: 'unchanged' };
+  const { toAnalyze, analyzedPool, backlogTotal } = planIncrementalCycle(allItems, existing);
+  if (toAnalyze.length === 0) {
+    return { createdCount: 0, source: 'unchanged', remainingBacklog: 0 };
+  }
 
   // Cold start seeding: with no edges nothing is analyzed yet, so the
   // target↔candidate pairing would face an empty pool. Run the legacy
@@ -53,9 +57,13 @@ export async function generateKnowledgeGraph(
   }
 
   const additions = mergeProposedEdges(proposed, existing, allItems);
-  if (additions.length === 0) return { createdCount: 0, source: 'unchanged' };
+  // 이번 배치에 못 들어간 항목 수 — 저장된 엣지 수가 아니라 처리 용량 기준
+  const remainingBacklog = Math.max(0, backlogTotal - toAnalyze.length);
+  if (additions.length === 0) {
+    return { createdCount: 0, source: 'unchanged', remainingBacklog };
+  }
   await coreClient.saveRecommendations(additions);
-  return { createdCount: additions.length, source };
+  return { createdCount: additions.length, source, remainingBacklog };
 }
 
 /**
