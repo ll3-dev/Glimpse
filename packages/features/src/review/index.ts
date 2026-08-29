@@ -15,3 +15,11 @@ export {
   type NextReviewDecision,
   type ReviewFeedbackType,
 } from './adjustIntervalFromFeedback';
+
+export {
+  sortDueItemsByEdgePriority,
+  countEdges,
+  EDGE_PRIORITY_WEIGHT,
+  EDGE_PRIORITY_CAP,
+  type EdgePriorityOptions,
+} from './edgePriority';
