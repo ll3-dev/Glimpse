@@ -122,6 +122,40 @@ export function createLocalLLMProvider(
  * object (Tauri emit_str splices raw JSON into JS source) with the same
  * camelCase shape as before — no JSON.parse, no handler changes.
  */
+
+// Qwen3 등 reasoning 모델의 사고 블록 — 스트리밍 표시와 최종 텍스트 양쪽에서
+// 제거한다(Rust engine의 strip_think_block과 같은 규칙). 스트리밍 UI는
+// append-only라 이미 보낸 텍스트를 회수할 수 없으므로, `<think>`가 올 수
+// 있는 동안은 홀딩했다가 `</think>` 도착 후 정답만 흘려보낸다.
+const THINK_OPEN = '<think>';
+const THINK_CLOSE = '</think>';
+
+function stripThinkBlock(text: string): string {
+  const closeIdx = text.indexOf(THINK_CLOSE);
+  if (closeIdx !== -1) {
+    return text.slice(closeIdx + THINK_CLOSE.length).trim();
+  }
+  const openIdx = text.indexOf(THINK_OPEN);
+  if (openIdx !== -1) {
+    return text.slice(0, openIdx).trim();
+  }
+  return text;
+}
+
+/** think 규칙을 적용한 뒤 UI로 흘려보낼 수 있는 부분. */
+function streamDisplayText(fullText: string): string {
+  const closeIdx = fullText.indexOf(THINK_CLOSE);
+  if (closeIdx !== -1) {
+    return fullText.slice(closeIdx + THINK_CLOSE.length).replace(/^\s+/, '');
+  }
+  // `<think>` 전체가 도착했거나 부분 태그일 가능성이 남아 있으면 홀딩.
+  // 그 외(일반 답변)는 그대로 표시.
+  if (fullText.includes(THINK_OPEN) || THINK_OPEN.startsWith(fullText)) {
+    return '';
+  }
+  return fullText;
+}
+
 export async function completeLocalLLMStream(
   messages: { role: string; content: string }[],
   callbacks: StreamingCallbacks,
@@ -155,6 +189,7 @@ export async function completeLocalLLMStream(
   };
 
   let fullText = '';
+  let visibleText = '';
   let unlisten: (() => void) | null = null;
 
   try {
@@ -165,9 +200,14 @@ export async function completeLocalLLMStream(
       listen,
       'llm:stream-token',
       (payload) => {
-        if (payload.requestId === requestId) {
-          fullText += payload.token;
-          callbacks.onToken(payload.token);
+        if (payload.requestId !== requestId) {
+          return;
+        }
+        fullText += payload.token;
+        const display = streamDisplayText(fullText);
+        if (display.startsWith(visibleText) && display.length > visibleText.length) {
+          callbacks.onToken(display.slice(visibleText.length));
+          visibleText = display;
         }
       },
     );
@@ -177,7 +217,7 @@ export async function completeLocalLLMStream(
       requestId,
     });
 
-    const text = fullText.replace(/^Assistant:\s*/i, '').trim();
+    const text = stripThinkBlock(fullText).replace(/^Assistant:\s*/i, '').trim();
     callbacks.onDone(text);
     return text || null;
   } catch (err) {

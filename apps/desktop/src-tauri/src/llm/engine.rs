@@ -22,6 +22,22 @@ mod imp {
         LlamaSampler::chain_simple(vec![LlamaSampler::temp(t), LlamaSampler::dist(42)])
     }
 
+    /// Qwen3 등 reasoning 모델이 출력하는 `<think>...</think>` 사고 블록을
+    /// 완성 텍스트에서 제거한다. 스트리밍 중엔 그대로 흘려보내되 최종 저장
+    /// 텍스트는 정제한다. 닫는 태그가 없으면(생성 한도로 잘림) 사고 중
+    /// 텍스트 전체가 답 대신일 수 없으므로 마지막 `</think>` 이후만 남긴다.
+    fn strip_think_block(text: &str) -> String {
+        if let Some(end) = text.find("</think>") {
+            let after = text[end + "</think>".len()..].trim();
+            return after.to_string();
+        }
+        if let Some(start) = text.find("<think>") {
+            // 닫힘 없이 잘림(생성 한도 도달) — 사고 블록부터 끝까지 제거.
+            return text[..start].trim().to_string();
+        }
+        text.to_string()
+    }
+
     pub struct LlmEngine {
         backend: LlamaBackend,
         model: Option<LlamaModel>,
@@ -54,6 +70,18 @@ mod imp {
             Ok(())
         }
 
+        /// 요청(프롬프트 + 최대 생성 토큰)이 실제로 들어갈 수 있는 최소
+        /// 컨텍스트를 계산해 카탈로그 context_length 를 상한클램프한다.
+        /// 모델카드 최대치(예: 262k)를 그대로 n_ctx 로 쓰면 KV 캐시가
+        /// 수십 GB로 뛰어 컨텍스트 생성이 실패한다 — 런타임은 채팅에
+        /// 필요한 만큼만 할당한다.
+        fn effective_context_length(&self, _max_tokens: u32) -> u32 {
+            // 8k 컨텍스트면 채팅 히스토리 10턴 + 생성 512토큰이 모두
+            // 들어간다. 모델카드 상한이 그보다 작으면 그것을 존중한다.
+            const RUNTIME_CONTEXT_CAP: u32 = 8_192;
+            self.context_length.min(RUNTIME_CONTEXT_CAP).max(512)
+        }
+
         pub fn unload_model(&mut self) {
             self.model = None;
             self.model_path = None;
@@ -72,6 +100,12 @@ mod imp {
             LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(self.context_length))
         }
 
+        /// 요청 max_tokens 를 반영한 런타임 컨텍스트 파라미터.
+        fn context_params_with(&self, _max_tokens: u32) -> LlamaContextParams {
+            LlamaContextParams::default()
+                .with_n_ctx(std::num::NonZeroU32::new(self.effective_context_length(_max_tokens)))
+        }
+
         pub fn completion(
             &self,
             prompt: &str,
@@ -81,7 +115,7 @@ mod imp {
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
             // Create a context for this completion request
-            let ctx_params = self.context_params();
+            let ctx_params = self.context_params_with(max_tokens);
             let mut ctx = model
                 .new_context(&self.backend, ctx_params)
                 .map_err(|e| format!("Failed to create context: {}", e))?;
@@ -152,7 +186,7 @@ mod imp {
             let text =
                 String::from_utf8(builder).map_err(|e| format!("Token-to-string failed: {}", e))?;
 
-            Ok(text)
+            Ok(strip_think_block(&text))
         }
 
         pub fn completion_stream<F>(
@@ -168,7 +202,7 @@ mod imp {
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
             // Create a context for this completion request
-            let ctx_params = self.context_params();
+            let ctx_params = self.context_params_with(max_tokens);
             let mut ctx = model
                 .new_context(&self.backend, ctx_params)
                 .map_err(|e| format!("Failed to create context: {}", e))?;
@@ -242,7 +276,7 @@ mod imp {
             let text =
                 String::from_utf8(builder).map_err(|e| format!("Token-to-string failed: {}", e))?;
 
-            Ok(text)
+            Ok(strip_think_block(&text))
         }
 
         pub fn embedding(&self, text: &str) -> Result<Vec<f32>, String> {
