@@ -110,6 +110,10 @@ const MODEL = {
   repo: 'test/repo',
   filename: 'model.gguf',
   family: 'qwen-chatml' as const,
+  sizeBytes: 5000,
+  quantization: 'Q4_K_M',
+  contextLength: 4096,
+  mobileProfile: { rank: 1, tier: 'compact' as const, strengths: [], minRamGb: 3 },
 };
 
 const FINAL_PATH = '/mock/documents/models/model.gguf';

@@ -69,7 +69,7 @@ describe("RECOMMENDED_MODELS on mobile", () => {
     expect(
       RECOMMENDED_MODELS.filter((model) => model.mobileProfile.recommended),
     ).toHaveLength(1);
-    expect(RECOMMENDED_MODELS.every((model) => model.sizeBytes > 0)).toBe(true);
+    expect(RECOMMENDED_MODELS.every((model) => (model.sizeBytes ?? 0) > 0)).toBe(true);
     expect(RECOMMENDED_MODELS.every((model) => model.license)).toBe(true);
     expect(RECOMMENDED_MODELS.every((model) => model.releasedAt)).toBe(true);
     expect(RECOMMENDED_MODELS.every((model) => model.ggufSource)).toBe(true);

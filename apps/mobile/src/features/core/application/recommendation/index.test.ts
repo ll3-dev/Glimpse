@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-import type { FeedbackEvent, KnowledgeItem, Recommendation } from '@glimpse/shared';
+import type {
+  CalculateTagOverlapInput,
+  FeedbackEvent,
+  KnowledgeItem,
+  Recommendation,
+} from '@glimpse/shared';
 import {
   calculateTagOverlap,
   createGenerateRecommendations,
@@ -44,7 +49,9 @@ describe('recommendation application layer', () => {
   });
 
   test('calculateTagOverlap delegates transformed tag input to core', async () => {
-    const calculateTagOverlapCore = mock(() => 2);
+    const calculateTagOverlapCore = mock<(input: CalculateTagOverlapInput) => Promise<number>>(
+      async () => 2
+    );
     const left = createItem('left', ['a']);
     const right = createItem('right', ['a', 'b']);
 

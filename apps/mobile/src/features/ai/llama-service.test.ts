@@ -463,7 +463,7 @@ describe('createLlamaService', () => {
       streamEventHub.clear();
 
       const receivedTokens: { requestId: string; token: string }[] = [];
-      const receivedDones: { requestId: string; fullText: string }[] = [];
+      const receivedDones: { requestId: string; fullText: string; stopReason: string }[] = [];
 
       const unToken = subscribeStreamToken((payload) => {
         receivedTokens.push(payload);

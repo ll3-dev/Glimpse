@@ -1,3 +1,4 @@
+import { describe, test, expect } from "bun:test";
 import type { ModelInfo } from "./model-list";
 import {
   getModelCompatibility,
@@ -16,6 +17,7 @@ function makeModel(sizeBytes: number, minRamGb?: number): ModelInfo {
     family: "embedded-chat",
     sizeBytes,
     quantization: "Q4_K_M",
+    contextLength: 4096,
     mobileProfile: {
       rank: 1,
       tier: "compact",

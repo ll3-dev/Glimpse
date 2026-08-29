@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { KnowledgeItem } from '@glimpse/shared';
+import type { AIFeature, AITarget } from '@/src/features/ai/targets/types';
+import type { Result } from '@/src/lib/effect-result';
+import type { LabelingResult } from './types';
 import { createRunForegroundLabeling } from './runForegroundLabeling';
 
 function createItem(overrides?: Partial<KnowledgeItem>): KnowledgeItem {
@@ -17,8 +20,6 @@ function createItem(overrides?: Partial<KnowledgeItem>): KnowledgeItem {
     difficulty: null,
     lastReviewedAt: null,
     nextReviewAt: null,
-    reviewCount: 0,
-    embedding: null,
     labelStatus: 'pending',
     labelRequestedAt: 10,
     ...overrides,
@@ -31,8 +32,13 @@ describe('createRunForegroundLabeling', () => {
     updateKnowledgeItem: mock<(id: string, patch: any) => Promise<KnowledgeItem>>(),
   };
 
-  const resolveEffectiveTarget = mock(() => ({ id: 'test-target' }));
-  const executeLabelingTarget = mock(async () => ({
+  const resolveEffectiveTarget = mock<(feature: AIFeature) => AITarget>(() => ({
+    kind: 'stub',
+    id: 'test-target',
+  }));
+  const executeLabelingTarget = mock<
+    (target: AITarget, item: KnowledgeItem) => Promise<Result<LabelingResult>>
+  >(async () => ({
     success: true,
     data: {
       labels: ['todo', 'project'],

@@ -40,14 +40,30 @@ mock.module('@/src/features/ai/model-manager', () => ({
 
 const { downloadLocalModel, cancelLocalModelDownload } = await import('./local-llm.download');
 
+// LocalModel.size는 byte 수(number), ModelInfo.size는 표시용 string이므로
+// 스토어용/다운로더용 픽스처를 분리한다.
 const TEST_MODEL = {
   id: 'm1',
   name: 'Test Model',
   filename: 'model.gguf',
   repo: 'test/repo',
-  family: 'qwen-chatml',
+  family: 'qwen-chatml' as const,
+  size: 5000,
+  downloaded: false,
   isReady: false,
-} as const;
+};
+
+const DOWNLOAD_MODEL = {
+  id: 'm1',
+  name: 'Test Model',
+  filename: 'model.gguf',
+  repo: 'test/repo',
+  family: 'qwen-chatml' as const,
+  sizeBytes: 5000,
+  quantization: 'Q4_K_M',
+  contextLength: 4096,
+  mobileProfile: { rank: 1, tier: 'compact' as const, strengths: [] },
+};
 
 describe('download/cancel downloader 인스턴스 일치', () => {
   beforeEach(() => {
@@ -58,7 +74,7 @@ describe('download/cancel downloader 인스턴스 일치', () => {
   });
 
   test('진행 중 취소하면 싱글턴의 cancelDownload가 호출된다', async () => {
-    const downloadPromise = downloadLocalModel({ ...TEST_MODEL });
+    const downloadPromise = downloadLocalModel({ ...DOWNLOAD_MODEL });
     // startLocalLLMDownload이 스토어를 downloading으로 만든 뒤 취소
     expect(getLocalLLMStoreConfig().downloadingModelId).toBe(TEST_MODEL.id);
 
@@ -71,7 +87,7 @@ describe('download/cancel downloader 인스턴스 일치', () => {
   });
 
   test('다운로드 성공 시 스토어가 completed로 수렴한다', async () => {
-    const result = await downloadLocalModel({ ...TEST_MODEL });
+    const result = await downloadLocalModel({ ...DOWNLOAD_MODEL });
 
     expect(result.success).toBe(true);
     const config = getLocalLLMStoreConfig();
@@ -83,7 +99,7 @@ describe('download/cancel downloader 인스턴스 일치', () => {
     const { startLocalLLMDownload } = await import('@/src/stores/settings/local-llm.store');
     startLocalLLMDownload('other-model');
 
-    const result = await downloadLocalModel({ ...TEST_MODEL });
+    const result = await downloadLocalModel({ ...DOWNLOAD_MODEL });
     expect(result.success).toBe(false);
   });
 });

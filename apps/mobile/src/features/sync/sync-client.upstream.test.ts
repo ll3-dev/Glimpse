@@ -19,19 +19,32 @@ mock.module('expo-device', () => ({
 }));
 
 type MinimalEventEmitter = {
+  addListener: () => { remove: () => void };
+  removeListener: () => void;
   emit: (event: string, ...args: unknown[]) => void;
   removeAllListeners: (event?: string) => void;
+  listenerCount: () => number;
 };
 const globalWithExpo = globalThis as typeof globalThis & {
   expo?: { EventEmitter: unknown };
 };
 if (!globalWithExpo.expo) {
   class TestEventEmitter implements MinimalEventEmitter {
+    addListener(): { remove: () => void } {
+      return { remove: () => {} };
+    }
+
+    removeListener(): void {}
+
     emit(): void {}
 
     removeAllListeners(): void {}
+
+    listenerCount(): number {
+      return 0;
+    }
   }
-  globalWithExpo.expo = { EventEmitter: TestEventEmitter };
+  globalWithExpo.expo = { EventEmitter: TestEventEmitter } as typeof globalWithExpo.expo;
 }
 
 const calls = {

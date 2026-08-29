@@ -59,7 +59,7 @@ describe('embedBatchWithBYOK', () => {
           { embedding: [2, 2], index: 1 },
         ],
       });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     const vectors = await embedBatchWithBYOK(
       config,
@@ -88,30 +88,30 @@ describe('embedBatchWithBYOK', () => {
     const fetchImpl = (async () => {
       called = true;
       throw new Error('should not be called');
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     expect(await embedBatchWithBYOK(config, [], fetchImpl)).toEqual([]);
     expect(called).toBe(false);
   });
 
   test('HTTP 오류는 reject된다', async () => {
-    const fetchImpl = (async () => jsonResponse({ error: {} }, 401)) as typeof fetch;
+    const fetchImpl = (async () => jsonResponse({ error: {} }, 401)) as unknown as typeof fetch;
     await expect(embedBatchWithBYOK(config, [{ input: 'a' }], fetchImpl)).rejects.toThrow(
       'HTTP 401',
     );
   });
 
   test('data 누락·개수 불일치·중복 index는 계약 위반으로 reject', async () => {
-    const missingData = (async () => jsonResponse({})) as typeof fetch;
+    const missingData = (async () => jsonResponse({})) as unknown as typeof fetch;
     await expect(embedBatchWithBYOK(config, [{ input: 'a' }], missingData)).rejects.toThrow();
 
     const wrongCount = (async () =>
-      jsonResponse({ data: [{ embedding: [1], index: 0 }] })) as typeof fetch;
+      jsonResponse({ data: [{ embedding: [1], index: 0 }] })) as unknown as typeof fetch;
     await expect(
       embedBatchWithBYOK(config, [{ input: 'a' }, { input: 'b' }], wrongCount),
     ).rejects.toThrow();
 
     const duplicateIndex = (async () =>
-      jsonResponse({ data: [{ embedding: [1], index: 0 }, { embedding: [2], index: 0 }] })) as typeof fetch;
+      jsonResponse({ data: [{ embedding: [1], index: 0 }, { embedding: [2], index: 0 }] })) as unknown as typeof fetch;
     await expect(
       embedBatchWithBYOK(config, [{ input: 'a' }, { input: 'b' }], duplicateIndex),
     ).rejects.toThrow();
@@ -122,7 +122,7 @@ describe('embedBatchWithBYOK', () => {
     const fetchImpl = (async () => {
       called = true;
       return jsonResponse({});
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
     await expect(
       embedBatchWithBYOK(
         { ...config, provider: 'anthropic' },

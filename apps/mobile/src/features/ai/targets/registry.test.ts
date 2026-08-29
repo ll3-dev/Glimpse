@@ -43,8 +43,8 @@ describe('ai target registry', () => {
   });
 
   test('lists only ready local models as selectable targets', () => {
-    addLocalLLMModel({ id: 'ready-model', name: 'Ready', isReady: true });
-    addLocalLLMModel({ id: 'not-ready-model', name: 'Not Ready', isReady: false });
+    addLocalLLMModel({ id: 'ready-model', name: 'Ready', family: 'qwen', size: 1_000_000_000, downloaded: true, isReady: true });
+    addLocalLLMModel({ id: 'not-ready-model', name: 'Not Ready', family: 'qwen', size: 1_000_000_000, downloaded: false, isReady: false });
 
     const metadataTargets = listSelectableTargets('metadata');
 

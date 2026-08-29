@@ -2,7 +2,7 @@ import { describe, expect, test, mock, beforeEach } from 'bun:test';
 import { Effect, Exit } from 'effect';
 import { createLocalLLMProvider } from './local-llm-provider';
 import type { LlamaService, GenerateResult } from '../llama-service';
-import type { LocalModel } from '@/src/stores/settings/local-llm.store';
+import type { LocalModel } from '@/src/features/core/application/state';
 import { isAIProviderError } from '../metadata/types';
 import {
   clearLocalLLMSettings,
@@ -46,8 +46,10 @@ function createMockModel(overrides: Partial<LocalModel> = {}): LocalModel {
   return {
     id: 'test-model',
     name: 'Test Model',
-    path: 'file:///path/to/model.gguf',
+    family: 'qwen',
     size: 1000000,
+    downloaded: true,
+    path: 'file:///path/to/model.gguf',
     isReady: true,
     ...overrides,
   };
@@ -202,7 +204,7 @@ describe('local-llm-provider store integration', () => {
 
   describe('isAvailable with store', () => {
     test('returns false when enabled=false', async () => {
-      addLocalLLMModel({ id: 'test', name: 'Test', isReady: true });
+      addLocalLLMModel({ id: 'test', name: 'Test', family: 'qwen', size: 1000000, downloaded: true, isReady: true });
       selectLocalLLMModel('test');
       // enabled is false by default
 
@@ -213,7 +215,7 @@ describe('local-llm-provider store integration', () => {
     });
 
     test('returns false when no model is selected', async () => {
-      addLocalLLMModel({ id: 'test', name: 'Test', isReady: true });
+      addLocalLLMModel({ id: 'test', name: 'Test', family: 'qwen', size: 1000000, downloaded: true, isReady: true });
       setStoreEnabled(true);
       // No model selected
 
@@ -224,7 +226,7 @@ describe('local-llm-provider store integration', () => {
     });
 
     test('returns false when selected model is not ready', async () => {
-      addLocalLLMModel({ id: 'test', name: 'Test', isReady: false });
+      addLocalLLMModel({ id: 'test', name: 'Test', family: 'qwen', size: 1000000, downloaded: false, isReady: false });
       selectLocalLLMModel('test');
       setStoreEnabled(true);
 
@@ -235,7 +237,7 @@ describe('local-llm-provider store integration', () => {
     });
 
     test('returns true when enabled + model selected + model ready', async () => {
-      addLocalLLMModel({ id: 'test', name: 'Test', isReady: true });
+      addLocalLLMModel({ id: 'test', name: 'Test', family: 'qwen', size: 1000000, downloaded: true, isReady: true });
       selectLocalLLMModel('test');
       setStoreEnabled(true);
 

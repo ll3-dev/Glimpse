@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { LlamaService } from '../llama-service';
-import type { LocalModel } from '@/src/stores/settings/local-llm.store';
+import type { LocalModel } from '@/src/features/core/application/state';
 import { resolveLocalLLMPreset } from './presets';
 import { createLocalLLMRuntime } from './runtime';
 
@@ -28,6 +28,8 @@ function createModel(overrides: Partial<LocalModel> = {}): LocalModel {
     id: 'qwen3.5-4b-q4',
     name: 'Qwen',
     family: 'embedded-chat',
+    size: 1_000_000_000,
+    downloaded: true,
     path: 'file:///tmp/model.gguf',
     isReady: true,
     ...overrides,

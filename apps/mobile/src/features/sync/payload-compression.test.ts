@@ -38,19 +38,20 @@ describe('maybeCompressRequestBody', () => {
 
 describe('parseResponseBody', () => {
   const payload = { protocolVersion: 1, snapshot: null, fingerprint: 'ab' };
+  type Payload = typeof payload;
 
   test('parses a plain (uncompressed) response', () => {
     const raw = Buffer.from(JSON.stringify(payload), 'utf8');
-    expect(parseResponseBody(raw, null)).toEqual(payload);
+    expect(parseResponseBody<Payload>(raw, null)).toEqual(payload);
   });
 
   test('decodes a gzipped response via content-encoding', () => {
     const gzipped = gzip(Buffer.from(JSON.stringify(payload), 'utf8'));
-    expect(parseResponseBody(gzipped, 'gzip')).toEqual(payload);
+    expect(parseResponseBody<Payload>(new Uint8Array(gzipped), 'gzip')).toEqual(payload);
   });
 
   test('header casing does not matter to the caller-decoded value', () => {
     const gzipped = gzip(Buffer.from(JSON.stringify(payload), 'utf8'));
-    expect(parseResponseBody(gzipped, 'GZIP')).toEqual(payload);
+    expect(parseResponseBody<Payload>(new Uint8Array(gzipped), 'GZIP')).toEqual(payload);
   });
 });

@@ -27,10 +27,11 @@ describe('loadKnowledgeItemOrFail', () => {
       createdAt: 1000,
       updatedAt: 1000,
       tags: null,
+      url: null,
       lastReviewedAt: null,
       nextReviewAt: null,
-      reviewCount: 0,
-      embedding: null,
+      stability: null,
+      difficulty: null,
       summary: null,
     };
 

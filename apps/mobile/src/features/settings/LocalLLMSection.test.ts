@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { canToggleLocalLLM, getLocalLLMToggleDisabledReason } from './localLLMToggle';
-import type { LocalModel } from '@/src/stores/settings/local-llm.store';
+import type { LocalModel } from '@/src/features/core/application/state';
 
 const readyModel: LocalModel = {
   id: 'ready-model',
   name: 'Ready Model',
+  family: 'qwen',
+  size: 1_000_000_000,
+  downloaded: true,
   isReady: true,
 };
 

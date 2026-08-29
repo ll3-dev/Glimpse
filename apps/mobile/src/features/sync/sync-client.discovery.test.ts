@@ -38,11 +38,21 @@ const globalWithExpo = globalThis as typeof globalThis & {
 if (!globalWithExpo.expo) {
   globalWithExpo.expo = {
     EventEmitter: class {
+      addListener(): { remove(): void } {
+        return { remove(): void {} };
+      }
+
+      removeListener(): void {}
+
       emit(): void {}
 
       removeAllListeners(): void {}
+
+      listenerCount(): number {
+        return 0;
+      }
     },
-  };
+  } as typeof globalWithExpo.expo;
 }
 
 // Mock the core client before importing sync-client (module side effects).

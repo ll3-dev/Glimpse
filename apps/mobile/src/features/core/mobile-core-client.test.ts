@@ -11,7 +11,7 @@ const bridge = {
     lastReviewedAt: null,
   })),
   saveKnowledgeItem: mock((_item: unknown) => ({})),
-  listKnowledgeItems: mock(() => []),
+  listKnowledgeItems: mock((): unknown[] => []),
   getKnowledgeItemById: mock((_itemId: string) => null),
   updateKnowledgeItem: mock((_itemId: string, _patch: unknown) => ({})),
   createConversation: mock((_conversation: unknown) => ({})),
@@ -221,11 +221,11 @@ describe('mobileCoreClient typed bridge contract', () => {
     // The upstream delta path and useAutoSync's change detection hang on
     // these two optional methods being delegated — a missing forwarder here
     // silently disables them in the real app while mocks keep tests green.
-    bridge.exportDelta.mockReturnValueOnce(Promise.resolve('{"delta":true}'));
-    bridge.syncDataRevision.mockReturnValueOnce(Promise.resolve(41));
+    bridge.exportDelta.mockReturnValueOnce('{"delta":true}');
+    bridge.syncDataRevision.mockReturnValueOnce(41);
 
-    await expect(mobileCoreClient.exportDelta?.(123)).resolves.toBe('{"delta":true}');
-    await expect(mobileCoreClient.syncDataRevision?.()).resolves.toBe(41);
+    await expect(Promise.resolve(mobileCoreClient.exportDelta?.(123))).resolves.toBe('{"delta":true}');
+    await expect(Promise.resolve(mobileCoreClient.syncDataRevision?.())).resolves.toBe(41);
     expect(bridge.exportDelta).toHaveBeenCalledWith(123);
   });
 

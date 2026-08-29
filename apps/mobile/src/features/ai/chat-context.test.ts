@@ -14,13 +14,14 @@ function item(id: string, title: string, body: string, tags: string[] = []): Kno
     title,
     body,
     tags,
+    url: null,
     summary: null,
     createdAt: 1,
     updatedAt: 1,
     lastReviewedAt: null,
     nextReviewAt: null,
-    reviewCount: 0,
-    embedding: null,
+    stability: null,
+    difficulty: null,
   };
 }
 

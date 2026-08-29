@@ -25,7 +25,7 @@ describe('adaptive poll interval', () => {
   test('idle polls double up to the ceiling', () => {
     expect(nextPollIntervalMs(60_000, false)).toBe(120_000);
     expect(nextPollIntervalMs(120_000, false)).toBe(240_000);
-    expect(nextPollIntervalMs(240_000, false)).toBe(300_000, 'doubles past the ceiling clamp to it');
+    expect(nextPollIntervalMs(240_000, false)).toBe(300_000); // doubles past the ceiling clamp to it
   });
 
   test('the ceiling is never exceeded', () => {
@@ -34,7 +34,7 @@ describe('adaptive poll interval', () => {
       interval = nextPollIntervalMs(interval, false);
       expect(interval).toBeLessThanOrEqual(MAX_POLL_MS);
     }
-    expect(interval).toBe(MAX_POLL_MS, 'idle saturation lands on the ceiling');
+    expect(interval).toBe(MAX_POLL_MS); // idle saturation lands on the ceiling
   });
 });
 

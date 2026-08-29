@@ -74,7 +74,7 @@ describe('appleIntelligenceToggle', () => {
       bridge: createBridge({
         isAvailable: mock(async () => ({
           available: false,
-          reason: 'unsupported_device',
+          reason: 'unsupported_device' as const,
         })),
       }),
     });
@@ -101,7 +101,7 @@ describe('appleIntelligenceToggle', () => {
       bridge: createBridge({
         isAvailable: mock(async () => ({
           available: false,
-          reason: 'not_configured',
+          reason: 'not_configured' as const,
         })),
       }),
     });

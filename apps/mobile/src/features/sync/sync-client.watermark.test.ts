@@ -23,19 +23,32 @@ mock.module('expo-device', () => ({
 // runtime at import time (via sync-discovery's import chain). Stub it
 // before anything imports those modules.
 type MinimalEventEmitter = {
+  addListener: () => { remove: () => void };
+  removeListener: () => void;
   emit: (event: string, ...args: unknown[]) => void;
   removeAllListeners: (event?: string) => void;
+  listenerCount: () => number;
 };
 const globalWithExpo = globalThis as typeof globalThis & {
   expo?: { EventEmitter: unknown };
 };
 if (!globalWithExpo.expo) {
   class TestEventEmitter implements MinimalEventEmitter {
+    addListener(): { remove: () => void } {
+      return { remove: () => {} };
+    }
+
+    removeListener(): void {}
+
     emit(): void {}
 
     removeAllListeners(): void {}
+
+    listenerCount(): number {
+      return 0;
+    }
   }
-  globalWithExpo.expo = { EventEmitter: TestEventEmitter };
+  globalWithExpo.expo = { EventEmitter: TestEventEmitter } as typeof globalWithExpo.expo;
 }
 
 // Mock the core client before importing sync-client (module side effects).
@@ -88,6 +101,7 @@ const BASE_RESPONSE: SyncResponse = {
   snapshot: null,
   delta: null,
   newWatermark: null,
+  upstreamAck: null,
   fingerprint: null,
   endpoints: { localPort: 34_129, tailscaleUrl: null },
 };
@@ -167,7 +181,7 @@ describe('sync-client watermark delta path', () => {
 
     const { syncWithDesktop } = await import('./sync-client');
     await syncWithDesktop({ force: true });
-    expect(calls.exportData).toBe(1, 'reconciliation must export the full snapshot');
+    expect(calls.exportData).toBe(1); // reconciliation must export the full snapshot
     expect(lastResponseBody?.sinceWatermark).toBeUndefined();
     expect(lastResponseBody?.snapshot).toBeDefined();
     expect(calls.mergeData).toHaveLength(1);
@@ -288,7 +302,7 @@ describe('sync-client watermark delta path', () => {
       newWatermark: 1_234_567,
     });
     await syncWithDesktop({ force: true });
-    expect(calls.exportData).toBe(1, 'second sync must not re-export');
+    expect(calls.exportData).toBe(1); // second sync must not re-export
     expect(lastResponseBody?.sinceWatermark).toBe(1_234_567);
     expect(calls.mergeDelta).toHaveLength(1);
   });

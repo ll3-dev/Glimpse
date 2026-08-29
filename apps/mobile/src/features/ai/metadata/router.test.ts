@@ -42,7 +42,7 @@ describe('metadata router', () => {
     });
     await Effect.runPromise(effect);
 
-    expect(receivedInput).toEqual({
+    expect(receivedInput).toEqual<MetadataInput>({
       content: 'Test content',
       title: 'Test Title',
       type: 'note',

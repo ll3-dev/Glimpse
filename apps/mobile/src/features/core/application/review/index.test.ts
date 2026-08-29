@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import type { KnowledgeItem } from '@glimpse/shared';
+import type { InitializeReviewScheduleOutput, KnowledgeItem } from '@glimpse/shared';
 import {
   calculateInitialReviewAt,
   createBatchInitializeReviewSchedules,
@@ -52,7 +52,9 @@ describe('core review application layer', () => {
   });
 
   test('initializeReviewScheduleWithCore delegates typed input to core', async () => {
-    const initializeReviewSchedule = mock(() => ({
+    const initializeReviewSchedule = mock<
+      (input: { createdAt: number; intervalMs?: number }) => Promise<InitializeReviewScheduleOutput>
+    >(async () => ({
       nextReviewAt: 1_500,
       stability: null,
       difficulty: null,
@@ -138,6 +140,8 @@ describe('core review application layer', () => {
       calculateNextReviewFromFeedback: mock(() => ({
         intervalMs: 1,
         nextReviewAt: 1,
+        stability: 0,
+        difficulty: 0,
       })),
       logger,
     })('missing', 123);

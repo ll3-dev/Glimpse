@@ -14,10 +14,11 @@ const mockItem: KnowledgeItem = {
   createdAt: 1000,
   updatedAt: 1000,
   tags: null,
+  url: null,
   lastReviewedAt: null,
   nextReviewAt: null,
-  reviewCount: 0,
-  embedding: null,
+  stability: null,
+  difficulty: null,
   summary: null,
 };
 
@@ -29,6 +30,8 @@ const createMockDeps = () => {
   const calculateNextReviewFromFeedback = mock(() => ({
     intervalMs: 2 * 24 * 60 * 60 * 1000,
     nextReviewAt: 1_700_000_123_000,
+    stability: 2.5,
+    difficulty: 5.5,
   }));
   const logger = { error: mock() };
 
@@ -47,6 +50,8 @@ describe('reviewActions', () => {
     deps.calculateNextReviewFromFeedback = mock(() => ({
       intervalMs: 2 * 24 * 60 * 60 * 1000,
       nextReviewAt: 1_700_000_123_000,
+      stability: 2.5,
+      difficulty: 5.5,
     }));
   });
 

@@ -21,6 +21,23 @@ import {
   markDownloadCompletionHandled,
 } from '@/src/features/settings';
 
+// LocalModel 전체 필드를 채우는 픽스처 — 테스트는 isReady 동작만 검증한다.
+function makeLocalModel(
+  id: string,
+  name: string,
+  isReady: boolean,
+): Parameters<typeof addLocalLLMModel>[0] {
+  return {
+    id,
+    name,
+    family: 'qwen',
+    size: 1_000_000_000,
+    downloaded: isReady,
+    isReady,
+  };
+}
+
+
 describe('Local LLM 상태 관리', () => {
   beforeEach(() => {
     clearLocalLLMSettings();
@@ -41,7 +58,7 @@ describe('Local LLM 상태 관리', () => {
   describe('모델 선택 및 ready 상태', () => {
     test('모델이 있고 선택되고 enabled이면 ready가 true가 된다', () => {
       // Setup: 모델 추가, 선택, enable
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', true));
       selectLocalLLMModel('test-model');
       enableLocalLLM();
 
@@ -50,7 +67,7 @@ describe('Local LLM 상태 관리', () => {
     });
 
     test('enabled가 아니면 ready는 false다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', true));
       selectLocalLLMModel('test-model');
       // enabled = false
 
@@ -58,7 +75,7 @@ describe('Local LLM 상태 관리', () => {
     });
 
     test('모델이 ready 상태가 아니면 ready는 false다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', false));
       selectLocalLLMModel('test-model');
       enableLocalLLM();
 
@@ -66,7 +83,7 @@ describe('Local LLM 상태 관리', () => {
     });
 
     test('모델이 선택되지 않으면 ready는 false다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', true));
       // 선택하지 않음
 
       expect(isLocalLLMReady()).toBe(false);
@@ -81,7 +98,7 @@ describe('Local LLM 상태 관리', () => {
     });
 
     test('선택된 모델이 ready 상태가 아니어도 enable은 성공하지만 ready는 false다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', false));
       selectLocalLLMModel('test-model');
 
       const result = enableLocalLLM();
@@ -91,7 +108,7 @@ describe('Local LLM 상태 관리', () => {
 
     test('disable이 항상 성공한다', () => {
       // 먼저 enable 설정
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', true));
       selectLocalLLMModel('test-model');
       enableLocalLLM();
       expect(isLocalLLMEnabled()).toBe(true);
@@ -104,8 +121,8 @@ describe('Local LLM 상태 관리', () => {
 
   describe('모델 관리', () => {
     test('여러 모델을 추가할 수 있다', () => {
-      addLocalLLMModel({ id: 'model-1', name: 'Model 1', isReady: true });
-      addLocalLLMModel({ id: 'model-2', name: 'Model 2', isReady: false });
+      addLocalLLMModel(makeLocalModel('model-1', 'Model 1', true));
+      addLocalLLMModel(makeLocalModel('model-2', 'Model 2', false));
 
       const models = getAvailableLocalModels();
       expect(models).toHaveLength(2);
@@ -119,7 +136,7 @@ describe('Local LLM 상태 관리', () => {
     });
 
     test('null로 선택을 해제할 수 있다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: true });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', true));
       selectLocalLLMModel('test-model');
       expect(getSelectedLocalModelId()).toBe('test-model');
 
@@ -131,7 +148,7 @@ describe('Local LLM 상태 관리', () => {
 
   describe('다운로드 세션', () => {
     test('다운로드 시작 시 전역 세션 상태와 복귀 경로를 저장한다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', false));
 
       startDownload('test-model', '/chat/123');
 
@@ -143,7 +160,7 @@ describe('Local LLM 상태 관리', () => {
     });
 
     test('다운로드 완료 시 모델이 자동 선택 가능 상태가 되고 완료 배너를 유지한다', () => {
-      addLocalLLMModel({ id: 'test-model', name: 'Test Model', isReady: false });
+      addLocalLLMModel(makeLocalModel('test-model', 'Test Model', false));
 
       startDownload('test-model', '/chat/123');
       finishDownload('test-model', 'file:///tmp/test-model.gguf');

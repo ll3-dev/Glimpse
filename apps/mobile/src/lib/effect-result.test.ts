@@ -308,7 +308,7 @@ describe('Context Tags', () => {
 describe('runEffectWithLayer', () => {
   test('runs effect with provided layer', async () => {
     const mockDb: Database = {
-      query: async () => [{ id: 1, name: 'test' }],
+      query: async <T>() => [{ id: 1, name: 'test' }] as T[],
       execute: async () => {},
     };
 

@@ -12,14 +12,15 @@ const createMockKnowledgeItem = (id: string, tags: string[] | null): KnowledgeIt
   type: 'note',
   title: `Item ${id}`,
   body: `Body for ${id}`,
+  url: null,
+  summary: null,
+  tags,
   createdAt: Date.now(),
   updatedAt: Date.now(),
-  tags,
+  stability: null,
+  difficulty: null,
   lastReviewedAt: null,
   nextReviewAt: null,
-  reviewCount: 0,
-  embedding: null,
-  summary: null,
 });
 
 describe('createGenerateRecommendations', () => {
@@ -40,7 +41,7 @@ describe('createGenerateRecommendations', () => {
   });
 
   test('returns empty array when less than 2 items', async () => {
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [createMockKnowledgeItem('1', ['tag1'])],
     }));
@@ -54,7 +55,7 @@ describe('createGenerateRecommendations', () => {
   });
 
   test('returns empty array when no weekly items', async () => {
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [],
     }));
@@ -68,7 +69,7 @@ describe('createGenerateRecommendations', () => {
   });
 
   test('returns error when getWeeklyItems fails', async () => {
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: false,
       error: { code: 'RECOMMENDATION_ERROR', message: 'DB error' },
     }));
@@ -86,7 +87,7 @@ describe('createGenerateRecommendations', () => {
     const item2 = createMockKnowledgeItem('2', ['tag3', 'shared']);
     const item3 = createMockKnowledgeItem('3', ['tag4']);
 
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [item1, item2, item3],
     }));
@@ -109,7 +110,7 @@ describe('createGenerateRecommendations', () => {
     const item1 = createMockKnowledgeItem('1', ['shared']);
     const item2 = createMockKnowledgeItem('2', ['shared']);
 
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [item1, item2],
     }));
@@ -128,7 +129,7 @@ describe('createGenerateRecommendations', () => {
     const item1 = createMockKnowledgeItem('1', ['shared']);
     const item2 = createMockKnowledgeItem('2', ['shared']);
 
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [item1, item2],
     }));
@@ -145,7 +146,7 @@ describe('createGenerateRecommendations', () => {
     const item1 = createMockKnowledgeItem('1', ['tag1']);
     const item2 = createMockKnowledgeItem('2', ['tag2']);
 
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [item1, item2],
     }));
@@ -163,7 +164,7 @@ describe('createGenerateRecommendations', () => {
     const item2 = createMockKnowledgeItem('2', ['shared']);
     const item3 = createMockKnowledgeItem('3', ['shared']);
 
-    mockDeps.getWeeklyItems = mock(async () => ({
+    mockDeps.getWeeklyItems = mock(async (): Promise<WeeklyItemsResult> => ({
       success: true,
       items: [item1, item2, item3],
     }));
