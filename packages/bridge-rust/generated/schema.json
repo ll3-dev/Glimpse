@@ -1,6 +1,7 @@
 {
   "packageId": "glimpse.core",
   "schemaVersion": 1,
+  "fieldOrder": "declaration",
   "commands": [
     {
       "name": "addMessage",
@@ -2833,6 +2834,130 @@
           }
         }
       }
+    }
+  ],
+  "events": [
+    {
+      "name": "llm:stream-done",
+      "payload": {
+        "title": "StreamDonePayload",
+        "description": "`llm:stream-done` 페이로드.",
+        "type": "object",
+        "required": [
+          "fullText",
+          "requestId",
+          "stopReason"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "fullText": {
+            "type": "string"
+          },
+          "stopReason": {
+            "type": "string"
+          }
+        }
+      },
+      "definitions": {}
+    },
+    {
+      "name": "llm:stream-token",
+      "payload": {
+        "title": "StreamTokenPayload",
+        "description": "`llm:stream-token` 페이로드.",
+        "type": "object",
+        "required": [
+          "requestId",
+          "token"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "definitions": {}
+    },
+    {
+      "name": "model:download-done",
+      "payload": {
+        "title": "DownloadDonePayload",
+        "description": "`model:download-done` 페이로드.",
+        "type": "object",
+        "required": [
+          "modelId",
+          "path"
+        ],
+        "properties": {
+          "modelId": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "definitions": {}
+    },
+    {
+      "name": "model:download-failed",
+      "payload": {
+        "title": "DownloadFailedPayload",
+        "description": "`model:download-failed` 페이로드.",
+        "type": "object",
+        "required": [
+          "error",
+          "modelId"
+        ],
+        "properties": {
+          "modelId": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "definitions": {}
+    },
+    {
+      "name": "model:download-progress",
+      "payload": {
+        "title": "DownloadProgressPayload",
+        "description": "`model:download-progress` 페이로드.",
+        "type": "object",
+        "required": [
+          "bytesReceived",
+          "modelId",
+          "percentage",
+          "totalBytes"
+        ],
+        "properties": {
+          "modelId": {
+            "type": "string"
+          },
+          "bytesReceived": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "totalBytes": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "percentage": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "definitions": {}
     }
   ]
 }

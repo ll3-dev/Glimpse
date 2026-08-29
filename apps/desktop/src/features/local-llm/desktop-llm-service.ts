@@ -8,7 +8,13 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { subscribeEvent } from '@rustra/tauri';
 import { getDesktopModels, type LocalModelDefinition } from '@glimpse/shared';
+
+// rustra 0.4.0 이벤트 계약 이름 — 채널은 rustraEventChannel() 규칙
+// (`rustra://{name}`)으로 파생된다.
+const DOWNLOAD_PROGRESS_EVENT = 'model:download-progress';
+const DOWNLOAD_DONE_EVENT = 'model:download-done';
 
 // ============================================================================
 // Types
@@ -328,10 +334,11 @@ function createTauriBridge(): DesktopLLMService {
       return parseEmbeddingBatchResponse(raw).map((vector) => ({ vector }));
     },
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
+    // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명/파싱은 @rustra/tauri 담당.
     onDownloadProgress: (callback) =>
-      listen<DownloadProgressEvent>('rustra://model:download-progress', (e) => callback(e.payload)),
+      subscribeEvent<DownloadProgressEvent>(listen, DOWNLOAD_PROGRESS_EVENT, (payload) => callback(payload)),
     onDownloadDone: (callback) =>
-      listen<DownloadDoneEvent>('rustra://model:download-done', (e) => callback(e.payload)),
+      subscribeEvent<DownloadDoneEvent>(listen, DOWNLOAD_DONE_EVENT, (payload) => callback(payload)),
   };
 }
 

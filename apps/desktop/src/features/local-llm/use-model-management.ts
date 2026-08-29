@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { subscribeEvent } from '@rustra/tauri';
 import { useEffect, useState } from 'react';
 import type { LocalModelDefinition } from '@glimpse/shared';
 import type { ModelDownloadStatus } from './desktop-llm-service';
@@ -75,38 +76,39 @@ export function useDownloadProgress() {
       else unlistens.push(fn);
     };
 
-    listen<DownloadProgress>('rustra://model:download-progress', (event) => {
+    // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명/파싱은 @rustra/tauri 담당.
+    subscribeEvent<DownloadProgress>(listen, 'model:download-progress', (payload) => {
       setProgress((prev) => ({
         ...prev,
-        [event.payload.modelId]: event.payload,
+        [payload.modelId]: payload,
       }));
       setFailures((prev) => {
-        if (!(event.payload.modelId in prev)) return prev;
+        if (!(payload.modelId in prev)) return prev;
         const next = { ...prev };
-        delete next[event.payload.modelId];
+        delete next[payload.modelId];
         return next;
       });
     }).then((fn) => track(fn));
 
-    listen<{ modelId: string; path: string }>('rustra://model:download-done', (event) => {
+    subscribeEvent<{ modelId: string; path: string }>(listen, 'model:download-done', (payload) => {
       setProgress((prev) => {
-        if (!(event.payload.modelId in prev)) return prev;
+        if (!(payload.modelId in prev)) return prev;
         const next = { ...prev };
-        delete next[event.payload.modelId];
+        delete next[payload.modelId];
         return next;
       });
     }).then((fn) => track(fn));
 
-    listen<DownloadFailure>('rustra://model:download-failed', (event) => {
+    subscribeEvent<DownloadFailure>(listen, 'model:download-failed', (payload) => {
       setProgress((prev) => {
-        if (!(event.payload.modelId in prev)) return prev;
+        if (!(payload.modelId in prev)) return prev;
         const next = { ...prev };
-        delete next[event.payload.modelId];
+        delete next[payload.modelId];
         return next;
       });
       setFailures((prev) => ({
         ...prev,
-        [event.payload.modelId]: event.payload,
+        [payload.modelId]: payload,
       }));
     }).then((fn) => track(fn));
 

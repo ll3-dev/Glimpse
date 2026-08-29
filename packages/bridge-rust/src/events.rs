@@ -22,6 +22,55 @@
 
 use serde_json::json;
 
+// ── (이벤트 계약) payload 타입 ──────────────────────────────
+// `glimpse_package()` 빌더가 `.event::<E>()` 로 선언하는 페이로드 타입들.
+// 런타임 emit 은 아래 json! 매크로가 같은 camelCase 모양을 만들므로 serde
+// rename 규칙이 이 레코드의 계약과 정확히 일치해야 한다 — 어긋나면 코드젠
+// 타입과 와이어가 달라진다.
+
+/// `llm:stream-token` 페이로드.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct StreamTokenPayload {
+    pub request_id: String,
+    pub token: String,
+}
+
+/// `llm:stream-done` 페이로드.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct StreamDonePayload {
+    pub request_id: String,
+    pub full_text: String,
+    pub stop_reason: String,
+}
+
+/// `model:download-progress` 페이로드.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadProgressPayload {
+    pub model_id: String,
+    pub bytes_received: u64,
+    pub total_bytes: u64,
+    pub percentage: f64,
+}
+
+/// `model:download-done` 페이로드.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadDonePayload {
+    pub model_id: String,
+    pub path: String,
+}
+
+/// `model:download-failed` 페이로드.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadFailedPayload {
+    pub model_id: String,
+    pub error: String,
+}
+
 /// LLM 토큰 이벤트 이름 — 웹뷰 채널 `rustra://llm:stream-token`.
 pub const STREAM_TOKEN_EVENT: &str = "llm:stream-token";
 /// LLM 스트림 완료 이벤트 이름 — 웹뷰 채널 `rustra://llm:stream-done`.
@@ -100,6 +149,19 @@ pub fn emit_model_download_failed(model_id: &str, error: &str) {
     );
 }
 
+/// 빌더 파이프에서 이벤트 계약을 선언한다 — payload 타입과 함께 등록해
+/// schema.json `events` 섹션과 TS 코드젠이 이벤트 와이어를 커버하게 한다.
+/// emit 경로(`json!` 리터럴)와 rename 규칙이 일치하는지는 아래 테스트가
+/// 런타임 페이로드로 검증한다.
+pub fn register_event_contracts(builder: rustra::PackageBuilder) -> rustra::PackageBuilder {
+    builder
+        .event::<StreamTokenPayload>(STREAM_TOKEN_EVENT)
+        .event::<StreamDonePayload>(STREAM_DONE_EVENT)
+        .event::<DownloadProgressPayload>(DOWNLOAD_PROGRESS_EVENT)
+        .event::<DownloadDonePayload>(DOWNLOAD_DONE_EVENT)
+        .event::<DownloadFailedPayload>(DOWNLOAD_FAILED_EVENT)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,13 +194,16 @@ mod tests {
         // 즉, 채널은 rustra://model:download-progress / rustra://model:download-done.
     }
 
-    /// emit 이 싱크(설치 시) 또는 버스(미설치 시) 중 정확히 한 곳에
-    /// camelCase 페이로드를 전달한다. glimpse_package 는 프로세스 글로벌
+    /// 싱크 설치 테스트는 프로세스 글로벌 싱크 슬롯을 두고 경합하므로
+    /// 직렬화한다 — 병렬 실행 시 다른 테스트의 emit이 내 싱크로 온다.
+    static SINK_TESTS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     /// emit 이 싱크(설치 시) 또는 버스(미설치 시) 중 정확히 한 곳에
     /// camelCase 페이로드를 전달한다. glimpse_package 는 프로세스 글로벌
     /// 이므로 싱크를 설치했다면 테스트 끝에서 해제한다.
     #[test]
     fn emit_events_deliver_camel_case_payload_to_sink_exactly_once() {
+        let _guard = SINK_TESTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         let pkg = glimpse_package();
         let seen: Arc<Mutex<Vec<(String, String)>>> = Arc::new(Mutex::new(Vec::new()));
         let sink_seen = Arc::clone(&seen);
@@ -203,5 +268,127 @@ mod tests {
             bus_events.is_empty(),
             "installed sink must bypass the polling bus"
         );
+    }
+
+    /// emit 경로(`json!` 리터럴)가 `.event::<E>()` 로 선언한 payload struct의
+    /// 직렬화와 정확히 일치하는지 검증한다 — 어긋나면 코드젠 타입과 실제
+    /// 와이어가 달라진다(계약 부정).
+    #[test]
+    fn emitted_payloads_match_declared_event_contract_types() {
+        let _guard = SINK_TESTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let pkg = glimpse_package();
+        let seen: Arc<Mutex<Vec<(String, String)>>> = Arc::new(Mutex::new(Vec::new()));
+        let sink_seen = Arc::clone(&seen);
+        pkg.set_event_sink(Some(Arc::new(move |name: &str, payload: &str| {
+            sink_seen
+                .lock()
+                .unwrap()
+                .push((name.to_string(), payload.to_string()));
+        })));
+
+        emit_llm_token("req-1", "Hello");
+        emit_llm_done("req-1", "Hello world", "completed");
+        emit_model_download_progress("qwen-1", 1024, 2048, 50.0);
+        emit_model_download_done("qwen-1", "/path/to/model.gguf");
+        emit_model_download_failed("qwen-1", "disk full");
+
+        pkg.set_event_sink(None);
+        let events = seen.lock().unwrap().clone();
+        assert_eq!(events.len(), 5);
+
+        let expect = |declared: &str, wire: &str, value: serde_json::Value| {
+            let wire_value: serde_json::Value = serde_json::from_str(wire).unwrap();
+            assert_eq!(
+                wire_value, value,
+                "emit wire payload for {declared} must match its declared struct serialization"
+            );
+        };
+
+        expect(
+            STREAM_TOKEN_EVENT,
+            &events[0].1,
+            serde_json::to_value(StreamTokenPayload {
+                request_id: "req-1".into(),
+                token: "Hello".into(),
+            })
+            .unwrap(),
+        );
+        expect(
+            STREAM_DONE_EVENT,
+            &events[1].1,
+            serde_json::to_value(StreamDonePayload {
+                request_id: "req-1".into(),
+                full_text: "Hello world".into(),
+                stop_reason: "completed".into(),
+            })
+            .unwrap(),
+        );
+        expect(
+            DOWNLOAD_PROGRESS_EVENT,
+            &events[2].1,
+            serde_json::to_value(DownloadProgressPayload {
+                model_id: "qwen-1".into(),
+                bytes_received: 1024,
+                total_bytes: 2048,
+                percentage: 50.0,
+            })
+            .unwrap(),
+        );
+        expect(
+            DOWNLOAD_DONE_EVENT,
+            &events[3].1,
+            serde_json::to_value(DownloadDonePayload {
+                model_id: "qwen-1".into(),
+                path: "/path/to/model.gguf".into(),
+            })
+            .unwrap(),
+        );
+        expect(
+            DOWNLOAD_FAILED_EVENT,
+            &events[4].1,
+            serde_json::to_value(DownloadFailedPayload {
+                model_id: "qwen-1".into(),
+                error: "disk full".into(),
+            })
+            .unwrap(),
+        );
+    }
+
+    /// 이벤트 계약이 실제로 선언됐는지 — schema.json `events` 섹션이 5개
+    /// 이벤트와 payload 스키마를 가져야 한다(코드젠 산출물의 입력).
+    #[test]
+    fn package_schema_declares_all_llm_and_download_events() {
+        let schema = glimpse_package().live_schema();
+        let events = schema
+            .get("events")
+            .and_then(|events| events.as_array())
+            .expect("glimpse.core schema must declare an events section");
+        let names: Vec<&str> = events
+            .iter()
+            .filter_map(|event| event.get("name").and_then(|name| name.as_str()))
+            .collect();
+        for expected in [
+            STREAM_TOKEN_EVENT,
+            STREAM_DONE_EVENT,
+            DOWNLOAD_PROGRESS_EVENT,
+            DOWNLOAD_DONE_EVENT,
+            DOWNLOAD_FAILED_EVENT,
+        ] {
+            assert!(
+                names.contains(&expected),
+                "schema events must declare {expected}"
+            );
+        }
+        // camelCase 페이로드 필드가 스키마에 그대로 보여야 한다.
+        let token = events
+            .iter()
+            .find(|event| event.get("name").and_then(|name| name.as_str()) == Some(STREAM_TOKEN_EVENT))
+            .expect("stream-token event declared");
+        let properties = token
+            .pointer("/payload/properties")
+            .expect("payload object schema");
+        assert!(properties.get("requestId").is_some());
+        assert!(properties.get("token").is_some());
+        assert!(properties.get("request_id").is_none());
     }
 }

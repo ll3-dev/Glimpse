@@ -7,6 +7,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { subscribeEvent } from '@rustra/tauri';
 import type { AIProvider, CompletionRequest, CompletionResponse, MetadataOutput, StreamingCallbacks } from '../types';
 import { buildSummaryPrompt, buildTagsPrompt, parseTagsResponse } from '../metadata-text';
 
@@ -157,12 +158,16 @@ export async function completeLocalLLMStream(
   let unlisten: (() => void) | null = null;
 
   try {
-    unlisten = await listen<{ requestId: string; token: string }>(
-      'rustra://llm:stream-token',
-      (event) => {
-        if (event.payload.requestId === requestId) {
-          fullText += event.payload.token;
-          callbacks.onToken(event.payload.token);
+    // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명(`rustra://llm:stream-token`)과
+    // JSON 파싱을 @rustra/tauri가 처리한다. 페이로드는 선언된 계약과 같은
+    // camelCase 모양({requestId, token}).
+    unlisten = await subscribeEvent<{ requestId: string; token: string }>(
+      listen,
+      'llm:stream-token',
+      (payload) => {
+        if (payload.requestId === requestId) {
+          fullText += payload.token;
+          callbacks.onToken(payload.token);
         }
       },
     );

@@ -5,6 +5,8 @@
  * aligned with the desktop rustra event contracts (`llm:stream-token`, `llm:stream-done`).
  */
 
+import { subscribeEvent } from '@rustra/react-native';
+
 export const STREAM_TOKEN_EVENT = 'llm:stream-token';
 export const STREAM_DONE_EVENT = 'llm:stream-done';
 
@@ -30,13 +32,11 @@ type RustraEventNativeSurface = {
  * Native event push wiring — JSI `onEvent`/`offEvent` over the rustra FFI
  * event sink (CallInvoker-marshalled to the JS thread).
  *
- * When the JSI bridge exposes `onEvent`, the first subscriber of an event
- * name registers a native listener that parses the JSON payload once and
- * re-emits into this hub, so Rust-side emitters and local JS emitters
- * (llama.rn token callbacks) share one subscription surface. The last
- * unsubscribe releases the native listener (push → polling path revert on
- * the Rust side). Without the native surface (Expo Go, tests), the hub
- * stays local-only — behavior is unchanged.
+ * Delegates to `@rustra/react-native`'s `subscribeEvent` (the 0.4.0 event
+ * contract helper): the first subscriber of an event name registers the
+ * native listener, the last unsubscribe releases it. Without the native
+ * surface (Expo Go, tests), returns null — the hub stays local-only and
+ * behavior is unchanged.
  */
 function registerNativeListener(
   eventName: string,
@@ -54,26 +54,10 @@ function registerNativeListener(
   }
 
   try {
-    native.onEvent(eventName, (payloadJson) => {
-      let payload: unknown;
-      try {
-        payload = JSON.parse(payloadJson);
-      } catch {
-        payload = payloadJson;
-      }
-      emit(payload);
-    });
+    return subscribeEvent(native, eventName, emit);
   } catch {
     return null;
   }
-
-  return () => {
-    try {
-      native?.offEvent?.(eventName);
-    } catch {
-      // Native surface vanished mid-flight (reload) — nothing to release.
-    }
-  };
 }
 
 class StreamEventHub {

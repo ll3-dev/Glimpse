@@ -22,8 +22,10 @@ pub use data::data_package;
 pub use error::to_rustra_err;
 pub use events::{
     emit_llm_done, emit_llm_token, emit_model_download_done, emit_model_download_failed,
-    emit_model_download_progress, DOWNLOAD_DONE_EVENT, DOWNLOAD_FAILED_EVENT,
-    DOWNLOAD_PROGRESS_EVENT, STREAM_DONE_EVENT, STREAM_TOKEN_EVENT,
+    emit_model_download_progress, register_event_contracts, DownloadDonePayload,
+    DownloadFailedPayload, DownloadProgressPayload, StreamDonePayload, StreamTokenPayload,
+    DOWNLOAD_DONE_EVENT, DOWNLOAD_FAILED_EVENT, DOWNLOAD_PROGRESS_EVENT, STREAM_DONE_EVENT,
+    STREAM_TOKEN_EVENT,
 };
 pub use feedback::feedback_package;
 pub use knowledge::knowledge_package;
@@ -52,6 +54,10 @@ pub fn glimpse_package() -> rustra::Package {
                 .pipe(recommendation::register_commands)
                 .pipe(review::register_commands)
                 .pipe(state::register_commands)
+                // (이벤트 계약) LLM 스트리밍/모델 다운로드 이벤트 — payload
+                // 타입을 schema.json `events` 섹션 + 계약 해시에 포함시켜
+                // 코드젠 산출물이 이벤트 와이어도 커버하게 한다.
+                .pipe(events::register_event_contracts)
                 .build();
 
             // Expose the generic rustra FFI symbols (`rustra_ffi_invoke_json`,
