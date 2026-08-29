@@ -1,25 +1,41 @@
-import type { CoreClient, KnowledgeItem, Recommendation } from '@glimpse/shared';
+import type { CoreClient, KnowledgeItem } from '@glimpse/shared';
 import { getProviderForFeature } from '@/features/ai/router';
 import { loadSettings } from '@/lib/settings-storage';
 import { parseEdges, type ProposedEdge } from './graph-edge-parser';
+import { planIncrementalCycle, RECHECK_LIMIT } from './incremental-graph';
+import { selectRecheckCandidates } from './recheck-candidates';
+import { mergeProposedEdges } from './edge-merge';
 import { selectGraphSourceWindow } from './graph-source-window';
-
-const MAX_NEW_EDGES = 16;
 
 export interface GraphGenerationResult {
   createdCount: number;
   source: 'desktop-ai' | 'tag-overlap' | 'unchanged';
 }
 
+/**
+ * Incremental knowledge-graph generation, run on sync-complete or manually.
+ *
+ * Incremental path: only unanalyzed/stale items go to the LLM, each paired
+ * with at most RECHECK_LIMIT recheck candidates from the analyzed pool.
+ * Cold start (no edges yet): the legacy newest-24 window seeds the first
+ * cycle as a self-contained batch so the graph has a base before
+ * incremental expansion takes over.
+ */
 export async function generateKnowledgeGraph(
   coreClient: CoreClient,
   allItems: KnowledgeItem[],
 ): Promise<GraphGenerationResult> {
-  const items = selectGraphSourceWindow(allItems);
-  if (items.length < 2) return { createdCount: 0, source: 'unchanged' };
-
   const existing = await coreClient.listRecommendations();
-  const existingPairs = new Set(existing.map((edge) => pairKey(edge.itemA_id, edge.itemB_id)));
+  const { toAnalyze, analyzedPool } = planIncrementalCycle(allItems, existing);
+  if (toAnalyze.length === 0) return { createdCount: 0, source: 'unchanged' };
+
+  // Cold start seeding: with no edges nothing is analyzed yet, so the
+  // target↔candidate pairing would face an empty pool. Run the legacy
+  // newest-24 window as one self-contained batch instead.
+  const coldStart = existing.length === 0;
+  const targets = coldStart ? selectGraphSourceWindow(toAnalyze) : toAnalyze;
+  const pool = coldStart ? targets : analyzedPool;
+
   const settings = loadSettings();
   let source: GraphGenerationResult['source'] = 'tag-overlap';
   let proposed: ProposedEdge[] = [];
@@ -27,46 +43,25 @@ export async function generateKnowledgeGraph(
   if (settings.aiProvider !== 'rules') {
     const provider = await getProviderForFeature('metadata');
     if (provider.kind === 'local-llm' || provider.kind === 'byok') {
-      proposed = await proposeWithDesktopAI(provider.complete.bind(provider), items);
+      proposed = await proposeWithDesktopAI(provider.complete.bind(provider), targets, pool);
       source = 'desktop-ai';
     }
   }
   if (proposed.length === 0) {
-    proposed = proposeByTagOverlap(items);
+    proposed = proposeByTagOverlap(targets, pool);
     source = 'tag-overlap';
   }
 
-  const validIds = new Set(items.map((item) => item.id));
-  const now = Date.now();
-  const additions: Recommendation[] = [];
-  for (const edge of proposed) {
-    const key = pairKey(edge.itemAId, edge.itemBId);
-    if (
-      edge.itemAId === edge.itemBId ||
-      !validIds.has(edge.itemAId) ||
-      !validIds.has(edge.itemBId) ||
-      existingPairs.has(key)
-    ) {
-      continue;
-    }
-    existingPairs.add(key);
-    additions.push({
-      id: crypto.randomUUID(),
-      itemA_id: edge.itemAId,
-      itemB_id: edge.itemBId,
-      reason: edge.reason.slice(0, 300),
-      status: 'pending',
-      createdAt: now + additions.length,
-      respondedAt: null,
-    });
-    if (additions.length >= MAX_NEW_EDGES) break;
-  }
-
+  const additions = mergeProposedEdges(proposed, existing, allItems);
   if (additions.length === 0) return { createdCount: 0, source: 'unchanged' };
   await coreClient.saveRecommendations(additions);
   return { createdCount: additions.length, source };
 }
 
+/**
+ * Batch prompt: each to-analyze item paired with only its recheck
+ * candidates — the full analyzed pool never enters the prompt.
+ */
 async function proposeWithDesktopAI(
   complete: (request: {
     prompt: string;
@@ -74,24 +69,31 @@ async function proposeWithDesktopAI(
     maxTokens?: number;
     temperature?: number;
   }) => Promise<{ text: string }>,
-  items: KnowledgeItem[],
+  targets: KnowledgeItem[],
+  pool: KnowledgeItem[],
 ): Promise<ProposedEdge[]> {
-  const compactItems = items.map((item) => ({
+  const compactTargets = targets.map((item) => ({
     id: item.id,
     title: item.title,
     summary: item.summary,
     tags: item.tags,
     excerpt: item.body?.slice(0, 240) ?? null,
+    candidates: selectRecheckCandidates(item, pool, RECHECK_LIMIT).map((candidate) => ({
+      id: candidate.id,
+      title: candidate.title,
+      summary: candidate.summary,
+      tags: candidate.tags,
+    })),
   }));
   try {
     const response = await complete({
       systemPrompt:
         'You build a knowledge graph. Return JSON only. Never invent IDs or facts.',
       prompt:
-        `Find meaningful relationships between these knowledge items. ` +
+        `Find meaningful relationships between each target and its candidate items. ` +
         `Return at most ${MAX_NEW_EDGES} edges as ` +
         '[{"itemAId":"...","itemBId":"...","reason":"short explanation"}].\n' +
-        JSON.stringify(compactItems),
+        JSON.stringify(compactTargets),
       maxTokens: 1_200,
       temperature: 0.2,
     });
@@ -104,12 +106,25 @@ async function proposeWithDesktopAI(
   }
 }
 
-function proposeByTagOverlap(items: KnowledgeItem[]): ProposedEdge[] {
+/**
+ * Deterministic fallback: target↔candidate pairs only (or target↔target
+ * within a cold-start batch) — after seeding, analyzed items never gain
+ * new edges among themselves.
+ */
+function proposeByTagOverlap(
+  targets: KnowledgeItem[],
+  pool: KnowledgeItem[],
+): ProposedEdge[] {
   const candidates: Array<ProposedEdge & { overlap: number }> = [];
-  for (let leftIndex = 0; leftIndex < items.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < items.length; rightIndex += 1) {
-      const left = items[leftIndex];
-      const right = items[rightIndex];
+  const withinBatch = targets === pool;
+  for (let leftIndex = 0; leftIndex < targets.length; leftIndex += 1) {
+    // Within a cold-start batch, pair targets among themselves; otherwise
+    // targets pair against analyzed items only.
+    const partnerStart = withinBatch ? leftIndex + 1 : 0;
+    for (let rightIndex = partnerStart; rightIndex < pool.length; rightIndex += 1) {
+      const left = targets[leftIndex];
+      const right = pool[rightIndex];
+      if (left.id === right.id) continue;
       const rightTags = new Set(right.tags ?? []);
       const shared = (left.tags ?? []).filter((tag) => rightTags.has(tag));
       if (shared.length > 0) {
@@ -127,6 +142,4 @@ function proposeByTagOverlap(items: KnowledgeItem[]): ProposedEdge[] {
     .slice(0, MAX_NEW_EDGES);
 }
 
-function pairKey(left: string, right: string): string {
-  return left < right ? `${left}\u0000${right}` : `${right}\u0000${left}`;
-}
+const MAX_NEW_EDGES = 16;
