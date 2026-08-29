@@ -187,7 +187,6 @@ export default function LibraryScreen() {
         <FlashList
           data={rerankedItems}
           renderItem={renderKnowledgeItem}
-          estimatedItemSize={100}
           contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}
           contentInset={{ bottom: insets.bottom }}
           keyExtractor={(item) => item.id}

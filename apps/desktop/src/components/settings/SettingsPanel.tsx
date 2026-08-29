@@ -4,6 +4,7 @@ import { BYOKSection } from './BYOKSection';
 import { ModelManagerSection } from './ModelManagerSection';
 import { DesktopSyncSection } from './DesktopSyncSection';
 import { ReviewReminderSection } from './ReviewReminderSection';
+import { ThemeSection } from './ThemeSection';
 import { loadSettings, saveSettings, type DesktopSettings } from '@/lib/settings-storage';
 
 type AiProvider = DesktopSettings['aiProvider'];
@@ -110,6 +111,10 @@ export function SettingsPanel() {
       <hr className="border-border/60" />
 
       <ReviewReminderSection />
+
+      <hr className="border-border/60" />
+
+      <ThemeSection />
     </div>
   );
 }
