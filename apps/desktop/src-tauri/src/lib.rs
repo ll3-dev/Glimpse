@@ -11,3 +11,4 @@ pub mod models;
 pub mod secrets;
 pub mod services;
 pub mod state;
+pub mod sync;

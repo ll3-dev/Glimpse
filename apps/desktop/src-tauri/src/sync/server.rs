@@ -11,10 +11,22 @@ use tauri::Emitter;
 use super::config::{DesktopSyncState, PublicEndpoints};
 use super::SYNC_PROTOCOL_VERSION;
 
-#[derive(Clone)]
-pub struct ServerState {
+/// `R` defaults to the production Wry runtime; tests inject
+/// `tauri::test::MockRuntime` so the real server can run headlessly.
+/// Clone is manual because the derive would demand `R: Clone` even though
+/// only the `AppHandle<R>` (whose Clone is runtime-independent) is copied.
+pub struct ServerState<R: tauri::Runtime = tauri::Wry> {
     pub sync: DesktopSyncState,
-    pub app: tauri::AppHandle,
+    pub app: tauri::AppHandle<R>,
+}
+
+impl<R: tauri::Runtime> Clone for ServerState<R> {
+    fn clone(&self) -> Self {
+        Self {
+            sync: self.sync.clone(),
+            app: self.app.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -124,7 +136,7 @@ impl IntoResponse for ApiError {
     }
 }
 
-pub fn router(state: ServerState) -> Router {
+pub fn router<R: tauri::Runtime>(state: ServerState<R>) -> Router {
     use axum::extract::Request;
     use tower_http::compression::CompressionLayer;
     use tower_http::decompression::DecompressionLayer;
@@ -226,7 +238,7 @@ fn is_allowed_host(host: &str, port: u16, local_names: &[String]) -> bool {
         })
 }
 
-async fn health(State(state): State<ServerState>) -> Json<HealthResponse> {
+async fn health<R: tauri::Runtime>(State(state): State<ServerState<R>>) -> Json<HealthResponse> {
     Json(HealthResponse {
         protocol_version: SYNC_PROTOCOL_VERSION,
         device_id: state.sync.device_id.clone(),
@@ -235,8 +247,8 @@ async fn health(State(state): State<ServerState>) -> Json<HealthResponse> {
     })
 }
 
-async fn pair(
-    State(state): State<ServerState>,
+async fn pair<R: tauri::Runtime>(
+    State(state): State<ServerState<R>>,
     ConnectInfo(remote): ConnectInfo<SocketAddr>,
     Json(request): Json<PairRequest>,
 ) -> Result<Json<PairResponse>, ApiError> {
@@ -277,8 +289,8 @@ async fn pair(
     }))
 }
 
-async fn sync(
-    State(state): State<ServerState>,
+async fn sync<R: tauri::Runtime>(
+    State(state): State<ServerState<R>>,
     headers: HeaderMap,
     Json(request): Json<SyncRequest>,
 ) -> Result<Json<SyncResponse>, ApiError> {
@@ -482,7 +494,9 @@ async fn sync(
 
 /// `public_endpoints_cached()` shells out to the tailscale CLI on cache miss;
 /// never run that on the async runtime — park it on the blocking pool instead.
-async fn endpoints_via_blocking_pool(state: &ServerState) -> PublicEndpoints {
+async fn endpoints_via_blocking_pool<R: tauri::Runtime>(
+    state: &ServerState<R>,
+) -> PublicEndpoints {
     let sync = state.sync.clone();
     tauri::async_runtime::spawn_blocking(move || sync.public_endpoints_cached())
         .await

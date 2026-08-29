@@ -1,6 +1,9 @@
+// `server`·`config` are pub so integration tests can drive the real HTTP
+// server headlessly (mock AppHandle + temp data dir) instead of mocking the
+// wire protocol.
 mod backup;
-mod config;
-mod server;
+pub mod config;
+pub mod server;
 mod tailscale;
 
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener as StdTcpListener};
