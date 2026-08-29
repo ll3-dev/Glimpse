@@ -5,7 +5,10 @@
  * aligned with the desktop rustra event contracts (`llm:stream-token`, `llm:stream-done`).
  */
 
-import { subscribeEvent } from '@rustra/react-native';
+import {
+  subscribeEvent,
+  type RustraEventNative,
+} from '@rustra/react-native';
 
 export const STREAM_TOKEN_EVENT = 'llm:stream-token';
 export const STREAM_DONE_EVENT = 'llm:stream-done';
@@ -23,11 +26,6 @@ export interface StreamDonePayload {
 
 type EventListener<T = unknown> = (payload: T) => void;
 
-type RustraEventNativeSurface = {
-  onEvent?(name: string, callback: (payloadJson: string) => void): void;
-  offEvent?(name: string): void;
-};
-
 /**
  * Native event push wiring — JSI `onEvent`/`offEvent` over the rustra FFI
  * event sink (CallInvoker-marshalled to the JS thread).
@@ -42,13 +40,8 @@ function registerNativeListener(
   eventName: string,
   emit: (payload: unknown) => void,
 ): (() => void) | null {
-  let native: RustraEventNativeSurface | undefined;
-  try {
-    native = (globalThis as { __rustraNative?: RustraEventNativeSurface })
-      .__rustraNative;
-  } catch {
-    native = undefined;
-  }
+  const native = (globalThis as { __rustraNative?: RustraEventNative })
+    .__rustraNative;
   if (!native?.onEvent || !native?.offEvent) {
     return null;
   }

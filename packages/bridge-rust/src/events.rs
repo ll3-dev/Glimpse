@@ -198,12 +198,10 @@ mod tests {
     /// 직렬화한다 — 병렬 실행 시 다른 테스트의 emit이 내 싱크로 온다.
     static SINK_TESTS: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-    /// emit 이 싱크(설치 시) 또는 버스(미설치 시) 중 정확히 한 곳에
-    /// camelCase 페이로드를 전달한다. glimpse_package 는 프로세스 글로벌
-    /// 이므로 싱크를 설치했다면 테스트 끝에서 해제한다.
-    #[test]
-    fn emit_events_deliver_camel_case_payload_to_sink_exactly_once() {
-        let _guard = SINK_TESTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    /// 싱크를 설치한 상태로 `emit`을 실행하고 싱크가 받은 (이름, 페이로드)
+    /// 목록을 돌려준다. 끝에서 싱크를 해제하므로 다른 테스트에 영향이 없다.
+    /// `SINK_TESTS` 가드를 호출자가 쥐고 있어야 한다(내부에서 재잠그지 않음).
+    fn with_captured_sink(emit: impl FnOnce()) -> Vec<(String, String)> {
         let pkg = glimpse_package();
         let seen: Arc<Mutex<Vec<(String, String)>>> = Arc::new(Mutex::new(Vec::new()));
         let sink_seen = Arc::clone(&seen);
@@ -214,19 +212,31 @@ mod tests {
                 .push((name.to_string(), payload.to_string()));
         })));
 
-        // 1. LLM 토큰 및 완료 이벤트
-        emit_llm_token("req-1", "Hello");
-        emit_llm_done("req-1", "Hello world", "completed");
+        emit();
 
-        // 2. 모델 다운로드 진행률 및 완료 이벤트
-        emit_model_download_progress("qwen-1", 1024, 2048, 50.0);
-        emit_model_download_done("qwen-1", "/path/to/model.gguf");
-
-        // 싱크가 받았으면 버스는 우회된다(이중 수신 없음).
-        let bus_events = pkg.event_bus().take_pending_events();
         pkg.set_event_sink(None); // 다른 테스트에 영향 주지 않게 복원
-
         let events = seen.lock().unwrap().clone();
+        events
+    }
+
+    /// emit 이 싱크(설치 시) 또는 버스(미설치 시) 중 정확히 한 곳에
+    /// camelCase 페이로드를 전달한다. glimpse_package 는 프로세스 글로벌
+    /// 이므로 싱크를 설치했다면 테스트 끝에서 해제한다.
+    #[test]
+    fn emit_events_deliver_camel_case_payload_to_sink_exactly_once() {
+        let _guard = SINK_TESTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let pkg = glimpse_package();
+        let bus = pkg.event_bus();
+
+        let events = with_captured_sink(|| {
+            // 1. LLM 토큰 및 완료 이벤트
+            emit_llm_token("req-1", "Hello");
+            emit_llm_done("req-1", "Hello world", "completed");
+
+            // 2. 모델 다운로드 진행률 및 완료 이벤트
+            emit_model_download_progress("qwen-1", 1024, 2048, 50.0);
+            emit_model_download_done("qwen-1", "/path/to/model.gguf");
+        });
         assert_eq!(events.len(), 4, "sink must receive all 4 events");
 
         // LLM 토큰 이벤트 검증
@@ -264,6 +274,7 @@ mod tests {
         assert!(model_done.get("model_id").is_none());
 
         // 정확히 한 번: 싱크를 받은 이상 버스는 비어 있어야 한다.
+        let bus_events = bus.take_pending_events();
         assert!(
             bus_events.is_empty(),
             "installed sink must bypass the polling bus"
@@ -276,24 +287,13 @@ mod tests {
     #[test]
     fn emitted_payloads_match_declared_event_contract_types() {
         let _guard = SINK_TESTS.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-        let pkg = glimpse_package();
-        let seen: Arc<Mutex<Vec<(String, String)>>> = Arc::new(Mutex::new(Vec::new()));
-        let sink_seen = Arc::clone(&seen);
-        pkg.set_event_sink(Some(Arc::new(move |name: &str, payload: &str| {
-            sink_seen
-                .lock()
-                .unwrap()
-                .push((name.to_string(), payload.to_string()));
-        })));
-
-        emit_llm_token("req-1", "Hello");
-        emit_llm_done("req-1", "Hello world", "completed");
-        emit_model_download_progress("qwen-1", 1024, 2048, 50.0);
-        emit_model_download_done("qwen-1", "/path/to/model.gguf");
-        emit_model_download_failed("qwen-1", "disk full");
-
-        pkg.set_event_sink(None);
-        let events = seen.lock().unwrap().clone();
+        let events = with_captured_sink(|| {
+            emit_llm_token("req-1", "Hello");
+            emit_llm_done("req-1", "Hello world", "completed");
+            emit_model_download_progress("qwen-1", 1024, 2048, 50.0);
+            emit_model_download_done("qwen-1", "/path/to/model.gguf");
+            emit_model_download_failed("qwen-1", "disk full");
+        });
         assert_eq!(events.len(), 5);
 
         let expect = |declared: &str, wire: &str, value: serde_json::Value| {

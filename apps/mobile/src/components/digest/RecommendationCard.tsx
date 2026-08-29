@@ -1,17 +1,10 @@
 import { View, Text, Pressable } from 'react-native';
-import {
-  FileText,
-  Link as LinkIcon,
-  Highlighter,
-  Image as ImageIcon,
-  Share2,
-  Check,
-  X,
-} from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 import type { KnowledgeItem, Recommendation, RecommendationStatus } from '@glimpse/shared';
 import { Card } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { cn } from '@/src/lib/utils';
+import { getTypeConfig } from '@/src/components/library/knowledge-type-config';
 
 type RecommendationCardProps = {
   itemA: KnowledgeItem;
@@ -23,18 +16,6 @@ type RecommendationCardProps = {
   onIgnore: () => void;
   onDismiss: () => void;
 };
-
-const TYPE_CONFIG = {
-  note: { label: '메모', Icon: FileText },
-  link: { label: '링크', Icon: LinkIcon },
-  highlight: { label: '하이라이트', Icon: Highlighter },
-  screenshot: { label: '스크린샷', Icon: ImageIcon },
-  share: { label: '공유', Icon: Share2 },
-} as const;
-
-function getTypeConfig(type: KnowledgeItem['type']) {
-  return TYPE_CONFIG[type] ?? { label: '항목', Icon: FileText };
-}
 
 function truncate(text: string | null, maxLength: number): string {
   if (!text) return '제목 없음';

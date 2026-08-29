@@ -2,11 +2,6 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
-  FileText,
-  Link as LinkIcon,
-  Highlighter,
-  Image as ImageIcon,
-  Share2,
   Check,
   Clock,
   Eye,
@@ -19,6 +14,7 @@ import { Text, Pressable, View } from 'react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { Card } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
+import { getTypeConfig } from '@/src/components/library/knowledge-type-config';
 
 type ReviewItemCardProps = {
   item: KnowledgeItem;
@@ -27,18 +23,6 @@ type ReviewItemCardProps = {
   onForgot?: (itemId: string) => void;
   onPostpone: (itemId: string) => void;
 };
-
-const TYPE_CONFIG = {
-  note: { label: '메모', Icon: FileText },
-  link: { label: '링크', Icon: LinkIcon },
-  highlight: { label: '하이라이트', Icon: Highlighter },
-  screenshot: { label: '스크린샷', Icon: ImageIcon },
-  share: { label: '공유', Icon: Share2 },
-} as const;
-
-function getTypeConfig(type: KnowledgeItem['type']) {
-  return TYPE_CONFIG[type] ?? { label: '항목', Icon: FileText };
-}
 
 export function ReviewItemCard({
   item,

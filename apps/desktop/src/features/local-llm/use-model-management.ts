@@ -4,7 +4,12 @@ import { listen } from '@tauri-apps/api/event';
 import { subscribeEvent } from '@rustra/tauri';
 import { useEffect, useState } from 'react';
 import type { LocalModelDefinition } from '@glimpse/shared';
-import type { ModelDownloadStatus } from './desktop-llm-service';
+import {
+  DOWNLOAD_DONE_EVENT,
+  DOWNLOAD_FAILED_EVENT,
+  DOWNLOAD_PROGRESS_EVENT,
+  type ModelDownloadStatus,
+} from './desktop-llm-service';
 import { llmQueryKeys } from './use-desktop-llm-overview';
 
 // ---------------------------------------------------------------------------
@@ -77,35 +82,20 @@ export function useDownloadProgress() {
     };
 
     // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명/파싱은 @rustra/tauri 담당.
-    subscribeEvent<DownloadProgress>(listen, 'model:download-progress', (payload) => {
+    subscribeEvent<DownloadProgress>(listen, DOWNLOAD_PROGRESS_EVENT, (payload) => {
       setProgress((prev) => ({
         ...prev,
         [payload.modelId]: payload,
       }));
-      setFailures((prev) => {
-        if (!(payload.modelId in prev)) return prev;
-        const next = { ...prev };
-        delete next[payload.modelId];
-        return next;
-      });
+      setFailures((prev) => withoutKey(prev, payload.modelId));
     }).then((fn) => track(fn));
 
-    subscribeEvent<{ modelId: string; path: string }>(listen, 'model:download-done', (payload) => {
-      setProgress((prev) => {
-        if (!(payload.modelId in prev)) return prev;
-        const next = { ...prev };
-        delete next[payload.modelId];
-        return next;
-      });
+    subscribeEvent<{ modelId: string; path: string }>(listen, DOWNLOAD_DONE_EVENT, (payload) => {
+      setProgress((prev) => withoutKey(prev, payload.modelId));
     }).then((fn) => track(fn));
 
-    subscribeEvent<DownloadFailure>(listen, 'model:download-failed', (payload) => {
-      setProgress((prev) => {
-        if (!(payload.modelId in prev)) return prev;
-        const next = { ...prev };
-        delete next[payload.modelId];
-        return next;
-      });
+    subscribeEvent<DownloadFailure>(listen, DOWNLOAD_FAILED_EVENT, (payload) => {
+      setProgress((prev) => withoutKey(prev, payload.modelId));
       setFailures((prev) => ({
         ...prev,
         [payload.modelId]: payload,
@@ -119,6 +109,15 @@ export function useDownloadProgress() {
   }, []);
 
   return { progress, failures };
+}
+
+/** Record without `key`, or the same object when the key is absent —
+ * shared by the progress/done/failed handlers' immutable map updates. */
+function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {
+  if (!(key in record)) return record;
+  const next = { ...record };
+  delete next[key];
+  return next;
 }
 
 /** Download a GGUF model from HuggingFace. */

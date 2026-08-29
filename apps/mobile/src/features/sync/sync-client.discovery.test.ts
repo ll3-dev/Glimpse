@@ -12,6 +12,11 @@
  */
 import { mock, afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { deleteSecureItem, setSecureItem, SecureStorageKeys } from '@/src/lib/secure-storage';
+// The Korean literal lives only in discovery-unavailable.ts (no expo/RN
+// imports, so a static import is safe even though the full module must be
+// imported lazily after the expo stub below). Suites and the mock factory
+// all assert against this one source.
+import { discoveryUnavailableError as UNAVAILABLE_MESSAGE } from '../../../modules/sync-discovery/src/discovery-unavailable';
 import { getSyncRuntime, resetSyncConfig, updateSyncConfig } from './sync-store';
 
 // `expo-device` (pulled in by sync-client) needs the native runtime; sync
@@ -60,8 +65,6 @@ mock.module('../../features/core', () => ({
     },
   },
 }));
-
-const UNAVAILABLE_MESSAGE = '이 기기에서는 Desktop 탐색을 사용할 수 없습니다.';
 
 async function captureError(run: () => Promise<unknown>): Promise<unknown> {
   try {

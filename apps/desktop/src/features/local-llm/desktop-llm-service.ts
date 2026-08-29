@@ -12,9 +12,11 @@ import { subscribeEvent } from '@rustra/tauri';
 import { getDesktopModels, type LocalModelDefinition } from '@glimpse/shared';
 
 // rustra 0.4.0 이벤트 계약 이름 — 채널은 rustraEventChannel() 규칙
-// (`rustra://{name}`)으로 파생된다.
-const DOWNLOAD_PROGRESS_EVENT = 'model:download-progress';
-const DOWNLOAD_DONE_EVENT = 'model:download-done';
+// (`rustra://{name}`)으로 파생된다. 이 기능의 모든 구독처가 이 상수를
+// 함께 쓴다 (packages/bridge-rust/src/events.rs 계약과 대응).
+export const DOWNLOAD_PROGRESS_EVENT = 'model:download-progress';
+export const DOWNLOAD_DONE_EVENT = 'model:download-done';
+export const DOWNLOAD_FAILED_EVENT = 'model:download-failed';
 
 // ============================================================================
 // Types

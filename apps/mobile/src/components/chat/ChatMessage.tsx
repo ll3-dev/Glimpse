@@ -18,7 +18,6 @@ interface ChatMessageProps {
   message: Message;
   onEdit?: (message: Message) => void;
   onDelete?: (message: Message) => void;
-  isPending?: boolean;
 }
 
 function ChatMessageImpl({ message, onEdit, onDelete }: ChatMessageProps) {
@@ -109,7 +108,6 @@ export const ChatMessage = memo(
   ChatMessageImpl,
   (prev, next) =>
     prev.message === next.message &&
-    prev.isPending === next.isPending &&
     prev.onEdit === next.onEdit &&
     prev.onDelete === next.onDelete,
 );

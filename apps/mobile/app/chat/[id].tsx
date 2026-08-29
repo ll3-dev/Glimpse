@@ -169,11 +169,6 @@ export default function ChatDetailScreen() {
                   message={message}
                   onEdit={messageActions.handleEdit}
                   onDelete={messageActions.handleDelete}
-                  isPending={
-                    isGenerating &&
-                    index === messages.length - 1 &&
-                    message.role === "user"
-                  }
                 />
               ))}
             </>

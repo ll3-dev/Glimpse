@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const workspaceRoot = new URL('../../../../', import.meta.url);
 
@@ -55,46 +57,33 @@ describe('mobile accessibility source contracts', () => {
     expect(toast).toContain('reduceMotion ? 0');
   });
 
-  test('modernized surfaces resolve dynamic colors through semantic tokens', async () => {
-    const files = await Promise.all([
-      source('apps/mobile/app/settings.tsx'),
-      source('apps/mobile/app/local-models.tsx'),
-      source('apps/mobile/app/capture.tsx'),
-      source('apps/mobile/app/library/[id].tsx'),
-      source('apps/mobile/app/(tabs)/library.tsx'),
-      source('apps/mobile/app/(tabs)/chat.tsx'),
-      source('apps/mobile/src/components/chat/ChatInput.tsx'),
-      source('apps/mobile/src/components/chat/ChatMessage.tsx'),
-      source('apps/mobile/src/components/chat/ChatMessageReasoning.tsx'),
-      source('apps/mobile/src/components/chat/ChatMessageActions.tsx'),
-      source('apps/mobile/src/components/chat/ContextBadge.tsx'),
-      source('apps/mobile/src/components/chat/ConversationEditModal.tsx'),
-      source('apps/mobile/src/components/chat/MessageEditModal.tsx'),
-      source('apps/mobile/src/components/chat/ChatAISetupDialog.tsx'),
-      source('apps/mobile/src/components/capture/CaptureForm.tsx'),
-      source('apps/mobile/src/components/capture/ShareForm.tsx'),
-      source('apps/mobile/src/components/capture/ScreenshotForm.tsx'),
-      source('apps/mobile/src/components/capture/HighlightForm.tsx'),
-      source('apps/mobile/src/components/capture/UnifiedCaptureForm.tsx'),
-      source('apps/mobile/src/components/capture/UnifiedCaptureAssistantBar.tsx'),
-      source('apps/mobile/src/components/digest/RecommendationCard.tsx'),
-      source('apps/mobile/src/components/library/KnowledgeItemCard.tsx'),
-      source('apps/mobile/src/components/library/KnowledgeItemDetailCard.tsx'),
-      source('apps/mobile/src/components/library/LibraryDetailHeaderActions.tsx'),
-      source('apps/mobile/src/components/library/LibrarySortPicker.tsx'),
-      source('apps/mobile/src/components/library/LibraryActiveFilterBar.tsx'),
-      source('apps/mobile/src/components/library/EditKnowledgeItemModal.tsx'),
-      source('apps/mobile/src/components/library/LibrarySearchInput.tsx'),
-      source('apps/mobile/src/components/library/EmptyLibraryState.tsx'),
-      source('apps/mobile/src/components/review/ReviewItemCard.tsx'),
-      source('apps/mobile/src/components/settings/SemanticSearchSection.tsx'),
-      source('apps/mobile/src/components/settings/ModelDownloadCard.tsx'),
-      source('apps/mobile/src/components/settings/GlobalModelDownloadBanner.tsx'),
-      source('apps/mobile/src/components/settings/LocalLLMSection.tsx'),
-    ]);
+  test('every app screen and component resolves colors through semantic tokens', () => {
+    // Walk the whole app/ + components/ trees instead of enumerating
+    // "modernized" files — a hardcoded hex in any new screen fails here,
+    // and no file can silently escape the contract when a list rots.
+    const roots = [
+      join(import.meta.dir, '..', '..', 'app'),
+      join(import.meta.dir, '..', '..', 'src', 'components'),
+    ];
 
-    for (const contents of files) {
-      expect(contents).not.toMatch(/#[0-9a-fA-F]{6}/);
-    }
+    const sources: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir)) {
+        const fullPath = join(dir, entry);
+        if (statSync(fullPath).isDirectory()) {
+          walk(fullPath);
+          continue;
+        }
+        if (/\.tsx?$/.test(entry)) {
+          sources.push(readFileSync(fullPath, 'utf8'));
+        }
+      }
+    };
+    for (const root of roots) walk(root);
+
+    expect(sources.length).toBeGreaterThan(30);
+
+    const offenders = sources.filter((contents) => /#[0-9a-fA-F]{6}/.test(contents));
+    expect(offenders).toEqual([]);
   });
 });

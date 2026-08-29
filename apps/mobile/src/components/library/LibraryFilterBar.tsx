@@ -3,12 +3,12 @@ import { FlatList, Pressable, Text, View, type ListRenderItem } from 'react-nati
 import { ArrowUpDown } from 'lucide-react-native';
 import { useSemanticColor } from '@glimpse/ui';
 import type { KnowledgeItemType } from '@glimpse/shared';
-import { type SortOrder, SORT_OPTIONS } from './LibrarySortPicker';
+import { type SortOrder, SORT_OPTIONS } from './library-sort-options';
 
 export type LibraryFilterType = 'all' | KnowledgeItemType;
 
 type FilterChip =
-  | { id: 'sort'; kind: 'sort'; label: string; value: SortOrder }
+  | { id: 'sort'; kind: 'sort'; label: string }
   | { id: string; kind: 'type'; label: string; value: LibraryFilterType }
   | { id: string; kind: 'tag'; label: string; value: string };
 
@@ -57,7 +57,6 @@ export function LibraryFilterBar({
         id: 'sort',
         kind: 'sort' as const,
         label: currentSortLabel,
-        value: sortOrder,
       },
       ...FILTER_OPTIONS.map((filter) => ({
         id: `type:${filter.type}`,
@@ -72,7 +71,7 @@ export function LibraryFilterBar({
         value: tag,
       })),
     ],
-    [availableTags, currentSortLabel, sortOrder]
+    [availableTags, currentSortLabel]
   );
 
   const renderChip = useCallback<ListRenderItem<FilterChip>>(

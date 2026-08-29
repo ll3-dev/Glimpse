@@ -10,58 +10,18 @@
  * Small payloads skip compression — the framing overhead outweighs the win.
  *
  * All byte↔string conversion is Hermes-safe: Hermes ships TextEncoder but no
- * TextDecoder and no global Buffer, so the same pure-JS UTF-8 decode used by
- * the rustra JSON engine is applied here (see rustra-json-engine.ts).
+ * TextDecoder and no global Buffer, so the shared pure-JS helpers from
+ * `@/src/lib/utf8` are used here (the rustra JSON engine uses the same ones).
  */
 
 import { gzip as gzipSync, ungzip as gunzipSync } from 'pako';
+import { decodeUtf8, encodeUtf8, utf8ByteLength } from '@/src/lib/utf8';
 
 /** Below this size (bytes) a body is sent as plain JSON. */
 export const GZIP_THRESHOLD_BYTES = 64 * 1024;
 
-const utf8Encoder = new TextEncoder();
-
-/** Encodes a JS string to UTF-8 bytes without Buffer. */
-function encodeUtf8(text: string): Uint8Array {
-  return utf8Encoder.encode(text);
-}
-
-/** Decodes UTF-8 bytes to a JS string without Buffer/TextDecoder. */
-function decodeUtf8(bytes: Uint8Array): string {
-  let out = '';
-  let i = 0;
-  const len = bytes.length;
-  while (i < len) {
-    const b = bytes[i];
-    if (b < 0x80) {
-      out += String.fromCharCode(b);
-      i += 1;
-    } else if ((b & 0xe0) === 0xc0) {
-      out += String.fromCharCode(((b & 0x1f) << 6) | (bytes[i + 1] & 0x3f));
-      i += 2;
-    } else if ((b & 0xf0) === 0xe0) {
-      out += String.fromCharCode(
-        ((b & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f),
-      );
-      i += 3;
-    } else if ((b & 0xf8) === 0xf0) {
-      const cp =
-        ((b & 0x07) << 18) |
-        ((bytes[i + 1] & 0x3f) << 12) |
-        ((bytes[i + 2] & 0x3f) << 6) |
-        (bytes[i + 3] & 0x3f);
-      const adj = cp - 0x10000;
-      out += String.fromCharCode(0xd800 + (adj >> 10), 0xdc00 + (adj & 0x3ff));
-      i += 4;
-    } else {
-      i += 1; // invalid lead byte — skip
-    }
-  }
-  return out;
-}
-
 export function shouldCompress(body: string): boolean {
-  return encodeUtf8(body).length >= GZIP_THRESHOLD_BYTES;
+  return utf8ByteLength(body) >= GZIP_THRESHOLD_BYTES;
 }
 
 export interface CompressedRequest {
@@ -76,11 +36,13 @@ export interface CompressedRequest {
  * never gets an implicit one from fetch.
  */
 export function maybeCompressRequestBody(json: string): CompressedRequest {
-  if (!shouldCompress(json)) {
-    return { body: encodeUtf8(json), headers: { 'Content-Type': 'application/json' } };
+  // Encode exactly once — the byte copy doubles as the threshold measurement.
+  const plain = encodeUtf8(json);
+  if (plain.length < GZIP_THRESHOLD_BYTES) {
+    return { body: plain, headers: { 'Content-Type': 'application/json' } };
   }
   return {
-    body: gzipSync(json),
+    body: gzipSync(plain),
     headers: {
       'Content-Type': 'application/json',
       'Content-Encoding': 'gzip',

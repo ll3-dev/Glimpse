@@ -2,33 +2,11 @@ import React from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Linking, Text, Pressable, View } from 'react-native';
-import {
-  ExternalLink,
-  Sparkles,
-  FileText,
-  Link as LinkIcon,
-  Highlighter,
-  Image as ImageIcon,
-  Share2,
-} from 'lucide-react-native';
+import { ExternalLink, Sparkles } from 'lucide-react-native';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { useSemanticColor } from '@glimpse/ui';
 import { formatKnowledgeLabel } from '@/src/features/labeling';
-
-const TYPE_CONFIG: Record<
-  KnowledgeItem['type'],
-  { label: string; Icon: React.ComponentType<{ size?: number; color?: string }> }
-> = {
-  note: { label: '메모', Icon: FileText },
-  link: { label: '링크', Icon: LinkIcon },
-  highlight: { label: '하이라이트', Icon: Highlighter },
-  screenshot: { label: '스크린샷', Icon: ImageIcon },
-  share: { label: '공유', Icon: Share2 },
-};
-
-function getTypeConfig(type: KnowledgeItem['type']) {
-  return TYPE_CONFIG[type] ?? { label: '항목', Icon: FileText };
-}
+import { getTypeConfig } from './knowledge-type-config';
 
 interface KnowledgeItemDetailCardProps {
   item: KnowledgeItem;

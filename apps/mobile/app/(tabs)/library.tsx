@@ -11,6 +11,7 @@ import {
   LibraryFilterBar,
   LibrarySearchInput,
   LibraryActiveFilterBar,
+  SORT_OPTIONS,
   type SortOrder,
 } from '@/src/components/library';
 import { resolveLibrarySearch } from '@/src/features/library';
@@ -113,11 +114,12 @@ export default function LibraryScreen() {
     );
   }
 
+  // 정렬 칩은 탭할 때마다 SORT_OPTIONS 순서대로 다음 정렬로 순환한다 —
+  // 칩 라벨과 순환 순서가 한 배열에서 함께 유지된다.
   const handleCycleSortOrder = useCallback(() => {
     setSortOrder((prev) => {
-      if (prev === 'latest') return 'oldest';
-      if (prev === 'oldest') return 'title';
-      return 'latest';
+      const index = SORT_OPTIONS.findIndex((option) => option.order === prev);
+      return SORT_OPTIONS[(index + 1) % SORT_OPTIONS.length].order;
     });
   }, []);
 
