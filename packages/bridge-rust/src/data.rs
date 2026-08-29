@@ -122,6 +122,51 @@ pub fn merge_delta(input: MergeDeltaInput) -> Result<MergeDeltaOutput> {
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct ExportDeltaInput {
+    pub since_clock_ms: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportDeltaOutput {
+    pub data_json: String,
+}
+
+/// Incremental export for the upstream (client→desktop) delta path: rows
+/// whose merge clock is strictly newer than `since_clock_ms`, plus all
+/// tombstones. Mirrors `export_data` but bounded by a clock cursor.
+#[command]
+pub fn export_delta(input: ExportDeltaInput) -> Result<ExportDeltaOutput> {
+    let core = crate::state::core_state();
+    let data_json = core
+        .export_delta_json(input.since_clock_ms)
+        .map_err(crate::error::to_rustra_err)?;
+    Ok(ExportDeltaOutput { data_json })
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncDataRevisionInput {}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncDataRevisionOutput {
+    pub revision: i64,
+}
+
+/// Storage write counter maintained by sync-table triggers. Lets clients
+/// detect local changes cheaply (revision moved) before paying for a delta
+/// export.
+#[command]
+pub fn sync_data_revision(_input: SyncDataRevisionInput) -> Result<SyncDataRevisionOutput> {
+    let core = crate::state::core_state();
+    Ok(SyncDataRevisionOutput {
+        revision: core.sync_data_revision().map_err(crate::error::to_rustra_err)?,
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct DeleteAllDataInput {}
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
@@ -147,9 +192,11 @@ pub(crate) fn register_commands(builder: rustra::PackageBuilder) -> rustra::Pack
     rustra::register!(
         builder,
         export_data,
+        export_delta,
         import_data,
         merge_data,
         merge_delta,
+        sync_data_revision,
         delete_all_data
     )
 }

@@ -1,2 +1,2 @@
-export const GENERATED_CONTRACT_HASH = '28cfa3d84eca65b6d59aefd9e4ebbf15a67a907658b4a8074f189af4f0c1e569';
+export const GENERATED_CONTRACT_HASH = '582b0752578c037b76b0fdd23d579b1795bf2b0f86000db021aebbcc0ac6dbac';
 export const SCHEMA_VERSION = 1;

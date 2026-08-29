@@ -26,6 +26,13 @@ impl CoreClientImpl {
         self.storage.export_delta(since_clock_ms)
     }
 
+    /// [`Self::export_delta`] in its JSON wire form.
+    pub fn export_delta_json(&self, since_clock_ms: i64) -> Result<String> {
+        Ok(serde_json::to_string_pretty(
+            &self.storage.export_delta(since_clock_ms)?,
+        )?)
+    }
+
     /// Row-wise LWW merge of an incremental payload — see
     /// [`SqliteStorage::apply_delta`]. Returns the summary of rows actually
     /// written (all zeros when every row was stale or the payload empty).

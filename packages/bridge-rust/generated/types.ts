@@ -162,6 +162,14 @@ export type ExportDataOutput = {
   dataJson: string;
 };
 
+export type ExportDeltaInput = {
+  sinceClockMs: number;
+};
+
+export type ExportDeltaOutput = {
+  dataJson: string;
+};
+
 export type GetDueKnowledgeItemsInput = {
   now: number;
   limit?: number | null;
@@ -330,6 +338,12 @@ export type SaveRecommendationsInput = {
 };
 
 export type SaveRecommendationsOutput = Record<string, unknown>;
+
+export type SyncDataRevisionInput = Record<string, unknown>;
+
+export type SyncDataRevisionOutput = {
+  revision: number;
+};
 
 export type UpdateConversationInput = {
   conversationId: string;

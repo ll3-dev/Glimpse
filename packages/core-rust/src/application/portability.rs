@@ -22,6 +22,11 @@ impl SharedCore {
         self.client().export_delta(since_clock_ms)
     }
 
+    /// [`Self::export_delta`] in its JSON wire form.
+    pub fn export_delta_json(&self, since_clock_ms: i64) -> Result<String> {
+        self.client().export_delta_json(since_clock_ms)
+    }
+
     /// Row-wise LWW merge of an incremental payload — see
     /// [`glimpse_core::SqliteStorage::apply_delta`]. Returns the summary of
     /// rows actually written (all zeros when every row was stale).
