@@ -29,10 +29,10 @@ export function useDueItemsQuery(limit?: number) {
       // dismissed/ignored 엣지는 부여 대상에서 제외(그래프 뷰와 동일한 기준).
       try {
         const allEdges = await coreClient.listRecommendations();
-        const acceptedEdges = allEdges.filter(
+        const activeEdges = allEdges.filter(
           (edge) => edge.status === 'pending' || edge.status === 'accepted',
         );
-        return sortDueItemsByEdgePriority(items, acceptedEdges);
+        return sortDueItemsByEdgePriority(items, activeEdges);
       } catch {
         // 엣지 로드 실패 시 무음 폴백 — 기존 SQL 정렬 순서를 그대로 사용.
         return items;
