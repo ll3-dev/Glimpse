@@ -61,6 +61,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             // rustra bridge — all generated domain commands via glimpse.core dispatch
             rustra::tauri_support::rustra_dispatch,
+            // Window management
+            commands::start_window_dragging,
             // LLM runtime commands
             commands::list_available_runtimes,
             commands::list_managed_models,

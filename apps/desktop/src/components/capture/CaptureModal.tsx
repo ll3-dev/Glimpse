@@ -153,7 +153,7 @@ export function CaptureModal() {
 
     saveMutation.mutate(item, {
       onSuccess: () => {
-        setToast({ message: 'Item saved successfully', type: 'success' });
+        setToast({ message: '지식이 성공적으로 저장되었습니다', type: 'success' });
         setForm(EMPTY_FORM);
         setErrors({});
         setTimeout(() => {
@@ -161,35 +161,37 @@ export function CaptureModal() {
         }, 600);
       },
       onError: (err) => {
-        setToast({ message: `Save failed: ${String(err)}`, type: 'error' });
+        setToast({ message: `저장 실패: ${String(err)}`, type: 'error' });
       },
     });
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
     >
       <button
         type="button"
-        aria-label="Close capture modal"
+        aria-label="캡처 모달 닫기"
         className="absolute inset-0 cursor-default"
         onClick={handleClose}
       />
-      <div className="relative w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-2xl">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5 border-b border-border/70 pb-3.5">
           <div className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-card-foreground">Capture</h2>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-tag-mint-bg text-tag-mint-text">
+              <Plus className="h-4 w-4" />
+            </div>
+            <h2 className="text-base font-bold text-card-foreground">새 지식 기록</h2>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            aria-label="Close capture modal"
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="닫기"
+            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -205,22 +207,23 @@ export function CaptureModal() {
         />
 
         {/* Footer Actions */}
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between border-t border-border/70 pt-4">
           <div />
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={handleClose}>
-              Cancel
+          <div className="flex items-center gap-2.5">
+            <Button variant="ghost" onClick={handleClose} className="rounded-xl">
+              취소
             </Button>
             <Button
               onClick={handleSave}
               disabled={saveMutation.isPending || metadataMutation.isPending}
+              className="gap-1.5 rounded-xl bg-app-text text-app-bg hover:opacity-90"
             >
               {metadataMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              {metadataMutation.isPending ? 'Generating metadata...' : saveMutation.isPending ? 'Saving...' : 'Save'}
+              {metadataMutation.isPending ? 'AI 메타데이터 분석 중...' : saveMutation.isPending ? '저장 중...' : '저장하기'}
             </Button>
           </div>
         </div>
@@ -228,9 +231,9 @@ export function CaptureModal() {
         {/* Toast */}
         {toast && (
           <div
-            className={`absolute bottom-4 left-1/2 -translate-x-1/2 rounded-md px-4 py-2 text-sm font-medium shadow-lg transition-opacity ${
+            className={`absolute bottom-4 left-1/2 -translate-x-1/2 rounded-xl px-4 py-2 text-xs font-semibold shadow-lg transition-opacity ${
               toast.type === 'success'
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-foreground text-background'
                 : 'bg-destructive text-white'
             }`}
           >

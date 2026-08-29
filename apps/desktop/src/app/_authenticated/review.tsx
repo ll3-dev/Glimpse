@@ -31,47 +31,47 @@ function ReviewScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-6 py-10">
+    <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-2xl">
         {/* Page header */}
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3">
-            <Brain className="size-3.5" />
-            Spaced Repetition
+          <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-md bg-tag-mint-bg px-2.5 py-1 text-xs font-medium text-tag-mint-text">
+            <Brain className="h-3.5 w-3.5" />
+            간격 반복 (Spaced Repetition)
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Review</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Strengthen your memory by reviewing knowledge items.
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">다시 보기</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            기억을 오래 유지하기 위해 주기적으로 지식을 복습합니다.
           </p>
         </div>
 
         {/* Content */}
         {isLoading ? (
           <div className="flex flex-col items-center gap-4 py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-            <p className="text-sm text-muted-foreground">Loading due items...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-foreground" />
+            <p className="text-xs text-muted-foreground">복습할 항목을 불러오는 중...</p>
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <p className="text-sm text-destructive">Failed to load due items.</p>
+            <p className="text-sm text-destructive">복습 항목을 불러오지 못했습니다.</p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted"
             >
               다시 시도
             </button>
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Brain className="size-8 text-muted-foreground" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/80 bg-muted/60 text-muted-foreground shadow-2xs">
+              <Brain className="h-6 w-6 opacity-70" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">
-              No items due for review!
+            <h3 className="mt-4 text-base font-semibold text-foreground">
+              오늘 복습할 항목이 없습니다
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Great work! Check back later when more items are scheduled.
+            <p className="mt-1 text-xs text-muted-foreground">
+              훌륭합니다! 다음 복습 주기가 되면 다시 알려드릴게요.
             </p>
           </div>
         ) : (

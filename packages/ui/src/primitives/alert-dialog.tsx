@@ -52,6 +52,7 @@ function AlertDialogOverlayNative({
       <Animated.View
         entering={FadeIn.duration(150)}
         exiting={FadeOut.duration(150)}
+        className="absolute inset-0 flex items-center justify-center bg-black/50 p-6"
       >
         {children}
       </Animated.View>
@@ -79,7 +80,7 @@ function AlertDialogContent({
       <AlertDialogOverlay>
         <AlertDialogPrimitive.Content
           className={cn(
-            "z-50 max-w-lg gap-4 rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl web:duration-200",
+            "z-50 w-full max-w-sm gap-4 rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl web:duration-200",
             open
               ? "web:animate-in web:fade-in-0 web:zoom-in-95"
               : "web:animate-out web:fade-out-0 web:zoom-out-95",
@@ -93,14 +94,14 @@ function AlertDialogContent({
 }
 
 function AlertDialogHeader({ className, ...props }: ViewProps) {
-  return <View className={cn("flex flex-col gap-2", className)} {...props} />;
+  return <View className={cn("flex flex-col gap-1.5", className)} {...props} />;
 }
 
 function AlertDialogFooter({ className, ...props }: ViewProps) {
   return (
     <View
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end mt-2",
         className
       )}
       {...props}
@@ -117,7 +118,7 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       className={cn(
-        "text-lg font-semibold text-foreground native:text-xl",
+        "text-base font-bold text-app-text tracking-tight",
         className
       )}
       {...props}
@@ -134,7 +135,7 @@ function AlertDialogDescription({
   return (
     <AlertDialogPrimitive.Description
       className={cn(
-        "text-sm text-muted-foreground native:text-base",
+        "text-xs leading-5 text-app-muted",
         className
       )}
       {...props}
@@ -189,3 +190,4 @@ export {
   AlertDialogTitle,
   AlertDialogTrigger,
 };
+

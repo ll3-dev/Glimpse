@@ -8,9 +8,11 @@ type CaptureSaveButtonProps = {
 export function CaptureSaveButton({ isSaving, onPress }: CaptureSaveButtonProps) {
   return (
     <Pressable
-      className={`px-4 py-2 rounded-lg bg-app-text ${isSaving ? 'opacity-40' : 'active:opacity-80'}`}
+      className={`h-9 px-4 rounded-full bg-app-text items-center justify-center ${isSaving ? 'opacity-40' : 'active:opacity-80'}`}
       onPress={onPress}
       disabled={isSaving}
+      accessibilityRole="button"
+      accessibilityLabel="저장"
     >
       <Text className="text-white font-semibold text-xs">
         {isSaving ? '저장 중...' : '저장'}
@@ -18,3 +20,4 @@ export function CaptureSaveButton({ isSaving, onPress }: CaptureSaveButtonProps)
     </Pressable>
   );
 }
+

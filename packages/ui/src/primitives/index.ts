@@ -30,3 +30,4 @@ export { Badge, badgeTextVariants, badgeVariants } from './badge';
 export { ScreenHeader } from './screen-header';
 export { Switch } from './switch';
 export { Skeleton } from './skeleton';
+export { GlimpseLogo, type GlimpseLogoProps } from './glimpse-logo';

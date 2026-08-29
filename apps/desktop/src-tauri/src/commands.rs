@@ -7,6 +7,11 @@ use crate::services::runtime_service::DesktopRuntimeService;
 use crate::state::DesktopRuntimeState;
 
 #[tauri::command]
+pub fn start_window_dragging(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.start_dragging().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn list_available_runtimes() -> Vec<RuntimeDescriptor> {
     DesktopRuntimeService::list_available_runtimes()
 }

@@ -5,6 +5,7 @@ import { filterKnowledgeItems } from '@glimpse/features/search';
 import { useDesktopSemanticRerank } from '@/features/search/useSemanticRerank';
 import { SearchBar } from '@/components/library/SearchBar';
 import { KnowledgeItemList } from '@/components/library/KnowledgeItemList';
+import { BookOpen, Sparkles } from 'lucide-react';
 
 function LibraryPage() {
   const { data: items, isLoading } = useKnowledgeItemsQuery();
@@ -28,16 +29,32 @@ function LibraryPage() {
   );
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Library</h1>
-        <span className="text-sm text-muted-foreground">
-          {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
-          {semantic.active ? ' · 의미 정렬' : ''}
-        </span>
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-5 p-8">
+      {/* Header */}
+      <div className="flex items-end justify-between border-b border-border/60 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">보관함</h1>
+            {semantic.active && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-tag-lavender-bg px-2 py-0.5 text-[11px] font-medium text-tag-lavender-text">
+                <Sparkles className="h-3 w-3" />
+                의미 정렬 활성
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            저장된 지식과 메모를 확인하고 검색합니다.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <BookOpen className="h-3.5 w-3.5" />
+          <span>{filteredItems.length}개의 지식</span>
+        </div>
       </div>
+
       <SearchBar onSearch={setSearchQuery} />
-      <div className="flex-1 overflow-y-auto">
+
+      <div className="flex-1 overflow-y-auto pr-1">
         <KnowledgeItemList
           items={filteredItems}
           isLoading={isLoading}

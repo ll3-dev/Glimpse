@@ -35,15 +35,14 @@ export default function LocalModelsScreen() {
     <View className="bg-app-bg flex-1" style={{ paddingTop: insets.top }}>
       <ScreenHeader
         title="로컬 AI 모델"
-        className="pb-2"
         leftElement={
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="뒤로 가기"
             onPress={() => router.back()}
-            className="-ml-2 min-h-11 min-w-11 items-center justify-center"
+            className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
           >
-            <ArrowLeft size={24} color={appText} />
+            <ArrowLeft size={22} color={appText} />
           </Pressable>
         }
       />

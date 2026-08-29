@@ -39,22 +39,22 @@ export function SearchBar({ onSearch }: SearchBarProps) {
 
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
       <Input
-        placeholder="Search knowledge items..."
-        aria-label="Search knowledge items"
+        placeholder="지식 검색... (키워드 또는 의미 검색)"
+        aria-label="지식 검색"
         value={value}
         onChange={handleChange}
-        className="pl-9 pr-9"
+        className="h-9.5 rounded-xl border-border bg-card pl-9 pr-9 text-sm shadow-2xs transition-colors placeholder:text-muted-foreground/80 focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/20"
       />
       {value && (
         <button
           type="button"
           onClick={handleClear}
-          aria-label="Clear search"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          aria-label="검색어 지우기"
+          className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
     </div>

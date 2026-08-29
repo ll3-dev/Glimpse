@@ -154,12 +154,12 @@ export default function LibraryScreen() {
         subtitle={items && items.length > 0 ? `${items.length}개의 지식` : undefined}
         rightElement={
           <Pressable
-            className="p-2 -mr-2 active:opacity-70"
+            className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
             onPress={() => router.push('/settings')}
             accessibilityRole="button"
             accessibilityLabel="설정"
           >
-            <Settings size={22} color={appText} />
+            <Settings size={20} color={appText} />
           </Pressable>
         }
       />
@@ -187,7 +187,8 @@ export default function LibraryScreen() {
         <FlashList
           data={rerankedItems}
           renderItem={renderKnowledgeItem}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          estimatedItemSize={100}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}
           contentInset={{ bottom: insets.bottom }}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={<EmptyLibraryState {...emptyState} />}
@@ -199,7 +200,7 @@ export default function LibraryScreen() {
         className="absolute right-6 w-14 h-14 rounded-full bg-app-text items-center justify-center shadow-lg active:opacity-90"
         style={{ bottom: insets.bottom + 16 }}
       >
-        <Plus color="white" size={30} />
+        <Plus color="white" size={28} />
       </Pressable>
     </View>
   );

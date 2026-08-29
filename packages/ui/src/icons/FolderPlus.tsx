@@ -1,4 +1,4 @@
-import { FolderPlus } from "lucide-react-native";
+import { FolderPlus as LucideFolderPlus } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(FolderPlus);
-export { FolderPlus };
+
+export const FolderPlus = iconWithClassName(LucideFolderPlus);

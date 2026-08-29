@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -40,27 +40,30 @@ export function ChatInput({ onSend, isPending }: ChatInputProps) {
   }, []);
 
   return (
-    <div className="flex items-end gap-2 border-t border-border bg-background px-4 py-3">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onInput={handleInput}
-        placeholder="Type a message..."
-        aria-label="Message input"
-        disabled={isPending}
-        rows={1}
-        className="flex-1 resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-50"
-      />
-      <Button
-        size="icon"
-        onClick={handleSend}
-        disabled={!value.trim() || isPending}
-        aria-label="Send message"
-      >
-        <Send className="h-4 w-4" />
-      </Button>
+    <div className="border-t border-border/80 bg-card/90 px-6 py-4 backdrop-blur-xs">
+      <div className="mx-auto flex max-w-4xl items-end gap-2.5">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onInput={handleInput}
+          placeholder="메시지를 입력하세요... (Enter로 전송, Shift+Enter로 줄바꿈)"
+          aria-label="채팅 메시지 입력"
+          disabled={isPending}
+          rows={1}
+          className="flex-1 resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/20 disabled:opacity-50"
+        />
+        <Button
+          size="icon"
+          onClick={handleSend}
+          disabled={!value.trim() || isPending}
+          aria-label="메시지 전송"
+          className="h-10 w-10 shrink-0 rounded-xl bg-app-text text-app-bg shadow-2xs hover:opacity-90 active:scale-95 disabled:opacity-30"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }

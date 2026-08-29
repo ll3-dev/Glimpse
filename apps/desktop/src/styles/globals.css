@@ -7,7 +7,34 @@
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    /* Semantic App Tokens */
+    --color-app-bg: var(--app-bg);
+    --color-app-surface: var(--app-surface);
+    --color-app-card: var(--app-card);
+    --color-app-border: var(--app-border);
+    --color-app-text: var(--app-text);
+    --color-app-muted: var(--app-muted);
+    --color-app-subtle: var(--app-subtle);
+    --color-app-primary: var(--app-primary);
+    --color-app-accent: var(--app-accent);
+
+    /* Tag / Metadata Pastel Tints */
+    --color-tag-mint-bg: var(--tag-mint-bg);
+    --color-tag-mint-text: var(--tag-mint-text);
+    --color-tag-peach-bg: var(--tag-peach-bg);
+    --color-tag-peach-text: var(--tag-peach-text);
+    --color-tag-sky-bg: var(--tag-sky-bg);
+    --color-tag-sky-text: var(--tag-sky-text);
+    --color-tag-lavender-bg: var(--tag-lavender-bg);
+    --color-tag-lavender-text: var(--tag-lavender-text);
+    --color-tag-rose-bg: var(--tag-rose-bg);
+    --color-tag-rose-text: var(--tag-rose-text);
+    --color-tag-neutral-bg: var(--tag-neutral-bg);
+    --color-tag-neutral-text: var(--tag-neutral-text);
+
+    /* Standard Component Tokens */
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,6 +76,32 @@
 }
 
 :root {
+    /* Semantic App Tokens (Light Mode - Notion Warm Minimalist) */
+    --app-bg: #f7f6f3;
+    --app-surface: #ffffff;
+    --app-card: #ffffff;
+    --app-border: #edece9;
+    --app-text: #37352f;
+    --app-muted: #787774;
+    --app-subtle: #9b9a97;
+    --app-primary: #2383e2;
+    --app-accent: #eb5757;
+
+    /* Tag Tints */
+    --tag-mint-bg: #edf7f0;
+    --tag-mint-text: #24663b;
+    --tag-peach-bg: #fcf2e8;
+    --tag-peach-text: #8a5020;
+    --tag-sky-bg: #eef5fb;
+    --tag-sky-text: #255d88;
+    --tag-lavender-bg: #f3effa;
+    --tag-lavender-text: #584578;
+    --tag-rose-bg: #faebeb;
+    --tag-rose-text: #9c3838;
+    --tag-neutral-bg: #f0eeec;
+    --tag-neutral-text: #64625d;
+
+    /* Base Tokens */
     --background: #f7f6f3;
     --foreground: #37352f;
     --card: #ffffff;
@@ -59,9 +112,9 @@
     --primary-foreground: #ffffff;
     --secondary: #f7f6f3;
     --secondary-foreground: #37352f;
-    --muted: #f7f6f3;
+    --muted: #f0eeec;
     --muted-foreground: #787774;
-    --accent: #f7f6f3;
+    --accent: #f0eeec;
     --accent-foreground: #37352f;
     --destructive: #eb5757;
     --border: #edece9;
@@ -84,47 +137,88 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --app-bg: #191919;
+    --app-surface: #242424;
+    --app-card: #242424;
+    --app-border: rgba(255, 255, 255, 0.08);
+    --app-text: #e3e2de;
+    --app-muted: #9b9a97;
+    --app-subtle: #686764;
+    --app-primary: #529cca;
+    --app-accent: #eb5757;
+
+    --tag-mint-bg: #1c3829;
+    --tag-mint-text: #7ee787;
+    --tag-peach-bg: #3d2618;
+    --tag-peach-text: #ffa657;
+    --tag-sky-bg: #1a2f4c;
+    --tag-sky-text: #79c0ff;
+    --tag-lavender-bg: #2d2244;
+    --tag-lavender-text: #d2a8ff;
+    --tag-rose-bg: #3c1e28;
+    --tag-rose-text: #ff7b72;
+    --tag-neutral-bg: #2b2b2b;
+    --tag-neutral-text: #c9d1d9;
+
+    --background: #191919;
+    --foreground: #e3e2de;
+    --card: #242424;
+    --card-foreground: #e3e2de;
+    --popover: #242424;
+    --popover-foreground: #e3e2de;
+    --primary: #e3e2de;
+    --primary-foreground: #191919;
+    --secondary: #242424;
+    --secondary-foreground: #e3e2de;
+    --muted: #242424;
+    --muted-foreground: #9b9a97;
+    --accent: #242424;
+    --accent-foreground: #e3e2de;
+    --destructive: #eb5757;
+    --border: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.12);
+    --ring: #529cca;
+    --chart-1: #529cca;
+    --chart-2: #7ee787;
+    --chart-3: #ffa657;
+    --chart-4: #d2a8ff;
+    --chart-5: #ff7b72;
+    --sidebar: #191919;
+    --sidebar-foreground: #e3e2de;
+    --sidebar-primary: #529cca;
+    --sidebar-primary-foreground: #191919;
+    --sidebar-accent: #242424;
+    --sidebar-accent-foreground: #e3e2de;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-ring: #529cca;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
-    @apply bg-background text-foreground;
-    }
+    @apply bg-background text-foreground antialiased selection:bg-app-primary/20 selection:text-app-text;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
   html {
     @apply font-sans;
-    }
+  }
+}
+
+/* Tauri & WebKit native window drag support */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+[data-tauri-drag-region] button,
+[data-tauri-drag-region] input,
+[data-tauri-drag-region] textarea,
+[data-tauri-drag-region] select,
+[data-tauri-drag-region] a,
+[data-tauri-drag-region] [role="button"],
+.no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }

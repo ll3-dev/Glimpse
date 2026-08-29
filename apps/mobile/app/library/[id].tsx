@@ -115,8 +115,13 @@ export default function LibraryDetailScreen() {
       <ScreenHeader
         title="보관함 상세"
         leftElement={
-          <Pressable onPress={() => router.back()} className="-ml-2 p-2">
-            <ArrowLeft size={24} color={appText} />
+          <Pressable
+            onPress={() => router.back()}
+            className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
+            accessibilityRole="button"
+            accessibilityLabel="뒤로 가기"
+          >
+            <ArrowLeft size={22} color={appText} />
           </Pressable>
         }
         rightElement={
@@ -148,7 +153,7 @@ export default function LibraryDetailScreen() {
       {showItem && item && (
         <ScrollView
           className="flex-1 px-6"
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           contentInset={{ bottom: insets.bottom }}
         >
           <KnowledgeItemDetailCard item={item} displayLabels={displayLabels} />
@@ -157,7 +162,7 @@ export default function LibraryDetailScreen() {
           <Pressable
             onPress={handleStartChat}
             disabled={isCreatingChat}
-            className="flex-row items-center justify-center bg-app-text rounded-full py-3.5 px-6 shadow-sm active:opacity-85"
+            className="flex-row items-center justify-center bg-app-text rounded-xl h-12 px-6 shadow-sm active:opacity-85"
           >
             <MessageCircle size={16} color="white" className="mr-2" />
             <Text className="text-sm font-semibold text-white">

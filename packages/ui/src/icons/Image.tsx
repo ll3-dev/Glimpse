@@ -1,4 +1,4 @@
-import { Image } from "lucide-react-native";
+import { Image as LucideImage } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(Image);
-export { Image };
+
+export const Image = iconWithClassName(LucideImage);

@@ -100,8 +100,13 @@ export default function CaptureScreen() {
         <ScreenHeader
           title="새 기록"
           leftElement={
-            <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-              <X size={24} color={appText} />
+            <Pressable
+              onPress={() => router.back()}
+              className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
+              accessibilityRole="button"
+              accessibilityLabel="닫기"
+            >
+              <X size={22} color={appText} />
             </Pressable>
           }
           rightElement={

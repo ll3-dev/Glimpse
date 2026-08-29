@@ -1,4 +1,4 @@
-import { PinOff } from "lucide-react-native";
+import { PinOff as LucidePinOff } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(PinOff);
-export { PinOff };
+
+export const PinOff = iconWithClassName(LucidePinOff);

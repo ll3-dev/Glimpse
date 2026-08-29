@@ -97,15 +97,14 @@ export default function SettingsScreen() {
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
       <ScreenHeader
         title={messages.settings.title}
-        className="pb-2"
         leftElement={
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={messages.common.back}
             onPress={() => router.back()}
-            className="-ml-2 min-h-11 min-w-11 items-center justify-center active:opacity-70"
+            className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
           >
-            <ArrowLeft size={24} color={appText} />
+            <ArrowLeft size={22} color={appText} />
           </Pressable>
         }
       />

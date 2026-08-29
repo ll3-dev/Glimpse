@@ -124,6 +124,12 @@ export function ModelManagerSection({
     loadMutation.mutate({ modelId, runtimeId: 'managed-local' });
   };
 
+  // 로드는 1GB+ 모델에서 수십 초 걸린다 — 어느 카드가 로드 중인지 알려
+  // 스피너를 띄운다.
+  const loadingModelId = loadMutation.isPending
+    ? (loadMutation.variables?.modelId ?? null)
+    : null;
+
   const handleUnload = (modelId: string) => {
     unloadMutation.mutate(modelId);
   };
@@ -137,26 +143,36 @@ export function ModelManagerSection({
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Cpu className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold text-card-foreground">
-            Local LLM
-          </h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="local-llm-toggle" className="text-sm text-muted-foreground cursor-pointer">
-            {enabled ? '켜짐' : '꺼짐'}
-          </Label>
-          <Switch
-            id="local-llm-toggle"
-            checked={enabled}
-            onCheckedChange={onToggle}
-          />
-        </div>
+    <div>
+      <div className="mb-3 flex items-center gap-1.5">
+        <Cpu className="h-4 w-4 text-app-primary" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+          로컬 AI 모델 관리 (Local LLM)
+        </h2>
       </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-card-foreground">
+              로컬 LLM 엔진 활성화
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              기기 내부에서 llama.cpp 런타임을 통해 모델을 직접 구동합니다.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="local-llm-toggle" className="text-xs font-semibold text-foreground cursor-pointer">
+              {enabled ? '켜짐' : '꺼짐'}
+            </Label>
+            <Switch
+              id="local-llm-toggle"
+              checked={enabled}
+              onCheckedChange={onToggle}
+            />
+          </div>
+        </div>
 
       {/* Runtime status & scan refresh */}
       {enabled && (
@@ -274,6 +290,7 @@ export function ModelManagerSection({
                           isDownloading={dlState != null}
                           downloadProgress={dlState ? Math.round(dlState.percentage) : undefined}
                           downloadError={dlFailure?.error}
+                          isLoading={loadingModelId === model.id}
                         />
                       );
                     })}
@@ -283,6 +300,7 @@ export function ModelManagerSection({
             })}
         </Tabs>
       )}
+      </div>
     </div>
   );
 }

@@ -59,13 +59,13 @@ export function ChatInput({
 
   return (
     <View 
-      className="bg-app-surface border-t border-app-border px-6 pt-3"
+      className="bg-app-surface border-t border-app-border px-6 pt-2.5"
       style={{ 
         paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 12),
       }}
     >
       <View className="flex-row items-end">
-        <View className="flex-1 rounded-md border border-app-border bg-app-bg px-3 mr-3 min-h-11 justify-center">
+        <View className="flex-1 rounded-xl border border-app-border bg-app-bg px-3.5 mr-2.5 min-h-[44px] max-h-32 justify-center">
           <TextInput
             value={text}
             onChangeText={setText}
@@ -73,19 +73,16 @@ export function ChatInput({
             placeholderTextColor={appSubtle}
             multiline
             maxLength={4000}
-            className="text-base text-app-text"
+            className="text-sm leading-5 text-app-text py-2"
             style={{ 
-              paddingTop: Platform.OS === 'ios' ? 10 : 0,
-              paddingBottom: Platform.OS === 'ios' ? 10 : 0,
               textAlignVertical: 'center',
-              includeFontPadding: false,
             }}
             editable={!isLoading}
           />
         </View>
         <Pressable
           className={cn(
-            "w-11 h-11 rounded-full items-center justify-center mb-0",
+            "w-11 h-11 rounded-full items-center justify-center",
             canSend
               ? "bg-app-text"
               : "bg-app-bg border border-app-border",

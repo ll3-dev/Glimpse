@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react-native";
+import { FileText as LucideFileText } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(FileText);
-export { FileText };
+
+export const FileText = iconWithClassName(LucideFileText);

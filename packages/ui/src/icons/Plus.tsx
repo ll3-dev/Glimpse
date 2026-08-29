@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react-native";
+import { Plus as LucidePlus } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(Plus);
-export { Plus };
+
+export const Plus = iconWithClassName(LucidePlus);

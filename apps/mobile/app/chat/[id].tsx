@@ -112,9 +112,9 @@ export default function ChatDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="대화 목록으로 돌아가기"
             onPress={() => navigation.handleBackPress()}
-            className="-ml-3 min-h-11 min-w-11 items-center justify-center"
+            className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
           >
-            <ChevronLeft size={24} color={appText} />
+            <ChevronLeft size={22} color={appText} />
           </Pressable>
         }
         rightElement={
@@ -123,9 +123,9 @@ export default function ChatDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel="대화 정보 편집"
               onPress={conversationActions.handleOpenEditModal}
-              className="min-h-11 min-w-11 items-center justify-center rounded-full bg-app-border/40 active:opacity-70"
+              className="h-10 w-10 items-center justify-center rounded-full bg-app-border/40 active:opacity-70"
             >
-              <SquarePen size={18} color={appText} />
+              <SquarePen size={17} color={appText} />
             </Pressable>
           ) : undefined
         }

@@ -1,4 +1,4 @@
-import { ClipboardCheck } from "lucide-react-native";
+import { ClipboardCheck as LucideClipboardCheck } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(ClipboardCheck);
-export { ClipboardCheck };
+
+export const ClipboardCheck = iconWithClassName(LucideClipboardCheck);

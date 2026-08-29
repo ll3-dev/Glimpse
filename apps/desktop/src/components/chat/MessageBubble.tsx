@@ -7,7 +7,7 @@ interface MessageBubbleProps {
 }
 
 function formatTimestamp(ts: number): string {
-  return new Date(ts).toLocaleTimeString(undefined, {
+  return new Date(ts).toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -24,19 +24,17 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
     >
       <div
         className={cn(
-          'max-w-[75%] rounded-2xl px-4 py-2.5',
+          'max-w-[78%] px-4 py-3 text-sm leading-relaxed shadow-2xs',
           isUser
-            ? 'rounded-br-md bg-primary text-primary-foreground'
-            : 'rounded-bl-md bg-muted text-foreground'
+            ? 'rounded-2xl rounded-tr-xs bg-app-text text-app-bg'
+            : 'rounded-2xl rounded-tl-xs border border-border bg-card text-foreground'
         )}
       >
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">
-          {message.content}
-        </p>
+        <p className="whitespace-pre-wrap">{message.content}</p>
         <span
           className={cn(
-            'mt-1 block text-xs',
-            isUser ? 'text-primary-foreground/60' : 'text-muted-foreground'
+            'mt-1.5 block text-[11px]',
+            isUser ? 'text-app-bg/70' : 'text-muted-foreground'
           )}
         >
           {formatTimestamp(message.createdAt)}

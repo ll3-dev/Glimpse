@@ -1,4 +1,4 @@
-import { Activity, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -55,7 +55,6 @@ export function QueryStateScrollView<T>({
   initialVisibleCount,
   visibleCountIncrement = 10,
 }: QueryStateScrollViewProps<T>) {
-  const KeyedView = View as any;
   const hasData = data.length > 0;
   const showLoading = isLoading;
   const showError = !isLoading && Boolean(error);
@@ -77,7 +76,7 @@ export function QueryStateScrollView<T>({
     ? Math.min(visibleCount, data.length)
     : data.length;
   const renderedItems = data.slice(0, clampedCount).map((item) => (
-    <KeyedView key={keyExtractor(item)}>{renderItem(item)}</KeyedView>
+    <View key={keyExtractor(item)}>{renderItem(item)}</View>
   ));
   const hasMore = windowed && clampedCount < data.length;
 
@@ -97,8 +96,9 @@ export function QueryStateScrollView<T>({
       className="flex-1"
       contentContainerStyle={{
         paddingTop: topPadding,
-        paddingBottom: bottomInset + 100,
+        paddingBottom: bottomInset + 80,
         paddingHorizontal: horizontalPadding,
+        flexGrow: 1,
       }}
       onScroll={handleScroll}
       scrollEventThrottle={64}
@@ -106,35 +106,36 @@ export function QueryStateScrollView<T>({
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
-      <Activity mode={showLoading ? "visible" : "hidden"}>
-        <View className="items-center justify-center py-24">
-          <Text className="text-muted-foreground text-sm font-medium">{loadingText}</Text>
+      {showLoading && (
+        <View className="flex-1 items-center justify-center py-24">
+          <Text className="text-app-muted text-sm font-medium">{loadingText}</Text>
         </View>
-      </Activity>
+      )}
 
-      <Activity mode={showError ? "visible" : "hidden"}>
-        <View className="items-center justify-center px-8 py-24">
+      {showError && (
+        <View className="flex-1 items-center justify-center px-8 py-24">
           <Text className="text-app-text mb-2 text-lg font-semibold tracking-tight">
             데이터를 불러오지 못했습니다
           </Text>
-          <Text className="text-muted-foreground text-center text-sm">
+          <Text className="text-app-muted text-center text-sm">
             {error?.message || "다시 시도해주세요"}
           </Text>
         </View>
-      </Activity>
+      )}
 
-      <Activity mode={showEmpty ? "visible" : "hidden"}>
-        <View className="items-center justify-center px-8 py-24">
+      {showEmpty && (
+        <View className="flex-1 items-center justify-center px-8 py-24">
           <Text className="text-app-text mb-2 text-lg font-semibold tracking-tight">
             {emptyTitle}
           </Text>
-          <Text className="text-muted-foreground text-center text-sm">
+          <Text className="text-app-muted text-center text-sm leading-relaxed">
             {emptyDescription}
           </Text>
         </View>
-      </Activity>
+      )}
 
-      <Activity mode={showData ? "visible" : "hidden"}>{renderedItems}</Activity>
+      {showData && renderedItems}
     </ScrollView>
   );
 }
+

@@ -13,22 +13,22 @@ interface DigestListProps {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm animate-pulse">
-      <div className="h-4 w-2/3 rounded bg-muted mb-3" />
+    <div className="rounded-xl border border-border/80 bg-card p-5 shadow-2xs animate-pulse">
+      <div className="h-4 w-2/3 rounded-md bg-muted mb-3.5" />
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 space-y-2">
           <div className="h-3 w-12 rounded bg-muted" />
           <div className="h-4 w-3/4 rounded bg-muted" />
         </div>
-        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 space-y-2">
           <div className="h-3 w-12 rounded bg-muted" />
           <div className="h-4 w-3/4 rounded bg-muted" />
         </div>
       </div>
       <div className="flex gap-2">
-        <div className="h-7 flex-1 rounded bg-muted" />
-        <div className="h-7 flex-1 rounded bg-muted" />
-        <div className="h-7 flex-1 rounded bg-muted" />
+        <div className="h-8 flex-1 rounded-lg bg-muted" />
+        <div className="h-8 flex-1 rounded-lg bg-muted" />
+        <div className="h-8 flex-1 rounded-lg bg-muted" />
       </div>
     </div>
   );
@@ -55,12 +55,12 @@ export function DigestList({
   if (recommendations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <Sparkles className="size-8 text-muted-foreground" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/80 bg-muted/60 text-muted-foreground shadow-2xs">
+          <Sparkles className="h-6 w-6 opacity-70" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground mb-1">No new recommendations!</h3>
-        <p className="text-sm text-muted-foreground">
-          Check back later for knowledge connections.
+        <h3 className="mt-4 text-base font-semibold text-foreground">추천할 연결이 없습니다</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          새로운 지식을 더 기록하면 AI가 지식 간의 유의미한 연결을 찾아 추천합니다.
         </p>
       </div>
     );

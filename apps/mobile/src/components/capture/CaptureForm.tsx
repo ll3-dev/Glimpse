@@ -147,7 +147,7 @@ export function CaptureForm({
         multiline={false}
       />
 
-      <View className="min-h-100">
+      <View className="min-h-[200px]">
         <TextInput
           className="text-base leading-6 text-app-text"
           value={body}

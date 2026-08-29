@@ -22,25 +22,25 @@ export function LibraryDetailHeaderActions({
     <View className="flex-row items-center gap-1">
       <Pressable
         onPress={onCopy}
-        className="p-2 active:opacity-70"
+        className="h-9 w-9 items-center justify-center rounded-lg active:bg-app-border/40"
         accessibilityLabel="복사"
       >
-        <Copy size={18} color={appMuted} />
+        <Copy size={17} color={appMuted} />
       </Pressable>
       <Pressable
         onPress={onEdit}
-        className="p-2 active:opacity-70"
+        className="h-9 w-9 items-center justify-center rounded-lg active:bg-app-border/40"
         accessibilityLabel="수정"
       >
-        <Pencil size={18} color={appMuted} />
+        <Pencil size={17} color={appMuted} />
       </Pressable>
       <Pressable
         onPress={onDelete}
         disabled={isDeleting}
-        className="p-2 -mr-2 active:opacity-70"
+        className="h-9 w-9 items-center justify-center rounded-lg active:bg-app-accent/10"
         accessibilityLabel="삭제"
       >
-        <Trash2 size={18} color={appAccent} />
+        <Trash2 size={17} color={appAccent} />
       </Pressable>
     </View>
   );

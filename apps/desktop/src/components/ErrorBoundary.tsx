@@ -56,34 +56,34 @@ interface ErrorFallbackProps {
 function ErrorFallback({ error, errorInfo, onReload }: ErrorFallbackProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
-      <div className="w-full max-w-lg space-y-6 rounded-xl border border-border bg-card p-8 shadow-lg">
+      <div className="w-full max-w-lg space-y-6 rounded-2xl border border-border bg-card p-8 shadow-xl">
         {/* Icon + heading */}
         <div className="flex items-start gap-4">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10">
             <AlertTriangle className="size-5 text-destructive" />
           </div>
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-card-foreground">Something went wrong</h2>
-            <p className="text-sm text-muted-foreground">
-              An unexpected error occurred. You can try reloading or report the issue.
+            <h2 className="text-lg font-bold text-card-foreground">오류가 발생했습니다</h2>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              예기치 못한 문제가 발생했습니다. 화면을 다시 불러오거나 문제가 지속되면 이슈를 제보해 주세요.
             </p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Button onClick={onReload}>
+          <Button onClick={onReload} className="gap-1.5 rounded-xl bg-app-text text-app-bg hover:opacity-90">
             <RotateCcw className="size-4" />
-            Reload
+            다시 불러오기
           </Button>
           <a
             href="https://github.com/ll3-dev/Glimpse/issues"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <ExternalLink className="size-4" />
-            Report Issue
+            <ExternalLink className="size-3.5" />
+            이슈 제보
           </a>
         </div>
 
@@ -109,18 +109,18 @@ function ErrorDetails({ error, componentStack }: ErrorDetailsProps) {
   if (!error && !componentStack) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pt-2 border-t border-border/60">
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronDown className={`size-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        Error details
+        상세 오류 정보 (Error details)
       </button>
 
       {expanded && (
-        <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs text-muted-foreground">
+        <pre className="max-h-48 overflow-auto rounded-xl bg-muted/70 p-3.5 text-[11px] leading-relaxed text-muted-foreground font-mono">
           {error && <>{String(error.message)}{'\n\n'}</>}
           {error?.stack && <>{error.stack}{'\n\n'}</>}
           {componentStack && <>Component stack:{'\n'}{componentStack}</>}

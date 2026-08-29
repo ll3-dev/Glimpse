@@ -16,17 +16,19 @@ export function LibraryActiveFilterBar({
   const appMuted = useSemanticColor('appMuted');
 
   return (
-    <View className="px-6 pb-2 flex-row items-center justify-between">
-      <Text className="text-xs text-app-muted">
+    <View className="px-6 pb-2.5 flex-row items-center justify-between">
+      <Text className="text-xs text-app-muted font-medium">
         {itemCount}개 항목 표시 중
         {selectedTag ? ` · #${selectedTag}` : ''}
       </Text>
       <Pressable
         onPress={onResetFilters}
-        className="flex-row items-center py-0.5 px-2 rounded bg-app-border/40"
+        className="flex-row items-center py-1 px-2.5 rounded-lg bg-app-border/40 active:bg-app-border/70"
+        accessibilityRole="button"
+        accessibilityLabel="필터 초기화"
       >
-        <X size={11} color={appMuted} className="mr-1" />
-        <Text className="text-[11px] font-medium text-app-muted">필터 초기화</Text>
+        <X size={11} color={appMuted} style={{ marginRight: 4 }} />
+        <Text className="text-[11px] font-semibold text-app-muted">필터 초기화</Text>
       </Pressable>
     </View>
   );

@@ -1,4 +1,4 @@
-import { Pin } from "lucide-react-native";
+import { Pin as LucidePin } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(Pin);
-export { Pin };
+
+export const Pin = iconWithClassName(LucidePin);

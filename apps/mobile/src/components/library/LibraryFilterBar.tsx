@@ -81,7 +81,7 @@ export function LibraryFilterBar({
         return (
           <Pressable
             onPress={onCycleSortOrder}
-            className={`flex-row items-center rounded-lg border px-2.5 py-1.5 active:opacity-70 ${
+            className={`h-8 flex-row items-center rounded-lg border px-2.5 active:opacity-70 ${
               isCustomSort
                 ? 'border-app-text bg-app-surface'
                 : 'border-app-border bg-app-surface'
@@ -122,7 +122,7 @@ export function LibraryFilterBar({
             onSelectTag(isActive ? null : item.value);
             onSelectType('all');
           }}
-          className={`rounded-lg border px-3 py-1.5 ${
+          className={`h-8 items-center justify-center rounded-lg border px-3 ${
             isActive
               ? 'border-app-text bg-app-text'
               : 'border-app-border bg-app-surface active:bg-app-bg'

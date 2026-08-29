@@ -103,7 +103,8 @@ export default function ChatScreen() {
             data={conversations}
             renderItem={renderConversation}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            estimatedItemSize={72}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
             contentInset={{ bottom: insets.bottom }}
           />
         </View>

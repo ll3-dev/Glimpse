@@ -1,4 +1,4 @@
-import { Sparkle } from "lucide-react-native";
+import { Sparkle as LucideSparkle } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(Sparkle);
-export { Sparkle };
+
+export const Sparkle = iconWithClassName(LucideSparkle);

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { LocalModelDefinition, LocalLLMModelFamily, ModelCapability } from '@glimpse/shared';
 import type { ManagedModelRecord } from '@/features/local-llm/desktop-llm-service';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -33,20 +32,22 @@ export interface ModelCardProps {
   downloadProgress?: number;
   /** 다운로드 실패 사유 — 실패 이벤트 수신 시 표시 */
   downloadError?: string;
+  /** 모델 로드 진행 중 — 수십 초 걸리는 로드에 피드백 제공 */
+  isLoading?: boolean;
 }
 
-// ── Family badge colors ──────────────────────────────────────────────────────
+// ── Family badge colors (Semantic Pastel Tokens) ─────────────────────────────
 
 const FAMILY_COLORS: Record<string, string> = {
-  'qwen-chatml': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  qwen: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  llama: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  phi: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  gemma: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  glm: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
-  nomic: 'bg-gray-100 text-gray-700 dark:bg-gray-800/40 dark:text-gray-300',
-  'generic-instruct': 'bg-slate-100 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300',
-  mistral: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+  'qwen-chatml': 'bg-tag-sky-bg text-tag-sky-text',
+  qwen: 'bg-tag-sky-bg text-tag-sky-text',
+  llama: 'bg-tag-lavender-bg text-tag-lavender-text',
+  phi: 'bg-tag-mint-bg text-tag-mint-text',
+  gemma: 'bg-tag-peach-bg text-tag-peach-text',
+  glm: 'bg-tag-mint-bg text-tag-mint-text',
+  nomic: 'bg-tag-neutral-bg text-tag-neutral-text',
+  'generic-instruct': 'bg-tag-neutral-bg text-tag-neutral-text',
+  mistral: 'bg-tag-lavender-bg text-tag-lavender-text',
 };
 
 function getFamilyColor(family: LocalLLMModelFamily): string {
@@ -56,12 +57,12 @@ function getFamilyColor(family: LocalLLMModelFamily): string {
 // ── Capability config ────────────────────────────────────────────────────────
 
 const CAPABILITY_CONFIG: Record<ModelCapability, { label: string; icon: React.ElementType }> = {
-  chat: { label: 'Chat', icon: MessageSquare },
-  code: { label: 'Code', icon: Code },
-  reasoning: { label: 'Reasoning', icon: Brain },
-  embedding: { label: 'Embedding', icon: Search },
-  vision: { label: 'Vision', icon: Eye },
-  tools: { label: 'Tools', icon: Zap },
+  chat: { label: '채팅', icon: MessageSquare },
+  code: { label: '코딩', icon: Code },
+  reasoning: { label: '추론', icon: Brain },
+  embedding: { label: '임베딩', icon: Search },
+  vision: { label: '비전', icon: Eye },
+  tools: { label: '도구', icon: Zap },
 };
 
 // ── Helper ───────────────────────────────────────────────────────────────────
@@ -86,211 +87,218 @@ export function ModelCard({
   isDownloading,
   downloadProgress = 0,
   downloadError,
+  isLoading,
 }: ModelCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isInstalled = installedModel?.status === 'ready' || installedModel?.status === 'active';
 
   return (
     <div
-      className={`group relative rounded-lg border bg-card p-4 transition-all hover:shadow-sm ${
+      className={`group relative flex flex-col justify-between rounded-2xl border bg-card p-5 transition-all shadow-2xs ${
         isActive
-          ? 'border-primary ring-1 ring-primary/30'
-          : 'border-border'
+          ? 'border-foreground/60 ring-1 ring-foreground/20'
+          : 'border-border hover:border-foreground/20 hover:shadow-xs'
       }`}
     >
-      {/* Active indicator */}
-      {isActive && (
-        <div className="absolute -top-px -right-px -bottom-px -left-px rounded-lg border-2 border-primary pointer-events-none" />
-      )}
-
-      {/* Header row: name + family badge */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-semibold text-card-foreground truncate">
-            {model.name}
-          </h4>
-          {model.description && (
-            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-              {model.description}
-            </p>
-          )}
-        </div>
-        <Badge
-          className={`shrink-0 text-[10px] px-1.5 py-0 h-5 border-0 ${getFamilyColor(model.family)}`}
-        >
-          {model.family}
-        </Badge>
-      </div>
-
-      {/* Meta row: size + quantization + context */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-        <span className="flex items-center gap-1">
-          <HardDrive className="h-3 w-3" />
-          {model.displaySize}
-        </span>
-        <span className="flex items-center gap-1">
-          <Zap className="h-3 w-3" />
-          {model.quantization}
-        </span>
-        <span>
-          ctx {formatContextLength(model.contextLength)}
-        </span>
-      </div>
-
-      {/* Capability badges */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {model.capabilities.map((cap) => {
-          const config = CAPABILITY_CONFIG[cap];
-          if (!config) return null;
-          const Icon = config.icon;
-          return (
-            <Badge
-              key={cap}
-              variant="secondary"
-              className="h-5 gap-0.5 text-[10px] px-1.5"
-            >
-              <Icon className="h-2.5 w-2.5" />
-              {config.label}
-            </Badge>
-          );
-        })}
-      </div>
-
-      {/* Status + download progress */}
-      {isDownloading && (
-        <div className="mb-3 space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">다운로드 중...</span>
-            <span className="font-medium text-primary">{downloadProgress}%</span>
+      <div>
+        {/* Header row: name + family badge */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-bold text-card-foreground truncate">
+              {model.name}
+            </h4>
+            {model.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                {model.description}
+              </p>
+            )}
           </div>
-          <Progress value={downloadProgress} />
-        </div>
-      )}
-
-      {/* Download failure */}
-      {downloadError && !isDownloading && (
-        <div className="mb-3 rounded-md bg-destructive/10 px-2.5 py-1.5">
-          <p className="text-xs text-destructive truncate" title={downloadError}>
-            다운로드 실패: {downloadError}
-          </p>
-        </div>
-      )}
-
-      {/* Status line */}
-      {!isDownloading && (
-        <div className="flex items-center gap-1.5 mb-3">
-          {isActive ? (
-            <>
-              <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
-              <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                활성 (Active)
-              </span>
-            </>
-          ) : isInstalled ? (
-            <>
-              <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-              <span className="text-xs text-muted-foreground">설치됨</span>
-            </>
-          ) : (
-            <>
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/30 shrink-0" />
-              <span className="text-xs text-muted-foreground">미설치</span>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Action buttons */}
-      <div className="flex items-center gap-2">
-        {!isInstalled && !isDownloading && (
-          <Button
-            size="sm"
-            onClick={() => onDownload(model)}
-            className="gap-1"
+          <span
+            className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium ${getFamilyColor(model.family)}`}
           >
-            <Download className="h-3.5 w-3.5" />
-            다운로드
-          </Button>
+            {model.family}
+          </span>
+        </div>
+
+        {/* Meta row: size + quantization + context */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+          <span className="flex items-center gap-1">
+            <HardDrive className="h-3 w-3" />
+            {model.displaySize}
+          </span>
+          <span className="flex items-center gap-1">
+            <Zap className="h-3 w-3" />
+            {model.quantization}
+          </span>
+          <span>
+            컨텍스트 {formatContextLength(model.contextLength)}
+          </span>
+        </div>
+
+        {/* Capability badges */}
+        <div className="flex flex-wrap gap-1 mb-4">
+          {model.capabilities.map((cap) => {
+            const config = CAPABILITY_CONFIG[cap];
+            if (!config) return null;
+            const Icon = config.icon;
+            return (
+              <span
+                key={cap}
+                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+              >
+                <Icon className="h-2.5 w-2.5" />
+                {config.label}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        {/* Status + download progress */}
+        {isDownloading && (
+          <div className="mb-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">다운로드 중...</span>
+              <span className="font-semibold text-foreground">{downloadProgress}%</span>
+            </div>
+            <Progress value={downloadProgress} />
+          </div>
         )}
 
-        {isDownloading && (
-          <>
-            <Button size="sm" disabled className="gap-1">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              다운로드 중...
+        {/* Download failure */}
+        {downloadError && !isDownloading && (
+          <div className="mb-3 rounded-xl bg-destructive/10 px-3 py-1.5">
+            <p className="text-xs text-destructive truncate" title={downloadError}>
+              다운로드 실패: {downloadError}
+            </p>
+          </div>
+        )}
+
+        {/* Status line */}
+        {!isDownloading && (
+          <div className="flex items-center gap-1.5 mb-3">
+            {isActive ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
+                <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                  활성 상태 (Active)
+                </span>
+              </>
+            ) : isInstalled ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                <span className="text-xs text-muted-foreground">설치됨</span>
+              </>
+            ) : (
+              <>
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/30 shrink-0" />
+                <span className="text-xs text-muted-foreground">미설치</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {!isInstalled && !isDownloading && (
+            <Button
+              size="sm"
+              onClick={() => onDownload(model)}
+              className="gap-1.5 rounded-xl bg-app-text text-app-bg hover:opacity-90"
+            >
+              <Download className="h-3.5 w-3.5" />
+              다운로드
             </Button>
-            {onCancelDownload && (
+          )}
+
+          {isDownloading && (
+            <>
+              <Button size="sm" disabled className="gap-1.5 rounded-xl">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                다운로드 중...
+              </Button>
+              {onCancelDownload && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCancelDownload(model.id)}
+                  className="gap-1.5 rounded-xl"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  취소
+                </Button>
+              )}
+            </>
+          )}
+
+          {isInstalled && !isActive && (
+            isLoading ? (
+              <Button size="sm" variant="outline" disabled className="gap-1.5 rounded-xl">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                로드 중...
+              </Button>
+            ) : (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onCancelDownload(model.id)}
-                className="gap-1"
+                onClick={() => onLoad(model.id)}
+                className="gap-1.5 rounded-xl"
               >
-                <X className="h-3.5 w-3.5" />
+                <Zap className="h-3.5 w-3.5" />
+                로드
+              </Button>
+            )
+          )}
+
+          {isActive && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onUnload(model.id)}
+              className="gap-1.5 rounded-xl"
+            >
+              <X className="h-3.5 w-3.5" />
+              언로드
+            </Button>
+          )}
+
+          {isInstalled && onDelete && !confirmDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirmDelete(true)}
+              className="gap-1 text-muted-foreground hover:text-destructive rounded-xl"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
+          {isInstalled && onDelete && confirmDelete && (
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="xs"
+                variant="destructive"
+                onClick={() => {
+                  onDelete(model.id);
+                  setConfirmDelete(false);
+                }}
+                className="gap-1 rounded-lg"
+              >
+                <Check className="h-3 w-3" />
+                확인
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => setConfirmDelete(false)}
+                className="rounded-lg"
+              >
                 취소
               </Button>
-            )}
-          </>
-        )}
-
-        {isInstalled && !isActive && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onLoad(model.id)}
-            className="gap-1"
-          >
-            <Zap className="h-3.5 w-3.5" />
-            로드
-          </Button>
-        )}
-
-        {isActive && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => onUnload(model.id)}
-            className="gap-1"
-          >
-            <X className="h-3.5 w-3.5" />
-            언로드
-          </Button>
-        )}
-
-        {isInstalled && onDelete && !confirmDelete && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setConfirmDelete(true)}
-            className="gap-1 text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
-
-        {isInstalled && onDelete && confirmDelete && (
-          <div className="flex items-center gap-1.5">
-            <Button
-              size="xs"
-              variant="destructive"
-              onClick={() => {
-                onDelete(model.id);
-                setConfirmDelete(false);
-              }}
-              className="gap-1"
-            >
-              <Check className="h-3 w-3" />
-              확인
-            </Button>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => setConfirmDelete(false)}
-            >
-              취소
-            </Button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

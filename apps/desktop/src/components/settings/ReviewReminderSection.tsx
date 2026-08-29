@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { Bell, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useReviewReminderScheduler } from '@glimpse/hooks';
@@ -64,15 +64,19 @@ export function ReviewReminderSection() {
 
   return (
     <section>
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Review Reminders
-      </h2>
-      <div className="rounded-lg border border-border bg-card p-5">
+      <div className="mb-3 flex items-center gap-1.5">
+        <Bell className="h-4 w-4 text-app-primary" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+          복습 알림 설정 (Reminders)
+        </h2>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-foreground">매일 알려드리기</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              매일 지정한 시간에 복습할 항목 수를 알려드립니다.
+            <p className="text-sm font-semibold text-foreground">매일 알림 받기</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              매일 지정한 시간에 복습할 지식 항목 수를 데스크톱 알림으로 전달합니다.
             </p>
           </div>
           <Switch
@@ -84,30 +88,34 @@ export function ReviewReminderSection() {
 
         {permissionDenied && (
           <p className="mt-3 text-xs text-destructive">
-            알림 권한이 꺼져 있어요. 시스템 설정에서 허용해 주세요.
+            시스템 알림 권한이 비활성화되어 있습니다. OS 알림 설정에서 권한을 허용해 주세요.
           </p>
         )}
 
         {enabled && (
-          <div className="mt-4 space-y-2 rounded-md border border-border bg-background p-4">
-            <p className="text-xs text-muted-foreground">알림 시간</p>
-            <TimeStepperRow
-              label="시간"
-              value={hour}
-              minValue={0}
-              maxValue={23}
-              onChange={(next) => handleTimeChange(next, minute)}
-            />
-            <TimeStepperRow
-              label="분"
-              value={minute}
-              minValue={0}
-              maxValue={59}
-              onChange={(next) => handleTimeChange(hour, next)}
-            />
-            <p className="font-mono text-sm font-semibold text-foreground">
-              {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
-            </p>
+          <div className="mt-5 space-y-3 rounded-xl border border-border/80 bg-background/80 p-4">
+            <p className="text-xs font-semibold text-muted-foreground">알림 예약 시각</p>
+            <div className="space-y-2">
+              <TimeStepperRow
+                label="시간"
+                value={hour}
+                minValue={0}
+                maxValue={23}
+                onChange={(next) => handleTimeChange(next, minute)}
+              />
+              <TimeStepperRow
+                label="분"
+                value={minute}
+                minValue={0}
+                maxValue={59}
+                onChange={(next) => handleTimeChange(hour, next)}
+              />
+            </div>
+            <div className="border-t border-border/60 pt-2 text-right">
+              <span className="font-mono text-base font-bold text-foreground">
+                {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -129,28 +137,30 @@ function TimeStepperRow({ label, value, minValue, maxValue, onChange }: TimeStep
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground/80">{label}</span>
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
-          size="icon"
+          size="icon-xs"
           aria-label={`${label} 감소`}
           disabled={value <= minValue}
+          className="rounded-lg"
           onClick={() => onChange(clamp(value - 1))}
         >
-          <Minus />
+          <Minus className="h-3 w-3" />
         </Button>
-        <span aria-live="polite" className="min-w-10 text-center font-mono text-sm font-semibold">
+        <span aria-live="polite" className="min-w-8 text-center font-mono text-xs font-semibold">
           {String(value).padStart(2, '0')}
         </span>
         <Button
           variant="outline"
-          size="icon"
+          size="icon-xs"
           aria-label={`${label} 증가`}
           disabled={value >= maxValue}
+          className="rounded-lg"
           onClick={() => onChange(clamp(value + 1))}
         >
-          <Plus />
+          <Plus className="h-3 w-3" />
         </Button>
       </div>
     </div>

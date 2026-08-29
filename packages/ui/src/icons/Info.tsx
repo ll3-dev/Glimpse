@@ -1,4 +1,4 @@
-import { Info } from "lucide-react-native";
+import { Info as LucideInfo } from "lucide-react-native";
 import { iconWithClassName } from "../lib/iconWithClassName";
-iconWithClassName(Info);
-export { Info };
+
+export const Info = iconWithClassName(LucideInfo);
