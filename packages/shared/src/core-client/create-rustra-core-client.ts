@@ -49,6 +49,7 @@ import {
   deleteKnowledgeItem,
   deleteMessage,
   exportData,
+  exportDelta,
   getDueKnowledgeItems,
   getKnowledgeItemById,
   importData,
@@ -69,6 +70,7 @@ import {
   respondToRecommendation,
   saveKnowledgeItem,
   saveRecommendations,
+  syncDataRevision,
   updateConversation,
   updateKnowledgeItem,
   updateMessage,
@@ -161,6 +163,8 @@ export function createRustraCoreClient(deps: RustraCoreClientDeps): CoreClient {
 
     // -- Data portability --
     exportData: async () => (await exportData({})).dataJson,
+    exportDelta: async (sinceClockMs) => (await exportDelta({ sinceClockMs })).dataJson,
+    syncDataRevision: async () => (await syncDataRevision({})).revision,
     importData: async (dataJson) => importData({ dataJson }),
     mergeData: async (dataJson) => mergeData({ dataJson }),
     mergeDelta: async (dataJson) => mergeDelta({ dataJson }),

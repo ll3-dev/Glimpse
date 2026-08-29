@@ -212,6 +212,15 @@ export interface CoreClient {
   listRecentFeedbackEvents(limit: number): Promise<FeedbackEvent[]>;
   logRecommendationFeedback(event: FeedbackEvent): Promise<FeedbackEvent>;
   exportData(): Promise<string>;
+  /**
+   * Incremental export bounded by a merge-clock cursor (upstream delta
+   * path): rows strictly newer than `sinceClockMs`, plus all tombstones.
+   * Implementations without the bridge command omit it; sync callers
+   * degrade to a full {@link CoreClient.exportData} snapshot.
+   */
+  exportDelta?(sinceClockMs: number): Promise<string>;
+  /** Storage write counter backing cheap local-change detection. Null when the active delegate does not implement it. */
+  syncDataRevision?(): Promise<number | null>;
   importData(dataJson: string): Promise<DataImportSummary>;
   mergeData(dataJson: string): Promise<DataImportSummary>;
   /**

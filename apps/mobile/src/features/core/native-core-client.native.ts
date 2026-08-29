@@ -110,6 +110,9 @@ export const nativeCoreClient: CoreClient = {
   logRecommendationFeedback: (event) =>
     selectDelegate().then((c) => c.logRecommendationFeedback(event)),
   exportData: () => selectDelegate().then((c) => c.exportData()),
+  exportDelta: (sinceClockMs) =>
+    selectDelegate().then((c) => c.exportDelta?.(sinceClockMs) ?? c.exportData()),
+  syncDataRevision: () => selectDelegate().then((c) => c.syncDataRevision?.() ?? null),
   importData: (dataJson) => selectDelegate().then((c) => c.importData(dataJson)),
   mergeData: (dataJson) => selectDelegate().then((c) => c.mergeData(dataJson)),
   deleteAllData: () => selectDelegate().then((c) => c.deleteAllData()),

@@ -73,6 +73,14 @@ export interface MobileCoreClient {
 
   // Data portability
   exportData(): Promise<string>;
+  /**
+   * Incremental export bounded by a merge-clock cursor (upstream delta
+   * path). Optional: the in-memory fallback client does not implement it,
+   * so sync callers degrade to a full `exportData` snapshot when absent.
+   */
+  exportDelta?(sinceClockMs: number): Promise<string>;
+  /** Storage write counter for cheap local-change detection. Null when the active delegate does not implement it. */
+  syncDataRevision?(): Promise<number | null>;
   importData(dataJson: string): Promise<DataImportSummary>;
   mergeData(dataJson: string): Promise<DataImportSummary>;
   /**
