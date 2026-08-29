@@ -186,6 +186,18 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   const snapshotPromise = watermark == null
     ? mobileCoreClient.exportData().then((data) => JSON.parse(data) as unknown)
     : null;
+  // Upstream path: rows newer than the last server-acked clock ride along on
+  // every watermark poll. The cursor advances only from the response's
+  // `upstreamAck`, so an upload that never lands simply re-sends next time —
+  // LWW merging makes the duplicate harmless. Extraction failures are not
+  // fatal: the periodic full-snapshot reconciliation still carries the edits.
+  const upstreamDeltaPromise =
+    watermark != null && mobileCoreClient.exportDelta
+      ? mobileCoreClient
+          .exportDelta(config.lastAckedUpstreamClock ?? 0)
+          .then((data) => JSON.parse(data) as unknown)
+          .catch(() => null)
+      : null;
   let lastError: unknown = new Error('연결 가능한 Desktop 주소가 없습니다.');
 
   const attempt = async (baseUrl: string): Promise<boolean> => {
@@ -197,6 +209,10 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
       requestBody.snapshot = await snapshotPromise;
     } else {
       requestBody.sinceWatermark = watermark;
+    }
+    if (upstreamDeltaPromise) {
+      const upstreamDelta = await upstreamDeltaPromise;
+      if (upstreamDelta) requestBody.upstreamDelta = upstreamDelta;
     }
     // Large payloads ride gzip: both peers share the tower-http contract.
     const requestPayload = maybeCompressRequestBody(JSON.stringify(requestBody));
@@ -227,6 +243,10 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
       config = updateSyncConfig({
         lastSyncedAt: Date.now(),
         outboundWatermark: response.newWatermark ?? watermark,
+        lastAckedUpstreamClock: advanceAckedUpstreamClock(
+          config.lastAckedUpstreamClock,
+          response.upstreamAck,
+        ),
         tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
       });
       return deltaAppliedSomething(summary);
@@ -249,6 +269,12 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
       // poll to the incremental path. Legacy desktops omit the field — keep
       // the reset-to-full-snapshot behavior for them.
       outboundWatermark: response.newWatermark ?? null,
+      // The full snapshot merged server-side carries every local row, so its
+      // ack (dataset's highest clock) is also a valid upstream cursor.
+      lastAckedUpstreamClock: advanceAckedUpstreamClock(
+        config.lastAckedUpstreamClock,
+        response.upstreamAck,
+      ),
       tailscaleUrl: response.endpoints.tailscaleUrl ?? config.tailscaleUrl,
     });
     // false = nothing merged locally (fingerprint skip). The auto-sync
@@ -352,6 +378,18 @@ function safeParse(text: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** The acked upstream cursor moves forward only, and only from a
+ * server-issued number. A null ack (legacy desktop) freezes the cursor —
+ * the periodic full-snapshot reconciliation remains the upstream carrier
+ * there, so correctness never depends on this feature being present. */
+function advanceAckedUpstreamClock(
+  current: number | null,
+  upstreamAck: number | null | undefined,
+): number | null {
+  if (upstreamAck == null) return current;
+  return Math.max(upstreamAck, current ?? 0);
 }
 
 /** Whether an applied delta touched any row. The merge summary counts rows
