@@ -19,6 +19,16 @@ export type SyncConfig = {
    * reseals any clock-skew gap.
    */
   outboundWatermark: number | null;
+  /**
+   * Highest local merge clock the desktop has confirmed merging from this
+   * device (upstream delta ack). Advanced ONLY from a successful server
+   * response (`upstreamAck`) — never optimistically — so a failed transfer
+   * re-sends the same rows next attempt, which LWW merging absorbs
+   * idempotently. Null until the first successful sync establishes a
+   * baseline; the delta export then starts from 0 (full history), which the
+   * desktop's LWW merge deduplicates.
+   */
+  lastAckedUpstreamClock: number | null;
 };
 
 export type SyncRuntimeStatus =
@@ -64,6 +74,14 @@ export type SyncResponse = {
    * so the client can adopt the incremental path.
    */
   newWatermark: number | null;
+  /**
+   * Highest merge clock the server confirmed merging from this request's
+   * upstream delta (`upstreamDelta`). The client advances
+   * `lastAckedUpstreamClock` only from this value; null (legacy desktop)
+   * keeps the cursor frozen and the periodic full snapshot remains the
+   * upstream carrier.
+   */
+  upstreamAck: number | null;
   /** Null on the delta path: no desktop-side rewrite means no fresh print. */
   fingerprint: string | null;
   endpoints: {

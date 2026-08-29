@@ -13,6 +13,7 @@ const DEFAULT_CONFIG: SyncConfig = {
   lastSyncedAt: null,
   snapshotFingerprint: null,
   outboundWatermark: null,
+  lastAckedUpstreamClock: null,
 };
 
 type SyncStore = {
