@@ -245,4 +245,56 @@ describe('generateResponseWithKnowledge', () => {
     expect(many.length).toBe(RAG_LIBRARY_LIMIT + 5);
     expect(texts).toHaveLength(RAG_LIBRARY_LIMIT);
   });
+
+  test('임베딩은 성공했으나 임계값 미달이면 원본 히스토리로 폴백 — 참조 없음', async () => {
+    const { generateResponseWithKnowledge } = await loadModule();
+    const history = [{ role: 'user', content: '전혀 다른 질문' }];
+    // 직교 벡터 = 코사인 0 < 0.55 — 임베딩 파이프라인은 살아 있지만 관련 항목 없음.
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      itemVectors: new Map(itemTexts.map((text) => [text, [0, 1]])),
+    }));
+
+    const result = await generateResponseWithKnowledge(history, undefined, {
+      loadLibrary: async () => [item({ id: 'a', title: '무관한 노트' })],
+      embed: embedForRagMock,
+    });
+
+    expect(chatResponseMock).toHaveBeenCalledTimes(1);
+    expect(chatResponseMock.mock.calls[0][0]).toEqual(history);
+    expect(result.references).toEqual([]);
+  });
+
+  test('관련 항목이 캡 상한 밖(101번째)이면 참조 없음 — 캡 절단이 곧 무관', async () => {
+    const { generateResponseWithKnowledge, RAG_LIBRARY_LIMIT } = await loadModule();
+    const beyond = item({
+      id: 'beyond',
+      title: '캡 밖 관련 노트',
+    });
+    const library = [
+      ...Array.from({ length: RAG_LIBRARY_LIMIT }, (_, index) =>
+        item({ id: `in-${index}`, title: `캡 내 노트 ${index}` }),
+      ),
+      beyond,
+    ];
+
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      // 캡 안 텍스트는 전부 직교(무관) — 관련 항목의 텍스트는 애초에 요청에 없다.
+      itemVectors: new Map(itemTexts.map((text) => [text, [0, 1]])),
+    }));
+
+    const result = await generateResponseWithKnowledge(
+      [{ role: 'user', content: '캡 밖 노트 찾기' }],
+      undefined,
+      { loadLibrary: async () => library, embed: embedForRagMock },
+    );
+
+    expect(library.length).toBe(RAG_LIBRARY_LIMIT + 1);
+    const texts = embedForRagMock.mock.calls[0][1];
+    expect(texts).toHaveLength(RAG_LIBRARY_LIMIT);
+    expect(texts).not.toContain(itemEmbeddingText(beyond));
+    expect(result.references).toEqual([]);
+    expect(chatResponseMock.mock.calls[0][0][0].role).not.toBe('system');
+  });
 });

@@ -92,6 +92,9 @@ export async function generateResponseWithKnowledge(
 
   // 3) 상한 컷 — 캐시 없는 재임베딩 비용이 메시지당 라이브러리 크기에 비례해
   //    자라는 것을 막는 경계(위 RAG_LIBRARY_LIMIT 주석 참조).
+  //    주의: slice 순서는 테이블 순서 그대로라 최신성·관련성 편향이 없다 —
+  //    라이브러리가 자라면 관련 항목이 조용히 잘려나갈 수 있다(참조 []).
+  //    TODO: 임베딩 캐시 + 최신성 우선 정렬이 후속 작업.
   const cappedItems = library.slice(0, RAG_LIBRARY_LIMIT);
 
   // 4) 항목 텍스트는 검색 리랭크와 같은 함수로 만들되, embedForRag의 결과가
