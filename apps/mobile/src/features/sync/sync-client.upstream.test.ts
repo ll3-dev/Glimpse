@@ -41,40 +41,43 @@ const calls = {
   mergeDelta: [] as string[],
 };
 
-mock.module('../../features/core', () => ({
-  mobileCoreClient: {
-    async exportDelta(sinceClockMs: number): Promise<string> {
-      calls.exportDelta.push(sinceClockMs);
-      return JSON.stringify({
-        formatVersion: 1,
-        exportedAt: 0,
-        knowledgeItems: [{ id: 'mobile-only', updatedAt: 800 }],
-        conversations: [],
-        messages: [],
-        recommendations: [],
-        feedbackEvents: [],
-        tombstones: [],
-      });
-    },
-    async exportData(): Promise<string> {
-      calls.exportData += 1;
-      return JSON.stringify({ formatVersion: 1, knowledgeItems: [], exportedAt: 0 });
-    },
-    async mergeData(dataJson: string): Promise<unknown> {
-      calls.mergeData.push(dataJson);
-      return {};
-    },
-    async mergeDelta(dataJson: string): Promise<unknown> {
-      calls.mergeDelta.push(dataJson);
-      return {
-        knowledgeItems: 1,
-        conversations: 0,
-        messages: 0,
-        recommendations: 0,
-        feedbackEvents: 0,
-      };
-    },
+/** Mutable stub the tests can hot-swap per case (e.g. oversized delta). */
+const mobileCoreClientStub = {
+  async exportDelta(sinceClockMs: number): Promise<string> {
+    calls.exportDelta.push(sinceClockMs);
+    return JSON.stringify({
+      formatVersion: 1,
+      exportedAt: 0,
+      knowledgeItems: [{ id: 'mobile-only', updatedAt: 800 }],
+      conversations: [],
+      messages: [],
+      recommendations: [],
+      feedbackEvents: [],
+      tombstones: [],
+    });
   },
+  async exportData(): Promise<string> {
+    calls.exportData += 1;
+    return JSON.stringify({ formatVersion: 1, knowledgeItems: [], exportedAt: 0 });
+  },
+  async mergeData(dataJson: string): Promise<unknown> {
+    calls.mergeData.push(dataJson);
+    return {};
+  },
+  async mergeDelta(dataJson: string): Promise<unknown> {
+    calls.mergeDelta.push(dataJson);
+    return {
+      knowledgeItems: 1,
+      conversations: 0,
+      messages: 0,
+      recommendations: 0,
+      feedbackEvents: 0,
+    };
+  },
+};
+
+mock.module('../../features/core', () => ({
+  mobileCoreClient: mobileCoreClientStub,
 }));
 
 let lastResponseBody: Record<string, unknown> | null = null;
@@ -243,5 +246,46 @@ describe('sync-client upstream delta path', () => {
     const config = updateSyncConfig({});
     expect(config.lastAckedUpstreamClock).toBe(650);
     expect(config.outboundWatermark).toBe(900);
+  });
+
+  test('oversized upstream delta falls back to the full-snapshot path', async () => {
+    // 10MB 한도를 넘는 델타(문자 수 기준 2바이트/문자 보수 추정)는 매 폴링마다
+    // 첨부되는 대신 전체 스냅샷 한 번으로 대체 전송된다.
+    const oversized = {
+      formatVersion: 1,
+      exportedAt: 0,
+      knowledgeItems: [{ id: 'big', body: 'x'.repeat(6 * 1024 * 1024) }],
+      conversations: [],
+      messages: [],
+      recommendations: [],
+      feedbackEvents: [],
+      tombstones: [],
+    };
+    const originalExportDelta = mobileCoreClientStub.exportDelta;
+    mobileCoreClientStub.exportDelta = async () => JSON.stringify(oversized);
+
+    updateSyncConfig({
+      desktopDeviceId: 'desktop-test',
+      lanUrl: 'http://desktop.test:34129',
+      outboundWatermark: 500,
+      lastAckedUpstreamClock: 700,
+      lastSyncedAt: Date.now(),
+    });
+    stubDesktopResponse({
+      ...BASE_RESPONSE,
+      snapshot: { formatVersion: 1, knowledgeItems: [] },
+      newWatermark: 900,
+      fingerprint: 'print-fallback',
+    });
+
+    try {
+      const { syncWithDesktop } = await import('./sync-client');
+      await syncWithDesktop({ force: true });
+      expect(lastResponseBody?.upstreamDelta).toBeUndefined();
+      expect(lastResponseBody?.snapshot).toBeDefined();
+      expect(calls.mergeData).toHaveLength(1);
+    } finally {
+      mobileCoreClientStub.exportDelta = originalExportDelta;
+    }
   });
 });

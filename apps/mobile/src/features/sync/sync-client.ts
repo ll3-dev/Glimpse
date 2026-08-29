@@ -56,6 +56,16 @@ const REQUEST_TIMEOUT_MS = 15_000;
  */
 const FULL_SYNC_EVERY_MS = 10 * 60 * 1000;
 
+/**
+ * Byte ceiling for the upstream delta attachment. A delta that outgrows this
+ * (first sync after unpair/re-pair, huge import) would dominate every poll's
+ * payload; falling back to the watermark-null full path sends it once as the
+ * periodic snapshot instead and resets the upstream cursor economy. UTF-16
+ * JS strings encode ~1-2 bytes/char over gzip'd JSON, so counting chars ×2
+ * is a conservative bound.
+ */
+const UPSTREAM_DELTA_LIMIT_BYTES = 10 * 1024 * 1024;
+
 let syncPromise: Promise<boolean> | null = null;
 
 /** Module-level backoff state shared across auto-sync invocations.
@@ -212,7 +222,19 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     }
     if (upstreamDeltaPromise) {
       const upstreamDelta = await upstreamDeltaPromise;
-      if (upstreamDelta) requestBody.upstreamDelta = upstreamDelta;
+      if (
+        upstreamDelta &&
+        JSON.stringify(upstreamDelta).length * 2 <= UPSTREAM_DELTA_LIMIT_BYTES
+      ) {
+        // Oversized deltas fall back to the full-snapshot path: send one
+        // snapshot instead of a giant attachment on every poll.
+        requestBody.upstreamDelta = upstreamDelta;
+      } else if (upstreamDelta) {
+        requestBody.snapshot = await (snapshotPromise ??
+          mobileCoreClient.exportData().then(
+            (data) => JSON.parse(data) as unknown,
+          ));
+      }
     }
     // Large payloads ride gzip: both peers share the tower-http contract.
     const requestPayload = maybeCompressRequestBody(JSON.stringify(requestBody));
