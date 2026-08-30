@@ -351,7 +351,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "description": "Discovery host + port → plain-http base URL, bracketing bare IPv6."
     },
     {
       "name": "endpointCandidates",
@@ -390,7 +391,8 @@
             }
           }
         }
-      }
+      },
+      "description": "The tailnet endpoint remains valid across network changes, while a cached\nLAN address commonly becomes stale as soon as the phone leaves Wi-Fi —\ntailnet first, deduped, empties dropped."
     },
     {
       "name": "exportData",
@@ -443,7 +445,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "description": "Incremental export for the upstream (client→desktop) delta path: rows\nwhose merge clock is strictly newer than `since_clock_ms`, plus all\ntombstones. Mirrors `export_data` but bounded by a clock cursor."
     },
     {
       "name": "getDueKnowledgeItems",
@@ -909,7 +912,8 @@
             "type": "boolean"
           }
         }
-      }
+      },
+      "description": "Opens the SQLite database at `dbPath` and installs it as the process-wide\n[`SharedCore`].\n\nMobile hosts have no native setup hook before the JS runtime starts, so\nthis is the rustra-side entry point: the JS client calls it once at app\nbootstrap with the same DB path the previous Nitro path used. Idempotent —\nwhen the core is already installed (previous call, or the desktop Tauri\nsetup hook) it returns `initialized: false` without touching the disk,\npreserving the \"exactly one SQLite connection per process\" invariant\nacross host styles. If two callers race past the fast path, the lock is\nheld across the swap: the last racer's connection survives and the\nearlier one is closed on drop (last-wins under a true race; sequential\ndouble-init is first-wins via the fast path above). The JS layer makes a\nrace impossible in practice — the bootstrap promise is memoized."
     },
     {
       "name": "initializeReviewSchedule",
@@ -1009,6 +1013,7 @@
           }
         }
       },
+      "description": "Manual (user-triggered) syncs ignore backoff; auto syncs respect it.",
       "definitions": {
         "BackoffState": {
           "type": "object",
@@ -2227,7 +2232,8 @@
             "minimum": 0.0
           }
         }
-      }
+      },
+      "description": "Merge a remote snapshot without discarding newer local changes."
     },
     {
       "name": "mergeDelta",
@@ -2283,7 +2289,8 @@
             "minimum": 0.0
           }
         }
-      }
+      },
+      "description": "Merge an incremental sync delta row-by-row with LWW semantics instead of\nrewriting the store — the watermark delta path's counterpart to\n[`merge_data`]. The counts are rows this delta actually wrote (LWW\nwinners); an all-stale or empty delta reports all zeros, letting callers\nskip post-sync refetches."
     },
     {
       "name": "normalizeBaseUrl",
@@ -2313,7 +2320,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "description": "Trims, strips trailing slashes, and defaults schemeless hosts to https."
     },
     {
       "name": "recordSyncFailure",
@@ -2353,6 +2361,7 @@
           }
         }
       },
+      "description": "`authRejected` freezes the controller until an explicit reset (re-pairing).",
       "definitions": {
         "BackoffState": {
           "type": "object",
@@ -2762,7 +2771,8 @@
             "format": "int64"
           }
         }
-      }
+      },
+      "description": "Storage write counter maintained by sync-table triggers. Lets clients\ndetect local changes cheaply (revision moved) before paying for a delta\nexport."
     },
     {
       "name": "syncDiscover",

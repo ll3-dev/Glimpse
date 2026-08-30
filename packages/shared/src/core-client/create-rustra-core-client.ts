@@ -164,7 +164,12 @@ export function createRustraCoreClient(deps: RustraCoreClientDeps): CoreClient {
     // -- Data portability --
     exportData: async () => (await exportData({})).dataJson,
     exportDelta: async (sinceClockMs) => (await exportDelta({ sinceClockMs })).dataJson,
-    syncDataRevision: async () => (await syncDataRevision({})).revision,
+    // i64 now decodes as `number | bigint` (rustra 0.5+ postcard fast-path);
+    // revisions fit well within 2^53, so coerce back to `number` at the seam.
+    syncDataRevision: async () => {
+      const { revision } = await syncDataRevision({});
+      return typeof revision === 'bigint' ? Number(revision) : revision;
+    },
     importData: async (dataJson) => importData({ dataJson }),
     mergeData: async (dataJson) => mergeData({ dataJson }),
     mergeDelta: async (dataJson) => mergeDelta({ dataJson }),

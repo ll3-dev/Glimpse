@@ -26,12 +26,12 @@ export const syncBridgeCalls = {
 };
 
 export const syncBridgeCanned = {
-  normalizeBaseUrl: [] as Array<{ url: string } | Error>,
-  discoveryBaseUrl: [] as Array<{ url: string } | Error>,
-  endpointCandidates: [] as Array<{ endpoints: string[] } | Error>,
-  recordSyncFailure: [] as Array<{ state: BackoffState } | Error>,
-  recordSyncSuccess: [] as Array<{ state: BackoffState } | Error>,
-  isHoldingOff: [] as Array<{ holdingOff: boolean } | Error>,
+  normalizeBaseUrl: [] as ({ url: string } | Error)[],
+  discoveryBaseUrl: [] as ({ url: string } | Error)[],
+  endpointCandidates: [] as ({ endpoints: string[] } | Error)[],
+  recordSyncFailure: [] as ({ state: BackoffState } | Error)[],
+  recordSyncSuccess: [] as ({ state: BackoffState } | Error)[],
+  isHoldingOff: [] as ({ holdingOff: boolean } | Error)[],
 };
 
 /** Clear recorded calls (and canned outputs unless preserved). */
@@ -46,7 +46,7 @@ export function resetSyncBridgeMock(options: { preserveCanned?: boolean } = {}):
   }
 }
 
-function next<T>(queue: Array<T | Error>): T {
+function next<T>(queue: (T | Error)[]): T {
   const next_ = queue.shift();
   if (next_ instanceof Error) throw next_;
   return next_ as T;
@@ -105,11 +105,12 @@ export function installSyncBridgeMock(): void {
       if (input.authRejected || input.state.invalidated) {
         return { state: { ...input.state, invalidated: true } };
       }
-      const failures = input.state.failures + 1;
-      const holdUntil = input.now + Math.min(
-        BASE_BACKOFF_MS * 2 ** Math.max(failures - 1, 0),
-        MAX_BACKOFF_MS,
-      );
+      // Bridge i64 fields widen to `number | bigint` in generated types;
+      // arithmetic coerces via Number() to keep the mock type-accurate.
+      const failures = Number(input.state.failures) + 1;
+      const holdUntil =
+        input.now +
+        Math.min(BASE_BACKOFF_MS * 2 ** Math.max(failures - 1, 0), MAX_BACKOFF_MS);
       return { state: { ...input.state, failures, holdUntil } };
     },
     recordSyncSuccess: async (input: { state: BackoffState }) => {

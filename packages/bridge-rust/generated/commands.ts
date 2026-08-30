@@ -31,8 +31,16 @@ deleteKnowledgeItem.commandId = 'deleteKnowledgeItem';
 
 export const deleteMessage = createGeneratedFields2<DeleteMessageInput, DeleteMessageOutput>(26, 'deleteMessage', "messageId", "deletedAt", 'deleteMessage');
 
+/**
+ * Discovery host + port → plain-http base URL, bracketing bare IPv6.
+ */
 export const discoveryBaseUrl = createGeneratedFields2<DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput>(37, 'discoveryBaseUrl', "host", "port", 'discoveryBaseUrl');
 
+/**
+ * The tailnet endpoint remains valid across network changes, while a cached
+ * LAN address commonly becomes stale as soon as the phone leaves Wi-Fi —
+ * tailnet first, deduped, empties dropped.
+ */
 export function endpointCandidates(input: EndpointCandidatesInput, options?: InvokeOptions): Promise<EndpointCandidatesOutput> {
   return invokeGenerated<EndpointCandidatesOutput>(35, 'endpointCandidates', input, options);
 }
@@ -43,6 +51,11 @@ export function exportData(input: ExportDataInput, options?: InvokeOptions): Pro
 }
 exportData.commandId = 'exportData';
 
+/**
+ * Incremental export for the upstream (client→desktop) delta path: rows
+ * whose merge clock is strictly newer than `since_clock_ms`, plus all
+ * tombstones. Mirrors `export_data` but bounded by a clock cursor.
+ */
 export function exportDelta(input: ExportDeltaInput, options?: InvokeOptions): Promise<ExportDeltaOutput> {
   return invokeGeneratedFields1<ExportDeltaOutput>(6, 'exportDelta', input, input["sinceClockMs"], options);
 }
@@ -63,6 +76,22 @@ export function importData(input: ImportDataInput, options?: InvokeOptions): Pro
 }
 importData.commandId = 'importData';
 
+/**
+ * Opens the SQLite database at `dbPath` and installs it as the process-wide
+ * [`SharedCore`].
+ * 
+ * Mobile hosts have no native setup hook before the JS runtime starts, so
+ * this is the rustra-side entry point: the JS client calls it once at app
+ * bootstrap with the same DB path the previous Nitro path used. Idempotent —
+ * when the core is already installed (previous call, or the desktop Tauri
+ * setup hook) it returns `initialized: false` without touching the disk,
+ * preserving the "exactly one SQLite connection per process" invariant
+ * across host styles. If two callers race past the fast path, the lock is
+ * held across the swap: the last racer's connection survives and the
+ * earlier one is closed on drop (last-wins under a true race; sequential
+ * double-init is first-wins via the fast path above). The JS layer makes a
+ * race impossible in practice — the bootstrap promise is memoized.
+ */
 export function initializeCore(input: InitializeCoreInput, options?: InvokeOptions): Promise<InitializeCoreOutput> {
   return invokeGeneratedFields1<InitializeCoreOutput>(33, 'initializeCore', input, input["dbPath"], options);
 }
@@ -73,6 +102,9 @@ export function initializeReviewSchedule(input: InitializeReviewScheduleInput, o
 }
 initializeReviewSchedule.commandId = 'initializeReviewSchedule';
 
+/**
+ * Manual (user-triggered) syncs ignore backoff; auto syncs respect it.
+ */
 export function isHoldingOff(input: IsHoldingOffInput, options?: InvokeOptions): Promise<IsHoldingOffOutput> {
   return invokeGenerated<IsHoldingOffOutput>(40, 'isHoldingOff', input, options);
 }
@@ -128,21 +160,37 @@ export function logRecommendationFeedback(input: LogRecommendationFeedbackInput,
 }
 logRecommendationFeedback.commandId = 'logRecommendationFeedback';
 
+/**
+ * Merge a remote snapshot without discarding newer local changes.
+ */
 export function mergeData(input: MergeDataInput, options?: InvokeOptions): Promise<MergeDataOutput> {
   return invokeGeneratedFields1<MergeDataOutput>(8, 'mergeData', input, input["dataJson"], options);
 }
 mergeData.commandId = 'mergeData';
 
+/**
+ * Merge an incremental sync delta row-by-row with LWW semantics instead of
+ * rewriting the store — the watermark delta path's counterpart to
+ * [`merge_data`]. The counts are rows this delta actually wrote (LWW
+ * winners); an all-stale or empty delta reports all zeros, letting callers
+ * skip post-sync refetches.
+ */
 export function mergeDelta(input: MergeDeltaInput, options?: InvokeOptions): Promise<MergeDeltaOutput> {
   return invokeGeneratedFields1<MergeDeltaOutput>(9, 'mergeDelta', input, input["dataJson"], options);
 }
 mergeDelta.commandId = 'mergeDelta';
 
+/**
+ * Trims, strips trailing slashes, and defaults schemeless hosts to https.
+ */
 export function normalizeBaseUrl(input: NormalizeBaseUrlInput, options?: InvokeOptions): Promise<NormalizeBaseUrlOutput> {
   return invokeGeneratedFields1<NormalizeBaseUrlOutput>(36, 'normalizeBaseUrl', input, input["value"], options);
 }
 normalizeBaseUrl.commandId = 'normalizeBaseUrl';
 
+/**
+ * `authRejected` freezes the controller until an explicit reset (re-pairing).
+ */
 export function recordSyncFailure(input: RecordFailureInput, options?: InvokeOptions): Promise<RecordFailureOutput> {
   return invokeGenerated<RecordFailureOutput>(38, 'recordSyncFailure', input, options);
 }
@@ -168,6 +216,11 @@ export function saveRecommendations(input: SaveRecommendationsInput, options?: I
 }
 saveRecommendations.commandId = 'saveRecommendations';
 
+/**
+ * Storage write counter maintained by sync-table triggers. Lets clients
+ * detect local changes cheaply (revision moved) before paying for a delta
+ * export.
+ */
 export function syncDataRevision(input: SyncDataRevisionInput, options?: InvokeOptions): Promise<SyncDataRevisionOutput> {
   return invokeGenerated<SyncDataRevisionOutput>(10, 'syncDataRevision', input, options);
 }

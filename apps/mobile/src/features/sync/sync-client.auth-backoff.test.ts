@@ -116,13 +116,14 @@ describe('sync auth vs transient failure classification', () => {
 
     // The bridge-returned invalidated state is what the next run consults —
     // even far in the future the stored verdict says "hold", and only a
-    // forced (manual) sync bypasses it. (Call [0] in this window is
-    // refreshHoldOffVerdict's recomputation; the run is call [1].)
+    // forced (manual) sync bypasses it. Run 1 made two hold consults (entry
+    // + post-failure verdict refresh); run 2's entry consult is call [2].
     syncBridgeCanned.isHoldingOff.length = 0;
     syncBridgeCanned.isHoldingOff.push({ holdingOff: true });
     await syncWithDesktop({ force: false });
-    expect(syncBridgeCalls.isHoldingOff).toHaveLength(1);
-    expect(syncBridgeCalls.isHoldingOff[0].state.invalidated).toBe(true);
+    expect(syncBridgeCalls.isHoldingOff).toHaveLength(3);
+    expect(syncBridgeCalls.isHoldingOff[2].state.invalidated).toBe(true);
+    expect(syncBridgeCalls.isHoldingOff[2].force).toBe(false);
   });
 
   test('transient 500 failure records a retryable failure (authRejected false)', async () => {

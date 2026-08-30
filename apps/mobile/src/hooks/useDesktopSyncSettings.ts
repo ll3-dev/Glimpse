@@ -16,7 +16,7 @@ import {
  * logic — the discovery list is tiny, so sequential awaits are fine.
  */
 async function resolveDiscoveredUrls(
-  desktops: Array<{ host: string; port: number; deviceId: string | null }>,
+  desktops: { host: string; port: number; deviceId: string | null }[],
 ): Promise<Record<string, string>> {
   const urls: Record<string, string> = {};
   for (const desktop of desktops) {

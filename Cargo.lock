@@ -3870,13 +3870,14 @@ dependencies = [
 
 [[package]]
 name = "rustra"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f55b87e6c830742cbfc2375f970d486bbd0611f3003c607c3b44e45412413cd8"
+checksum = "f4ac566538049313f017853955a14e76b204925fbbd7b078b0d73bb67c6822b7"
 dependencies = [
  "hex",
  "postcard",
  "rustra-macros",
+ "rustra-naming",
  "schemars 0.8.22",
  "serde",
  "serde_json",
@@ -3886,14 +3887,21 @@ dependencies = [
 
 [[package]]
 name = "rustra-macros"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9760cdabe9df760f5383cef793c998dd249e297b9e08cdb39cfb5b7875a08212"
+checksum = "2567f26dc8f4324d0689d53b20f672ddd78e5cc32afc564f714144817c5221ff"
 dependencies = [
  "proc-macro2",
  "quote",
+ "rustra-naming",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "rustra-naming"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd05f878d9937e49d5622868706215ad63e6df4f1d23a6b22913d65c9e02a928"
 
 [[package]]
 name = "rustversion"

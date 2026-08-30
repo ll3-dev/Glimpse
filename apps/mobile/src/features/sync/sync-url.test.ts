@@ -8,6 +8,7 @@
  * the mirror used by every sync test suite.
  */
 import { describe, expect, test } from 'bun:test';
+import type { BackoffState } from '@glimpse/bridge-generated/types';
 import { HttpError, isAuthError } from './sync-url';
 import {
   installSyncBridgeMock,
@@ -99,16 +100,18 @@ describe('sync bridge mock mirror of the Rust URL contract', () => {
     resetSyncBridgeMock();
     const bridge = await import('@glimpse/bridge-generated');
 
-    let state = { failures: 0, invalidated: false, holdUntil: 0 };
+    // Bridge i64 fields widen to `number | bigint`; Number() keeps the
+    // mirror contract assertions type-exact.
+    let state: BackoffState = { failures: 0, invalidated: false, holdUntil: 0 };
     state = (await bridge.recordSyncFailure({ state, now: 1_000 })).state;
-    expect(state.holdUntil).toBe(1_000 + 60_000);
+    expect(Number(state.holdUntil)).toBe(1_000 + 60_000);
 
-    state = (await bridge.recordSyncFailure({ state, now: state.holdUntil })).state;
-    expect(state.holdUntil).toBe(1_000 + 60_000 + 120_000);
+    state = (await bridge.recordSyncFailure({ state, now: Number(state.holdUntil) })).state;
+    expect(Number(state.holdUntil)).toBe(1_000 + 60_000 + 120_000);
 
     // Twelve more failures stay capped at 30 minutes.
     for (let i = 0; i < 12; i += 1) {
-      state = (await bridge.recordSyncFailure({ state, now: state.holdUntil })).state;
+      state = (await bridge.recordSyncFailure({ state, now: Number(state.holdUntil) })).state;
     }
     const capped = (await bridge.recordSyncFailure({ state, now: 0 })).state;
     expect(capped.holdUntil).toBeLessThanOrEqual(30 * 60_000);
@@ -119,7 +122,7 @@ describe('sync bridge mock mirror of the Rust URL contract', () => {
     expect(reset.holdUntil).toBe(0);
 
     // Auth rejection freezes: isHoldingOff holds far in the future unless forced.
-    let frozen = { failures: 0, invalidated: false, holdUntil: 0 };
+    let frozen: BackoffState = { failures: 0, invalidated: false, holdUntil: 0 };
     frozen = (await bridge.recordSyncFailure({ state: frozen, now: 0, authRejected: true })).state;
     expect(frozen.invalidated).toBe(true);
     expect(

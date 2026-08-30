@@ -32,12 +32,13 @@ export async function discoverSyncDesktops(
     timeoutMs: Math.min(Math.max(timeoutMs, 500), 5_000),
   });
   // The Rust side already dedupes by deviceId and sorts; reshape to the
-  // module's long-standing contract (deviceId nullable).
+  // module's long-standing contract (deviceId nullable). i64 widens to
+  // `number | bigint` on the TS side (rustra 0.5+); coerce at the seam.
   return output.peers.map((peer) => ({
     name: peer.name,
     host: peer.host,
     port: peer.port,
     deviceId: peer.deviceId === '' ? null : peer.deviceId,
-    protocolVersion: peer.protocolVersion,
+    protocolVersion: Number(peer.protocolVersion),
   }));
 }

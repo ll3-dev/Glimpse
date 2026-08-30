@@ -26,7 +26,6 @@ import {
 } from './sync-bridge-test-mock';
 import { deleteSecureItem, setSecureItem, SecureStorageKeys } from '@/src/lib/secure-storage';
 import { resetSyncConfig, updateSyncConfig } from './sync-store';
-import { HttpError } from './sync-url';
 
 // `expo-device` (pulled in by sync-client) needs the native runtime; sync
 // only reads deviceName. Mock at the module boundary instead. These calls
@@ -170,15 +169,17 @@ describe('sync-client bridge delegation contract', () => {
     expect(syncBridgeCalls.recordSyncFailure[0].state).toEqual(freshState);
 
     // The NEXT run must feed the stored bridge state back into isHoldingOff.
-    // (Call [0] in this window is refreshHoldOffVerdict's post-failure
-    // recomputation; the run itself is call [1].)
+    // Run 1 made one consult (entry) — its post-failure refresh short-circuits
+    // locally because the canned hold expired (holdUntil < now) — so run 2's
+    // entry consult is call [1]. It feeds the stored failure state back.
     syncBridgeCanned.isHoldingOff.length = 0;
     syncBridgeCanned.isHoldingOff.push({ holdingOff: true });
+    syncBridgeCalls.endpointCandidates.length = 0;
     await syncWithDesktop(); // not forced
     // A holding-off run stops before endpointCandidates.
-    expect(syncBridgeCalls.isHoldingOff).toHaveLength(1);
-    expect(syncBridgeCalls.isHoldingOff[0].state).toEqual(afterOneFailure);
-    expect(syncBridgeCalls.isHoldingOff[0].force).toBeUndefined();
+    expect(syncBridgeCalls.isHoldingOff).toHaveLength(2);
+    expect(syncBridgeCalls.isHoldingOff[1].state).toEqual(afterOneFailure);
+    expect(syncBridgeCalls.isHoldingOff[1].force).toBeUndefined();
     expect(syncBridgeCalls.endpointCandidates).toHaveLength(0);
   });
 
@@ -198,12 +199,14 @@ describe('sync-client bridge delegation contract', () => {
     const { syncWithDesktop } = await import('./sync-client');
     await expect(syncWithDesktop({ force: true })).rejects.toThrow();
     expect(syncBridgeCalls.recordSyncFailure[0].authRejected).toBe(true);
-    // Stored state is the bridge's invalidated one.
+    // Stored state is the bridge's invalidated one. Run 2's entry consult
+    // follows run 1's entry + post-failure refresh, so it is call [2] — and
+    // it must feed the invalidated state back to the bridge.
     syncBridgeCanned.isHoldingOff.length = 0;
     syncBridgeCanned.isHoldingOff.push({ holdingOff: true });
     await syncWithDesktop();
-    expect(syncBridgeCalls.isHoldingOff).toHaveLength(1);
-    expect(syncBridgeCalls.isHoldingOff[0].state.invalidated).toBe(true);
+    expect(syncBridgeCalls.isHoldingOff).toHaveLength(3);
+    expect(syncBridgeCalls.isHoldingOff[2].state.invalidated).toBe(true);
   });
 
   test('bridge hold-off verdict is honored: holding runs skip the HTTP attempt', async () => {

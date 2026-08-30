@@ -6,16 +6,16 @@ export type MessageIo = {
   conversationId: string;
   role: string;
   content: string;
-  createdAt: number;
-  updatedAt?: number | null;
-  deletedAt?: number | null;
+  createdAt: number | bigint;
+  updatedAt?: number | bigint | null;
+  deletedAt?: number | bigint | null;
 };
 
 export type CoreKnowledgeItemLikeIo = {
   tags?: string[] | null;
-  lastReviewedAt?: number | null;
-  nextReviewAt?: number | null;
-  createdAt?: number | null;
+  lastReviewedAt?: number | bigint | null;
+  nextReviewAt?: number | bigint | null;
+  createdAt?: number | bigint | null;
 };
 
 export type ConversationIo = {
@@ -23,9 +23,9 @@ export type ConversationIo = {
   title?: string | null;
   icon?: string | null;
   contextItemId?: string | null;
-  createdAt: number;
-  updatedAt: number;
-  deletedAt?: number | null;
+  createdAt: number | bigint;
+  updatedAt: number | bigint;
+  deletedAt?: number | bigint | null;
 };
 
 export type KnowledgeItemIo = {
@@ -42,24 +42,24 @@ export type KnowledgeItemIo = {
   labelSource?: string | null;
   labelVersion?: string | null;
   labelScore?: number | null;
-  labelRequestedAt?: number | null;
-  labelCompletedAt?: number | null;
+  labelRequestedAt?: number | bigint | null;
+  labelCompletedAt?: number | bigint | null;
   labelError?: string | null;
-  createdAt: number;
-  updatedAt: number;
+  createdAt: number | bigint;
+  updatedAt: number | bigint;
   stability?: number | null;
   difficulty?: number | null;
-  lastReviewedAt?: number | null;
-  nextReviewAt?: number | null;
+  lastReviewedAt?: number | bigint | null;
+  nextReviewAt?: number | bigint | null;
 };
 
 export type BackoffState = {
   /** Consecutive failures so far (reset to 0 on success). */
-  failures: number;
+  failures: number | bigint;
   /** True once an auth rejection made retrying pointless until re-pairing. */
   invalidated: boolean;
   /** Timestamp (ms) until which auto-sync should hold off. */
-  holdUntil: number;
+  holdUntil: number | bigint;
 };
 
 export type RecommendationIo = {
@@ -68,15 +68,15 @@ export type RecommendationIo = {
   itemB_id: string;
   reason?: string | null;
   status: string;
-  createdAt: number;
-  respondedAt?: number | null;
+  createdAt: number | bigint;
+  respondedAt?: number | bigint | null;
 };
 
 export type FeedbackEventIo = {
   id: string;
   recommendationId: string;
   action: string;
-  createdAt: number;
+  createdAt: number | bigint;
 };
 
 /**
@@ -93,14 +93,14 @@ export type DiscoveredPeer = {
   /** TXT `deviceId` — stable identity for dedupe/pairing. */
   deviceId: string;
   /** TXT `protocol` — sync wire protocol version. */
-  protocolVersion: number;
+  protocolVersion: number | bigint;
 };
 
 export type ConversationPatchIo = {
   title?: unknown;
   icon?: unknown;
   contextItemId?: unknown;
-  updatedAt?: number | null;
+  updatedAt?: number | bigint | null;
   deletedAt?: unknown;
 };
 
@@ -120,7 +120,7 @@ export type KnowledgeItemPatchIo = {
   labelRequestedAt?: unknown;
   labelCompletedAt?: unknown;
   labelError?: unknown;
-  updatedAt?: number | null;
+  updatedAt?: number | bigint | null;
   stability?: unknown;
   difficulty?: unknown;
   lastReviewedAt?: unknown;
@@ -129,7 +129,7 @@ export type KnowledgeItemPatchIo = {
 
 export type MessagePatchIo = {
   content?: string | null;
-  updatedAt?: number | null;
+  updatedAt?: number | bigint | null;
   deletedAt?: unknown;
 };
 
@@ -164,7 +164,7 @@ export type DeleteAllDataOutput = Record<string, unknown>;
 
 export type DeleteConversationInput = {
   conversationId: string;
-  deletedAt: number;
+  deletedAt: number | bigint;
 };
 
 export type DeleteConversationOutput = Record<string, unknown>;
@@ -177,7 +177,7 @@ export type DeleteKnowledgeItemOutput = Record<string, unknown>;
 
 export type DeleteMessageInput = {
   messageId: string;
-  deletedAt: number;
+  deletedAt: number | bigint;
 };
 
 export type DeleteMessageOutput = Record<string, unknown>;
@@ -207,7 +207,7 @@ export type ExportDataOutput = {
 };
 
 export type ExportDeltaInput = {
-  sinceClockMs: number;
+  sinceClockMs: number | bigint;
 };
 
 export type ExportDeltaOutput = {
@@ -215,7 +215,7 @@ export type ExportDeltaOutput = {
 };
 
 export type GetDueKnowledgeItemsInput = {
-  now: number;
+  now: number | bigint;
   limit?: number | null;
 };
 
@@ -254,20 +254,20 @@ export type InitializeCoreOutput = {
 };
 
 export type InitializeReviewScheduleInput = {
-  createdAt: number;
-  intervalMs?: number | null;
+  createdAt: number | bigint;
+  intervalMs?: number | bigint | null;
 };
 
 export type InitializeReviewScheduleOutput = {
-  nextReviewAt: number;
+  nextReviewAt: number | bigint;
   stability?: number | null;
   difficulty?: number | null;
-  lastReviewedAt?: number | null;
+  lastReviewedAt?: number | bigint | null;
 };
 
 export type IsHoldingOffInput = {
   state: BackoffState;
-  now: number;
+  now: number | bigint;
   force?: boolean;
 };
 
@@ -332,7 +332,7 @@ export type ListRecommendationsOutput = {
 };
 
 export type ListWeeklyKnowledgeItemsInput = {
-  since: number;
+  since: number | bigint;
 };
 
 export type ListWeeklyKnowledgeItemsOutput = {
@@ -381,7 +381,7 @@ export type NormalizeBaseUrlOutput = {
 
 export type RecordFailureInput = {
   state: BackoffState;
-  now: number;
+  now: number | bigint;
   authRejected?: boolean;
 };
 
@@ -422,12 +422,12 @@ export type SaveRecommendationsOutput = Record<string, unknown>;
 export type SyncDataRevisionInput = Record<string, unknown>;
 
 export type SyncDataRevisionOutput = {
-  revision: number;
+  revision: number | bigint;
 };
 
 export type SyncDiscoverInput = {
   /** How long to browse before returning (clamped to [100, 5000] ms). */
-  timeoutMs: number;
+  timeoutMs: number | bigint;
 };
 
 export type SyncDiscoverOutput = {
