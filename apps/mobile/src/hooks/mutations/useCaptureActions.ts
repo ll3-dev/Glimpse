@@ -55,7 +55,7 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
     },
     onSuccess: (item) => {
       patchKnowledgeItems(queryClient, (current) => [item, ...current]);
-      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
       notifyStubQualityOnce();
     },
   });
@@ -111,7 +111,7 @@ export function useDeleteKnowledgeItemMutation(): UseMutationResult<
       patchKnowledgeItems(queryClient, (current) =>
         current.filter((entry) => entry.id !== itemId),
       );
-      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
     },
   });

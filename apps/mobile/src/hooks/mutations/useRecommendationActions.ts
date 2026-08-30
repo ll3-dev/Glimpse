@@ -26,7 +26,7 @@ const actionToStatus: Record<RecommendationAction, RecommendationStatus> = {
 
 /**
  * Hook to respond to a recommendation (accept/ignore/dismiss).
- * Automatically invalidates the pending recommendations query on success.
+ * Automatically invalidates the recommendations queries on success.
  *
  * @returns UseMutationResult for responding to recommendations
  *
@@ -57,7 +57,7 @@ export function useRespondToRecommendationMutation(): UseMutationResult<
       return { status };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
       void updateRecommendationCadence();
     },
   });

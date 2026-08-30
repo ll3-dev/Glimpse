@@ -25,7 +25,7 @@ export function useAppForegroundRecommendations(): void {
           const result = await refreshRecommendations();
           if (active && result.success && result.createdCount > 0) {
             await queryClient.invalidateQueries({
-              queryKey: queryKeys.recommendations.pending,
+              queryKey: queryKeys.recommendations.all,
             });
           }
         } finally {
