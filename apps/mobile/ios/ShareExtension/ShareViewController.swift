@@ -516,10 +516,13 @@ class ShareViewController: UIViewController {
 
   /// Saves text directly without opening the main app
   private func saveTextDirectly(_ text: String) {
-    // Save to UserDefaults (same record shape as legacy mode). Text keeps the
-    // legacy key; URL records moved to urlKey so they never clobber text.
+    // Append to the pending text array instead of replacing it: the Shortcuts
+    // CaptureQuickNoteIntent writes the same key, and a replace would silently
+    // destroy a not-yet-absorbed quick note (the reverse order loses ours too).
     let userDefaults = UserDefaults(suiteName: hostAppGroupIdentifier)
-    userDefaults?.set([text], forKey: sharedKey)
+    var pending = userDefaults?.stringArray(forKey: sharedKey) ?? []
+    pending.append(text)
+    userDefaults?.set(pending, forKey: sharedKey)
     userDefaults?.set(true, forKey: "\(sharedKey)_directSave")
     userDefaults?.synchronize()
     NSLog("[INFO] Text saved directly (will be processed on next app launch)")
