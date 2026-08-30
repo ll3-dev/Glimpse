@@ -6,9 +6,6 @@ import {
 
 export const llmQueryKeys = {
   overview: ['llm', 'overview'] as const,
-  health: ['llm', 'health'] as const,
-  models: ['llm', 'models'] as const,
-  runtimes: ['llm', 'runtimes'] as const,
 };
 
 export function useDesktopLLMOverview() {

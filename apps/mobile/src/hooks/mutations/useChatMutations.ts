@@ -157,9 +157,6 @@ export function useDeleteConversationMutation() {
           ) ?? [],
       );
       queryClient.removeQueries({
-        queryKey: queryKeys.chat.conversation(variables.conversationId),
-      });
-      queryClient.removeQueries({
         queryKey: queryKeys.chat.messages(variables.conversationId),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.all });

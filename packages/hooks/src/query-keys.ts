@@ -15,7 +15,6 @@ export const queryKeys = {
   recommendations: {
     all: ['recommendations'] as const,
     pending: ['recommendations', 'pending'] as const,
-    weekly: ['recommendations', 'weekly'] as const,
     graph: ['recommendations', 'graph'] as const,
   },
   chat: {

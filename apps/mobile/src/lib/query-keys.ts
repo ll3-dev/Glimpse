@@ -22,13 +22,11 @@ export const queryKeys = {
   recommendations: {
     all: ['recommendations'] as const,
     pending: ['recommendations', 'pending'] as const,
-    weekly: ['recommendations', 'weekly'] as const,
     graph: ['recommendations', 'graph'] as const,
   },
   chat: {
     all: ['chat'] as const,
     conversations: ['chat', 'conversations'] as const,
-    conversation: (id: string) => ['chat', 'conversation', id] as const,
     messages: (conversationId: string) => ['chat', 'messages', conversationId] as const,
   },
 } as const;
