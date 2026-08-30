@@ -316,14 +316,18 @@ mod tests {
 
     #[test]
     fn success_resets_the_hold() {
-        let state = record_failure_pure(fresh(), 0, false);
-        let state = BackoffState {
-            failures: 0,
-            hold_until: 0,
-            ..state
-        };
-        assert_eq!(state.failures, 0);
-        assert!(state.hold_until <= 1);
+        let state = record_failure_pure(fresh(), 1_000, false);
+        assert!(state.failures > 0 && state.hold_until > 1_000);
+
+        let reset = record_sync_success(RecordSuccessInput {
+            state,
+            reset: false,
+        })
+        .unwrap()
+        .state;
+        assert_eq!(reset.failures, 0);
+        assert_eq!(reset.hold_until, 0);
+        assert!(!reset.invalidated);
     }
 
     #[test]
