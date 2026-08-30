@@ -27,7 +27,6 @@ type EmptyStateProps = {
  */
 function EmptyState({ icon: Icon, title, description, action, compact }: EmptyStateProps) {
   const appMuted = useSemanticColor('appMuted');
-  const appBg = useSemanticColor('appBg');
 
   return (
     <View

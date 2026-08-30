@@ -33,7 +33,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run desktop:typecheck
       - run: bun run test:coverage
-      - run: bun test packages/features/src apps/desktop/src --coverage
+      - run: bun test packages/features/src apps/desktop/src packages/ui --coverage
       - run: bun run web:export
       - run: bun run audit:critical
       - uses: actions/upload-artifact@v7
