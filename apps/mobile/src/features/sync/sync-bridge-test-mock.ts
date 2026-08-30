@@ -53,8 +53,14 @@ function next<T>(queue: (T | Error)[]): T {
 }
 
 /** Install the mock. Must run before sync-client is first imported. */
-export function installSyncBridgeMock(): void {
+export async function installSyncBridgeMock(): Promise<void> {
+  // Spread the real module under the 6-command overrides: consumers outside
+  // sync (e.g. the headless E2E imports the real core client through this
+  // same module id) need the other 40+ exports to stay importable, or the
+  // module swap breaks them at import time with a missing-export SyntaxError.
+  const real = await import('@glimpse/bridge-generated');
   mock.module('@glimpse/bridge-generated', () => ({
+    ...real,
     normalizeBaseUrl: async (input: { value: string }) => {
       syncBridgeCalls.normalizeBaseUrl.push(input);
       if (syncBridgeCanned.normalizeBaseUrl.length > 0) {

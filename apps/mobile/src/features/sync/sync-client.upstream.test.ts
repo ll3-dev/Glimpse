@@ -92,7 +92,7 @@ const mobileCoreClientStub = {
 
 // sync_plan commands live in the rustra bridge — mock them (Rust-contract
 // mirror) before importing sync-client (module side effects).
-installSyncBridgeMock();
+await installSyncBridgeMock();
 
 mock.module('../../features/core', () => ({
   mobileCoreClient: mobileCoreClientStub,

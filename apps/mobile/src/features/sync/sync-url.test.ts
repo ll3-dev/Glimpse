@@ -17,6 +17,8 @@ import {
   syncBridgeCanned,
 } from './sync-bridge-test-mock';
 
+await installSyncBridgeMock();
+
 describe('sync http error surface', () => {
   test('isAuthError reads the response status off an HttpError, not message text', () => {
     expect(isAuthError(new HttpError('페어링 토큰이 필요합니다.', 401))).toBe(true);
@@ -42,8 +44,6 @@ describe('sync http error surface', () => {
 });
 
 describe('sync bridge mock mirror of the Rust URL contract', () => {
-  installSyncBridgeMock();
-
   test('normalizeBaseUrl mirror trims, strips trailing slashes, defaults to https', async () => {
     resetSyncBridgeMock();
     const bridge = await import('@glimpse/bridge-generated');

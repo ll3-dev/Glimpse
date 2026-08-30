@@ -54,7 +54,7 @@ if (!globalWithExpo.expo) {
 
 // sync_plan commands live in the rustra bridge — mock them (Rust-contract
 // mirror) before importing sync-client (module side effects).
-installSyncBridgeMock();
+await installSyncBridgeMock();
 
 // Mock the core client before importing sync-client (module side effects).
 const calls = {

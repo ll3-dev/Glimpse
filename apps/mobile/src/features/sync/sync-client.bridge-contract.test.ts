@@ -63,7 +63,7 @@ if (!globalWithExpo.expo) {
   } as typeof globalWithExpo.expo;
 }
 
-installSyncBridgeMock();
+await installSyncBridgeMock();
 
 // runSync builds the snapshot export before attempting any endpoint, so the
 // core client must be stubbed too (only the pieces the contract touches).
