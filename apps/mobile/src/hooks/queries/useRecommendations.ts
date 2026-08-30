@@ -44,6 +44,7 @@ export function useRecommendationsQuery(): UseQueryResult<RecommendationWithItem
  */
 export function useAllRecommendationsQuery(): UseQueryResult<Recommendation[], Error> {
   return useQuery({
+    // 주의: all 키는 무효화 프리픽스인 동시에 이 쿼리의 실제 키다. pending으로 좁히면 연결된 노트 섹션이 갱신되지 않는다.
     queryKey: queryKeys.recommendations.all,
     queryFn: () => mobileCoreClient.listRecommendations(),
     staleTime: 1000 * 60 * 5,

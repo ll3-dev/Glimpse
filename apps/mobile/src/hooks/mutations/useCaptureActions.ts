@@ -55,6 +55,7 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
     },
     onSuccess: (item) => {
       patchKnowledgeItems(queryClient, (current) => [item, ...current]);
+      // pending뿐 아니라 연결된 노트 섹션(useAllRecommendationsQuery)까지 새 엣지 반영.
       queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
       notifyStubQualityOnce();
     },
@@ -111,6 +112,7 @@ export function useDeleteKnowledgeItemMutation(): UseMutationResult<
       patchKnowledgeItems(queryClient, (current) =>
         current.filter((entry) => entry.id !== itemId),
       );
+      // pending뿐 아니라 연결된 노트 섹션(useAllRecommendationsQuery)까지 새 엣지 반영.
       queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.review.dueItems });
     },

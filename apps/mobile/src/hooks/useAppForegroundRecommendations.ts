@@ -24,6 +24,7 @@ export function useAppForegroundRecommendations(): void {
         try {
           const result = await refreshRecommendations();
           if (active && result.success && result.createdCount > 0) {
+            // pending뿐 아니라 연결된 노트 섹션까지 갱신.
             await queryClient.invalidateQueries({
               queryKey: queryKeys.recommendations.all,
             });

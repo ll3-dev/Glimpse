@@ -26,7 +26,7 @@ const actionToStatus: Record<RecommendationAction, RecommendationStatus> = {
 
 /**
  * Hook to respond to a recommendation (accept/ignore/dismiss).
- * Automatically invalidates the recommendations queries on success.
+ * Automatically invalidates all recommendation queries (pending list + connected edges) on success.
  *
  * @returns UseMutationResult for responding to recommendations
  *
