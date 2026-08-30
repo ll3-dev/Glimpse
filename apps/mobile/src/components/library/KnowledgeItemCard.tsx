@@ -88,7 +88,7 @@ export const KnowledgeItemCard = memo(function KnowledgeItemCard({
   return (
     <Card className="mb-2 overflow-hidden border border-app-border bg-app-surface">
       <Pressable
-        className="flex-row items-start p-3.5 active:opacity-75"
+        className="flex-row items-start p-4 active:opacity-75"
         onPress={() => onPress?.(item.id)}
         disabled={!onPress}
       >

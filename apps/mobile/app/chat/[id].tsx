@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, SquarePen } from 'lucide-react-native';
+import { ChevronLeft, SquarePen, MessageCircle } from 'lucide-react-native';
 import {
   useConversationsQuery,
   useMessagesQuery,
@@ -27,6 +27,7 @@ import { useMessageActions } from "@/src/hooks/chat/useMessageActions";
 import { useConversationActions } from "@/src/hooks/chat/useConversationActions";
 import { useChatNavigation } from "@/src/hooks/chat/useChatNavigation";
 import { ScreenHeader } from "@glimpse/ui/primitives/screen-header";
+import { EmptyState } from "@glimpse/ui/primitives/empty-state";
 import { useSemanticColor } from "@glimpse/ui";
 
 export default function ChatDetailScreen() {
@@ -114,7 +115,7 @@ export default function ChatDetailScreen() {
             onPress={() => navigation.handleBackPress()}
             className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
           >
-            <ChevronLeft size={22} color={appText} />
+            <ChevronLeft size={20} color={appText} />
           </Pressable>
         }
         rightElement={
@@ -175,13 +176,15 @@ export default function ChatDetailScreen() {
           )}
 
           {!isLoadingMessages && (!messages || messages.length === 0) && (
-            <View className="flex-1 items-center justify-center py-8">
-              <Text className="text-center text-app-subtle text-sm">
-                {contextItem
+            <EmptyState
+              icon={MessageCircle}
+              compact
+              title={
+                contextItem
                   ? "이 항목에 대해 질문해 보세요"
-                  : "메시지를 입력해 대화를 시작하세요"}
-              </Text>
-            </View>
+                  : "메시지를 입력해 대화를 시작하세요"
+              }
+            />
           )}
 
           {/* Streaming response */}

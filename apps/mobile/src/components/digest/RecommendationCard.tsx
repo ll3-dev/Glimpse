@@ -67,7 +67,7 @@ export function RecommendationCard({
   const IconB = typeConfigB.Icon;
 
   return (
-    <Card className="mb-4 p-4 border border-app-border bg-app-surface shadow-xs">
+    <Card className="mb-2 p-4 border border-app-border bg-app-surface shadow-xs">
       {/* Status Badge */}
       {isResponded && (
         <View className="mb-3 flex-row">

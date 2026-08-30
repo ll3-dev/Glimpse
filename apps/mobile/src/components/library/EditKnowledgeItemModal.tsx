@@ -91,7 +91,7 @@ export function EditKnowledgeItemModal({
           {/* Modal Header */}
           <View className="flex-row items-center justify-between px-6 py-4 border-b border-app-border">
             <Pressable onPress={onClose} className="p-1 -ml-1">
-              <X size={22} color={appMuted} />
+              <X size={20} color={appMuted} />
             </Pressable>
             <Text className="text-base font-semibold text-app-text">기록 수정</Text>
             <Pressable

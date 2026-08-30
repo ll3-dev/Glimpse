@@ -8,6 +8,7 @@
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { RotateCcw } from 'lucide-react-native';
 import { useDueItemsQuery, useReviewActionsMutation } from '@/src/hooks';
 import { QueryStateScrollView } from '@glimpse/ui/common';
 import { ReviewItemCard } from '@/src/components/review';
@@ -102,6 +103,7 @@ export default function ReviewScreen() {
         loadingText="불러오는 중..."
         bottomInset={insets.bottom}
         topPadding={8}
+        emptyIcon={RotateCcw}
         emptyTitle="복습할 항목이 없습니다"
         emptyDescription={"새로운 항목을 저장하면\n자동으로 복습 일정이 잡혀요"}
         keyExtractor={(item) => item.id}

@@ -27,6 +27,8 @@ export { Textarea } from './textarea';
 export { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 export { View } from './view';
 export { Badge, badgeTextVariants, badgeVariants } from './badge';
+export { EmptyState } from './empty-state';
+export type { EmptyStateProps } from './empty-state';
 export { ScreenHeader } from './screen-header';
 export { Switch } from './switch';
 export { Skeleton } from './skeleton';

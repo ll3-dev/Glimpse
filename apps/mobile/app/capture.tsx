@@ -129,7 +129,7 @@ export default function CaptureScreen() {
               accessibilityRole="button"
               accessibilityLabel="닫기"
             >
-              <X size={22} color={appText} />
+              <X size={20} color={appText} />
             </Pressable>
           }
           rightElement={

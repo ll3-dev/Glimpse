@@ -8,6 +8,7 @@
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Sparkles } from 'lucide-react-native';
 import { useRecommendationsQuery, useRecommendationActionsMutation } from '@/src/hooks';
 import { RecommendationCard } from '@/src/components/digest';
 import { QueryStateScrollView } from '@glimpse/ui/common';
@@ -39,6 +40,7 @@ export default function DigestScreen() {
         error={error}
         loadingText="불러오는 중..."
         bottomInset={insets.bottom}
+        emptyIcon={Sparkles}
         emptyTitle="추천이 없습니다"
         emptyDescription={"더 많은 항목을 저장하면\n연결 추천을 받을 수 있어요"}
         keyExtractor={(rec) => rec.recommendation.id}

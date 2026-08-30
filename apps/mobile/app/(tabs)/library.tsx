@@ -2,11 +2,10 @@ import { View, Pressable } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useState, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Settings } from 'lucide-react-native';
+import { BookOpen, Settings } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Plus } from '@glimpse/ui/icons';
 import {
-  EmptyLibraryState,
   KnowledgeItemCard,
   LibraryFilterBar,
   LibrarySearchInput,
@@ -17,7 +16,7 @@ import {
 import { resolveLibrarySearch } from '@/src/features/library';
 import { useMobileSemanticRerank } from '@/src/features/search/useMobileSemanticRerank';
 import { useForegroundLabeling, useKnowledgeItemsQuery } from '@/src/hooks';
-import { ScreenHeader } from '@glimpse/ui/primitives';
+import { EmptyState, ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { getDisplayLabels } from '@/src/features/labeling';
 import type { KnowledgeItem } from '@glimpse/shared';
@@ -191,7 +190,9 @@ export default function LibraryScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}
           contentInset={{ bottom: insets.bottom }}
           keyExtractor={(item) => item.id}
-          ListEmptyComponent={<EmptyLibraryState {...emptyState} />}
+          ListEmptyComponent={
+            <EmptyState icon={BookOpen} title={emptyState.title} description={emptyState.description} />
+          }
         />
       </View>
 

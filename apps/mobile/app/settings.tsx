@@ -105,7 +105,7 @@ export default function SettingsScreen() {
             onPress={() => router.back()}
             className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
           >
-            <ArrowLeft size={22} color={appText} />
+            <ArrowLeft size={20} color={appText} />
           </Pressable>
         }
       />

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { EmptyState } from "../primitives/empty-state";
 
 type QueryStateScrollViewProps<T> = {
   data: readonly T[];
@@ -15,6 +16,7 @@ type QueryStateScrollViewProps<T> = {
   onRefresh: () => void;
   renderItem: (item: T) => ReactNode;
   keyExtractor: (item: T) => string;
+  emptyIcon: ComponentType<{ size?: number; color?: string }>;
   emptyTitle: string;
   emptyDescription: string;
   error?: Error | null;
@@ -45,6 +47,7 @@ export function QueryStateScrollView<T>({
   onRefresh,
   renderItem,
   keyExtractor,
+  emptyIcon,
   emptyTitle,
   emptyDescription,
   error,
@@ -124,14 +127,7 @@ export function QueryStateScrollView<T>({
       )}
 
       {showEmpty && (
-        <View className="flex-1 items-center justify-center px-8 py-24">
-          <Text className="text-app-text mb-2 text-lg font-semibold tracking-tight">
-            {emptyTitle}
-          </Text>
-          <Text className="text-app-muted text-center text-sm leading-relaxed">
-            {emptyDescription}
-          </Text>
-        </View>
+        <EmptyState icon={emptyIcon} title={emptyTitle} description={emptyDescription} />
       )}
 
       {showData && renderedItems}

@@ -43,7 +43,7 @@ export function ReviewItemCard({
   const TypeIcon = typeConfig.Icon;
 
   return (
-    <Card className="mb-3 overflow-hidden border border-app-border bg-app-surface shadow-xs">
+    <Card className="mb-2 overflow-hidden border border-app-border bg-app-surface shadow-xs">
       {/* Header Info */}
       <View className="flex-row items-center justify-between px-4 pt-3.5 pb-2">
         <View className="flex-row items-center gap-1.5 rounded-md border border-app-border bg-app-bg px-2.5 py-0.5">

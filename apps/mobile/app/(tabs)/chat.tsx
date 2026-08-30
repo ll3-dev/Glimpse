@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, MessageCircle } from 'lucide-react-native';
 import { useConversationsQuery, useCreateConversationMutation } from '@/src/hooks';
-import { ScreenHeader, Skeleton } from '@glimpse/ui/primitives';
+import { EmptyState, ScreenHeader, Skeleton } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { ConversationList } from '@/src/components/chat';
 import { FlashList } from "@shopify/flash-list";
@@ -19,7 +19,6 @@ import type { Conversation } from '@glimpse/shared';
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const appMuted = useSemanticColor('appMuted');
   const appBg = useSemanticColor('appBg');
 
   const { data: conversations, isLoading } = useConversationsQuery();
@@ -112,27 +111,17 @@ export default function ChatScreen() {
 
       {/* Empty state */}
       {showEmpty && (
-        <View className="flex-1 items-center justify-center py-24 px-6">
-          <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-app-surface border border-app-border">
-            <MessageCircle size={20} color={appMuted} />
-          </View>
-          <Text className="mb-2 text-base font-semibold text-app-text tracking-tight text-center">
-            새 대화를 시작하세요
-          </Text>
-          <Text className="mb-6 text-center text-sm text-app-muted leading-relaxed">
-            AI와 자유롭게 대화하거나{"\n"}보관함 항목에 대해 질문해 보세요
-          </Text>
-          <Pressable
-            className="flex-row items-center rounded-lg bg-app-text px-5 py-2.5 active:opacity-90"
-            onPress={handleCreateConversation}
-            disabled={isCreating}
-          >
-            <Plus size={16} color={appBg} />
-            <Text className="ml-2 font-medium text-sm text-app-bg">
-              {isCreating ? "생성 중..." : "새 대화 시작"}
-            </Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon={MessageCircle}
+          title="새 대화를 시작하세요"
+          description={"AI와 자유롭게 대화하거나\n보관함 항목에 대해 질문해 보세요"}
+          action={{
+            label: "새 대화 시작",
+            onPress: handleCreateConversation,
+            disabled: isCreating,
+            pendingLabel: "생성 중...",
+          }}
+        />
       )}
     </View>
   );

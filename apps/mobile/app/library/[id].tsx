@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { ArrowLeft, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, MessageCircle, SearchX } from 'lucide-react-native';
 import {
   Alert,
   ScrollView,
@@ -17,7 +17,7 @@ import {
   useAllRecommendationsQuery,
 } from '@/src/hooks';
 import { getDisplayLabels } from '@/src/features/labeling';
-import { ScreenHeader } from '@glimpse/ui/primitives';
+import { EmptyState, ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import {
   EditKnowledgeItemModal,
@@ -125,7 +125,7 @@ export default function LibraryDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="뒤로 가기"
           >
-            <ArrowLeft size={22} color={appText} />
+            <ArrowLeft size={20} color={appText} />
           </Pressable>
         }
         rightElement={
@@ -147,11 +147,7 @@ export default function LibraryDetailScreen() {
       )}
 
       {showMissing && (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-app-muted text-base">
-            항목을 찾을 수 없습니다.
-          </Text>
-        </View>
+        <EmptyState icon={SearchX} title="항목을 찾을 수 없습니다." />
       )}
 
       {showItem && item && (

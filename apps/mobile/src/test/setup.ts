@@ -78,6 +78,11 @@ mock.module("react-native", () => ({
   TurboModuleRegistry: {
     getEnforcing: () => ({}),
   },
+  // 기본 호스트 컴포넌트 — UI 프리미티브 렌더 테스트(react-dom/server)에서 사용.
+  // 문자열 더미로 두면 react-dom/server가 HTML 태그로 렌더한다.
+  View: 'View',
+  Text: 'Text',
+  Pressable: 'Pressable',
 }));
 
 const nitroStorage = new Map<string, unknown>();

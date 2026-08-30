@@ -23,7 +23,7 @@ function DefaultErrorFallback({ error, onReset }: { error: Error; onReset: () =>
     <View className="flex-1 bg-app-bg items-center justify-center p-6">
       <View className="w-full max-w-sm rounded-2xl border border-app-border bg-app-card p-6 shadow-sm">
         <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-app-bg border border-app-border">
-          <AlertTriangle size={22} color={appAccent} />
+          <AlertTriangle size={20} color={appAccent} />
         </View>
 
         <Text className="text-app-text text-lg font-semibold tracking-tight mb-1">

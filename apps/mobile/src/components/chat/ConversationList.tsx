@@ -34,7 +34,7 @@ export function ConversationList({ conversation, onPress }: ConversationListProp
 
   return (
     <Pressable
-      className="flex-row items-center p-3.5 bg-app-surface border border-app-border rounded-xl mb-2.5 active:opacity-75 shadow-xs"
+      className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-xl mb-2 active:opacity-75 shadow-xs"
       onPress={() => onPress(conversation.id)}
     >
       <View className="w-9 h-9 rounded-lg bg-app-bg items-center justify-center mr-3">
