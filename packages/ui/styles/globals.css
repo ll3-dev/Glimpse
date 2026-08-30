@@ -20,7 +20,7 @@
   --color-input: var(--color-app-border);
   --color-ring: color-mix(in srgb, var(--color-app-primary) 16%, white);
   --color-primary: var(--color-app-primary);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--color-app-bg);
   --color-secondary: var(--color-app-bg);
   --color-secondary-foreground: var(--color-app-text);
   --color-accent: var(--color-app-bg);

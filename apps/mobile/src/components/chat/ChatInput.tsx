@@ -27,7 +27,7 @@ export function ChatInput({
   const insets = useSafeAreaInsets();
   const appSubtle = useSemanticColor('appSubtle');
   const appMuted = useSemanticColor('appMuted');
-  const foreground = useSemanticColor('appBg');
+  const appBg = useSemanticColor('appBg');
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener(
@@ -92,9 +92,11 @@ export function ChatInput({
           disabled={!canSend}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color={foreground} />
+            // Loading implies !canSend, so the button bg is bg-app-bg — the
+            // spinner must not use the inverted (appBg) token or it vanishes.
+            <ActivityIndicator size="small" color={appMuted} />
           ) : (
-            <Send size={18} color={canSend ? foreground : appMuted} />
+            <Send size={18} color={canSend ? appBg : appMuted} />
           )}
         </Pressable>
       </View>
