@@ -21,6 +21,13 @@ const rootDir = dirname(import.meta.dir);
 const nodeModulesDir = join(rootDir, "node_modules");
 const outputPath = join(rootDir, "THIRD-PARTY-NOTICES.md");
 
+if (!existsSync(nodeModulesDir)) {
+  console.error(
+    `node_modules를 찾을 수 없습니다: ${nodeModulesDir} — 먼저 'bun install'을 실행하세요.`,
+  );
+  process.exit(1);
+}
+
 const packages = new Map<string, PackageInfo>();
 
 function readPackageJson(packageJsonPath: string): void {
@@ -28,16 +35,20 @@ function readPackageJson(packageJsonPath: string): void {
   try {
     raw = readFileSync(packageJsonPath, "utf8");
   } catch {
+    console.error(`건너뜀: ${packageJsonPath}`);
     return; // 읽을 수 없는 항목은 건너뜀
   }
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(raw);
   } catch {
+    console.error(`건너뜀: ${packageJsonPath}`);
     return;
   }
   const name = typeof parsed.name === "string" ? parsed.name : undefined;
   if (!name) return;
+  // 퍼스트파티 워크스페이스 패키지는 서드파티가 아니므로 제외
+  if (name.startsWith("@glimpse/")) return;
   const version = typeof parsed.version === "string" ? parsed.version : "unknown";
   const licenseField = parsed.license ?? parsed.licenses;
   let license = "UNKNOWN";

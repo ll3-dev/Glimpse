@@ -4,7 +4,7 @@
 
 > 이 문서는 `bun run licenses:generate`로 생성되었습니다. 수동 편집 대신 스크립트를 다시 실행해 갱신하세요.
 
-총 1228개 패키지, 22개 라이선스 그룹.
+총 1221개 패키지, 22개 라이선스 그룹.
 
 ## (BSD-3-Clause OR GPL-2.0) (1)
 
@@ -200,7 +200,7 @@
 - yargs-parser@21.1.1
 - zod-to-json-schema@3.25.2
 
-## MIT (1064)
+## MIT (1057)
 
 - @babel/code-frame@7.29.7 — https://babel.dev/docs/en/next/babel-code-frame
 - @babel/code-frame@7.29.0 — https://babel.dev/docs/en/next/babel-code-frame
@@ -350,13 +350,6 @@
 - @floating-ui/react-dom@2.1.7 — https://floating-ui.com/docs/react-dom
 - @floating-ui/react-dom@2.1.8 — https://floating-ui.com/docs/react-dom
 - @floating-ui/utils@0.2.11 — https://floating-ui.com
-- @glimpse/bridge-generated@0.1.0
-- @glimpse/desktop@0.1.0
-- @glimpse/features@0.1.0
-- @glimpse/hooks@0.1.0
-- @glimpse/mobile@1.0.0
-- @glimpse/shared@0.1.0
-- @glimpse/ui@0.1.0
 - @happy-dom/global-registrator@20.11.8 — https://github.com/capricorn86/happy-dom/tree/master/packages/global-registrator
 - @hono/node-server@1.19.15 — https://github.com/honojs/node-server
 - @inquirer/ansi@1.0.2 — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/ansi/README.md
