@@ -7,6 +7,10 @@ export interface RunForegroundLabelingDeps {
   now?: () => number;
 }
 
+/**
+ * 데스크톱 라벨링은 rules 라벨러만 사용한다 — 설정 aiProvider와 무관한
+ * 명시적 계약. AI provider 라벨링(모바일 executors.ts 대응)은 별도 과제.
+ */
 export function createRunForegroundLabeling(deps: RunForegroundLabelingDeps) {
   return async function runForegroundLabeling(limit: number = 2): Promise<LabelingJobRunResult> {
     const now = deps.now ?? Date.now;

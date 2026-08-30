@@ -210,12 +210,51 @@ const API_CONFIGS: Record<string, APIConfig> = {
 // Provider factory
 // ---------------------------------------------------------------------------
 
+/** BYOK 요청 타임아웃 기본값 — 멍텅구리 커넥션이 채팅을 영원히 붙잡지 않게 한다 */
+const DESKTOP_BYOK_TIMEOUT_MS = 30_000;
+
+/**
+ * 플래그 기반 AbortController 타임아웃 — 모바일 byok-provider와 동일한 이식
+ * 패턴. AbortSignal.timeout은 RN 런타임에 없고(데스크톱 Tauri 웨뷰에는 있지만
+ * realm 이식성 유지), fetch의 abort 거부는 AbortError로만 알려주므로 타임아웃
+ * 여부는 에러 이름이 아닌 timedOut 플래그로 판정한다. throw하지 않고 플래그만
+ * 돌려준다 — 분류(TIMEOUT throw vs null 폴백)는 호출부의 몫이다.
+ */
+async function fetchWithTimeout(
+  fetchFn: typeof fetch,
+  endpoint: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<{ response: Response | null; timedOut: boolean }> {
+  let timedOut = false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    const response = await fetchFn(endpoint, { ...init, signal: controller.signal });
+    return { response, timedOut };
+  } catch (error) {
+    if (timedOut) {
+      // abort 거부를 그대로 삼키고 플래그로 보고한다 — throw 하면 스트림
+      // 경로의 null 폴백에 도달하기 전에 소실된다.
+      return { response: null, timedOut: true };
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface BYOKProviderConfig {
   provider?: BYOKProviderType;
   apiKey?: string;
   baseUrl?: string;
   model?: string;
   fetchFn?: typeof fetch;
+  /** 요청 타임아웃(ms) — 미지정 시 30초. 테스트에서 짧게 주입한다. */
+  timeoutMs?: number;
 }
 
 function throwProviderError(code: string, message: string, provider: AIProviderKind): never {
@@ -252,15 +291,28 @@ export function createBYOKProvider(config?: BYOKProviderConfig): AIProvider {
 
       const apiConfig = API_CONFIGS[providerType] ?? API_CONFIGS['openai'];
       const endpoint = apiConfig.resolveEndpoint(baseUrl, model, apiKey);
+      const timeoutMs = config?.timeoutMs ?? DESKTOP_BYOK_TIMEOUT_MS;
 
-      const response = await fetchFn(endpoint, {
-        method: 'POST',
-        headers: apiConfig.buildHeaders(apiKey),
-        body: apiConfig.buildBody(request.prompt, model, request.systemPrompt, {
-          maxTokens: request.maxTokens,
-          temperature: request.temperature,
-        }),
-      });
+      const { response, timedOut } = await fetchWithTimeout(
+        fetchFn,
+        endpoint,
+        {
+          method: 'POST',
+          headers: apiConfig.buildHeaders(apiKey),
+          body: apiConfig.buildBody(request.prompt, model, request.systemPrompt, {
+            maxTokens: request.maxTokens,
+            temperature: request.temperature,
+          }),
+        },
+        timeoutMs,
+      );
+      if (timedOut || !response) {
+        throwProviderError(
+          'AI_PROVIDER_TIMEOUT',
+          `API request timed out after ${timeoutMs}ms`,
+          'byok',
+        );
+      }
 
       if (!response.ok) {
         // 상태별 에러 매핑 — 401/403(키 문제)와 429(레이트 제한)를
@@ -398,13 +450,25 @@ export async function completeBYOKStream(
   if (!apiConfig.buildStreamBody || !apiConfig.parseSSEToken) return null;
 
   const endpoint = apiConfig.resolveEndpoint(baseUrl, model, apiKey);
+  const timeoutMs = config?.timeoutMs ?? DESKTOP_BYOK_TIMEOUT_MS;
 
   try {
-    const response = await fetchFn(endpoint, {
-      method: 'POST',
-      headers: apiConfig.buildHeaders(apiKey),
-      body: apiConfig.buildStreamBody(messages, model),
-    });
+    // 타임아웃은 throw 대신 null 폴백 — 멍텅구리 스트림을 비스트리밍 경로로
+    // 강등하는 것이 맞는 저하이고, 에러 UI 대신 응답을 받아가는 쪽이 낫다.
+    const { response, timedOut } = await fetchWithTimeout(
+      fetchFn,
+      endpoint,
+      {
+        method: 'POST',
+        headers: apiConfig.buildHeaders(apiKey),
+        body: apiConfig.buildStreamBody(messages, model),
+      },
+      timeoutMs,
+    );
+    if (timedOut || !response) {
+      console.warn(`[byok] streaming request timed out after ${timeoutMs}ms, falling back to non-streaming`);
+      return null;
+    }
 
     if (!response.ok) {
       // 401/403/429 는 비스트리밍 폴백으로 넘기면 안 된다 — 같은 이유로
