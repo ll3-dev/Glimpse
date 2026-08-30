@@ -24,6 +24,11 @@ schemars = "0.8"
 # uses mdns-sd (same crate the desktop server advertises with, kept
 # version-locked so browse/advertise stay compatible); iOS uses the
 # system dnssd C API (entitlement-free Bonjour); Android uses JNI→
-# NsdManager. See sync_discovery/.
-[target.'cfg(not(target_os = "ios"))'.dependencies]
+# NsdManager (orchestrated from Rust; a minimal Kotlin adapter implements
+# the DiscoveryListener interface — a Java interface cannot be implemented
+# from pure Rust). See sync_discovery/.
+[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
 mdns-sd = "0.20.3"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"

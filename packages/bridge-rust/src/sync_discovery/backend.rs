@@ -1,6 +1,7 @@
 //! Discovery backend — desktop `mdns-sd` implementation plus the platform
-//! dispatch table. iOS (dnssd) and Android (JNI→NsdManager) backends are
-//! cfg-gated follow-ups (plan B2-3 / B2-4).
+//! dispatch table. iOS (dnssd) and Android (JNI→NsdManager) live in their own
+//! cfg-gated modules; this module always hosts the shared input/output types,
+//! helpers, and the `sync_discover` command registration.
 
 use rustra::prelude::*;
 
@@ -51,6 +52,7 @@ pub fn dedupe_by_device_id(peers: Vec<DiscoveredPeer>) -> Vec<DiscoveredPeer> {
         .collect()
 }
 
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 const SERVICE_TYPE: &str = "_glimpse-sync._tcp.local.";
 
 #[command]
@@ -58,7 +60,9 @@ pub fn sync_discover(input: SyncDiscoverInput) -> Result<SyncDiscoverOutput> {
     let timeout_ms = input.timeout_ms.clamp(100, 5_000);
     #[cfg(target_os = "ios")]
     let peers = super::dnssd::discover(timeout_ms);
-    #[cfg(not(target_os = "ios"))]
+    #[cfg(target_os = "android")]
+    let peers = super::jni::discover(timeout_ms);
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
     let peers = mdns_sd::ServiceDaemon::new()
         .map_err(|error| rustra::RustraError::internal(error.to_string()))
         .and_then(|daemon| browse(daemon, timeout_ms))?;
@@ -69,7 +73,7 @@ pub fn sync_discover(input: SyncDiscoverInput) -> Result<SyncDiscoverOutput> {
 
 /// Blocking browse+resolve via `mdns-sd`, bounded by the recv deadline so a
 /// silent network cannot hang the (synchronous) bridge command.
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 fn browse(
     daemon: mdns_sd::ServiceDaemon,
     timeout_ms: u64,
@@ -97,7 +101,7 @@ fn browse(
     Ok(peers)
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 fn peer_from_service(info: &mdns_sd::ResolvedService) -> DiscoveredPeer {
     let properties = info.get_properties();
     DiscoveredPeer {

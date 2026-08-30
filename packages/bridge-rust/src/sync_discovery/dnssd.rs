@@ -40,7 +40,6 @@ type DNSServiceResolveReply = unsafe extern "C" fn(
     context: *mut c_void,
 );
 
-const FLAGS_MORE_COMING: DNSServiceFlags = 0x1;
 const FLAGS_ADD: DNSServiceFlags = 0x2;
 const ERR_NO_ERROR: DNSServiceErrorType = 0;
 
