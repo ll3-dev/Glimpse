@@ -51,9 +51,9 @@ Used for item labels, AI classification tags, and category chips. Values below a
 
 Foreground text/icon on `app-text`-filled surfaces (primary buttons, `EmptyState` CTA) uses the inverted token `text-app-bg` — never hardcoded white. The shadcn compatibility token follows the same rule: `primary-foreground: var(--color-app-bg)` in `globals.css`.
 
-### Dark Mode (Mobile: Fully Supported)
+### Dark Mode (Mobile & Desktop)
 
-Mobile dark mode is implemented via uniwind `@variant dark` theme-scoped variables in `globals.css`:
+Both platforms ship a full dark theme. The mechanism below is described in mobile (uniwind) terms; desktop provides the same palette via the `.dark` block in `apps/desktop/src/styles/globals.css` plus the `ThemeSection` settings toggle. Mobile dark mode is implemented via uniwind `@variant dark` theme-scoped variables in `globals.css`:
 
 - Background: Rich deep slate/charcoal (`#191919`), not pure `#000000`.
 - Card Surface: Elevated dark grey (`#242424`).
