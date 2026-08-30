@@ -37,6 +37,7 @@ export default function DigestScreen() {
         isRefreshing={isRefreshing}
         onRefresh={() => refetch()}
         error={error}
+        loadingText="불러오는 중..."
         bottomInset={insets.bottom}
         emptyTitle="추천이 없습니다"
         emptyDescription={"더 많은 항목을 저장하면\n연결 추천을 받을 수 있어요"}

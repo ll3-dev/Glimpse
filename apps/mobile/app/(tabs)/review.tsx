@@ -99,6 +99,7 @@ export default function ReviewScreen() {
         isRefreshing={isRefreshing}
         onRefresh={() => refetch()}
         error={error}
+        loadingText="불러오는 중..."
         bottomInset={insets.bottom}
         topPadding={8}
         emptyTitle="복습할 항목이 없습니다"

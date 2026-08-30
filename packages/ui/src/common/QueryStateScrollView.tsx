@@ -18,7 +18,7 @@ type QueryStateScrollViewProps<T> = {
   emptyTitle: string;
   emptyDescription: string;
   error?: Error | null;
-  loadingText?: string;
+  loadingText: string;
   topPadding?: number;
   horizontalPadding?: number;
   bottomInset: number;
@@ -48,7 +48,7 @@ export function QueryStateScrollView<T>({
   emptyTitle,
   emptyDescription,
   error,
-  loadingText = "로딩 중...",
+  loadingText,
   topPadding = 16,
   horizontalPadding = 24,
   bottomInset,
