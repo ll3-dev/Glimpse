@@ -16,7 +16,7 @@
  */
 
 import { useEffect } from "react";
-import { AppState, Platform, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus } from "react-native";
 import { mobileCoreClient } from "@/src/features/core/mobile-core-client";
 import { logger } from "@/src/utils/logger";
 import {
@@ -82,22 +82,4 @@ export function useProcessPendingShares() {
       subscription.remove();
     };
   }, []);
-}
-
-/**
- * Processes any pending shares immediately.
- * Returns 1 only when every pending entry was saved; otherwise failed
- * entries stay pending for the next run.
- */
-export async function processPendingSharesNow(): Promise<number> {
-  if (Platform.OS !== "ios") {
-    return 0;
-  }
-
-  try {
-    return await processPendingBatch(batchDeps);
-  } catch (error) {
-    logger.error("[PendingShareProcessor] Error in processPendingSharesNow:", error);
-    return 0;
-  }
 }

@@ -41,7 +41,7 @@ export default function CaptureScreen() {
     });
     if (Object.keys(patch).length > 0) {
       // 외부 시스템(share-intent provider)의 일회성 이벤트를 폼 상태로 동기화하는
-      // 정당한 케이스. useCaptureFormState의 apply_share_intent와 동일한 패턴.
+      // 정당한 케이스. 외부 시스템 이벤트의 폼 상태 동기화 패턴.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormState((prev) => ({ ...prev, ...patch }));
     }

@@ -139,17 +139,3 @@ export function initializeCoreClient(): Promise<string> {
 
   return promise;
 }
-
-/**
- * Returns the current database path without initializing.
- * Useful for Share Extension to know where the DB is.
- */
-export async function getCoreDbPath(): Promise<string> {
-  if (Platform.OS === "ios") {
-    const appGroupPath = await getAppGroupContainerPath();
-    if (appGroupPath) {
-      return `${appGroupPath}/glimpse.sqlite`;
-    }
-  }
-  return LEGACY_DB_PATH;
-}

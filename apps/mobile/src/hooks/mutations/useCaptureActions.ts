@@ -118,31 +118,3 @@ export function useDeleteKnowledgeItemMutation(): UseMutationResult<
     },
   });
 }
-
-/**
- * Combined hook that provides capture actions.
- *
- * @returns Object with save mutation and convenience methods
- *
- * @example
- * const { save, isPending } = useCaptureActionsMutation();
- * save({ type: 'note', body: 'Hello world' });
- */
-export function useCaptureActionsMutation() {
-  const saveMutation = useSaveKnowledgeItemMutation();
-  const updateMutation = useUpdateKnowledgeItemMutation();
-  const deleteMutation = useDeleteKnowledgeItemMutation();
-
-  return {
-    save: saveMutation.mutate,
-    saveAsync: saveMutation.mutateAsync,
-    update: updateMutation.mutate,
-    updateAsync: updateMutation.mutateAsync,
-    delete: deleteMutation.mutate,
-    deleteAsync: deleteMutation.mutateAsync,
-    isPending: saveMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
-    saveMutation,
-    updateMutation,
-    deleteMutation,
-  };
-}

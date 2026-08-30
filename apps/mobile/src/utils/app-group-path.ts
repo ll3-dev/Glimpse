@@ -23,26 +23,6 @@ export async function getAppGroupContainerPath(): Promise<string | null> {
 }
 
 /**
- * Gets the App Group container path synchronously (iOS only).
- * Uses a fallback construction if native module fails.
- */
-export function getAppGroupContainerPathSync(): string | null {
-  if (Platform.OS !== "ios") {
-    return null;
-  }
-
-  // Try native module first (more reliable)
-  // Note: NativeModules calls are synchronous for simple getters in some setups
-  // but we'll use the async version in practice
-
-  // Fallback: construct path manually (less reliable but works in most cases)
-  // The actual path is /var/mobile/Containers/Shared/AppGroup/<UUID>/
-  // which we can't determine without native code
-
-  return null;
-}
-
-/**
  * Pending share data saved by Share Extension in direct save mode
  */
 export interface PendingShareData {
