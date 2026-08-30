@@ -1,14 +1,21 @@
 //! Sync peer discovery — `sync_discover` command domain.
 //!
-//! Per-platform backends behind one command: desktop = `mdns-sd`
-//! (`backend`), iOS = dnssd C API (cfg-gated, B2-3), Android = Rust→JNI
-//! →NsdManager (cfg-gated, B2-4). HTTP transport stays in JS.
+//! Per-platform backends behind one command: desktop/Android-host = `mdns-sd`
+//! (`backend`), iOS = system dnssd C API (`dnssd`, entitlement-free Bonjour).
+//! HTTP transport stays in JS.
 
 pub mod backend;
 
+#[cfg(target_os = "ios")]
+pub mod dnssd;
+
+/// Service type without the `.local.` domain — dnssd's browse API takes the
+/// short form while mdns-sd takes the fully-qualified one.
+#[cfg(target_os = "ios")]
+pub(crate) const SERVICE_TYPE_SHORT: &str = "_glimpse-sync._tcp";
+
 pub use backend::{
-    compare_peers, dedupe_by_device_id, sync_discover, DiscoveredPeer, SyncDiscoverInput,
-    SyncDiscoverOutput,
+    compare_peers, dedupe_by_device_id, DiscoveredPeer, SyncDiscoverInput, SyncDiscoverOutput,
 };
 
 #[cfg(test)]

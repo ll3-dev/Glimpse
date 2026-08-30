@@ -56,6 +56,9 @@ const SERVICE_TYPE: &str = "_glimpse-sync._tcp.local.";
 #[command]
 pub fn sync_discover(input: SyncDiscoverInput) -> Result<SyncDiscoverOutput> {
     let timeout_ms = input.timeout_ms.clamp(100, 5_000);
+    #[cfg(target_os = "ios")]
+    let peers = super::dnssd::discover(timeout_ms);
+    #[cfg(not(target_os = "ios"))]
     let peers = mdns_sd::ServiceDaemon::new()
         .map_err(|error| rustra::RustraError::internal(error.to_string()))
         .and_then(|daemon| browse(daemon, timeout_ms))?;
@@ -66,6 +69,7 @@ pub fn sync_discover(input: SyncDiscoverInput) -> Result<SyncDiscoverOutput> {
 
 /// Blocking browse+resolve via `mdns-sd`, bounded by the recv deadline so a
 /// silent network cannot hang the (synchronous) bridge command.
+#[cfg(not(target_os = "ios"))]
 fn browse(
     daemon: mdns_sd::ServiceDaemon,
     timeout_ms: u64,
@@ -93,6 +97,7 @@ fn browse(
     Ok(peers)
 }
 
+#[cfg(not(target_os = "ios"))]
 fn peer_from_service(info: &mdns_sd::ResolvedService) -> DiscoveredPeer {
     let properties = info.get_properties();
     DiscoveredPeer {

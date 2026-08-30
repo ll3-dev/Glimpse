@@ -16,9 +16,14 @@ glimpse-core = { path = "../core-rust" }
 # Exact pin so a cargo update can never silently drift the Rust side past
 # the pinned @rustra/* TS side.
 rustra = "=0.4.0"
-# Sync peer discovery (sync_discover) — same crate the desktop server uses
-# for advertising, kept version-locked so browse/advertise stay compatible.
-mdns-sd = "0.20.3"
-schemars = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+schemars = "0.8"
+
+# Sync peer discovery (sync_discover) backends are per-platform: desktop
+# uses mdns-sd (same crate the desktop server advertises with, kept
+# version-locked so browse/advertise stay compatible); iOS uses the
+# system dnssd C API (entitlement-free Bonjour); Android uses JNI→
+# NsdManager. See sync_discovery/.
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+mdns-sd = "0.20.3"
