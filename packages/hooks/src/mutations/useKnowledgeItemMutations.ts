@@ -10,7 +10,8 @@ export function useSaveKnowledgeItemMutation() {
     mutationFn: (item: KnowledgeItem) => coreClient.saveKnowledgeItem(item),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.knowledgeItems.all });
-      qc.invalidateQueries({ queryKey: queryKeys.recommendations.pending });
+      // 저장이 새 엣지를 만들 수 있으므로 pending뿐 아니라 그래프·연결 노트 쿼리까지 갱신.
+      qc.invalidateQueries({ queryKey: queryKeys.recommendations.all });
     },
   });
 }
