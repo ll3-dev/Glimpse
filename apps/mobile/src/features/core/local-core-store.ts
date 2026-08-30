@@ -8,7 +8,6 @@ import { storage } from '@/src/lib/storage';
 
 // Storage keys for core settings
 const CORE_STORE_KEYS = {
-  INFERENCE_MODE: 'core:inferenceMode',
   BYOK_CONFIG: 'core:byokConfig',
   APPLE_INTELLIGENCE_CONFIG: 'core:appleIntelligenceConfig',
   LOCAL_LLM_CONFIG: 'core:localLLMConfig',
@@ -21,7 +20,6 @@ const localCoreStorage: KeyValueStorage = {
 };
 
 interface CoreStore {
-  inferenceMode: string | null;
   byokConfig: string | null;
   appleIntelligenceConfig: string | null;
   localLLMConfig: string | null;
@@ -29,20 +27,12 @@ interface CoreStore {
 
 function createLocalCoreStore(storage: KeyValueStorage) {
   const readCoreStore = (): CoreStore => ({
-    inferenceMode: storage.getString(CORE_STORE_KEYS.INFERENCE_MODE) ?? null,
     byokConfig: storage.getString(CORE_STORE_KEYS.BYOK_CONFIG) ?? null,
     appleIntelligenceConfig: storage.getString(CORE_STORE_KEYS.APPLE_INTELLIGENCE_CONFIG) ?? null,
     localLLMConfig: storage.getString(CORE_STORE_KEYS.LOCAL_LLM_CONFIG) ?? null,
   });
 
   const writeCoreStore = (store: Partial<CoreStore>): void => {
-    if (store.inferenceMode !== undefined) {
-      if (store.inferenceMode === null) {
-        storage.remove(CORE_STORE_KEYS.INFERENCE_MODE);
-      } else {
-        storage.set(CORE_STORE_KEYS.INFERENCE_MODE, store.inferenceMode);
-      }
-    }
     if (store.byokConfig !== undefined) {
       if (store.byokConfig === null) {
         storage.remove(CORE_STORE_KEYS.BYOK_CONFIG);
@@ -73,7 +63,6 @@ function createLocalCoreStore(storage: KeyValueStorage) {
   };
 
   const resetCoreStoreForTests = (): void => {
-    storage.remove(CORE_STORE_KEYS.INFERENCE_MODE);
     storage.remove(CORE_STORE_KEYS.BYOK_CONFIG);
     storage.remove(CORE_STORE_KEYS.APPLE_INTELLIGENCE_CONFIG);
     storage.remove(CORE_STORE_KEYS.LOCAL_LLM_CONFIG);
