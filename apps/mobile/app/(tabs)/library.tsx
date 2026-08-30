@@ -31,6 +31,7 @@ export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const appText = useSemanticColor('appText');
+  const appBg = useSemanticColor('appBg');
 
   const { data: items } = useKnowledgeItemsQuery();
   useForegroundLabeling(items);
@@ -199,7 +200,7 @@ export default function LibraryScreen() {
         className="absolute right-6 w-14 h-14 rounded-full bg-app-text items-center justify-center shadow-lg active:opacity-90"
         style={{ bottom: insets.bottom + 16 }}
       >
-        <Plus color="white" size={28} />
+        <Plus color={appBg} size={28} />
       </Pressable>
     </View>
   );

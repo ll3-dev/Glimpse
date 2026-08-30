@@ -79,7 +79,7 @@ export function ModelCatalogFilters({
             >
               <Text
                 className={`text-xs font-semibold ${
-                  selected ? "text-white" : "text-app-muted"
+                  selected ? "text-app-bg" : "text-app-muted"
                 }`}
               >
                 {filter.label} {counts[filter.id]}

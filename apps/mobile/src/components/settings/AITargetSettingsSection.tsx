@@ -39,7 +39,7 @@ function TargetPicker({
             }`}
             onPress={() => onSelect(null)}
           >
-            <Text className={`text-xs font-semibold ${inheritsDefault ? 'text-white' : 'text-app-text'}`}>
+            <Text className={`text-xs font-semibold ${inheritsDefault ? 'text-app-bg' : 'text-app-text'}`}>
               기본값 사용
             </Text>
           </Pressable>
@@ -57,7 +57,7 @@ function TargetPicker({
               }`}
               onPress={() => onSelect(option.id)}
             >
-              <Text className={`text-xs font-semibold ${selected ? 'text-white' : 'text-app-text'}`}>
+              <Text className={`text-xs font-semibold ${selected ? 'text-app-bg' : 'text-app-text'}`}>
                 {option.label}
               </Text>
             </Pressable>

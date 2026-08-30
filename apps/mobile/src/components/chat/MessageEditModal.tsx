@@ -98,7 +98,7 @@ export function MessageEditModal({
                 onPress={handleSave} 
                 disabled={!content.trim() || content.trim() === message.content}
               >
-                <Text className="text-sm font-bold text-white">수정 완료</Text>
+                <Text className="text-sm font-bold text-app-bg">수정 완료</Text>
               </Button>
             </View>
           </View>

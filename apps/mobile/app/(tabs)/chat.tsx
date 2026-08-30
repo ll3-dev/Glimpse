@@ -20,6 +20,7 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const appMuted = useSemanticColor('appMuted');
+  const appBg = useSemanticColor('appBg');
 
   const { data: conversations, isLoading } = useConversationsQuery();
   const { mutate: createConversation, isPending: isCreating } = useCreateConversationMutation();
@@ -69,8 +70,8 @@ export default function ChatScreen() {
               onPress={handleCreateConversation}
               disabled={isCreating}
             >
-              <Plus size={14} color="white" strokeWidth={3} />
-              <Text className="ml-1.5 text-xs font-bold text-white">
+              <Plus size={14} color={appBg} strokeWidth={3} />
+              <Text className="ml-1.5 text-xs font-bold text-app-bg">
                 {isCreating ? "생성 중" : "새 대화"}
               </Text>
             </Pressable>
@@ -126,8 +127,8 @@ export default function ChatScreen() {
             onPress={handleCreateConversation}
             disabled={isCreating}
           >
-            <Plus size={16} color="white" />
-            <Text className="ml-2 font-medium text-sm text-white">
+            <Plus size={16} color={appBg} />
+            <Text className="ml-2 font-medium text-sm text-app-bg">
               {isCreating ? "생성 중..." : "새 대화 시작"}
             </Text>
           </Pressable>

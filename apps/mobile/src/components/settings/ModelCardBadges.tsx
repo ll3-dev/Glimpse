@@ -32,7 +32,7 @@ export function ModelCardBadges({
     <View className="mb-2 flex-row flex-wrap items-center gap-1.5">
       {isSelected && (
         <Badge variant="outline" className="border-app-text bg-app-text">
-          <BadgeText className="text-white font-semibold">사용 중</BadgeText>
+          <BadgeText className="text-app-bg font-semibold">사용 중</BadgeText>
         </Badge>
       )}
       {isCompleted && !isSelected && (

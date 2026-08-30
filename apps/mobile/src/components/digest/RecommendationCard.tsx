@@ -58,6 +58,7 @@ export function RecommendationCard({
 }: RecommendationCardProps) {
   const isResponded = recommendation.status !== 'pending';
   const appMuted = useSemanticColor('appMuted');
+  const appBg = useSemanticColor('appBg');
 
   const typeConfigA = getTypeConfig(itemA.type);
   const IconA = typeConfigA.Icon;
@@ -133,8 +134,8 @@ export function RecommendationCard({
             onPress={onAccept}
             className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg bg-app-text py-2.5 active:opacity-80"
           >
-            <Check size={14} color="white" />
-            <Text className="text-xs font-semibold text-white">수락</Text>
+            <Check size={14} color={appBg} />
+            <Text className="text-xs font-semibold text-app-bg">수락</Text>
           </Pressable>
 
           <Pressable

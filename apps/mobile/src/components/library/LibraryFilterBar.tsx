@@ -132,7 +132,7 @@ export function LibraryFilterBar({
         >
           <Text
             className={`text-xs font-medium tracking-tight ${
-              isActive ? 'text-white font-semibold' : 'text-app-muted'
+              isActive ? 'text-app-bg font-semibold' : 'text-app-muted'
             }`}
           >
             {item.label}

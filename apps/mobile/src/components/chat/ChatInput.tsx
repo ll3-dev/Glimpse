@@ -27,7 +27,7 @@ export function ChatInput({
   const insets = useSafeAreaInsets();
   const appSubtle = useSemanticColor('appSubtle');
   const appMuted = useSemanticColor('appMuted');
-  const primaryForeground = useSemanticColor('primaryForeground');
+  const foreground = useSemanticColor('appBg');
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener(
@@ -92,9 +92,9 @@ export function ChatInput({
           disabled={!canSend}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color={primaryForeground} />
+            <ActivityIndicator size="small" color={foreground} />
           ) : (
-            <Send size={18} color={canSend ? primaryForeground : appMuted} />
+            <Send size={18} color={canSend ? foreground : appMuted} />
           )}
         </Pressable>
       </View>

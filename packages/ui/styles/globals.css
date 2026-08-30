@@ -27,6 +27,7 @@
   --color-accent-foreground: var(--color-app-text);
   --color-destructive: var(--color-app-accent);
   --color-destructive-foreground: #ffffff;
+  --color-popover: var(--color-app-surface);
   --color-popover-foreground: var(--color-app-text);
 
   --color-tag-mint-bg: #edf7f0;

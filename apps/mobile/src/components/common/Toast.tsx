@@ -82,10 +82,10 @@ export function Toast() {
         accessibilityLabel={currentToast.message}
         accessibilityHint="알림 닫기"
         onPress={hideToast}
-        className="min-h-11 flex-row items-center bg-app-text px-4 py-2.5 rounded-full shadow-lg border border-white/10 max-w-[92%] active:opacity-90"
+        className="min-h-11 flex-row items-center bg-app-text px-4 py-2.5 rounded-full shadow-lg border border-app-bg/10 max-w-[92%] active:opacity-90"
       >
         <View className="mr-2">{getIcon()}</View>
-        <Text className="text-white text-xs font-medium tracking-tight flex-shrink mr-2" numberOfLines={2}>
+        <Text className="text-app-bg text-xs font-medium tracking-tight flex-shrink mr-2" numberOfLines={2}>
           {currentToast.message}
         </Text>
         <X size={13} color={appSubtle} />

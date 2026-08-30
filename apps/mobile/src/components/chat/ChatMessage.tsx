@@ -45,10 +45,10 @@ function ChatMessageImpl({ message, onEdit, onDelete }: ChatMessageProps) {
   };
 
   const bubbleTextClassName = isUser
-    ? 'text-white text-base leading-6'
+    ? 'text-app-bg text-base leading-6'
     : 'text-app-text text-base leading-6';
   const mutedTextClassName = isUser
-    ? 'text-white/80 text-sm leading-5'
+    ? 'text-app-bg/80 text-sm leading-5'
     : 'text-app-muted text-sm leading-5';
 
   return (
@@ -79,7 +79,7 @@ function ChatMessageImpl({ message, onEdit, onDelete }: ChatMessageProps) {
           {isEdited && (
             <Text
               className={`mt-1 text-xs ${
-                isUser ? 'text-white/60' : 'text-app-subtle'
+                isUser ? 'text-app-bg/60' : 'text-app-subtle'
               }`}
             >
               (수정됨)

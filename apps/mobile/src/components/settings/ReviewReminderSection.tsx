@@ -158,7 +158,7 @@ export function ReviewReminderSection() {
                 >
                   <Text
                     className={`text-xs font-semibold ${
-                      selected ? 'text-white' : 'text-app-text'
+                      selected ? 'text-app-bg' : 'text-app-text'
                     }`}
                   >
                     {preset.label}
@@ -179,7 +179,7 @@ export function ReviewReminderSection() {
             >
               <Text
                 className={`text-xs font-semibold ${
-                  activePreset === 'custom' || isCustomExpanded ? 'text-white' : 'text-app-text'
+                  activePreset === 'custom' || isCustomExpanded ? 'text-app-bg' : 'text-app-text'
                 }`}
               >
                 {activePreset === 'custom'

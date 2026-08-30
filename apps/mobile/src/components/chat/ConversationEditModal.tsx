@@ -111,7 +111,7 @@ export function ConversationEditModal({
                   )}
                   onPress={() => setIcon(null)}
                 >
-                  <Text className={cn("text-[10px] font-semibold uppercase", icon === null ? "text-white" : "text-app-muted")}>기본</Text>
+                  <Text className={cn("text-[10px] font-semibold uppercase", icon === null ? "text-app-bg" : "text-app-muted")}>기본</Text>
                 </Pressable>
                 {CHAT_CONVERSATION_ICONS.map((candidate) => (
                   <Pressable
@@ -138,7 +138,7 @@ export function ConversationEditModal({
                 <Text className="text-xs font-semibold text-app-accent">삭제</Text>
               </Button>
               <Button variant="default" className="flex-[3] h-11 rounded-md" onPress={handleSave} disabled={!title.trim()}>
-                <Text className="text-sm font-bold text-white">저장하기</Text>
+                <Text className="text-sm font-bold text-app-bg">저장하기</Text>
               </Button>
             </View>
           </View>

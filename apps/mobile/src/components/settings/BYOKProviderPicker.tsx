@@ -34,7 +34,7 @@ export function BYOKProviderPicker({
           >
             <Text
               className={`text-xs font-semibold uppercase ${
-                selectedProvider === provider ? 'text-white' : 'text-app-text'
+                selectedProvider === provider ? 'text-app-bg' : 'text-app-text'
               }`}
             >
               {provider}

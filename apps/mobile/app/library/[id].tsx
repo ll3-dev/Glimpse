@@ -42,6 +42,7 @@ export default function LibraryDetailScreen() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const appText = useSemanticColor('appText');
+  const appBg = useSemanticColor('appBg');
 
   const { data: items, isLoading } = useKnowledgeItemsQuery();
   const { data: recommendations } = useAllRecommendationsQuery();
@@ -173,8 +174,8 @@ export default function LibraryDetailScreen() {
             disabled={isCreatingChat}
             className="flex-row items-center justify-center bg-app-text rounded-xl h-12 px-6 shadow-sm active:opacity-85"
           >
-            <MessageCircle size={16} color="white" className="mr-2" />
-            <Text className="text-sm font-semibold text-white">
+            <MessageCircle size={16} color={appBg} className="mr-2" />
+            <Text className="text-sm font-semibold text-app-bg">
               {isCreatingChat ? '대화 준비 중...' : '이 항목으로 AI와 대화하기'}
             </Text>
           </Pressable>

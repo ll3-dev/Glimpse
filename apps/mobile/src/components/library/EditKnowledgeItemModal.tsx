@@ -32,6 +32,7 @@ export function EditKnowledgeItemModal({
   const [lastItem, setLastItem] = useState<KnowledgeItem | null>(item);
   const appMuted = useSemanticColor('appMuted');
   const appSubtle = useSemanticColor('appSubtle');
+  const appBg = useSemanticColor('appBg');
 
   const { mutate: updateItem, isPending } = useUpdateKnowledgeItemMutation();
 
@@ -98,8 +99,8 @@ export function EditKnowledgeItemModal({
               disabled={isPending}
               className="flex-row items-center bg-app-text px-3 py-1.5 rounded-full active:opacity-80"
             >
-              <Check size={14} color="white" />
-              <Text className="ml-1 text-xs font-semibold text-white">
+              <Check size={14} color={appBg} />
+              <Text className="ml-1 text-xs font-semibold text-app-bg">
                 {isPending ? '저장 중' : '저장'}
               </Text>
             </Pressable>

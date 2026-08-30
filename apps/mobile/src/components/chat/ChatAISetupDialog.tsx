@@ -71,10 +71,10 @@ export function ChatAISetupDialog({
                   }`}
                   onPress={() => onSelectModel(model.id)}
                 >
-                  <Text className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-app-text'}`}>
+                  <Text className={`text-sm font-semibold ${isSelected ? 'text-app-bg' : 'text-app-text'}`}>
                     {model.name}
                   </Text>
-                  <Text className={`mt-1 text-xs ${isSelected ? 'text-white/80' : 'text-app-muted'}`}>
+                  <Text className={`mt-1 text-xs ${isSelected ? 'text-app-bg/80' : 'text-app-muted'}`}>
                     {isSelected ? '현재 선택된 모델' : '이 모델로 채팅 시작'}
                   </Text>
                 </Pressable>

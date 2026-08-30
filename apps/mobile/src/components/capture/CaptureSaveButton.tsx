@@ -14,7 +14,7 @@ export function CaptureSaveButton({ isSaving, onPress }: CaptureSaveButtonProps)
       accessibilityRole="button"
       accessibilityLabel="저장"
     >
-      <Text className="text-white font-semibold text-xs">
+      <Text className="text-app-bg font-semibold text-xs">
         {isSaving ? '저장 중...' : '저장'}
       </Text>
     </Pressable>

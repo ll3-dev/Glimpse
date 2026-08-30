@@ -48,7 +48,7 @@ export function ModelDownloadCard({
   const appMuted = useSemanticColor("appMuted");
   const appSubtle = useSemanticColor("appSubtle");
   const appAccent = useSemanticColor("appAccent");
-  const foreground = useSemanticColor("primaryForeground");
+  const foreground = useSemanticColor("appBg");
 
   return (
     <View
@@ -140,7 +140,7 @@ export function ModelDownloadCard({
             <Download size={14} color={canDownload ? foreground : appSubtle} />
             <Text
               className={`text-xs font-semibold ${
-                canDownload ? "text-white" : "text-app-subtle"
+                canDownload ? "text-app-bg" : "text-app-subtle"
               }`}
             >
               {canDownload ? "다운로드" : "기기 제한"}
