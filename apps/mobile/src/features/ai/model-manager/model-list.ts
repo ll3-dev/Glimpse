@@ -9,6 +9,7 @@ import type {
   GGUFSource,
   LocalModelDefinition,
   MobileModelProfile,
+  ModelLicenseKind,
 } from "@glimpse/shared";
 import { getChatModels, getEmbeddingModels } from "@glimpse/shared";
 import type { LocalLLMModelFamily } from "../local-llm";
@@ -39,6 +40,8 @@ export interface ModelInfo {
   contextLength: number;
   /** License identifier from the publisher/model card */
   license?: string;
+  /** 라이선스 성격 — permissive(Apache/MIT 등 허용적) 또는 custom(조건부 허용) */
+  licenseKind?: ModelLicenseKind;
   /** Base-model release month shown in the catalog */
   releasedAt?: string;
   /** Whether the downloadable GGUF came from the model publisher */
@@ -65,6 +68,7 @@ function toModelInfo(def: LocalModelDefinition): ModelInfo {
     quantization: def.quantization,
     contextLength: def.contextLength,
     license: def.license,
+    licenseKind: def.licenseKind,
     releasedAt: def.releasedAt,
     ggufSource: def.ggufSource,
     sourceModelRepo: def.sourceModelRepo,

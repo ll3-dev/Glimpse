@@ -86,6 +86,12 @@ export function ModelDownloadCard({
         {model.size} · {model.quantization}
         {model.license ? ` · ${model.license}` : ""}
       </Text>
+      {model.licenseKind === "custom" && (
+        <Text className="text-app-accent mt-1 text-[11px] leading-4">
+          이 모델은 커스텀 라이선스예요. 상용 배포 시 라이선스 조건을 확인해
+          주세요.
+        </Text>
+      )}
       <Text className="text-app-subtle mt-1 text-[11px] leading-4">
         모델 최대 컨텍스트 {model.contextLength.toLocaleString()} 토큰 · 모바일 실행은 메모리 보호를 위해 4,096 토큰부터 시작
       </Text>
