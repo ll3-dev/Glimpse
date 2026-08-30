@@ -391,6 +391,8 @@ export type RecordFailureOutput = {
 
 export type RecordSuccessInput = {
   state: BackoffState;
+  /** Re-pairing / unpairing is the "explicit reset" the auth-freeze contract promises: `invalidated` only ever clears through this flag. Plain sync successes must NOT clear it — a 401 stays frozen until the user actually re-pairs. */
+  reset?: boolean;
 };
 
 export type RecordSuccessOutput = {

@@ -165,6 +165,12 @@ pub(crate) fn record_failure_pure(
 #[serde(rename_all = "camelCase")]
 pub struct RecordSuccessInput {
     pub state: BackoffState,
+    /// Re-pairing / unpairing is the "explicit reset" the auth-freeze
+    /// contract promises: `invalidated` only ever clears through this flag.
+    /// Plain sync successes must NOT clear it — a 401 stays frozen until the
+    /// user actually re-pairs.
+    #[serde(default)]
+    pub reset: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
@@ -179,7 +185,7 @@ pub fn record_sync_success(input: RecordSuccessInput) -> Result<RecordSuccessOut
         state: BackoffState {
             failures: 0,
             hold_until: 0,
-            ..input.state
+            invalidated: if input.reset { false } else { input.state.invalidated },
         },
     })
 }
@@ -327,6 +333,35 @@ mod tests {
         // Ordinary failures after invalidation stay invalidated.
         let state = record_failure_pure(state, 5_000, false);
         assert!(state.invalidated);
+    }
+
+    #[test]
+    fn only_explicit_reset_clears_invalidation() {
+        // The freeze contract: invalidated persists through plain successes
+        // (sync recovery must not silently unfreeze an auth rejection) and
+        // clears exclusively through the reset flag (re-pairing / unpair).
+        let frozen = record_failure_pure(fresh(), 0, true);
+        assert!(frozen.invalidated);
+
+        // Plain success (reset: false) preserves the freeze.
+        let plain = record_sync_success(RecordSuccessInput {
+            state: frozen.clone(),
+            reset: false,
+        })
+        .unwrap()
+        .state;
+        assert!(plain.invalidated);
+
+        // Explicit reset (re-pairing / unpair) clears it.
+        let reset = record_sync_success(RecordSuccessInput {
+            state: frozen,
+            reset: true,
+        })
+        .unwrap()
+        .state;
+        assert!(!reset.invalidated);
+        assert_eq!(reset.failures, 0);
+        assert_eq!(reset.hold_until, 0);
     }
 
     #[test]

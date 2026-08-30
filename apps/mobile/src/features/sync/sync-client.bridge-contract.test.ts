@@ -89,6 +89,8 @@ mock.module('../../features/core', () => ({
 
 const freshState: BackoffState = { failures: 0, invalidated: false, holdUntil: 0 };
 
+const originalFetch = globalThis.fetch;
+
 describe('sync-client bridge delegation contract', () => {
   beforeEach(async () => {
     // unpairDesktop resets the module-level backoff state (through the
@@ -110,6 +112,7 @@ describe('sync-client bridge delegation contract', () => {
   });
 
   afterEach(async () => {
+    globalThis.fetch = originalFetch;
     await deleteSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
     resetSyncConfig();
   });
@@ -207,6 +210,49 @@ describe('sync-client bridge delegation contract', () => {
     await syncWithDesktop();
     expect(syncBridgeCalls.isHoldingOff).toHaveLength(3);
     expect(syncBridgeCalls.isHoldingOff[2].state.invalidated).toBe(true);
+  });
+
+  test('re-pairing after an auth freeze clears the invalidated state (explicit reset)', async () => {
+    // The freeze contract end-to-end: a 401 freezes, plain sync successes
+    // must NOT unfreeze (silent unfreeze would mask a broken pairing), and
+    // only re-pairing's explicit reset clears it.
+    const invalidated: BackoffState = { failures: 0, invalidated: true, holdUntil: 0 };
+    syncBridgeCanned.isHoldingOff.push({ holdingOff: false });
+    syncBridgeCanned.endpointCandidates.push({ endpoints: ['http://desktop.test:34129'] });
+    syncBridgeCanned.recordSyncFailure.push({ state: invalidated });
+
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ message: '토큰 불일치' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      })) as unknown as typeof fetch;
+
+    const sync = await import('./sync-client');
+    await expect(sync.syncWithDesktop({ force: true })).rejects.toThrow();
+    expect(syncBridgeCalls.recordSyncFailure[0].authRejected).toBe(true);
+
+    // Re-pairing records success WITH the reset flag — the only path that
+    // clears the freeze (mirror of Rust `record_sync_success`). The pair
+    // endpoint answers 200 with a fresh token.
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({
+        protocolVersion: 1,
+        desktopDeviceId: 'desktop-test',
+        desktopDeviceName: 'Desktop',
+        token: 'fresh-token',
+        endpoints: { tailscaleUrl: null },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })) as unknown as typeof fetch;
+    await sync.pairWithDesktop('http://desktop.test:34129', '123456');
+    const resetCall = syncBridgeCalls.recordSyncSuccess.find((call) => call.reset);
+    expect(resetCall).toBeDefined();
+    expect(resetCall?.reset).toBe(true);
+
+    // The stored state is the bridge's reset (uninvalidated) state.
+    syncBridgeCanned.isHoldingOff.length = 0;
+    syncBridgeCanned.isHoldingOff.push({ holdingOff: false });
+    syncBridgeCalls.isHoldingOff.length = 0;
+    await sync.syncWithDesktop({ force: true });
+    expect(syncBridgeCalls.isHoldingOff[0].state.invalidated).toBe(false);
   });
 
   test('bridge hold-off verdict is honored: holding runs skip the HTTP attempt', async () => {

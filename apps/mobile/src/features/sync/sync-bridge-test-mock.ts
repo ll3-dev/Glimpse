@@ -21,7 +21,7 @@ export const syncBridgeCalls = {
   discoveryBaseUrl: [] as { host: string; port: number }[],
   endpointCandidates: [] as { tailscaleUrl: string | null; lanUrl: string | null }[],
   recordSyncFailure: [] as { state: BackoffState; now: number; authRejected?: boolean }[],
-  recordSyncSuccess: [] as { state: BackoffState }[],
+  recordSyncSuccess: [] as { state: BackoffState; reset?: boolean }[],
   isHoldingOff: [] as { state: BackoffState; now: number; force?: boolean }[],
 };
 
@@ -30,26 +30,25 @@ export const syncBridgeCanned = {
   discoveryBaseUrl: [] as ({ url: string } | Error)[],
   endpointCandidates: [] as ({ endpoints: string[] } | Error)[],
   recordSyncFailure: [] as ({ state: BackoffState } | Error)[],
-  recordSyncSuccess: [] as ({ state: BackoffState } | Error)[],
+  recordSyncSuccess: [] as ({ state: BackoffState; reset?: boolean } | Error)[],
   isHoldingOff: [] as ({ holdingOff: boolean } | Error)[],
 };
 
-/** Clear recorded calls (and canned outputs unless preserved). */
-export function resetSyncBridgeMock(options: { preserveCanned?: boolean } = {}): void {
+/** Clear recorded calls and canned outputs. */
+export function resetSyncBridgeMock(): void {
   for (const key of Object.keys(syncBridgeCalls)) {
     (syncBridgeCalls as Record<string, unknown[]>)[key].length = 0;
   }
-  if (!options.preserveCanned) {
-    for (const key of Object.keys(syncBridgeCanned)) {
-      (syncBridgeCanned as Record<string, unknown[]>)[key].length = 0;
-    }
+  for (const key of Object.keys(syncBridgeCanned)) {
+    (syncBridgeCanned as Record<string, unknown[]>)[key].length = 0;
   }
 }
 
 function next<T>(queue: (T | Error)[]): T {
   const next_ = queue.shift();
   if (next_ instanceof Error) throw next_;
-  return next_ as T;
+  if (next_ === undefined) throw new Error('sync bridge mock: canned queue ran dry');
+  return next_;
 }
 
 /** Install the mock. Must run before sync-client is first imported. */
@@ -119,12 +118,20 @@ export async function installSyncBridgeMock(): Promise<void> {
         Math.min(BASE_BACKOFF_MS * 2 ** Math.max(failures - 1, 0), MAX_BACKOFF_MS);
       return { state: { ...input.state, failures, holdUntil } };
     },
-    recordSyncSuccess: async (input: { state: BackoffState }) => {
+    recordSyncSuccess: async (input: { state: BackoffState; reset?: boolean }) => {
       syncBridgeCalls.recordSyncSuccess.push(input);
       if (syncBridgeCanned.recordSyncSuccess.length > 0) {
         return next(syncBridgeCanned.recordSyncSuccess);
       }
-      return { state: { failures: 0, invalidated: input.state.invalidated, holdUntil: 0 } };
+      // Mirror of the Rust contract: only `reset: true` (re-pairing /
+      // unpairing) clears the auth freeze; plain successes preserve it.
+      return {
+        state: {
+          failures: 0,
+          invalidated: input.reset ? false : input.state.invalidated,
+          holdUntil: 0,
+        },
+      };
     },
     isHoldingOff: async (input: { state: BackoffState; now: number; force?: boolean }) => {
       syncBridgeCalls.isHoldingOff.push(input);

@@ -90,6 +90,12 @@ export interface RustraCoreClientDeps {
 }
 
 export function createRustraCoreClient(deps: RustraCoreClientDeps): CoreClient {
+  // rustra 0.5+ widens i64 (timestamps, clocks) to `number | bigint` in the
+  // generated types. Values stay far below 2^53, so the wire decodes them as
+  // plain numbers at runtime; the `as` casts below therefore hold in practice.
+  // Sync surfaces that feed arithmetic took explicit Number() seams instead
+  // (syncDataRevision below, sync-client's backoff state) — if a runtime
+  // bigint ever shows up here, add the same coercion.
   return {
     initialize: async (dbPath) => deps.initialize(dbPath),
 

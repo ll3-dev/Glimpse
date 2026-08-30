@@ -80,6 +80,18 @@ let syncPromise: Promise<boolean> | null = null;
 let backoffState: BackoffState = { failures: 0, invalidated: false, holdUntil: 0 };
 let lastHoldOffVerdict = false;
 
+/** Normalize a bridge-returned BackoffState before storing it: rustra 0.5+
+ * widens i64 to `number | bigint`, so coerce at this single seam to keep the
+ * module's cheap guards (`failures === 0`, `now >= holdUntil`) number-based
+ * and consistent with the other bigint seams in the codebase. */
+function normalizeBackoffState(state: BackoffState): BackoffState {
+  return {
+    failures: Number(state.failures),
+    invalidated: state.invalidated,
+    holdUntil: Number(state.holdUntil),
+  };
+}
+
 function isHoldingOffCached(): boolean {
   return lastHoldOffVerdict;
 }
@@ -160,8 +172,11 @@ export async function pairWithDesktop(baseUrl: string, pairingCode: string): Pro
       autoSync: true,
     });
     setSyncRuntime('idle');
-    // Re-pairing resets the backoff controller — through the bridge.
-    backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+    // Re-pairing is the explicit reset the auth-freeze contract promises:
+    // only this flag clears `invalidated` (a plain success must not).
+    backoffState = normalizeBackoffState(
+      (await recordSyncSuccess({ state: backoffState, reset: true })).state,
+    );
     await refreshHoldOffVerdict();
     await syncWithDesktop({ force: true });
   } catch (error) {
@@ -175,9 +190,11 @@ export async function unpairDesktop(): Promise<void> {
   await deleteSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
   resetSyncConfig();
   // Unpairing discards the pairing token the invalidated flag froze the
-  // controller for; reset through the bridge so the next pairing starts
-  // clean instead of inheriting the old desktop's backoff.
-  backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+  // controller for; explicit reset through the bridge so the next pairing
+  // starts clean instead of inheriting the old desktop's freeze.
+  backoffState = normalizeBackoffState(
+    (await recordSyncSuccess({ state: backoffState, reset: true })).state,
+  );
   lastHoldOffVerdict = false;
 }
 
@@ -198,9 +215,11 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   }
   const token = await getSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
   if (!token) {
-    backoffState = (
-      await recordSyncFailure({ state: backoffState, now: Date.now(), authRejected: true })
-    ).state;
+    backoffState = normalizeBackoffState(
+      (
+        await recordSyncFailure({ state: backoffState, now: Date.now(), authRejected: true })
+      ).state,
+    );
     await refreshHoldOffVerdict();
     setSyncRuntime('error', '페어링 토큰이 없습니다. 다시 페어링해 주세요.');
     return false;
@@ -345,7 +364,7 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   for (const baseUrl of candidates) {
     try {
       const changed = await attempt(baseUrl);
-      backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+      backoffState = normalizeBackoffState((await recordSyncSuccess({ state: backoffState })).state);
       await refreshHoldOffVerdict();
       setSyncRuntime('synced');
       // Propagate the merge verdict: false (skip / all-stale delta) lets the
@@ -363,7 +382,7 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     for (const baseUrl of rediscovered.filter((url) => !candidates.includes(url))) {
       try {
         const changed = await attempt(baseUrl);
-        backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+        backoffState = normalizeBackoffState((await recordSyncSuccess({ state: backoffState })).state);
         await refreshHoldOffVerdict();
         setSyncRuntime('synced');
         return changed;
@@ -374,13 +393,15 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     }
   }
 
-  backoffState = (
-    await recordSyncFailure({
-      state: backoffState,
-      now: Date.now(),
-      authRejected: isAuthError(lastError),
-    })
-  ).state;
+  backoffState = normalizeBackoffState(
+    (
+      await recordSyncFailure({
+        state: backoffState,
+        now: Date.now(),
+        authRejected: isAuthError(lastError),
+      })
+    ).state,
+  );
   await refreshHoldOffVerdict();
   const message = errorMessage(lastError);
   setSyncRuntime('error', message);
@@ -393,8 +414,10 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
  * Awaited by runSync before it exits so the cache always reflects the state
  * the sync ended on. */
 async function refreshHoldOffVerdict(): Promise<void> {
-  // Cheap local pre-check mirrors the bridge: no failures, no invalidation,
-  // or an expired hold can never hold off.
+  // Cheap local pre-check mirrors the bridge predicate — if sync_plan.rs
+  // ever grows a new hold condition, this negation must be updated to match
+  // (it only skips a redundant round-trip; the cached verdict below stays
+  // conservative either way).
   if (
     !backoffState.invalidated &&
     (backoffState.failures === 0 || Date.now() >= backoffState.holdUntil)
