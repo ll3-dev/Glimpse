@@ -48,13 +48,9 @@ export interface DownloadFailure {
   error: string;
 }
 
-// ---------------------------------------------------------------------------
-// Query keys
-// ---------------------------------------------------------------------------
-export const modelKeys = {
-  ...llmQueryKeys,
-  available: ['models', 'available'] as const,
-};
+// 이전 modelKeys.available(['models','available']) 키는 소비처가 없어
+// 무효화해도 no-op였음 — 다운로드/취소/삭제/로드/언로드 결과는 각 뮤테이션이
+// llmQueryKeys.overview를 무효화해 이미 반영하므로 정의 자체를 제거했다.
 
 // ---------------------------------------------------------------------------
 // Hooks
@@ -129,7 +125,6 @@ export function useDownloadModel() {
       return invoke<ManagedModelRecord>('download_model', { modelId: modelDef.id });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: modelKeys.available });
       void queryClient.invalidateQueries({ queryKey: llmQueryKeys.overview });
     },
   });
@@ -144,7 +139,6 @@ export function useCancelDownload() {
       return invoke<void>('cancel_download', { modelId });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: modelKeys.available });
       void queryClient.invalidateQueries({ queryKey: llmQueryKeys.overview });
     },
   });
@@ -159,7 +153,6 @@ export function useDeleteModel() {
       return invoke<void>('delete_model', { modelId });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: modelKeys.available });
       void queryClient.invalidateQueries({ queryKey: llmQueryKeys.overview });
     },
   });
@@ -175,7 +168,6 @@ export function useLoadModel() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: llmQueryKeys.overview });
-      void queryClient.invalidateQueries({ queryKey: modelKeys.available });
     },
   });
 }
@@ -190,7 +182,6 @@ export function useUnloadModel() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: llmQueryKeys.overview });
-      void queryClient.invalidateQueries({ queryKey: modelKeys.available });
     },
   });
 }
