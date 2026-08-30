@@ -19,6 +19,7 @@
     --color-app-subtle: var(--app-subtle);
     --color-app-primary: var(--app-primary);
     --color-app-accent: var(--app-accent);
+    --color-success: var(--success);
 
     /* Tag / Metadata Pastel Tints */
     --color-tag-mint-bg: var(--tag-mint-bg);
@@ -86,6 +87,7 @@
     --app-subtle: #9b9a97;
     --app-primary: #2383e2;
     --app-accent: #eb5757;
+    --success: #1a7f37;
 
     /* Tag Tints */
     --tag-mint-bg: #edf7f0;
@@ -146,6 +148,7 @@
     --app-subtle: #686764;
     --app-primary: #529cca;
     --app-accent: #eb5757;
+    --success: #7ee787;
 
     --tag-mint-bg: #1c3829;
     --tag-mint-text: #7ee787;

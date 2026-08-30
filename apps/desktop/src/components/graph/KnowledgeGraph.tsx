@@ -9,13 +9,9 @@ interface KnowledgeGraphProps {
   isLoading: boolean;
 }
 
-const NODE_COLORS = [
-  '#2383e2', // Sky / Primary
-  '#1a7f37', // Mint
-  '#a04100', // Amber
-  '#6e3ab7', // Lavender
-  '#cf222e', // Rose
-] as const;
+// SVG fill resolves CSS vars natively, so the palette tracks light/dark themes
+// via the --chart-* tokens defined in styles/globals.css.
+const NODE_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'] as const;
 
 export function KnowledgeGraph({ items, recommendations, isLoading }: KnowledgeGraphProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);

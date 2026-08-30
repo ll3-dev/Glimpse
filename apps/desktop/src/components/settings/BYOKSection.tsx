@@ -180,7 +180,7 @@ export function BYOKSection({ settings, onSettingsChange }: BYOKSectionProps) {
             </Button>
             {toast && (
               <span className="flex items-center gap-1 text-xs font-medium text-foreground">
-                <Check className="h-3.5 w-3.5 text-green-600" />
+                <Check className="h-3.5 w-3.5 text-success" />
                 {toast}
               </span>
             )}

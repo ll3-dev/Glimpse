@@ -182,7 +182,7 @@ export function ModelManagerSection({
             <span
               className={`h-2 w-2 rounded-full shrink-0 ${
                 overview?.health?.status === 'healthy'
-                  ? 'bg-green-500'
+                  ? 'bg-success'
                   : overview?.health?.status === 'degraded'
                     ? 'bg-yellow-500'
                     : 'bg-muted-foreground/40'
@@ -212,7 +212,7 @@ export function ModelManagerSection({
             </Button>
             {activeModelId && (
               <Badge variant="secondary" className="gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 {installedMap.get(activeModelId)?.name ?? activeModelId}
               </Badge>
             )}

@@ -180,8 +180,8 @@ export function ModelCard({
           <div className="flex items-center gap-1.5 mb-3">
             {isActive ? (
               <>
-                <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
-                <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                <span className="h-2 w-2 rounded-full bg-success shrink-0" />
+                <span className="text-xs font-semibold text-success">
                   활성 상태 (Active)
                 </span>
               </>

@@ -31,7 +31,7 @@ export function DesktopSyncSection() {
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
             <span
               className={`h-2 w-2 rounded-full ${
-                !status ? 'bg-muted-foreground' : status.startupError ? 'bg-destructive' : 'bg-green-500'
+                !status ? 'bg-muted-foreground' : status.startupError ? 'bg-destructive' : 'bg-success'
               }`}
             />
             {!status ? '확인 중' : status.startupError ? '오류' : '실행 중'}
@@ -106,7 +106,7 @@ export function DesktopSyncSection() {
             <div className="divide-y divide-border/60 rounded-xl border border-border/70 bg-background/50">
               {status.pairedClients.map((client) => (
                 <div key={client.deviceId} className="flex items-center gap-3 p-3 text-sm text-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                   <span className="font-medium">{client.deviceName}</span>
                   <span className="ml-auto text-xs text-muted-foreground">{formatSeen(client.lastSeenAt)}</span>
                   <Button
