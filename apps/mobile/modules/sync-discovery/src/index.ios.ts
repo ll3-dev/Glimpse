@@ -14,11 +14,12 @@ export { discoveryUnavailableError };
 
 /**
  * iOS routes discovery through the shared Rust `sync_discover` command
- * (dnssd backend, entitlement-free Bonjour). The command needs the JSI
- * bridge installed; until then `invoke` rejects, which the caller surfaces
- * as the explicit unavailable state (same contract as a missing native
- * module). Mirrors the Android adapter (index.android.ts) on the same
- * bridge command; clamps both platforms to the same [500, 5000] window.
+ * (dnssd backend, entitlement-free Bonjour). Before the JSI bridge is
+ * installed the command rejects; the caller's catch path surfaces the raw
+ * engine error, while a non-iOS platform throws the explicit unavailable
+ * error instead. Mirrors the Android adapter (index.android.ts) on the
+ * same bridge command; clamps both platforms to the same [500, 5000]
+ * window.
  */
 export function isSyncDiscoveryAvailable(): boolean {
   return Platform.OS === 'ios';
