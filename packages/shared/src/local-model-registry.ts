@@ -110,7 +110,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     releasedAt: "2026.07",
     ggufSource: "publisher",
     mobileProfile: {
-      rank: 1,
+      rank: 1.5,
       tier: "balanced",
       strengths: ["한국어", "도구·추론"],
       caveat:

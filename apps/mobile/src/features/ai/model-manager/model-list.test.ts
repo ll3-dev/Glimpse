@@ -40,8 +40,8 @@ describe("RECOMMENDED_MODELS on mobile", () => {
 
   it("exposes the researched mobile catalog in recommendation order", () => {
     expect(RECOMMENDED_MODELS.map((model) => model.id)).toEqual([
-      "lfm2.5-2.6b-q4",
       "qwen3.5-2b-q4",
+      "lfm2.5-2.6b-q4",
       "kanana-2-3b-instruct-q4",
       "qwen3-edgerazor-1.7b-tq1",
       "minicpm5-1b-q4",
