@@ -9,6 +9,8 @@ export interface IncrementalCyclePlan {
   toAnalyze: KnowledgeItem[];
   /** 재검증 페어 생성을 위한 analyzed 풀 */
   analyzedPool: KnowledgeItem[];
+  /** 배치 상한을 포함한 전체 백로그 크기 — 자동화 훅이 잔여 작업을 추적 */
+  backlogTotal: number;
 }
 
 /**
@@ -38,5 +40,6 @@ export function planIncrementalCycle(
   return {
     toAnalyze: backlog.slice(0, MAX_BATCH_PER_CYCLE),
     analyzedPool: analyzed,
+    backlogTotal: backlog.length,
   };
 }

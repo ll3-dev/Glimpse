@@ -1712,6 +1712,8 @@ name = "glimpse-bridge"
 version = "0.1.0"
 dependencies = [
  "glimpse-core",
+ "jni 0.21.1",
+ "mdns-sd",
  "rustra",
  "schemars 0.8.22",
  "serde",

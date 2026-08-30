@@ -318,6 +318,81 @@
       }
     },
     {
+      "name": "discoveryBaseUrl",
+      "commandId": 37,
+      "inputType": "DiscoveryBaseUrlInput",
+      "outputType": "DiscoveryBaseUrlOutput",
+      "inputSchema": {
+        "title": "DiscoveryBaseUrlInput",
+        "type": "object",
+        "required": [
+          "host",
+          "port"
+        ],
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "DiscoveryBaseUrlOutput",
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "endpointCandidates",
+      "commandId": 35,
+      "inputType": "EndpointCandidatesInput",
+      "outputType": "EndpointCandidatesOutput",
+      "inputSchema": {
+        "title": "EndpointCandidatesInput",
+        "type": "object",
+        "properties": {
+          "tailscaleUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lanUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "EndpointCandidatesOutput",
+        "type": "object",
+        "required": [
+          "endpoints"
+        ],
+        "properties": {
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "exportData",
       "commandId": 5,
       "inputType": "ExportDataInput",
@@ -892,6 +967,71 @@
               "null"
             ],
             "format": "int64"
+          }
+        }
+      }
+    },
+    {
+      "name": "isHoldingOff",
+      "commandId": 40,
+      "inputType": "IsHoldingOffInput",
+      "outputType": "IsHoldingOffOutput",
+      "inputSchema": {
+        "title": "IsHoldingOffInput",
+        "type": "object",
+        "required": [
+          "now",
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/BackoffState"
+          },
+          "now": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "force": {
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "IsHoldingOffOutput",
+        "type": "object",
+        "required": [
+          "holdingOff"
+        ],
+        "properties": {
+          "holdingOff": {
+            "type": "boolean"
+          }
+        }
+      },
+      "definitions": {
+        "BackoffState": {
+          "type": "object",
+          "required": [
+            "failures",
+            "holdUntil",
+            "invalidated"
+          ],
+          "properties": {
+            "failures": {
+              "description": "Consecutive failures so far (reset to 0 on success).",
+              "type": "integer",
+              "format": "int64"
+            },
+            "invalidated": {
+              "description": "True once an auth rejection made retrying pointless until re-pairing.",
+              "type": "boolean"
+            },
+            "holdUntil": {
+              "description": "Timestamp (ms) until which auto-sync should hold off.",
+              "type": "integer",
+              "format": "int64"
+            }
           }
         }
       }
@@ -2146,6 +2286,157 @@
       }
     },
     {
+      "name": "normalizeBaseUrl",
+      "commandId": 36,
+      "inputType": "NormalizeBaseUrlInput",
+      "outputType": "NormalizeBaseUrlOutput",
+      "inputSchema": {
+        "title": "NormalizeBaseUrlInput",
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "NormalizeBaseUrlOutput",
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "recordSyncFailure",
+      "commandId": 38,
+      "inputType": "RecordFailureInput",
+      "outputType": "RecordFailureOutput",
+      "inputSchema": {
+        "title": "RecordFailureInput",
+        "type": "object",
+        "required": [
+          "now",
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/BackoffState"
+          },
+          "now": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authRejected": {
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "RecordFailureOutput",
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/BackoffState"
+          }
+        }
+      },
+      "definitions": {
+        "BackoffState": {
+          "type": "object",
+          "required": [
+            "failures",
+            "holdUntil",
+            "invalidated"
+          ],
+          "properties": {
+            "failures": {
+              "description": "Consecutive failures so far (reset to 0 on success).",
+              "type": "integer",
+              "format": "int64"
+            },
+            "invalidated": {
+              "description": "True once an auth rejection made retrying pointless until re-pairing.",
+              "type": "boolean"
+            },
+            "holdUntil": {
+              "description": "Timestamp (ms) until which auto-sync should hold off.",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "recordSyncSuccess",
+      "commandId": 39,
+      "inputType": "RecordSuccessInput",
+      "outputType": "RecordSuccessOutput",
+      "inputSchema": {
+        "title": "RecordSuccessInput",
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/BackoffState"
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "RecordSuccessOutput",
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/BackoffState"
+          }
+        }
+      },
+      "definitions": {
+        "BackoffState": {
+          "type": "object",
+          "required": [
+            "failures",
+            "holdUntil",
+            "invalidated"
+          ],
+          "properties": {
+            "failures": {
+              "description": "Consecutive failures so far (reset to 0 on success).",
+              "type": "integer",
+              "format": "int64"
+            },
+            "invalidated": {
+              "description": "True once an auth rejection made retrying pointless until re-pairing.",
+              "type": "boolean"
+            },
+            "holdUntil": {
+              "description": "Timestamp (ms) until which auto-sync should hold off.",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "respondToRecommendation",
       "commandId": 30,
       "inputType": "RespondToRecommendationInput",
@@ -2469,6 +2760,87 @@
           "revision": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      }
+    },
+    {
+      "name": "syncDiscover",
+      "commandId": 34,
+      "inputType": "SyncDiscoverInput",
+      "outputType": "SyncDiscoverOutput",
+      "inputSchema": {
+        "title": "SyncDiscoverInput",
+        "type": "object",
+        "required": [
+          "timeoutMs"
+        ],
+        "properties": {
+          "timeoutMs": {
+            "description": "How long to browse before returning (clamped to [100, 5000] ms).",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "SyncDiscoverOutput",
+        "type": "object",
+        "required": [
+          "peers"
+        ],
+        "properties": {
+          "peers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/DiscoveredPeer"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "DiscoveredPeer": {
+          "description": "One discoverable desktop sync server (mDNS SRV + TXT resolved).",
+          "type": "object",
+          "required": [
+            "addresses",
+            "deviceId",
+            "host",
+            "name",
+            "port",
+            "protocolVersion"
+          ],
+          "properties": {
+            "name": {
+              "description": "Instance name — the desktop's user-facing device name.",
+              "type": "string"
+            },
+            "host": {
+              "description": "mDNS hostname with trailing dot (e.g. `glimpse-ab12cd34.local.`).",
+              "type": "string"
+            },
+            "port": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            },
+            "addresses": {
+              "description": "Resolved IPv4/IPv6 addresses observed during browse.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "deviceId": {
+              "description": "TXT `deviceId` — stable identity for dedupe/pairing.",
+              "type": "string"
+            },
+            "protocolVersion": {
+              "description": "TXT `protocol` — sync wire protocol version.",
+              "type": "integer",
+              "format": "int64"
+            }
           }
         }
       }
