@@ -51,6 +51,9 @@ function patchKnowledgeItemInList(
     next[index] = { ...next[index], ...patch };
     return next;
   });
+  // 상세 화면(['knowledgeItems','detail',id])은 리스트 패치의 프리픽스 안에
+  // 있지만 setQueryData는 exact 키만 건드리므로, 상세 쿼리를 명시 무효화한다.
+  qc.invalidateQueries({ queryKey: queryKeys.knowledgeItems.detail(item.id) });
 }
 
 export function useMarkAsReviewedMutation() {

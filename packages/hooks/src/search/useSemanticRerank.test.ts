@@ -9,7 +9,11 @@ import { renderHook, act } from '@testing-library/react';
 // 이미 존재하면 보존하고 없을 때만 정의한다.
 beforeAll(() => {
   const existing = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-  GlobalRegistrator.register({ url: 'http://localhost/' });
+  // useReviewMutations.test.ts 등 다른 파일과 한 프로세스를 공유하므로
+  // 이중 등록(두 번째 register가 throw)을 isRegistered로 막는다.
+  if (!GlobalRegistrator.isRegistered) {
+    GlobalRegistrator.register({ url: 'http://localhost/' });
+  }
   if (existing && !Object.getOwnPropertyDescriptor(globalThis, 'localStorage')?.writable) {
     Object.defineProperty(globalThis, 'localStorage', {
       ...existing,
