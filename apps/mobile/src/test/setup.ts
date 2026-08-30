@@ -57,10 +57,18 @@ mock.module("react-native", () => ({
     OS: 'ios',
     Version: '17.0',
     select: (options: Record<string, unknown>) => options.ios,
+    constants: {},
   },
   AppState: {
     addEventListener: () => ({ remove: () => {} }),
   },
+  // uniwind(config.native)가 모듈 로드 시 require — 테마 스토어 테스트에 필요
+  Appearance: {
+    getColorScheme: () => 'light',
+    addChangeListener: () => ({ remove: () => {} }),
+    setColorScheme: () => null,
+  },
+  Insets: { mode: 'padding', top: 0, bottom: 0, left: 0, right: 0 },
   NativeModules: {},
   NativeEventEmitter: class NativeEventEmitter {
     addListener() { return { remove: () => {} }; }

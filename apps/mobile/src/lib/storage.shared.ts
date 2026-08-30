@@ -51,6 +51,8 @@ export const StorageKeys = {
   REVIEW_REMINDER_ENABLED: 'review_reminder_enabled',
   REVIEW_REMINDER_HOUR: 'review_reminder_hour',
   REVIEW_REMINDER_MINUTE: 'review_reminder_minute',
+  // Theme preference (system/light/dark)
+  THEME_PREFERENCE: 'theme_preference',
   // Labeling backfill (one-time version flag)
   LABELING_BACKFILL_VERSION: 'labeling_backfill_version',
 } as const;

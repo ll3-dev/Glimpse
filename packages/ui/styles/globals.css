@@ -42,3 +42,67 @@
   --color-tag-neutral-bg: #f0eeec;
   --color-tag-neutral-text: #64625d;
 }
+
+/*
+ * Per-theme palette overrides. uniwind (native) compiles @variant blocks into
+ * theme-scoped variables that follow Uniwind.setTheme(), so both themes must
+ * declare the same variable set. Values mirror apps/desktop
+ * `.dark` exactly; light restates the @theme defaults.
+ *
+ * The shadcn compatibility tokens (background, foreground, muted, ...) are
+ * declared in @theme as var() references to the app-* tokens, so they follow
+ * these overrides without their own blocks.
+ */
+@layer theme {
+  :root {
+    @variant dark {
+      --color-app-bg: #191919;
+      --color-app-surface: #242424;
+      --color-app-card: #242424;
+      --color-app-border: rgba(255, 255, 255, 0.08);
+      --color-app-text: #e3e2de;
+      --color-app-muted: #9b9a97;
+      --color-app-subtle: #686764;
+      --color-app-primary: #529cca;
+      --color-app-accent: #eb5757;
+
+      --color-tag-mint-bg: #1c3829;
+      --color-tag-mint-text: #7ee787;
+      --color-tag-peach-bg: #3d2618;
+      --color-tag-peach-text: #ffa657;
+      --color-tag-sky-bg: #1a2f4c;
+      --color-tag-sky-text: #79c0ff;
+      --color-tag-lavender-bg: #2d2244;
+      --color-tag-lavender-text: #d2a8ff;
+      --color-tag-rose-bg: #3c1e28;
+      --color-tag-rose-text: #ff7b72;
+      --color-tag-neutral-bg: #2b2b2b;
+      --color-tag-neutral-text: #c9d1d9;
+    }
+
+    @variant light {
+      --color-app-bg: #f7f6f3;
+      --color-app-surface: #ffffff;
+      --color-app-card: #ffffff;
+      --color-app-border: #edece9;
+      --color-app-text: #37352f;
+      --color-app-muted: #787774;
+      --color-app-subtle: #9b9a97;
+      --color-app-primary: #2383e2;
+      --color-app-accent: #eb5757;
+
+      --color-tag-mint-bg: #edf7f0;
+      --color-tag-mint-text: #24663b;
+      --color-tag-peach-bg: #fcf2e8;
+      --color-tag-peach-text: #8a5020;
+      --color-tag-sky-bg: #eef5fb;
+      --color-tag-sky-text: #255d88;
+      --color-tag-lavender-bg: #f3effa;
+      --color-tag-lavender-text: #584578;
+      --color-tag-rose-bg: #faebeb;
+      --color-tag-rose-text: #9c3838;
+      --color-tag-neutral-bg: #f0eeec;
+      --color-tag-neutral-text: #64625d;
+    }
+  }
+}

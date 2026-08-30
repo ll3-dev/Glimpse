@@ -7,6 +7,7 @@ import { useSemanticColor } from '@glimpse/ui';
 import { SettingsOverviewCard } from '@/src/components/settings/SettingsOverviewCard';
 import { UnifiedAISettingsSection } from '@/src/components/settings/UnifiedAISettingsSection';
 import { ReviewReminderSection } from '@/src/components/settings/ReviewReminderSection';
+import { ThemeSection } from '@/src/components/settings/ThemeSection';
 import { LanguageSection } from '@/src/components/settings/LanguageSection';
 import { DesktopSyncSection } from '@/src/components/settings/DesktopSyncSection';
 import { DataManagementSection } from '@/src/components/settings/DataManagementSection';
@@ -130,6 +131,7 @@ export default function SettingsScreen() {
 
         {/* Group 2: General & Notifications */}
         <ReviewReminderSection />
+        <ThemeSection />
         <LanguageSection />
 
         {/* Group 3: Sync & Data */}
