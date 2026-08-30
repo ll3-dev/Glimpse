@@ -30,6 +30,20 @@ function createJsonResponse(data: unknown, ok = true) {
   };
 }
 
+/**
+ * React Native fetch(whatwg-fetch)처럼 signal을 존중하는 hanging fetch:
+ * abort되면 AbortError로 거부한다(TimeoutError가 아님 — RN은 항상 AbortError).
+ * 타임아웃 분류가 에러 이름이 아닌 구현 측 플래그로 동작함을 강제한다.
+ */
+function createSignalAwareHangingFetch(): typeof fetch {
+  return ((url: string, init?: RequestInit) =>
+    new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => {
+        reject(new DOMException('The operation was aborted.', 'AbortError'));
+      });
+    })) as unknown as typeof fetch;
+}
+
 describe('API_CONFIGS', () => {
   test('has config for openai', () => {
     expect(API_CONFIGS.openai).toBeDefined();
@@ -78,6 +92,67 @@ describe('createBYOKProvider', () => {
 
       const available = await provider.isAvailable();
       expect(available).toBe(false);
+    });
+  });
+
+  describe('hydration guard', () => {
+    function createStoreReadinessHarness() {
+      let ready = false;
+      return {
+        isReady: () => ready,
+        markReady: () => {
+          ready = true;
+        },
+      };
+    }
+
+    test('awaits hydrate before reading store, so deferred readiness succeeds', async () => {
+      const store = createStoreReadinessHarness();
+      const mockFetch = createMockFetch(
+        createJsonResponse({
+          choices: [{ message: { content: 'Hydrated summary' } }],
+        })
+      );
+
+      const provider = createBYOKProvider({
+        isReady: store.isReady,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
+        fetch: mockFetch,
+        hydrate: async () => {
+          // 콜드스타트 복원이 generate 도중에 완료되는 시나리오
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          store.markReady();
+        },
+      });
+
+      const exit = await Effect.runPromiseExit(provider.generate({ content: 'test' }));
+
+      expect(Exit.isSuccess(exit)).toBe(true);
+      if (Exit.isSuccess(exit)) {
+        expect(exit.value.summary).toBe('Hydrated summary');
+      }
+    });
+
+    test('surfaces hydrate failure as AI_PROVIDER_UNAVAILABLE', async () => {
+      const provider = createBYOKProvider({
+        isReady: () => true,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
+        hydrate: async () => {
+          throw new Error('secure store unavailable');
+        },
+      });
+
+      const exit = await Effect.runPromiseExit(provider.generate({ content: 'test' }));
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_UNAVAILABLE');
+        }
+      }
     });
   });
 
@@ -269,6 +344,89 @@ describe('createBYOKProvider', () => {
         getApiKey: () => 'test-key',
         getProvider: () => 'openai',
         fetch: mockFetch as unknown as typeof fetch,
+      });
+
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_NETWORK_ERROR');
+        }
+      }
+    });
+
+    test('returns Effect that fails with AI_PROVIDER_TIMEOUT when request hangs', async () => {
+      // React Native fetch(whatwg-fetch)는 abort 시 항상 AbortError로 거부한다 —
+      // 타임아웃 분류는 에러 이름이 아니라 구현 측 플래그로 판정되어야 한다.
+      const hangingFetch = createSignalAwareHangingFetch();
+
+      const provider = createBYOKProvider({
+        isReady: () => true,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
+        fetch: hangingFetch,
+        timeoutMs: 20,
+      });
+
+      const effect = provider.generate({ content: 'test' });
+      const exit = await Effect.runPromiseExit(effect);
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+        if (isAIProviderError(error)) {
+          expect(error.code).toBe('AI_PROVIDER_TIMEOUT');
+        }
+      }
+    });
+
+    test('works without AbortSignal.timeout (React Native runtime has no static timeout)', async () => {
+      // 회귀 방지: RN polyfill에는 AbortSignal.timeout가 없다. 이전 구현은
+      // TypeError('AbortSignal.timeout is not a function')를 던져 정상 호출까지 실패했다.
+      const signalStatic = AbortSignal as unknown as { timeout?: unknown };
+      const originalTimeout = signalStatic.timeout;
+      delete signalStatic.timeout;
+
+      try {
+        const provider = createBYOKProvider({
+          isReady: () => true,
+          getApiKey: () => 'test-key',
+          getProvider: () => 'openai',
+          fetch: createSignalAwareHangingFetch(),
+          timeoutMs: 20,
+        });
+
+        const effect = provider.generate({ content: 'test' });
+        const exit = await Effect.runPromiseExit(effect);
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          if (isAIProviderError(error)) {
+            expect(error.code).toBe('AI_PROVIDER_TIMEOUT');
+          }
+        }
+      } finally {
+        signalStatic.timeout = originalTimeout;
+      }
+    });
+
+    test('returns Effect that fails with NETWORK_ERROR for non-timeout aborts', async () => {
+      // 호출자 측 abort(TimeoutError 아님)는 여전히 NETWORK_ERROR로 분류된다.
+      const abortingFetch = (() =>
+        Promise.reject(
+          new DOMException('The operation was aborted.', 'AbortError')
+        )) as unknown as typeof fetch;
+
+      const provider = createBYOKProvider({
+        isReady: () => true,
+        getApiKey: () => 'test-key',
+        getProvider: () => 'openai',
+        fetch: abortingFetch,
+        timeoutMs: 30_000,
       });
 
       const effect = provider.generate({ content: 'test' });
