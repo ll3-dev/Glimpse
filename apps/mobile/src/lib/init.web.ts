@@ -1,8 +1,12 @@
 import { LocaleConfig } from 'react-native-calendars';
+import { ensureThemeHydrated } from '@/src/stores/settings/theme.store';
 
 // Native initialization registers background tasks and expo-network listeners.
 // Both touch browser globals during SSR, so the web entry keeps initialization
-// side-effect free until React mounts in the browser.
+// side-effect free until React mounts in the browser. Theme hydration only
+// reads MMKV and applies the saved preference (uniwind's web path guards the
+// native Appearance calls), so it is safe to run here like on native.
+ensureThemeHydrated();
 LocaleConfig.locales.ko = {
   monthNames: [
     '1월',

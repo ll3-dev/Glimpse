@@ -2,7 +2,6 @@ import { useUniwind } from 'uniwind';
 import {
   useThemePreference,
   useThemePreferenceActions,
-  type ThemePreference,
 } from '@/src/stores/settings/theme.store';
 
 /**
@@ -24,7 +23,7 @@ export function useColorScheme() {
   return {
     colorScheme,
     isDarkColorScheme: colorScheme === 'dark',
-    themePreference: preference satisfies ThemePreference,
+    themePreference: preference,
     setColorScheme: setPreference,
     toggleColorScheme: () => setPreference(colorScheme === 'dark' ? 'light' : 'dark'),
   };
