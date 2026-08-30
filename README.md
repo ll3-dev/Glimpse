@@ -278,3 +278,7 @@ Glimpse is a Bun workspace built around an Expo-based React Native app, with sha
 - [지원 및 문의](SUPPORT.md)
 - [변경 이력](CHANGELOG.md)
 - [모바일 스토어 제출 절차](apps/mobile/docs/store-submission.md)
+
+## License
+
+MIT — see [LICENSE](./LICENSE). Third-party notices: [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).

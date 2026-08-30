@@ -2,6 +2,7 @@
   "name": "@glimpse/bridge-generated",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "main": "./generated/commands.ts",
   "types": "./generated/commands.ts",
   "exports": {
