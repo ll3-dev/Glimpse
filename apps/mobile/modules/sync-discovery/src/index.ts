@@ -1,4 +1,3 @@
-import { requireOptionalNativeModule } from 'expo-modules-core';
 import { discoveryUnavailableError } from './discovery-unavailable';
 
 export type DiscoveredSyncDesktop = {
@@ -9,27 +8,29 @@ export type DiscoveredSyncDesktop = {
   protocolVersion: number;
 };
 
-type SyncDiscoveryNativeModule = {
-  discover(timeoutMs: number): Promise<DiscoveredSyncDesktop[]>;
-};
-
-const nativeModule = requireOptionalNativeModule<SyncDiscoveryNativeModule>(
-  'GlimpseSyncDiscovery',
-);
-
 export { discoveryUnavailableError };
 
+/**
+ * Fallback entry point for resolvers without platform-extension support
+ * (bun tests, tsc). Discovery is unavailable in those contexts. Metro
+ * resolves device builds to index.ios.ts / index.android.ts instead — both
+ * route through the shared Rust `sync_discover` bridge command. The Swift
+ * native module binding this file used to carry is gone.
+ *
+ * The signatures mirror the platform adapters so every entry point of the
+ * module keeps one contract (`discoverSyncDesktops` takes an optional
+ * timeout — callers like sync-client pass one).
+ */
 export function isSyncDiscoveryAvailable(): boolean {
-  return nativeModule !== null;
+  return false;
 }
 
 export async function discoverSyncDesktops(
   timeoutMs: number = 2_500,
 ): Promise<DiscoveredSyncDesktop[]> {
-  if (!nativeModule) {
-    // An absent module is a different situation from "no desktops found":
-    // surface it explicitly so the UI can say so instead of showing 0 results.
-    throw new Error(discoveryUnavailableError);
-  }
-  return nativeModule.discover(Math.min(Math.max(timeoutMs, 500), 10_000));
+  // `timeoutMs` is accepted for contract parity with the platform adapters;
+  // without a native runtime there is nothing to discover on any resolver
+  // that lands here.
+  void timeoutMs;
+  throw new Error(discoveryUnavailableError);
 }
