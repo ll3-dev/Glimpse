@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Alert, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSaveKnowledgeItemMutation } from '@/src/hooks';
 import { useRouter } from 'expo-router';
+import { useShareIntentContext } from 'expo-share-intent';
 import { X } from '@glimpse/ui/icons';
 import {
   CaptureSaveButton,
@@ -11,6 +12,7 @@ import {
 } from '@/src/components/capture';
 import { ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
+import { shareIntentToFormState } from '@/src/features/capture/form/intent-to-form';
 import { toast } from '@/src/stores/toast.store';
 import type { KnowledgeItemType } from '@glimpse/shared';
 
@@ -24,6 +26,27 @@ export default function CaptureScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const appText = useSemanticColor('appText');
+  const { hasShareIntent, shareIntent, resetShareIntent } =
+    useShareIntentContext();
+
+  // 공유 인텐트(외부 공유 → 캡처 진입) 내용을 폼에 프리필한다.
+  // 적용을 먼저 하고 인텐트를 리셋해 연속 공유도 누락되지 않는다.
+  useEffect(() => {
+    if (!hasShareIntent || !shareIntent) return;
+    const patch = shareIntentToFormState({
+      text: shareIntent.text ?? null,
+      webUrl: shareIntent.webUrl ?? null,
+      title: shareIntent.meta?.title ?? null,
+      files: shareIntent.files ?? null,
+    });
+    if (Object.keys(patch).length > 0) {
+      // 외부 시스템(share-intent provider)의 일회성 이벤트를 폼 상태로 동기화하는
+      // 정당한 케이스. useCaptureFormState의 apply_share_intent와 동일한 패턴.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormState((prev) => ({ ...prev, ...patch }));
+    }
+    resetShareIntent();
+  }, [hasShareIntent, shareIntent, resetShareIntent]);
 
   const handleSave = () => {
     if (isPending) return;
