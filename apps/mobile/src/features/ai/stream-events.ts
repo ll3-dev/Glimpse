@@ -165,9 +165,11 @@ export function subscribeStreamToken(
  * Convenience helper to subscribe to stream completion events.
  *
  * NOTE: no production consumer today — mobile streaming completion resolves
- * through the JS promise path (`generateStream`), not this event. Kept as the
- * documented wire contract for `llm:stream-done` (desktop rustra parity);
- * only re-exports (llama-service.ts) and tests consume it.
+ * through the JS promise path (`generateStream`), not this event, and the
+ * desktop app no longer emits it (the bridge's `emit_llm_done` remains part
+ * of the rustra command surface, exercised by integration tests only). Kept
+ * as the documented wire contract for `llm:stream-done`; only re-exports
+ * (llama-service.ts) and tests consume it.
  */
 export function subscribeStreamDone(
   callback: (payload: StreamDonePayload) => void,
