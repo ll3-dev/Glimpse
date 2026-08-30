@@ -99,7 +99,7 @@ bun run start
 - `bun run android`: 모바일 앱 Android 실행
 - `bun run web`: 모바일 앱 web 실행
 - `bun run web:export`: 모바일 web 정적 export 검증
-- `bun run lint`: 모바일 lint 실행
+- `bun run lint`: 모바일 + 데스크톱 lint 실행 (각 앱의 lint 스크립트를 순차 실행)
 - `bun run typecheck`: 모바일 TypeScript 검사
 - `bun test`: 모바일 테스트 실행
 - `bun run test:coverage`: 모바일 테스트 커버리지 실행
@@ -202,7 +202,7 @@ graph LR
   TS["TypeScript<br/>@glimpse/bridge-generated"]
   ENGINE["rustra engine<br/>JSI JSON wire"]
   FFI["rustra FFI<br/>staticlib"]
-  PKG["glimpse.core package<br/>26 commands"]
+  PKG["glimpse.core package<br/>40 commands"]
   DOMAIN["Rust Domain<br/>CoreClientImpl"]
   DB["SQLite<br/>SqliteStorage"]
 
@@ -255,6 +255,12 @@ Rust 코어 변경 시에는 추가로:
 
 ```sh
 cargo check -p glimpse-core
+```
+
+동기화 로직 변경 시에는 GUI 없이 양방향 동기화를 헤드리스로 검증할 수 있습니다:
+
+```sh
+cd apps/mobile && bun run sync:e2e
 ```
 
 ## 개발 원칙

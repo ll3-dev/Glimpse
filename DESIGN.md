@@ -12,7 +12,7 @@
 - **Density**: Comfortable and breathable. Generous padding (`px-6` / `24px` horizontal margins on mobile), structured 8px-grid spacing.
 - **Corner Radii**:
   - Small / Badges / Tooltips: `rounded` (4px) or `rounded-md` (6px–8px)
-  - Cards & Containers: `rounded-md` (8px) for standard cards, `rounded-2xl` (16px) for elevated dialogs/sheets
+  - Cards & Containers: `rounded-xl` (12px) — `Card` primitive `default`/`muted` variants; `rounded-2xl` (16px) for the `elevated` variant and dialogs/sheets
   - Floating action buttons / Avatars: `rounded-full` (9999px)
 
 ---
@@ -36,23 +36,32 @@ All styling should prioritize the semantic tokens defined in `packages/ui/styles
 
 ### Pastel Tag / Metadata Tints
 
-Used for item labels, AI classification tags, and category chips:
+Used for item labels, AI classification tags, and category chips. Values below are the light-mode tokens from `packages/ui/styles/globals.css` (each has a matching dark-mode override in the same file):
 
 | Name | Background (`bg-`) | Text Color | Intended Usage |
 |---|---|---|---|
-| Mint | `#d9f3e1` | `#1a7f37` | Knowledge connections, confirmed status |
-| Peach / Amber | `#ffe8d4` | `#a04100` | Highlights, bookmarks, reading queue |
-| Sky / Blue | `#dcecfa` | `#0969da` | Web links, articles, references |
-| Lavender | `#e6e0f5` | `#6e3ab7` | AI insights, digests, semantic topics |
-| Rose | `#fde0ec` | `#cf222e` | Priority items, review reminders |
-| Cream / Neutral | `#f0eeec` / `bg-app-border/40` | `#787774` | Default tags, neutral categories |
+| Mint | `#edf7f0` | `#24663b` | Knowledge connections, confirmed status |
+| Peach / Amber | `#fcf2e8` | `#8a5020` | Highlights, bookmarks, reading queue |
+| Sky / Blue | `#eef5fb` | `#255d88` | Web links, articles, references |
+| Lavender | `#f3effa` | `#584578` | AI insights, digests, semantic topics |
+| Rose | `#faebeb` | `#9c3838` | Priority items, review reminders |
+| Cream / Neutral | `#f0eeec` | `#64625d` | Default tags, neutral categories |
 
-### Dark Mode Principles (When Enabled)
+### Foreground-on-Primary Inversion
+
+Foreground text/icon on `app-text`-filled surfaces (primary buttons, `EmptyState` CTA) uses the inverted token `text-app-bg` — never hardcoded white. The shadcn compatibility token follows the same rule: `primary-foreground: var(--color-app-bg)` in `globals.css`.
+
+### Dark Mode (Mobile: Fully Supported)
+
+Mobile dark mode is implemented via uniwind `@variant dark` theme-scoped variables in `globals.css`:
 
 - Background: Rich deep slate/charcoal (`#191919`), not pure `#000000`.
 - Card Surface: Elevated dark grey (`#242424`).
 - Border: Translucent hairline (`rgba(255, 255, 255, 0.08)`).
 - Text: Off-white (`#e3e2de`) and muted grey (`#9b9a97`).
+- Tag tints switch to dark-adjusted pairs (e.g. Mint `#1c3829`/`#7ee787`) declared in the same `@variant` block.
+
+Theme selection (`system` / `light` / `dark`) lives in `apps/mobile/src/stores/settings/theme.store.ts` — `Uniwind.setTheme()` applies it and MMKV persists the choice across launches. Never hardcode dark colors in components; always use semantic token classes so the `@variant` overrides apply.
 
 ---
 
@@ -77,7 +86,7 @@ Use clean system sans-serif (Inter / SF Pro / Geist Variable) with intentional t
 - **Structure**: Always wrap interactive list items with `<Card>` or `<Pressable className="... rounded-md border border-app-border bg-app-surface">`.
 - **Spacing**: `p-4` internal padding, `mb-2` or `gap-2` between items.
 - **Touch Feedback**: Provide subtle opacity/pressed feedback (`active:opacity-80` or Native highlight).
-- **Icons**: Use consistent `lucide-react-native` icons sized `16px`–`20px` with `#787774` or `#37352f`.
+- **Icons**: Use consistent `lucide-react-native` icons sized `20px` for actionable/interactive elements, `16px` for inline card icons, and `14px`+ for micro/meta indicators — colored with semantic tokens (`text-app-muted`, `text-app-text`).
 
 ### Screen Headers
 - Standardized with `ScreenHeader` primitive:
@@ -97,8 +106,9 @@ Use clean system sans-serif (Inter / SF Pro / Geist Variable) with intentional t
 - Background should use soft muted tones (`bg-app-border/40` or pastel tint palette).
 
 ### Empty States
-- Centered layout with generous vertical spacing (`py-16`).
-- Subtle muted icon, concise headline in `app-text`, explanatory description in `app-muted` with line breaks.
+- Standardize on the `EmptyState` primitive (`packages/ui/src/primitives/empty-state.tsx`): centered layout, generous vertical spacing (`py-24`; `compact` variant `py-8` for narrow contexts like chat detail).
+- Icon inside a `h-12 w-12` circular surface chip (`rounded-full bg-app-surface border-app-border`), colored `app-muted`, size `20`.
+- Concise headline in `app-text`, optional description in `app-muted`, optional single CTA action (`bg-app-text` fill with `text-app-bg` inverted foreground).
 
 ---
 

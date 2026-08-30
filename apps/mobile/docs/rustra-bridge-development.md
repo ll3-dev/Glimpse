@@ -18,7 +18,7 @@ TS CoreClient adapter (src/features/core/rustra-core-client.ts)
        └─ global rustra engine (configure() at bootstrap)
             └─ rustra-jsi module (modules/rustra-jsi/) — JSI HostObject
                  └─ rustra_ffi_invoke_json (packages/bridge-rust staticlib)
-                      └─ glimpse.core package (26 rustra commands)
+                      └─ glimpse.core package (40 rustra commands)
                            └─ glimpse-core SharedCore (single SQLite connection)
 ```
 
