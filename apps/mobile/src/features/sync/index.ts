@@ -15,12 +15,6 @@ export {
   updateSyncConfig,
   useSyncStore,
 } from './sync-store';
-export {
-  discoveryBaseUrl,
-  endpointCandidates,
-  HttpError,
-  isAuthError,
-  normalizeBaseUrl,
-} from './sync-url';
+export { HttpError, isAuthError } from './sync-url';
 export type { SyncConfig, SyncRuntimeState, SyncRuntimeStatus } from './types';
 export type { DiscoveredSyncDesktop } from '../../../modules/sync-discovery/src';

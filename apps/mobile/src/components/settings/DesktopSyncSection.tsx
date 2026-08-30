@@ -2,7 +2,6 @@ import { ActivityIndicator, Pressable, Switch as NativeSwitch, Text, TextInput, 
 import { Check, MonitorSmartphone, RefreshCw, Search, Unplug } from 'lucide-react-native';
 import { Button, Text as ButtonText } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
-import { discoveryBaseUrl } from '@/src/features/sync';
 import { useDesktopSyncSettings } from '@/src/hooks';
 import { SettingsSection } from './SettingsSection';
 
@@ -108,14 +107,18 @@ export function DesktopSyncSection() {
           </Button>
 
           {sync.runtime.discovered.map((desktop) => {
-            const url = discoveryBaseUrl(desktop);
+            // URL resolved through the bridge during discover()
+            // (useDesktopSyncSettings.discoveredUrls), keyed by host:port.
+            const url = sync.discoveredUrls[`${desktop.host}:${desktop.port}`] ?? '';
             const selected = sync.address === url;
             return (
               <Pressable
-                key={desktop.deviceId ?? url}
+                key={desktop.deviceId ?? `${desktop.host}:${desktop.port}`}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
-                onPress={() => sync.selectDesktop(url)}
+                onPress={() => {
+                  if (url) sync.selectDesktop(url);
+                }}
                 className={`min-h-11 rounded-lg border px-3.5 py-2 ${selected ? 'border-app-text bg-app-bg' : 'border-transparent bg-app-bg/50'}`}
               >
                 <Text className="text-sm font-semibold text-app-text">{desktop.name}</Text>

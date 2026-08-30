@@ -9,6 +9,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { deleteSecureItem, setSecureItem, SecureStorageKeys } from '@/src/lib/secure-storage';
 import { updateSyncConfig } from './sync-store';
+import { installSyncBridgeMock } from './sync-bridge-test-mock';
 import type { SyncResponse } from './types';
 
 mock.module('expo-device', () => ({
@@ -88,6 +89,10 @@ const mobileCoreClientStub = {
     };
   },
 };
+
+// sync_plan commands live in the rustra bridge — mock them (Rust-contract
+// mirror) before importing sync-client (module side effects).
+installSyncBridgeMock();
 
 mock.module('../../features/core', () => ({
   mobileCoreClient: mobileCoreClientStub,

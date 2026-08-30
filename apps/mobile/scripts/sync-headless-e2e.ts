@@ -97,6 +97,12 @@ mock.module('../../../modules/sync-discovery/src', () => ({
   discoverSyncDesktops: async () => [],
 }));
 
+// sync_plan 6커맨드(normalize/discovery/candidates/record*/isHoldingOff)는
+// rustra 브리지 소유 — Bun 헤드리스에는 JSI 표면이 없으므로 Rust 계약을
+// 미러링하는 스텁으로 대체한다 (sync-bridge-test-mock과 동일 기본값).
+const bridgeMock = await import('../src/features/sync/sync-bridge-test-mock');
+bridgeMock.installSyncBridgeMock();
+
 // --- 데스크톱 시뮬레이터 서버 -------------------------------------------
 
 type Row = { id: string; updatedAt: number; [key: string]: unknown };

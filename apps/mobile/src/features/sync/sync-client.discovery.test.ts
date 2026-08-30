@@ -18,6 +18,7 @@ import { deleteSecureItem, setSecureItem, SecureStorageKeys } from '@/src/lib/se
 // all assert against this one source.
 import { discoveryUnavailableError as UNAVAILABLE_MESSAGE } from '../../../modules/sync-discovery/src/discovery-unavailable';
 import { getSyncRuntime, resetSyncConfig, updateSyncConfig } from './sync-store';
+import { installSyncBridgeMock } from './sync-bridge-test-mock';
 
 // `expo-device` (pulled in by sync-client) needs the native runtime; sync
 // only reads deviceName. Mock at the module boundary instead. These calls
@@ -54,6 +55,10 @@ if (!globalWithExpo.expo) {
     },
   } as typeof globalWithExpo.expo;
 }
+
+// sync_plan commands live in the rustra bridge — mock them (Rust-contract
+// mirror) before importing sync-client (module side effects).
+installSyncBridgeMock();
 
 // Mock the core client before importing sync-client (module side effects).
 mock.module('../../features/core', () => ({

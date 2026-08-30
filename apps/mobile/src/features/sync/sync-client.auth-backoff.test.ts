@@ -1,58 +1,146 @@
 /**
  * Integration tests for the auth-error → invalidated-backoff branch in
- * sync-client. These pin the contract between fetchJson (HttpError with a
- * status), isAuthError, and recordFailure: a 401 must invalidate the backoff
- * controller (no more pointless retries until re-pairing), while any other
- * failure must stay a plain retryable backoff.
+ * sync-client, now that the backoff controller lives in the rustra bridge
+ * (`sync_plan.rs`). These pin the TS-side contract: fetchJson maps a 401
+ * response to an `HttpError` carrying the status, `isAuthError` classifies
+ * it, and runSync forwards `authRejected: true` to `recordSyncFailure` —
+ * the bridge then decides to freeze. The exponential math itself is asserted
+ * by Rust unit tests and mirrored (not re-owned) by the mock defaults.
  */
-import { afterEach, describe, expect, test } from 'bun:test';
-import type { BackoffController } from './backoff';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import type { BackoffState } from '@glimpse/bridge-generated/types';
 import {
-  backoffDurationMs,
-  createBackoffController,
-  isHoldingOff,
-  MAX_BACKOFF_MS,
-} from './backoff';
+  installSyncBridgeMock,
+  resetSyncBridgeMock,
+  syncBridgeCalls,
+  syncBridgeCanned,
+} from './sync-bridge-test-mock';
 import { HttpError, isAuthError } from './sync-url';
+import { deleteSecureItem, setSecureItem, SecureStorageKeys } from '@/src/lib/secure-storage';
+import { resetSyncConfig, updateSyncConfig } from './sync-store';
+
+mock.module('expo-device', () => ({
+  get deviceName(): string | null {
+    return 'Glimpse Test Phone';
+  },
+  modelName: 'TestModel',
+}));
+
+const globalWithExpo = globalThis as typeof globalThis & {
+  expo?: { EventEmitter: unknown };
+};
+if (!globalWithExpo.expo) {
+  globalWithExpo.expo = {
+    EventEmitter: class {
+      addListener(): { remove(): void } {
+        return { remove(): void {} };
+      }
+
+      removeListener(): void {}
+
+      emit(): void {}
+
+      removeAllListeners(): void {}
+
+      listenerCount(): number {
+        return 0;
+      }
+    },
+  } as typeof globalWithExpo.expo;
+}
+
+installSyncBridgeMock();
+
+// runSync builds the snapshot export before attempting any endpoint, so the
+// core client must be stubbed too (only the pieces the contract touches).
+mock.module('../../features/core', () => ({
+  mobileCoreClient: {
+    async exportData(): Promise<string> {
+      return JSON.stringify({ formatVersion: 1, knowledgeItems: [], exportedAt: 0 });
+    },
+    async mergeData(): Promise<unknown> {
+      return {};
+    },
+    async mergeDelta(): Promise<unknown> {
+      return {
+        knowledgeItems: 0,
+        conversations: 0,
+        messages: 0,
+        recommendations: 0,
+        feedbackEvents: 0,
+      };
+    },
+  },
+}));
 
 const originalFetch = globalThis.fetch;
 
 describe('sync auth vs transient failure classification', () => {
-  afterEach(() => {
+  beforeEach(async () => {
+    // unpairDesktop resets the module-level backoff state (through the
+    // bridge), so every test starts from a fresh controller despite
+    // sync-client's module cache.
+    const { unpairDesktop } = await import('./sync-client');
+    await unpairDesktop();
+    resetSyncBridgeMock();
+    await setSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN, 'test-token');
+    updateSyncConfig({
+      desktopDeviceId: 'desktop-test',
+      desktopDeviceName: 'Desktop',
+      lanUrl: 'http://desktop.test:34129',
+      autoSync: true,
+      snapshotFingerprint: null,
+      outboundWatermark: null,
+      lastAckedUpstreamClock: null,
+    });
+  });
+
+  afterEach(async () => {
     globalThis.fetch = originalFetch;
+    await deleteSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
+    resetSyncConfig();
   });
 
-  test('401 HttpError invalidates the controller so auto-sync stops retrying', () => {
-    // What fetchJson throws after a 401 response (server body becomes message).
-    const authFailure = new HttpError('저장된 페어링과 일치하지 않습니다.', 401);
+  test('401 failure forwards authRejected to the bridge and stores the invalidated state', async () => {
+    const invalidated: BackoffState = { failures: 0, invalidated: true, holdUntil: 0 };
+    syncBridgeCanned.isHoldingOff.push({ holdingOff: false });
+    syncBridgeCanned.endpointCandidates.push({ endpoints: ['http://desktop.test:34129'] });
+    syncBridgeCanned.recordSyncFailure.push({ state: invalidated });
 
-    let state = simulateSyncFailureCycle(createBackoffController(), authFailure);
-    expect(state.invalidated).toBe(true);
-    // Auto-sync holds off indefinitely — even far in the future.
-    expect(isHoldingOff(state, Date.now() + 10 * MAX_BACKOFF_MS)).toBe(true);
-    // …but manual sync still ignores the hold.
-    expect(isHoldingOff(state, Date.now(), { force: true })).toBe(false);
+    mockFetchResponses({ status: 401, body: { message: '저장된 페어링과 일치하지 않습니다.' } });
 
-    // Ordinary failures afterwards never un-invalidate it.
-    state = simulateSyncFailureCycle(state, new Error('네트워크 오류'));
-    expect(state.invalidated).toBe(true);
+    const { syncWithDesktop } = await import('./sync-client');
+    await expect(syncWithDesktop({ force: true })).rejects.toThrow();
+    expect(syncBridgeCalls.recordSyncFailure).toHaveLength(1);
+    expect(syncBridgeCalls.recordSyncFailure[0].authRejected).toBe(true);
+
+    // The bridge-returned invalidated state is what the next run consults —
+    // even far in the future the stored verdict says "hold", and only a
+    // forced (manual) sync bypasses it. (Call [0] in this window is
+    // refreshHoldOffVerdict's recomputation; the run is call [1].)
+    syncBridgeCanned.isHoldingOff.length = 0;
+    syncBridgeCanned.isHoldingOff.push({ holdingOff: true });
+    await syncWithDesktop({ force: false });
+    expect(syncBridgeCalls.isHoldingOff).toHaveLength(1);
+    expect(syncBridgeCalls.isHoldingOff[0].state.invalidated).toBe(true);
   });
 
-  test('transient 500 failure backs off but stays retryable', () => {
-    const serverFailure = new HttpError('서버 오류', 500);
+  test('transient 500 failure records a retryable failure (authRejected false)', async () => {
+    const afterOneFailure: BackoffState = {
+      failures: 1,
+      invalidated: false,
+      holdUntil: 1_000 + 60_000,
+    };
+    syncBridgeCanned.isHoldingOff.push({ holdingOff: false });
+    syncBridgeCanned.endpointCandidates.push({ endpoints: ['http://desktop.test:34129'] });
+    syncBridgeCanned.recordSyncFailure.push({ state: afterOneFailure });
 
-    let state = simulateSyncFailureCycle(createBackoffController(), serverFailure);
-    expect(state.invalidated).toBe(false);
-    const firstHold = state.holdUntil;
-    expect(backoffDurationMs(state.failures)).toBe(60_000);
-    expect(isHoldingOff(state, firstHold - 1)).toBe(true);
-    expect(isHoldingOff(state, firstHold)).toBe(false);
+    mockFetchResponses({ status: 500, body: { message: '서버 오류' } });
 
-    // Repeated failures escalate the hold without ever invalidating.
-    state = simulateSyncFailureCycle(state, serverFailure);
-    expect(state.failures).toBe(2);
-    expect(backoffDurationMs(2)).toBe(120_000);
-    expect(state.invalidated).toBe(false);
+    const { syncWithDesktop } = await import('./sync-client');
+    await expect(syncWithDesktop({ force: true })).rejects.toThrow();
+    expect(syncBridgeCalls.recordSyncFailure).toHaveLength(1);
+    expect(syncBridgeCalls.recordSyncFailure[0].authRejected).toBe(false);
   });
 
   test('fetchJson-style mapping turns a 401 response into an auth HttpError', async () => {
@@ -88,18 +176,6 @@ describe('sync auth vs transient failure classification', () => {
     expect(isAuthError(error)).toBe(false);
   });
 });
-
-/** One failed sync round-trip as runSync performs it at its tail. */
-function simulateSyncFailureCycle(
-  state: BackoffController,
-  lastError: unknown,
-): BackoffController {
-  if (isAuthError(lastError)) {
-    return { ...state, invalidated: true };
-  }
-  const failures = state.failures + 1;
-  return { ...state, failures, holdUntil: Date.now() + backoffDurationMs(failures) };
-}
 
 function mockFetchResponses(response: { status: number; body: unknown }): void {
   globalThis.fetch = (async () =>

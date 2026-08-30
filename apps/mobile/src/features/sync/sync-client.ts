@@ -1,5 +1,14 @@
 import * as Device from 'expo-device';
 import {
+  discoveryBaseUrl,
+  endpointCandidates,
+  isHoldingOff,
+  normalizeBaseUrl,
+  recordSyncFailure,
+  recordSyncSuccess,
+} from '@glimpse/bridge-generated';
+import type { BackoffState } from '@glimpse/bridge-generated/types';
+import {
   discoverSyncDesktops,
   discoveryUnavailableError,
   isSyncDiscoveryAvailable,
@@ -22,20 +31,7 @@ import {
   setSyncRuntime,
   updateSyncConfig,
 } from './sync-store';
-import {
-  createBackoffController,
-  isHoldingOff,
-  recordFailure,
-  recordSuccess,
-  type BackoffController,
-} from './backoff';
-import {
-  discoveryBaseUrl,
-  endpointCandidates,
-  HttpError,
-  isAuthError,
-  normalizeBaseUrl,
-} from './sync-url';
+import { HttpError, isAuthError } from './sync-url';
 import {
   maybeCompressRequestBody,
   parseResponseBody,
@@ -68,13 +64,36 @@ const UPSTREAM_DELTA_LIMIT_BYTES = 10 * 1024 * 1024;
 
 let syncPromise: Promise<boolean> | null = null;
 
-/** Module-level backoff state shared across auto-sync invocations.
- * Exposed to siblings via `readSyncBackoff` so the background task can check
- * the hold-off without importing private module state. */
-let backoff: BackoffController = createBackoffController();
+/**
+ * Module-level backoff state shared across auto-sync invocations. The
+ * exponential/auth-freeze math lives in the rustra bridge (`sync_plan.rs`);
+ * this module only stores the bridge-returned `BackoffState` and feeds it
+ * back into the next command round-trip.
+ *
+ * The hold-off verdict computed at the end of each `runSync` is cached in
+ * `lastHoldOffVerdict` so `isSyncInBackoff` can serve the background task's
+ * synchronous interface without awaiting the bridge mid-task. It is
+ * refreshed on every state transition (success, failure, hold-off short
+ * circuit, re-pairing) — reads between syncs therefore reflect the state
+ * the last sync left behind.
+ */
+let backoffState: BackoffState = { failures: 0, invalidated: false, holdUntil: 0 };
+let lastHoldOffVerdict = false;
+
+function isHoldingOffCached(): boolean {
+  return lastHoldOffVerdict;
+}
 
 export function isSyncInBackoff(now: number = Date.now()): boolean {
-  return isHoldingOff(backoff, now);
+  // Cheap freshness guard: an expired hold or reset failures can never hold
+  // even without a bridge round-trip; the cached verdict covers the rest.
+  if (
+    !backoffState.invalidated &&
+    (backoffState.failures === 0 || now >= backoffState.holdUntil)
+  ) {
+    return false;
+  }
+  return isHoldingOffCached();
 }
 
 export function getOrCreateSyncDeviceId(): string {
@@ -107,7 +126,10 @@ export async function discoverDesktops(): Promise<DiscoveredSyncDesktop[]> {
 }
 
 export async function pairWithDesktop(baseUrl: string, pairingCode: string): Promise<void> {
-  const normalized = normalizeBaseUrl(baseUrl);
+  // Normalization (scheme defaulting, trailing-slash trim) is bridge logic.
+  // An empty result still means "no address typed"; a bridge failure
+  // surfaces as the sync runtime error it is.
+  const normalized = (await normalizeBaseUrl({ value: baseUrl })).url;
   if (!normalized) {
     throw new Error('Desktop 주소를 입력해 주세요.');
   }
@@ -138,7 +160,9 @@ export async function pairWithDesktop(baseUrl: string, pairingCode: string): Pro
       autoSync: true,
     });
     setSyncRuntime('idle');
-    backoff = createBackoffController();
+    // Re-pairing resets the backoff controller — through the bridge.
+    backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+    await refreshHoldOffVerdict();
     await syncWithDesktop({ force: true });
   } catch (error) {
     const message = errorMessage(error);
@@ -150,6 +174,11 @@ export async function pairWithDesktop(baseUrl: string, pairingCode: string): Pro
 export async function unpairDesktop(): Promise<void> {
   await deleteSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
   resetSyncConfig();
+  // Unpairing discards the pairing token the invalidated flag froze the
+  // controller for; reset through the bridge so the next pairing starts
+  // clean instead of inheriting the old desktop's backoff.
+  backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+  lastHoldOffVerdict = false;
 }
 
 export async function syncWithDesktop(
@@ -169,17 +198,26 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   }
   const token = await getSecureItem(SecureStorageKeys.SYNC_PAIRING_TOKEN);
   if (!token) {
-    backoff = recordFailure(backoff, Date.now(), true);
+    backoffState = (
+      await recordSyncFailure({ state: backoffState, now: Date.now(), authRejected: true })
+    ).state;
+    await refreshHoldOffVerdict();
     setSyncRuntime('error', '페어링 토큰이 없습니다. 다시 페어링해 주세요.');
     return false;
   }
-  if (isHoldingOff(backoff, Date.now(), options)) {
+  const holdingOff = (
+    await isHoldingOff({ state: backoffState, now: Date.now(), force: options.force })
+  ).holdingOff;
+  if (holdingOff) {
     // Auto-sync cooldown after failures; a manual sync always ignores it.
+    lastHoldOffVerdict = true;
     return false;
   }
+  lastHoldOffVerdict = false;
 
   setSyncRuntime('syncing');
-  let candidates = endpointCandidates(config);
+  // Endpoint ordering (tailnet first, deduped) is bridge logic.
+  let candidates = (await endpointCandidates(config)).endpoints;
   if (candidates.length === 0) {
     candidates = await rediscoverPairedDesktop(config.desktopDeviceId);
   }
@@ -307,7 +345,8 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
   for (const baseUrl of candidates) {
     try {
       const changed = await attempt(baseUrl);
-      backoff = recordSuccess(backoff);
+      backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+      await refreshHoldOffVerdict();
       setSyncRuntime('synced');
       // Propagate the merge verdict: false (skip / all-stale delta) lets the
       // auto-sync caller skip its query invalidations.
@@ -324,7 +363,8 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     for (const baseUrl of rediscovered.filter((url) => !candidates.includes(url))) {
       try {
         const changed = await attempt(baseUrl);
-        backoff = recordSuccess(backoff);
+        backoffState = (await recordSyncSuccess({ state: backoffState })).state;
+        await refreshHoldOffVerdict();
         setSyncRuntime('synced');
         return changed;
       } catch (error) {
@@ -334,10 +374,40 @@ async function runSync(options: { force?: boolean }): Promise<boolean> {
     }
   }
 
-  backoff = recordFailure(backoff, Date.now(), isAuthError(lastError));
+  backoffState = (
+    await recordSyncFailure({
+      state: backoffState,
+      now: Date.now(),
+      authRejected: isAuthError(lastError),
+    })
+  ).state;
+  await refreshHoldOffVerdict();
   const message = errorMessage(lastError);
   setSyncRuntime('error', message);
   throw new Error(message);
+}
+
+/** Recompute the background task's cached hold-off verdict from the stored
+ * state. The bridge stays authoritative for the verdict itself; this only
+ * freezes the answer for the synchronous `isSyncInBackoff` interface.
+ * Awaited by runSync before it exits so the cache always reflects the state
+ * the sync ended on. */
+async function refreshHoldOffVerdict(): Promise<void> {
+  // Cheap local pre-check mirrors the bridge: no failures, no invalidation,
+  // or an expired hold can never hold off.
+  if (
+    !backoffState.invalidated &&
+    (backoffState.failures === 0 || Date.now() >= backoffState.holdUntil)
+  ) {
+    lastHoldOffVerdict = false;
+    return;
+  }
+  try {
+    const output = await isHoldingOff({ state: backoffState, now: Date.now() });
+    lastHoldOffVerdict = output.holdingOff;
+  } catch {
+    // Bridge unavailable: keep the previous verdict rather than crash.
+  }
 }
 
 async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
@@ -350,7 +420,8 @@ async function rediscoverPairedDesktop(deviceId: string): Promise<string[]> {
     setDiscoveredSyncDesktops(found);
     const paired = found.find((desktop) => desktop.deviceId === deviceId);
     if (!paired) return [];
-    const lanUrl = discoveryBaseUrl(paired);
+    // URL shaping (IPv6 bracketing, plain http) is bridge logic.
+    const lanUrl = (await discoveryBaseUrl({ host: paired.host, port: paired.port })).url;
     updateSyncConfig({ lanUrl });
     return [lanUrl];
   } catch {
