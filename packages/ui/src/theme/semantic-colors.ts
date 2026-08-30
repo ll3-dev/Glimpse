@@ -49,13 +49,13 @@ const FALLBACKS: Record<SemanticColorName, string> = {
   appSubtle: '#9b9a97',
   appPrimary: '#2383e2',
   appAccent: '#eb5757',
-  primaryForeground: '#ffffff',
-  tagMintText: '#1a7f37',
-  tagPeachText: '#a04100',
-  tagSkyText: '#0969da',
-  tagLavenderText: '#6e3ab7',
-  tagRoseText: '#cf222e',
-  tagNeutralText: '#787774',
+  primaryForeground: '#f7f6f3',
+  tagMintText: '#24663b',
+  tagPeachText: '#8a5020',
+  tagSkyText: '#255d88',
+  tagLavenderText: '#584578',
+  tagRoseText: '#9c3838',
+  tagNeutralText: '#64625d',
 };
 
 export function useSemanticColor(name: SemanticColorName): string {
