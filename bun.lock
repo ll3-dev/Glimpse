@@ -15,8 +15,8 @@
         "@glimpse/features": "workspace:*",
         "@glimpse/hooks": "workspace:*",
         "@glimpse/shared": "workspace:*",
-        "@rustra/tauri": "0.4.0",
-        "@rustra/types": "0.4.0",
+        "@rustra/tauri": "0.6.0",
+        "@rustra/types": "0.6.0",
         "@tailwindcss/vite": "^4.2.2",
         "@tanstack/react-query": "^5.95.2",
         "@tanstack/react-router": "^1.168.7",
@@ -786,7 +786,7 @@
 
     "@rustra/react-native": ["@rustra/react-native@0.6.0", "", { "dependencies": { "@rustra/types": "^0.6.0" }, "peerDependencies": { "react-native": ">=0.76" }, "optionalPeers": ["react-native"] }, "sha512-6oe4e4Ht8Yp5l8nIniJ10IyOkT9pKq/V2ZIsTDHPOGtoABK1SDST60STm85LRfwwf/tliTA36FI6mcbb+8RnyA=="],
 
-    "@rustra/tauri": ["@rustra/tauri@0.4.0", "", { "dependencies": { "@rustra/types": "^0.4.0" } }, "sha512-4iX8kNYg+04qWNbL2sfCtrxnDwC0PxTMHP6tzvcWLKkpb91hVTG6CZeXyMsCHXkL30j3084nOi2fHHJRpLBEOQ=="],
+    "@rustra/tauri": ["@rustra/tauri@0.6.0", "", { "dependencies": { "@rustra/types": "^0.6.0" } }, "sha512-iO8qI7RfEz3VcfBJIbj/8Kfvjp0Kb3Rca8gqmqFMhi3qpAMixlg7z6QYFwcRVxWZsWZ4Fl7K0Ta+Z0Qm3lEjjw=="],
 
     "@rustra/types": ["@rustra/types@0.6.0", "", {}, "sha512-wMW0ueNFweGzY1an8UeyktDEJRjDDAen1cJJ4jrkmg0R5uurdTBOs8tZKa0H+UHdb0DVIP5lJWxwqqphqx2JnA=="],
 
