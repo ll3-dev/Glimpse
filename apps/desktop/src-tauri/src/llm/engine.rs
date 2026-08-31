@@ -10,6 +10,8 @@ mod imp {
     use llama_cpp_2::llama_batch::LlamaBatch;
     use llama_cpp_2::model::params::LlamaModelParams;
     use llama_cpp_2::model::{AddBos, LlamaModel};
+    use llama_cpp_2::token::LlamaToken;
+    use llama_cpp_2::TokenToStringError;
     use llama_cpp_2::sampling::LlamaSampler;
     use llama_cpp_2::LlamaModelLoadError;
 
@@ -36,6 +38,25 @@ mod imp {
             return text[..start].trim().to_string();
         }
         text.to_string()
+    }
+
+    /// 토큰 → UTF-8 조각 변환. 16바이트 같은 고정 버퍼로는 멀티바이트
+    /// 조각에서 InsufficientBufferSpace(-필요크기) 가 나온다 — 크레이트
+    /// 공식 패턴대로 에러가 알려준 필요 크기로 재시도한다. 한글(3바이트)
+    /// 조각이 흔한 이 앱에서 실측으로 확인된 결함이다.
+    fn token_piece(model: &LlamaModel, token: LlamaToken) -> Result<Vec<u8>, String> {
+        const INITIAL_BUFFER: usize = 32;
+        match model.token_to_piece_bytes(token, INITIAL_BUFFER, true, None) {
+            Ok(bytes) => Ok(bytes.to_vec()),
+            Err(TokenToStringError::InsufficientBufferSpace(needed)) => {
+                let size = (-needed) as usize;
+                model
+                    .token_to_piece_bytes(token, size, true, None)
+                    .map(|bytes| bytes.to_vec())
+                    .map_err(|e| format!("Token-to-string failed: {}", e))
+            }
+            Err(e) => Err(format!("Token-to-string failed: {}", e)),
+        }
     }
 
     pub struct LlmEngine {
@@ -70,18 +91,6 @@ mod imp {
             Ok(())
         }
 
-        /// 요청(프롬프트 + 최대 생성 토큰)이 실제로 들어갈 수 있는 최소
-        /// 컨텍스트를 계산해 카탈로그 context_length 를 상한클램프한다.
-        /// 모델카드 최대치(예: 262k)를 그대로 n_ctx 로 쓰면 KV 캐시가
-        /// 수십 GB로 뛰어 컨텍스트 생성이 실패한다 — 런타임은 채팅에
-        /// 필요한 만큼만 할당한다.
-        fn effective_context_length(&self, _max_tokens: u32) -> u32 {
-            // 8k 컨텍스트면 채팅 히스토리 10턴 + 생성 512토큰이 모두
-            // 들어간다. 모델카드 상한이 그보다 작으면 그것을 존중한다.
-            const RUNTIME_CONTEXT_CAP: u32 = 8_192;
-            self.context_length.min(RUNTIME_CONTEXT_CAP).max(512)
-        }
-
         pub fn unload_model(&mut self) {
             self.model = None;
             self.model_path = None;
@@ -95,15 +104,30 @@ mod imp {
             self.model_path.as_ref()
         }
 
-        /// 레지스트리 context_length 를 반영한 컨텍스트 파라미터.
-        fn context_params(&self) -> LlamaContextParams {
-            LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(self.context_length))
-        }
+        /// 프롬프트 토큰 수와 생성 예산으로 컨텍스트 크기와 실제 생성
+        /// 예산을 정한다. n_ctx 는 프롬프트+생성이 모두 들어가도록
+        /// 카탈로그 상한(8k 런타임 캡) 안에서 늘리고, 모자라면 생성
+        /// 예산을 잘라 n_ctx 안에서 소진하게 한다 — 그렇지 않으면 긴
+        /// 프롬프트/큰 max_tokens 조합에서 llama.cpp 가 NoKvCacheSlot
+        /// 디코드 에러로 실패한다.
+        fn context_plan(
+            &self,
+            prompt_tokens: usize,
+            max_tokens: u32,
+        ) -> (LlamaContextParams, u32) {
+            const RUNTIME_CONTEXT_CAP: u32 = 8_192;
+            // 컨텍스트 생성 실패(수십 GB KV 캐시)를 막는 하한.
+            const MIN_CTX: u32 = 512;
 
-        /// 요청 max_tokens 를 반영한 런타임 컨텍스트 파라미터.
-        fn context_params_with(&self, _max_tokens: u32) -> LlamaContextParams {
-            LlamaContextParams::default()
-                .with_n_ctx(std::num::NonZeroU32::new(self.effective_context_length(_max_tokens)))
+            let catalog_cap = self.context_length.min(RUNTIME_CONTEXT_CAP).max(MIN_CTX);
+            // +1: 마지막 프롬프트 토큰의 logits 슬롯도 필요하다.
+            let needed = prompt_tokens as u32 + max_tokens + 1;
+            let n_ctx = needed.min(catalog_cap).max(MIN_CTX.min(catalog_cap));
+            let budget = max_tokens.min(n_ctx.saturating_sub(prompt_tokens as u32 + 1));
+            (
+                LlamaContextParams::default().with_n_ctx(std::num::NonZeroU32::new(n_ctx)),
+                budget,
+            )
         }
 
         pub fn completion(
@@ -114,16 +138,18 @@ mod imp {
         ) -> Result<String, String> {
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
-            // Create a context for this completion request
-            let ctx_params = self.context_params_with(max_tokens);
-            let mut ctx = model
-                .new_context(&self.backend, ctx_params)
-                .map_err(|e| format!("Failed to create context: {}", e))?;
-
             // Tokenize the prompt
             let tokens = model
                 .str_to_token(prompt, AddBos::Always)
                 .map_err(|e| format!("Tokenization failed: {}", e))?;
+
+            // 컨텍스트는 토큰화 후 생성 — 프롬프트 + 생성 예산이 실제로
+            // 들어갈 크기를 잡아야 NoKvCacheSlot 이 나지 않는다. n_ctx 가
+            // 모자라면 생성 예산을 잘라 n_ctx 안에서 소진시킨다.
+            let (ctx_params, budget) = self.context_plan(tokens.len(), max_tokens);
+            let mut ctx = model
+                .new_context(&self.backend, ctx_params)
+                .map_err(|e| format!("Failed to create context: {}", e))?;
 
             let n_ctx = ctx.n_ctx() as usize;
             if tokens.len() >= n_ctx {
@@ -153,7 +179,7 @@ mod imp {
             let mut generated_tokens = Vec::new();
             let mut n_cur = n_tokens as i32;
 
-            for _ in 0..max_tokens {
+            for _ in 0..budget {
                 let new_token = sampler.sample(&ctx, batch.n_tokens() - 1);
                 sampler.accept(new_token);
 
@@ -178,9 +204,7 @@ mod imp {
             // (deprecated `tokens_to_str` 대신 현재 API 사용)
             let mut builder: Vec<u8> = Vec::with_capacity(generated_tokens.len() * 8);
             for token in &generated_tokens {
-                let bytes = model
-                    .token_to_piece_bytes(*token, 16, true, None)
-                    .map_err(|e| format!("Token-to-string failed: {}", e))?;
+                let bytes = token_piece(model, *token)?;
                 builder.extend_from_slice(&bytes);
             }
             let text =
@@ -201,16 +225,16 @@ mod imp {
         {
             let model = self.model.as_ref().ok_or("No model loaded")?;
 
-            // Create a context for this completion request
-            let ctx_params = self.context_params_with(max_tokens);
-            let mut ctx = model
-                .new_context(&self.backend, ctx_params)
-                .map_err(|e| format!("Failed to create context: {}", e))?;
-
             // Tokenize the prompt
             let tokens = model
                 .str_to_token(prompt, AddBos::Always)
                 .map_err(|e| format!("Tokenization failed: {}", e))?;
+
+            // completion 과 동일 — 토큰화 후 컨텍스트 플랜(NoKvCacheSlot 방지).
+            let (ctx_params, budget) = self.context_plan(tokens.len(), max_tokens);
+            let mut ctx = model
+                .new_context(&self.backend, ctx_params)
+                .map_err(|e| format!("Failed to create context: {}", e))?;
 
             let n_ctx = ctx.n_ctx() as usize;
             if tokens.len() >= n_ctx {
@@ -238,7 +262,7 @@ mod imp {
             let mut n_cur = n_tokens as i32;
             let mut on_token = on_token;
 
-            for _ in 0..max_tokens {
+            for _ in 0..budget {
                 let new_token = sampler.sample(&ctx, batch.n_tokens() - 1);
                 sampler.accept(new_token);
 
@@ -249,7 +273,7 @@ mod imp {
                 generated_tokens.push(new_token);
 
                 // Convert this single token to a string and invoke the callback
-                if let Ok(bytes) = model.token_to_piece_bytes(new_token, 16, true, None) {
+                if let Ok(bytes) = token_piece(model, new_token) {
                     if let Ok(token_str) = String::from_utf8(bytes) {
                         on_token(&token_str);
                     }
@@ -268,9 +292,7 @@ mod imp {
             // Convert all tokens back to a full string
             let mut builder: Vec<u8> = Vec::with_capacity(generated_tokens.len() * 8);
             for token in &generated_tokens {
-                let bytes = model
-                    .token_to_piece_bytes(*token, 16, true, None)
-                    .map_err(|e| format!("Token-to-string failed: {}", e))?;
+                let bytes = token_piece(model, *token)?;
                 builder.extend_from_slice(&bytes);
             }
             let text =
@@ -336,6 +358,73 @@ mod imp {
             }
 
             Ok(out)
+        }
+    }
+
+    /// 실모델 통합 테스트 — 다운로드된 GGUF를 실제 llama.cpp로 로드해
+    /// 완성·스트리밍·임베딩을 검증한다. 모델 파일(수 GB)과 수십 초의
+    /// 추론 시간이 필요하므로 평시 CI에서는 `#[ignore]`로 건너뛰고
+    ///   cargo test --features llm real_model -- --ignored
+    /// 로 명시 실행한다. 모델이 없으면 실패가 아닌 skip(eprintln+조기
+    /// 반환) — 실기기 환경에서만 의미 있는 테스트다.
+    #[cfg(test)]
+    mod real_model_tests {
+        use super::*;
+
+        #[test]
+        #[ignore]
+        fn real_model_completion_stream_and_embedding() {
+            const MODEL_PATH: &str = "Qwen3.5-2B-Q4_K_M.gguf";
+            if !std::path::Path::new(MODEL_PATH).exists() {
+                eprintln!("skip: model not found at {}", MODEL_PATH);
+                return;
+            }
+
+            let mut engine = LlmEngine::new();
+            engine
+                .load_model(MODEL_PATH, 2048)
+                .expect("downloaded model must load into llama.cpp");
+            assert!(engine.is_loaded());
+
+            // 완성 — ChatML 프롬프트로 한국어 인사를 유도한다. reasoning
+            // 모델은 답변 전 수백~수천 토큰을 사고에 쓰므로 생성 예산을
+            // 넉넉히 잡고, /no_think 힌트로 사고를 억제한다(Qwen3 표준).
+            let prompt = "<|im_start|>user\n안녕하세요! 한 문장으로 인사해 주세요. /no_think<|im_end|>\n<|im_start|>assistant\n";
+
+            // 스트리밍 — 콜백 토큰을 모아 최종 텍스트 정합성을 확인한다.
+            let mut streamed_tokens: usize = 0;
+            let streamed = engine
+                .completion_stream(prompt, 2048, Some(0.7), |_| {
+                    streamed_tokens += 1;
+                })
+                .expect("streaming completion must succeed with a real model");
+            assert!(
+                !streamed.trim().is_empty(),
+                "streamed text must be non-empty"
+            );
+            assert!(
+                streamed_tokens > 0,
+                "stream callback must fire at least once"
+            );
+
+            let text = engine
+                .completion(prompt, 2048, Some(0.7))
+                .expect("completion must produce text with a real model");
+            assert!(
+                !text.trim().is_empty(),
+                "completion text must be non-empty (empty text was once surfaced as [No response])"
+            );
+
+            // 임베딩 — Qwen3.5는 LLM 풀링(POOLING_TYPE_NONE)만 지원해
+            // 시퀀스 임베딩이 불가능하다. 카탈로그도 supports_embedding:
+            // false로 정확히 표시한다. 엔진이 가짜 벡터를 만들지 않고
+            // 정직하게 Err 하는지가 이 모델로 검증 가능한 계약이다.
+            // (실제 임베딩 검증은 임베딩 지원 모델에서 수행.)
+            let result = engine.embedding("지식 조각 임베딩 검증");
+            assert!(
+                result.is_err(),
+                "an LLM-only model must not produce embeddings — a fake vector would silently corrupt similarity"
+            );
         }
     }
 }
