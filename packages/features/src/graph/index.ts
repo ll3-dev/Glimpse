@@ -3,3 +3,5 @@ export * from './pair';
 export * from './plan';
 export * from './fallback';
 export * from './discovery';
+export * from './metrics';
+export * from './local-metrics';
