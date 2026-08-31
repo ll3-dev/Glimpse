@@ -23,6 +23,13 @@ import * as Haptics from 'expo-haptics';
 import type { KnowledgeItem } from '@glimpse/shared';
 import type { LibraryFilterType } from '@/src/components/library/LibraryFilterBar';
 
+function sortPreservingRank(base: KnowledgeItem[], ranked: KnowledgeItem[]): KnowledgeItem[] {
+  const rank = new Map(ranked.map((item, index) => [item.id, index]));
+  return [...base].sort(
+    (a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+  );
+}
+
 export default function LibraryScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<LibraryFilterType>('all');
@@ -96,13 +103,6 @@ export default function LibraryScreen() {
 
   const hasActiveFilters = selectedType !== 'all' || selectedTag !== null || Boolean(searchQuery.trim());
 
-  function sortPreservingRank(base: KnowledgeItem[], ranked: KnowledgeItem[]): KnowledgeItem[] {
-    const rank = new Map(ranked.map((item, index) => [item.id, index]));
-    return [...base].sort(
-      (a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
-    );
-  }
-
   // 정렬 칩은 탭할 때마다 SORT_OPTIONS 순서대로 다음 정렬로 순환한다 —
   // 칩 라벨과 순환 순서가 한 배열에서 함께 유지된다.
   const handleCycleSortOrder = useCallback(() => {
@@ -171,9 +171,9 @@ export default function LibraryScreen() {
         <FlashList
           data={rerankedItems}
           renderItem={renderKnowledgeItem}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}
           contentInset={{ bottom: insets.bottom }}
           keyExtractor={(item) => item.id}
+          ListFooterComponent={<View style={{ height: insets.bottom + 88 }} />}
           ListEmptyComponent={
             <EmptyState icon={BookOpen} title={emptyState.title} description={emptyState.description} />
           }

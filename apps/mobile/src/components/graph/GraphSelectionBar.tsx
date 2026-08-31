@@ -12,6 +12,15 @@ type GraphSelectionBarProps = {
 
 const MAX_REASONS = 2;
 
+function reasonEntries(reasons: string[]): { key: string; reason: string }[] {
+  const occurrences = new Map<string, number>();
+  return reasons.map((reason) => {
+    const occurrence = occurrences.get(reason) ?? 0;
+    occurrences.set(reason, occurrence + 1);
+    return { key: `${reason}\u0000${occurrence}`, reason };
+  });
+}
+
 /**
  * 노드 선택 바 — 데스크톱의 엣지 hover tooltip을 대체하는 자리.
  * 선택 노드 라벨·연결 수·근거 요약과 "상세 보기" CTA를 노출한다.
@@ -24,7 +33,7 @@ export function GraphSelectionBar({ selection, nodeLabel, onOpenDetail, onClear 
   const appBg = useSemanticColor('appBg');
 
   const reasons = selection.incidentReasons;
-  const shown = reasons.slice(0, MAX_REASONS);
+  const shown = reasonEntries(reasons.slice(0, MAX_REASONS));
   const rest = reasons.length - shown.length;
 
   return (
@@ -40,8 +49,8 @@ export function GraphSelectionBar({ selection, nodeLabel, onOpenDetail, onClear 
           <Text className="text-xs font-medium mt-0.5" style={{ color: appMuted }}>
             연결 {selection.connectedIds.size - 1}개
           </Text>
-          {shown.map((reason, i) => (
-            <Text key={i} className="text-xs mt-0.5" style={{ color: appMuted }} numberOfLines={1}>
+          {shown.map(({ key, reason }) => (
+            <Text key={key} className="text-xs mt-0.5" style={{ color: appMuted }} numberOfLines={1}>
               {reason}
             </Text>
           ))}

@@ -44,13 +44,15 @@ export default function GraphScreen() {
   const appBorder = useSemanticColor('appBorder');
   const appText = useSemanticColor('appText');
   const appMuted = useSemanticColor('appMuted');
-  const palette = [
-    useSemanticColor('chart1'),
-    useSemanticColor('chart2'),
-    useSemanticColor('chart3'),
-    useSemanticColor('chart4'),
-    useSemanticColor('chart5'),
-  ];
+  const chart1 = useSemanticColor('chart1');
+  const chart2 = useSemanticColor('chart2');
+  const chart3 = useSemanticColor('chart3');
+  const chart4 = useSemanticColor('chart4');
+  const chart5 = useSemanticColor('chart5');
+  const palette = useMemo(
+    () => [chart1, chart2, chart3, chart4, chart5],
+    [chart1, chart2, chart3, chart4, chart5],
+  );
 
   const { nodes, edges } = useMemo(
     () => focusedNodeId
