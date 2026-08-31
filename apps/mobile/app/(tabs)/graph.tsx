@@ -25,6 +25,7 @@ import {
 import { selectTodayDiscoveries } from '@glimpse/features';
 import { layoutFocusedGraph, layoutGraph } from '@glimpse/shared';
 import { EmptyState, ScreenHeader, useSemanticColor } from '@glimpse/ui';
+import { recordMobileGraphDiscoveryOpen } from '@/src/features/graph/graph-metrics.store';
 
 function readParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -75,6 +76,10 @@ export default function GraphScreen() {
   );
 
   const openItem = (itemId: string) => router.push(`/library/${itemId}`);
+  const onOpenDiscoveryItem = (itemId: string) => {
+    recordMobileGraphDiscoveryOpen();
+    openItem(itemId);
+  };
   const setFocusedNodeId = (itemId: string | null) => {
     router.setParams({ focusId: itemId ?? '' });
   };
@@ -105,7 +110,7 @@ export default function GraphScreen() {
         <GraphDiscoveryCard
           discovery={discovery}
           isResponding={isResponding}
-          onOpenItem={openItem}
+          onOpenItem={onOpenDiscoveryItem}
           onFocus={(itemId) => {
             setFocusedNodeId(itemId);
             setSelectedEdgeId(null);

@@ -11,9 +11,11 @@ import {
   materializeGraphRecommendations,
   planLivingGraphCycle,
   proposeGraphEdgesByTagOverlap,
+  type GraphCycleMetricSample,
   type ProposedGraphEdge,
 } from '@glimpse/features';
 import { mobileCoreClient } from '@/src/features/core';
+import { recordMobileGraphCycle } from '@/src/features/graph/graph-metrics.store';
 import { logger } from '@/src/utils/logger';
 import { proposeEdgesWithAI } from './proposeEdgesWithAI';
 
@@ -29,6 +31,8 @@ export interface RecommendationRefreshDeps {
   listRecommendations: () => Promise<Recommendation[]>;
   proposeEdges: (items: KnowledgeItem[]) => Promise<ProposedGraphEdge[]>;
   commitAnalysis: (input: GraphAnalysisCommitInput) => Promise<GraphAnalysisCommitResult>;
+  measureNow?: () => number;
+  recordCycle?: (sample: GraphCycleMetricSample) => void;
 }
 
 export type RecommendationRefreshResult =
@@ -61,13 +65,37 @@ function getDefaultDeps(): RecommendationRefreshDeps {
     listRecommendations: () => mobileCoreClient.listRecommendations(),
     proposeEdges: (items) => proposeEdgesWithAI(items),
     commitAnalysis: (input) => mobileCoreClient.commitGraphAnalysis(input),
+    measureNow: () => performance.now(),
+    recordCycle: recordMobileGraphCycle,
   };
 }
 
 export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
   return async (options: { force?: boolean } = {}): Promise<RecommendationRefreshResult> => {
+    const startedAt = deps.measureNow?.();
+    let recordedAt = 0;
+    const finish = <T extends RecommendationRefreshResult>(
+      result: T,
+      skippedCount: number,
+    ): T => {
+      try {
+        if (startedAt !== undefined && deps.measureNow && deps.recordCycle) {
+          deps.recordCycle({
+            succeeded: result.success,
+            durationMs: deps.measureNow() - startedAt,
+            processedCount: result.success ? result.processedCount : 0,
+            skippedCount,
+            recordedAt,
+          });
+        }
+      } catch {
+        // Diagnostics must not turn a recoverable refresh into a failure.
+      }
+      return result;
+    };
     try {
       const now = deps.now();
+      recordedAt = now;
       const [items, storedRecords, existing] = await Promise.all([
         deps.listItems(),
         deps.listAnalysisRecords(),
@@ -79,14 +107,14 @@ export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
         { now, batchLimit: deps.batchLimit },
       );
       if (plan.toAnalyze.length === 0) {
-        return {
+        return finish({
           success: true,
           skipped: true,
           reason: 'no_dirty',
           createdCount: 0,
           processedCount: 0,
           remainingBacklog: 0,
-        };
+        }, plan.skippedCount);
       }
 
       const aiInput = [...plan.toAnalyze, ...plan.analyzedPool];
@@ -119,7 +147,7 @@ export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
         LIVING_GRAPH_ANALYZER_VERSION,
       );
       const committed = await deps.commitAnalysis({ records, recommendations: additions });
-      return {
+      return finish({
         success: true,
         skipped: false,
         createdCount: committed.savedRecommendations,
@@ -127,15 +155,15 @@ export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
         generatedCount: proposed.length,
         remainingBacklog: plan.remainingBacklog,
         source,
-      };
+      }, plan.skippedCount);
     } catch (error) {
-      return {
+      return finish({
         success: false,
         error: {
           code: 'RECOMMENDATION_ERROR',
           message: error instanceof Error ? error.message : String(error),
         },
-      };
+      }, 0);
     }
   };
 }

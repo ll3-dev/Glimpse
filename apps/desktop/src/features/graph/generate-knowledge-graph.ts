@@ -5,11 +5,13 @@ import {
   materializeGraphRecommendations,
   planLivingGraphCycle,
   proposeGraphEdgesByTagOverlap,
+  type GraphCycleMetricSample,
   type ProposedGraphEdge,
 } from '@glimpse/features';
 import { getProviderForFeature } from '@/features/ai/router';
 import { loadSettings } from '@/lib/settings-storage';
 import { parseEdges } from './graph-edge-parser';
+import { recordDesktopGraphCycle } from './graph-metrics.store';
 import { selectRecheckCandidates } from './recheck-candidates';
 
 const RECHECK_LIMIT = 20;
@@ -24,6 +26,18 @@ export interface GraphGenerationResult {
   remainingBacklog: number;
 }
 
+export interface GraphGenerationTelemetry {
+  wallNow: () => number;
+  measureNow: () => number;
+  recordCycle: (sample: GraphCycleMetricSample) => void;
+}
+
+const defaultTelemetry: GraphGenerationTelemetry = {
+  wallNow: Date.now,
+  measureNow: () => performance.now(),
+  recordCycle: recordDesktopGraphCycle,
+};
+
 /**
  * Runs one Living Graph analysis batch. Analysis progress is persisted in the
  * core independently of edge creation, so a valid zero-edge result is clean
@@ -32,12 +46,51 @@ export interface GraphGenerationResult {
 export async function generateKnowledgeGraph(
   coreClient: CoreClient,
   allItems: KnowledgeItem[],
+  telemetry: GraphGenerationTelemetry = defaultTelemetry,
+): Promise<GraphGenerationResult> {
+  const startedAt = telemetry.measureNow();
+  const now = telemetry.wallNow();
+  let result: GraphGenerationResult;
+  try {
+    result = await runKnowledgeGraphCycle(coreClient, allItems, now);
+  } catch (error) {
+    try {
+      telemetry.recordCycle({
+        succeeded: false,
+        durationMs: telemetry.measureNow() - startedAt,
+        processedCount: 0,
+        skippedCount: 0,
+        recordedAt: now,
+      });
+    } catch {
+      // Diagnostics must not hide the graph generation error.
+    }
+    throw error;
+  }
+  try {
+    telemetry.recordCycle({
+      succeeded: true,
+      durationMs: telemetry.measureNow() - startedAt,
+      processedCount: result.processedCount,
+      skippedCount: result.skippedCount,
+      recordedAt: now,
+    });
+  } catch {
+    // Diagnostics must not turn a successful graph generation into a failure.
+  }
+  return result;
+}
+
+async function runKnowledgeGraphCycle(
+  coreClient: CoreClient,
+  allItems: KnowledgeItem[],
+  now: number,
 ): Promise<GraphGenerationResult> {
   const [existing, analysisRecords] = await Promise.all([
     coreClient.listRecommendations(),
     coreClient.listGraphAnalysisRecords(),
   ]);
-  const plan = planLivingGraphCycle(allItems, analysisRecords, { now: Date.now() });
+  const plan = planLivingGraphCycle(allItems, analysisRecords, { now });
   if (plan.toAnalyze.length === 0) {
     return {
       createdCount: 0,
@@ -78,14 +131,14 @@ export async function generateKnowledgeGraph(
   }
 
   const additions = materializeGraphRecommendations(proposed, existing, allItems, {
-    now: Date.now(),
+    now,
     createId: () => crypto.randomUUID(),
     limit: MAX_NEW_EDGES,
   });
   const records = buildCompletedGraphAnalysisRecords(
     plan.toAnalyze,
     [...existing, ...additions],
-    Date.now(),
+    now,
     LIVING_GRAPH_ANALYZER_VERSION,
   );
   const committed = await coreClient.commitGraphAnalysis({

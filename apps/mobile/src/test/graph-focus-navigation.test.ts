@@ -20,4 +20,11 @@ describe('mobile graph focus navigation source contract', () => {
     expect(graph).toContain("router.setParams({ focusId: itemId ?? '' })");
     expect(graph).toContain('layoutFocusedGraph(items, recommendations, focusedNodeId)');
   });
+
+  test('오늘의 발견 상세 이동은 로컬 품질 카운터를 남긴다', async () => {
+    const graph = await source('apps/mobile/app/(tabs)/graph.tsx');
+
+    expect(graph).toContain('recordMobileGraphDiscoveryOpen();');
+    expect(graph).toContain('onOpenDiscoveryItem');
+  });
 });

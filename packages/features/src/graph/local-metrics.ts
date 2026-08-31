@@ -11,6 +11,14 @@ export interface GraphLocalMetrics {
   lastCycleAt: number | null;
 }
 
+export interface GraphCycleMetricSample {
+  succeeded: boolean;
+  durationMs: number;
+  processedCount: number;
+  skippedCount: number;
+  recordedAt: number;
+}
+
 export const MAX_GRAPH_DURATION_SAMPLES = 20;
 
 function finiteNonNegative(value: unknown): value is number {
@@ -85,13 +93,7 @@ export function recordGraphDiscoveryOpen(current: GraphLocalMetrics): GraphLocal
 
 export function recordGraphCycleMetrics(
   current: GraphLocalMetrics,
-  sample: {
-    succeeded: boolean;
-    durationMs: number;
-    processedCount: number;
-    skippedCount: number;
-    recordedAt: number;
-  },
+  sample: GraphCycleMetricSample,
 ): GraphLocalMetrics {
   const durationMs = safeNumber(sample.durationMs);
   return {

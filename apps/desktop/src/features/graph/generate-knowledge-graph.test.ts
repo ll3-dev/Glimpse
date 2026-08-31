@@ -55,6 +55,46 @@ function createCore(initialRecords: GraphAnalysisRecord[] = [], initialEdges: Re
 }
 
 describe('desktop Living Graph cycle', () => {
+  test('한 사이클의 처리·생략 수와 실행 시간을 로컬 측정기에 전달한다', async () => {
+    const items = [item('done', [], 1), item('new', [], 2)];
+    const { coreClient } = createCore([record('done')]);
+    const samples: {
+      succeeded: boolean;
+      durationMs: number;
+      processedCount: number;
+      skippedCount: number;
+      recordedAt: number;
+    }[] = [];
+    const ticks = [2, 11];
+
+    const result = await generateKnowledgeGraph(coreClient, items, {
+      wallNow: () => 500,
+      measureNow: () => ticks.shift() ?? 11,
+      recordCycle: (sample) => samples.push(sample),
+    });
+
+    expect(result.processedCount).toBe(1);
+    expect(samples).toEqual([{
+      succeeded: true,
+      durationMs: 9,
+      processedCount: 1,
+      skippedCount: 1,
+      recordedAt: 500,
+    }]);
+  });
+
+  test('로컬 측정기 저장 실패가 성공한 그래프 실행을 실패로 바꾸지 않는다', async () => {
+    const { coreClient } = createCore();
+
+    const result = await generateKnowledgeGraph(coreClient, [item('solo', [], 1)], {
+      wallNow: () => 500,
+      measureNow: () => 1,
+      recordCycle: () => { throw new Error('storage blocked'); },
+    });
+
+    expect(result).toMatchObject({ processedCount: 1, source: 'tag-overlap' });
+  });
+
   test('0-edge 배치도 completed watermark를 남겨 재실행에서 건너뛴다', async () => {
     const items = [item('a', []), item('b', [])];
     const { coreClient, commits } = createCore();

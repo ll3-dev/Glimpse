@@ -46,6 +46,32 @@ function deps(overrides: Partial<RecommendationRefreshDeps> = {}): Recommendatio
 }
 
 describe('mobile Living Graph refresh', () => {
+  test('한 사이클의 처리·생략 수와 실행 시간을 로컬 측정기에 전달한다', async () => {
+    const samples: {
+      succeeded: boolean;
+      durationMs: number;
+      processedCount: number;
+      skippedCount: number;
+      recordedAt: number;
+    }[] = [];
+    const ticks = [5, 17];
+    const result = await createRefreshRecommendations(deps({
+      measureNow: () => ticks.shift() ?? 17,
+      recordCycle: (sample) => samples.push(sample),
+      listItems: async () => [item('done', [], 1), item('new', [], 2)],
+      listAnalysisRecords: async () => [record('done')],
+    }))();
+
+    expect(result).toMatchObject({ success: true, processedCount: 1 });
+    expect(samples).toEqual([{
+      succeeded: true,
+      durationMs: 12,
+      processedCount: 1,
+      skippedCount: 1,
+      recordedAt: 100,
+    }]);
+  });
+
   test('AI가 비어도 태그 폴백과 원자 커밋으로 연결·워터마크를 저장한다', async () => {
     const commits: GraphAnalysisCommitInput[] = [];
     const commitAnalysis = mock(async (input: GraphAnalysisCommitInput) => {

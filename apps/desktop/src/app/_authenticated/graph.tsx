@@ -17,6 +17,7 @@ import type {
 import { Network } from 'lucide-react';
 import { GraphDiscoveryCard } from '@/components/graph/GraphDiscoveryCard';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
+import { recordDesktopGraphDiscoveryOpen } from '@/features/graph/graph-metrics.store';
 
 type GraphSearch = { focus?: string };
 
@@ -49,6 +50,10 @@ function GraphScreen() {
   const openItem = (itemId: string) => {
     void navigate({ to: '/library/$itemId', params: { itemId } });
   };
+  const openDiscoveryItem = (itemId: string) => {
+    recordDesktopGraphDiscoveryOpen();
+    openItem(itemId);
+  };
   const respondTo = (recommendationId: string, action: FeedbackActionType) => {
     respondMutation.mutate({
       recommendationId,
@@ -79,7 +84,7 @@ function GraphScreen() {
           <GraphDiscoveryCard
             discovery={discovery}
             isResponding={respondMutation.isPending}
-            onOpenItem={openItem}
+            onOpenItem={openDiscoveryItem}
             onFocus={setFocusedNodeId}
             onAccept={() => respondTo(discovery.recommendation.id, 'accept')}
             onIgnore={() => respondTo(discovery.recommendation.id, 'ignore')}

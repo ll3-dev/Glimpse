@@ -29,4 +29,11 @@ describe('desktop graph focus navigation source contract', () => {
     expect(canvas.match(/tabIndex=\{0\}/g)?.length).toBeGreaterThanOrEqual(2);
     expect(canvas).toContain('event.key === \'Enter\' || event.key === \' \'');
   });
+
+  test('오늘의 발견 상세 이동은 로컬 품질 카운터를 남긴다', async () => {
+    const graph = await source('app/_authenticated/graph.tsx');
+
+    expect(graph).toContain('recordDesktopGraphDiscoveryOpen();');
+    expect(graph).toContain('openDiscoveryItem');
+  });
 });
