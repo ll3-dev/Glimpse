@@ -35,7 +35,7 @@ rustup run stable cargo ndk \
   -t arm64-v8a \
   -t x86 \
   -t x86_64 \
-  build -p glimpse-bridge --release
+  build -p glimpse-bridge --lib --release
 
 # Rust target triple -> Android ABI -> output dir (mirrors the rustra example).
 copy_staticlib() {

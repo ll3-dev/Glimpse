@@ -36,7 +36,7 @@ build_ios_target() {
     "$cflags_var=$min_flag" \
     "$cxxflags_var=$min_flag" \
     "$rustflags_var=-C link-arg=$min_flag" \
-    rustup run stable cargo build -p glimpse-bridge --release --target "$target"
+    rustup run stable cargo build -p glimpse-bridge --lib --release --target "$target"
 }
 
 pushd "$REPO_DIR" >/dev/null
