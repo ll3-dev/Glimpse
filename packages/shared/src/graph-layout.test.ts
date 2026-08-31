@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { KnowledgeItem, Recommendation } from './index';
-import { layoutGraph } from './graph-layout';
+import { layoutFocusedGraph, layoutGraph } from './graph-layout';
 
 function item(partial: Partial<KnowledgeItem> & { id: string }): KnowledgeItem {
   return {
@@ -71,5 +71,41 @@ describe('layoutGraph', () => {
     for (const node of nodes) {
       expect(Math.hypot(node.x - 500, node.y - 330)).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('layoutFocusedGraph', () => {
+  test('focus를 중앙에 두고 1-hop 이웃을 안쪽 링에 배치한다', () => {
+    const items = [item({ id: 'focus' }), item({ id: 'near' }), item({ id: 'far' })];
+    const recommendations = [edge({ id: 'e1', itemA_id: 'focus', itemB_id: 'near' })];
+
+    const { nodes } = layoutFocusedGraph(items, recommendations, 'focus');
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+
+    expect(byId.get('focus')).toMatchObject({ x: 500, y: 320 });
+    expect(Math.hypot(byId.get('near')!.x - 500, byId.get('near')!.y - 320)).toBeLessThan(220);
+    expect(Math.hypot(byId.get('far')!.x - 500, byId.get('far')!.y - 320)).toBeGreaterThan(220);
+  });
+
+  test('36개 제한에서도 오래된 focus와 이웃을 먼저 보존한다', () => {
+    const items = [
+      item({ id: 'focus', updatedAt: -1_000 }),
+      item({ id: 'near', updatedAt: -999 }),
+      ...Array.from({ length: 40 }, (_, index) => item({ id: `item-${index}`, updatedAt: index })),
+    ];
+    const recommendations = [edge({ id: 'e1', itemA_id: 'focus', itemB_id: 'near' })];
+
+    const { nodes } = layoutFocusedGraph(items, recommendations, 'focus');
+    expect(nodes).toHaveLength(36);
+    expect(nodes.some(({ id }) => id === 'focus')).toBe(true);
+    expect(nodes.some(({ id }) => id === 'near')).toBe(true);
+  });
+
+  test('focus가 없으면 전체 레이아웃과 동일하다', () => {
+    const items = [item({ id: 'a' }), item({ id: 'b' })];
+    const recommendations = [edge({ id: 'e1', itemA_id: 'a', itemB_id: 'b' })];
+    expect(layoutFocusedGraph(items, recommendations, 'ghost')).toEqual(
+      layoutGraph(items, recommendations),
+    );
   });
 });
