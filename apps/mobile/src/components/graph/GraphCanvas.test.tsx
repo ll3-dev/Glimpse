@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
+import type { GraphEdge, GraphNode } from '@glimpse/shared';
 
 /**
  * GraphCanvas 렌더 검증.
@@ -20,7 +21,6 @@ mock.module('@glimpse/ui', () => ({
 
 const { renderToStaticMarkup } = await import('react-dom/server');
 const { GraphCanvas } = await import('./GraphCanvas');
-import type { GraphEdge, GraphNode } from '@glimpse/shared';
 
 function node(id: string, x: number, y: number): GraphNode {
   return { id, label: `라벨-${id}`, x, y };

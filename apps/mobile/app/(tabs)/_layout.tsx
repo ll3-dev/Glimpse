@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Library, Sparkles, RotateCcw, MessageCircle } from "lucide-react-native";
+import { Library, Sparkles, RotateCcw, MessageCircle, Network } from "lucide-react-native";
 import { View } from "react-native";
 import { useSemanticColor } from "@glimpse/ui";
 
@@ -61,6 +61,13 @@ export default function TabsLayout() {
           options={{
             title: "다이제스트",
             tabBarIcon: ({ color }) => <Sparkles color={color} size={18} />,
+          }}
+        />
+        <Tabs.Screen
+          name="graph"
+          options={{
+            title: "연결",
+            tabBarIcon: ({ color }) => <Network color={color} size={18} />,
           }}
         />
         <Tabs.Screen
