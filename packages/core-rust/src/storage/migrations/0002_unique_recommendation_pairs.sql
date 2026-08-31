@@ -1,12 +1,32 @@
 BEGIN IMMEDIATE;
 
 CREATE TEMP TABLE recommendation_pair_keep AS
-SELECT
-    CASE WHEN item_a_id < item_b_id THEN item_a_id ELSE item_b_id END AS item_low,
-    CASE WHEN item_a_id < item_b_id THEN item_b_id ELSE item_a_id END AS item_high,
-    MIN(id) AS keep_id
-FROM recommendations
-GROUP BY item_low, item_high;
+WITH ranked_pairs AS (
+    SELECT
+        CASE WHEN item_a_id < item_b_id THEN item_a_id ELSE item_b_id END AS item_low,
+        CASE WHEN item_a_id < item_b_id THEN item_b_id ELSE item_a_id END AS item_high,
+        id AS keep_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                CASE WHEN item_a_id < item_b_id THEN item_a_id ELSE item_b_id END,
+                CASE WHEN item_a_id < item_b_id THEN item_b_id ELSE item_a_id END
+            ORDER BY
+                CASE status
+                    WHEN 'accepted' THEN 4
+                    WHEN 'pending' THEN 3
+                    WHEN 'ignored' THEN 2
+                    WHEN 'dismissed' THEN 1
+                    ELSE 0
+                END DESC,
+                COALESCE(responded_at, created_at) DESC,
+                created_at DESC,
+                id DESC
+        ) AS pair_rank
+    FROM recommendations
+)
+SELECT item_low, item_high, keep_id
+FROM ranked_pairs
+WHERE pair_rank = 1;
 
 UPDATE feedback_events
 SET recommendation_id = (

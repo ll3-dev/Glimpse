@@ -317,7 +317,7 @@ mod tests {
 
         assert_eq!(pair_count, 1);
         assert_eq!(canonical_pair, ("item-a".into(), "item-b".into()));
-        assert_eq!(feedback_parent, "a-keep");
+        assert_eq!(feedback_parent, "z-removed");
 
         let duplicate_result = storage.conn.execute(
             "INSERT INTO recommendations (id, item_a_id, item_b_id, status, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
