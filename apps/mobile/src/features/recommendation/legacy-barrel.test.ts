@@ -14,7 +14,7 @@ import {
   createLogRecommendationFeedback,
   createRespondToRecommendation,
   createSaveRecommendations,
-} from './index';
+} from '@glimpse/features';
 
 function createItem(id: string, tags: string[] | null): KnowledgeItem {
   return {

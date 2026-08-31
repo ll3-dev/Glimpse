@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createRespondToRecommendation,
   type RespondToRecommendationDeps,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 
 const createMockDeps = () => {
   const coreClient = {

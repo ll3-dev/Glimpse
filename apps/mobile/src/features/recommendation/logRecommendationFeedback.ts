@@ -8,7 +8,7 @@ import {
   type RecommendationFeedbackDeps,
   type RecentFeedbackFailureResult,
   type RecentFeedbackResult,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 import type { FeedbackActionType } from '@glimpse/shared';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from '@/src/lib/id';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';

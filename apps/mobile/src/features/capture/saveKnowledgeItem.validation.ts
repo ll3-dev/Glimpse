@@ -1,1 +1,1 @@
-export { validateInput } from '@/src/features/core/application/capture';
+export { validateInput } from '@glimpse/features';

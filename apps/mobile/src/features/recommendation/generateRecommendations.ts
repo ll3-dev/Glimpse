@@ -3,7 +3,7 @@ import {
   createSaveRecommendations as createSaveRecommendationsUsecase,
   type GenerateRecommendationsDeps,
   type SaveRecommendationsDeps,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 import { mobileCoreClient } from '@/src/features/core';
 import { generateId, isIdCollisionError, MAX_ID_COLLISION_RETRIES } from "@/src/lib/id";
 import { getWeeklyItems } from "./getWeeklyItems";

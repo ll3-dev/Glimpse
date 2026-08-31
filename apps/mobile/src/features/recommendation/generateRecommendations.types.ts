@@ -5,4 +5,4 @@ export type {
   GenerateRecommendationsResult,
   GenerateResult,
   SaveRecommendationsDeps,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';

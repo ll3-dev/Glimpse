@@ -4,7 +4,7 @@ import {
   type GetConversationsFailureResult,
   type GetConversationsResult,
   type GetConversationsSuccessResult,
-} from '@/src/features/core/application/chat';
+} from '@glimpse/features';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 function getDefaultDeps(): GetAllConversationsDeps {

@@ -3,7 +3,7 @@ import {
   createSaveRecommendations,
   type GeneratedRecommendation,
   type SaveRecommendationsDeps,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 
 describe('createSaveRecommendations', () => {
   const coreClient = {

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createGetDueItems,
   type GetDueItemsDeps,
-} from '@/src/features/core/application/review';
+} from '@glimpse/features';
 
 const coreClient = {
   getDueKnowledgeItems: mock(),

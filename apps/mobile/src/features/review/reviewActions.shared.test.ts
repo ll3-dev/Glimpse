@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { loadKnowledgeItemOrFail } from '@/src/features/core/application/review';
+import { loadKnowledgeItemOrFail } from '@glimpse/features';
 import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockCoreClient = () => ({

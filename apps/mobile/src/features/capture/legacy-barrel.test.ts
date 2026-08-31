@@ -5,7 +5,7 @@ import {
   createSaveKnowledgeItem,
   normalizeText,
   validateInput,
-} from './index';
+} from '@glimpse/features';
 
 describe('core capture application layer', () => {
   test('validateInput enforces required fields per input type', () => {

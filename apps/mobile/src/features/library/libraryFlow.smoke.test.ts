@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import {
   createSaveKnowledgeItem,
   type SaveKnowledgeItemDeps,
-} from '@/src/features/core/application/capture';
+} from '@glimpse/features';
 import {
   createGetAllKnowledgeItems,
   type GetAllKnowledgeItemsDeps,

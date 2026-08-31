@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createGenerateRecommendations } from '@/src/features/core/application/recommendation';
+import { createGenerateRecommendations } from '@glimpse/features';
 import type {
   GenerateRecommendationsDeps,
   GeneratedRecommendation,
   WeeklyItemsResult,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 import type { KnowledgeItem } from '@glimpse/shared';
 
 const createMockKnowledgeItem = (id: string, tags: string[] | null): KnowledgeItem => ({

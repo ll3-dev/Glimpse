@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createSaveKnowledgeItem,
   type SaveKnowledgeItemDeps,
-} from '@/src/features/core/application/capture';
+} from '@glimpse/features';
 import type { KnowledgeItem } from '@glimpse/shared';
 import type { MetadataInput, MetadataOutput } from '@/src/features/ai/metadata';
 

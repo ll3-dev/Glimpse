@@ -3,7 +3,7 @@ import {
   type GetDueItemsDeps,
   type GetDueItemsOptions,
   type GetDueItemsResult,
-} from '@/src/features/core/application/review';
+} from '@glimpse/features';
 import { logger } from '@/src/utils/logger';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 

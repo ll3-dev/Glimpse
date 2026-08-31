@@ -8,7 +8,7 @@ import {
   createPostponeReview,
   initializeReviewScheduleWithCore,
   loadKnowledgeItemOrFail,
-} from './index';
+} from '@glimpse/features';
 
 function createItem(overrides: Partial<KnowledgeItem> = {}): KnowledgeItem {
   return {

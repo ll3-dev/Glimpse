@@ -3,7 +3,7 @@ import {
   createMarkAsReviewed,
   createPostponeReview,
   type ReviewActionsDeps,
-} from '@/src/features/core/application/review';
+} from '@glimpse/features';
 import type { KnowledgeItem } from '@glimpse/shared';
 
 const mockItem: KnowledgeItem = {

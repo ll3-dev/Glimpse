@@ -5,7 +5,7 @@ import {
   type DeleteConversationInput,
   type DeleteConversationResult,
   type DeleteConversationSuccessResult,
-} from '@/src/features/core/application/chat';
+} from '@glimpse/features';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 function getDefaultDeps(): DeleteConversationDeps {

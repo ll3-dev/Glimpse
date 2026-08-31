@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   createGetPendingRecommendations,
   type GetPendingRecommendationsDeps,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 
 const coreClient = {
   listPendingRecommendations: mock(),

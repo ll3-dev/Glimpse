@@ -5,7 +5,7 @@ import {
   type UpdateConversationDetailsInput,
   type UpdateConversationDetailsResult,
   type UpdateConversationDetailsSuccessResult,
-} from '@/src/features/core/application/chat';
+} from '@glimpse/features';
 import { mobileCoreClient, type MobileCoreClient } from '@/src/features/core';
 
 function getDefaultDeps(): UpdateConversationDetailsDeps {

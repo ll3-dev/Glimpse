@@ -3,7 +3,7 @@ import {
   createGetRecentFeedbackEvents,
   createLogRecommendationFeedback,
   type RecommendationFeedbackDeps,
-} from '@/src/features/core/application/recommendation';
+} from '@glimpse/features';
 import type { FeedbackEvent } from '@glimpse/shared';
 
 const createMockDeps = () => {
