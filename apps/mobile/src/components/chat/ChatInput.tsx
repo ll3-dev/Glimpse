@@ -65,7 +65,7 @@ export function ChatInput({
       }}
     >
       <View className="flex-row items-end">
-        <View className="flex-1 rounded-xl border border-app-border bg-app-bg px-3.5 mr-2.5 min-h-[44px] max-h-32 justify-center">
+        <View className="flex-1 rounded-xl border border-app-border bg-app-bg/50 px-3.5 mr-2.5 min-h-[44px] max-h-32 justify-center">
           <TextInput
             value={text}
             onChangeText={setText}
@@ -82,9 +82,9 @@ export function ChatInput({
         </View>
         <Pressable
           className={cn(
-            "w-11 h-11 rounded-full items-center justify-center",
+            "w-11 h-11 rounded-full items-center justify-center active:opacity-85",
             canSend
-              ? "bg-app-text"
+              ? "bg-app-text shadow-xs"
               : "bg-app-bg border border-app-border",
             isLoading && "opacity-70"
           )}

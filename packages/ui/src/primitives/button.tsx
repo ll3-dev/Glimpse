@@ -34,22 +34,21 @@ const buttonVariants = cva(
 );
 
 const buttonTextVariants = cva(
-  "text-sm font-medium text-foreground native:text-base web:whitespace-nowrap web:transition-colors",
+  "text-sm font-medium text-app-text web:whitespace-nowrap web:transition-colors",
   {
     variants: {
       variant: {
-        default: "text-primary-foreground",
-        destructive: "text-destructive-foreground",
-        outline: "group-active:text-accent-foreground",
-        secondary:
-          "text-secondary-foreground group-active:text-secondary-foreground",
-        ghost: "group-active:text-accent-foreground",
-        link: "text-primary group-active:underline",
+        default: "text-white font-semibold",
+        destructive: "text-white font-semibold",
+        outline: "text-app-text font-medium",
+        secondary: "text-app-text font-medium",
+        ghost: "text-app-muted font-medium group-active:text-app-text",
+        link: "text-app-primary font-medium group-active:underline",
       },
       size: {
-        default: "",
-        sm: "",
-        lg: "native:text-lg",
+        default: "text-sm",
+        sm: "text-xs",
+        lg: "text-base font-semibold",
         icon: "",
       },
     },

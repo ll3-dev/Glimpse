@@ -16,6 +16,7 @@ import { ScreenHeader } from '@glimpse/ui/primitives';
 import { toast } from '@/src/stores/toast.store';
 import { logger } from '@/src/utils/logger';
 import { useCallback } from 'react';
+import * as Haptics from 'expo-haptics';
 
 export default function ReviewScreen() {
   const router = useRouter();
@@ -27,11 +28,12 @@ export default function ReviewScreen() {
   const isRefreshing = isFetching && !isLoading;
 
   const handleComplete = useCallback((itemId: string) => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     markAsReviewed(
       { itemId },
       {
         onSuccess: () => {
-          toast.success('복습이 완료되었습니다');
+          toast.success('복습을 완료했습니다');
         },
         onError: (error) => {
           logger.error('Failed to mark item as reviewed', error, { itemId });
@@ -41,6 +43,7 @@ export default function ReviewScreen() {
   }, [markAsReviewed]);
 
   const handlePostpone = useCallback((itemId: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     postponeReview(
       { itemId },
       {
@@ -55,6 +58,7 @@ export default function ReviewScreen() {
   }, [postponeReview]);
 
   const handleForgot = useCallback((itemId: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     markAsForgotten(
       { itemId },
       {

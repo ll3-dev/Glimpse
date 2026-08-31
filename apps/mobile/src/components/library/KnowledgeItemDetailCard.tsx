@@ -86,9 +86,9 @@ export function KnowledgeItemDetailCard({ item, displayLabels }: KnowledgeItemDe
           {displayLabels.map((label) => (
             <View
               key={label}
-              className="bg-app-surface border border-app-border rounded-md px-2.5 py-1"
+              className="bg-tag-mint-bg/60 border border-tag-mint-text/20 rounded-md px-2.5 py-1"
             >
-              <Text className="text-app-text text-xs font-medium">
+              <Text className="text-tag-mint-text text-xs font-medium">
                 {formatKnowledgeLabel(label)}
               </Text>
             </View>

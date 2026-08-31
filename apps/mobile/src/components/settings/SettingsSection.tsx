@@ -18,7 +18,7 @@ export function SettingsSection({ title, icon, children, footer }: SettingsSecti
         </Text>
       </View>
 
-      <Card className="p-4 border border-app-border bg-app-surface">
+      <Card className="p-4 rounded-2xl border border-app-border bg-app-surface">
         {children}
       </Card>
 

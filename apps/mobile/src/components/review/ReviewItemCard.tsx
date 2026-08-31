@@ -43,16 +43,16 @@ export function ReviewItemCard({
   const TypeIcon = typeConfig.Icon;
 
   return (
-    <Card className="mb-2 overflow-hidden border border-app-border bg-app-surface shadow-xs">
+    <Card className="mb-3.5 overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-xs">
       {/* Header Info */}
-      <View className="flex-row items-center justify-between px-4 pt-3.5 pb-2">
+      <View className="flex-row items-center justify-between px-4 pt-4 pb-2">
         <View className="flex-row items-center gap-1.5 rounded-md border border-app-border bg-app-bg px-2.5 py-0.5">
           <TypeIcon size={12} color={appMuted} />
-          <Text className="text-[11px] font-semibold text-app-muted tracking-tight">
+          <Text className="text-[11px] font-medium text-app-muted tracking-tight">
             {typeConfig.label}
           </Text>
         </View>
-        <Text className="text-[11px] text-app-subtle font-medium">
+        <Text className="text-xs text-app-muted font-normal">
           {timeAgo} 등록
         </Text>
       </View>

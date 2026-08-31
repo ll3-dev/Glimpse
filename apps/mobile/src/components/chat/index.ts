@@ -21,3 +21,4 @@ export { ChatMessageReasoning } from './ChatMessageReasoning';
 export { ChatMessageActions } from './ChatMessageActions';
 export { ChatDetailDialogs } from './ChatDetailDialogs';
 export { ChatAISetupDialog } from './ChatAISetupDialog';
+export { ConversationIcon, CHAT_CONVERSATION_ICONS, CHAT_CONVERSATION_ICON_MAP } from './chatConversationIcons';

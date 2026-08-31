@@ -13,7 +13,7 @@ import {
 } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import type { Conversation } from '@glimpse/shared';
-import { CHAT_CONVERSATION_ICONS } from './chatConversationIcons';
+import { CHAT_CONVERSATION_ICONS, CHAT_CONVERSATION_ICON_MAP } from './chatConversationIcons';
 import { cn } from '@/src/lib/utils';
 import { Trash2, X } from 'lucide-react-native';
 
@@ -37,6 +37,7 @@ export function ConversationEditModal({
   const [lastConversation, setLastConversation] = useState(conversation);
   const appMuted = useSemanticColor('appMuted');
   const appAccent = useSemanticColor('appAccent');
+  const appText = useSemanticColor('appText');
 
   // prop→state 동기화를 effect 대신 렌더 중 상태 조정으로 처리
   // (react-hooks/set-state-in-effect — cascading render 회피)
@@ -85,7 +86,7 @@ export function ConversationEditModal({
           >
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">대화 설정</Text>
-              <Pressable onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
+              <Pressable onPress={handleClose} className="h-9 w-9 items-center justify-center rounded-full bg-app-bg border border-app-border active:opacity-70">
                 <X size={16} color={appMuted} />
               </Pressable>
             </View>
@@ -106,25 +107,34 @@ export function ConversationEditModal({
               <View className="flex-row flex-wrap gap-2">
                 <Pressable
                   className={cn(
-                    "h-10 w-10 items-center justify-center rounded-md border",
+                    "h-10 w-10 items-center justify-center rounded-xl border",
                     icon === null ? "border-app-text bg-app-text" : "border-app-border bg-app-bg"
                   )}
                   onPress={() => setIcon(null)}
                 >
                   <Text className={cn("text-[10px] font-semibold uppercase", icon === null ? "text-app-bg" : "text-app-muted")}>기본</Text>
                 </Pressable>
-                {CHAT_CONVERSATION_ICONS.map((candidate) => (
-                  <Pressable
-                    key={candidate}
-                    className={cn(
-                      "h-10 w-10 items-center justify-center rounded-md border",
-                      icon === candidate ? "border-app-text bg-app-surface shadow-xs" : "border-app-border bg-app-bg"
-                    )}
-                    onPress={() => setIcon(candidate)}
-                  >
-                    <Text className="text-base">{candidate}</Text>
-                  </Pressable>
-                ))}
+                {CHAT_CONVERSATION_ICONS.map((candidate) => {
+                  const CandidateIcon = CHAT_CONVERSATION_ICON_MAP[candidate];
+                  const isSelected = icon === candidate;
+                  return (
+                    <Pressable
+                      key={candidate}
+                      className={cn(
+                        "h-10 w-10 items-center justify-center rounded-xl border active:opacity-80",
+                        isSelected ? "border-app-text bg-app-surface shadow-xs" : "border-app-border bg-app-bg"
+                      )}
+                      onPress={() => setIcon(candidate)}
+                    >
+                      {CandidateIcon && (
+                        <CandidateIcon
+                          size={16}
+                          color={isSelected ? appText : appMuted}
+                        />
+                      )}
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 

@@ -1,5 +1,7 @@
 import { View, Text, Pressable } from 'react-native';
 import type { Conversation } from '@glimpse/shared';
+import { ConversationIcon } from './chatConversationIcons';
+import { useSemanticColor } from '@glimpse/ui';
 
 interface ConversationListProps {
   conversation: Conversation;
@@ -30,30 +32,30 @@ function getInitialLetter(title: string | null): string {
 export function ConversationList({ conversation, onPress }: ConversationListProps) {
   const displayTitle = conversation.title?.trim() || '새 대화';
   const relativeTime = formatRelativeTime(conversation.updatedAt);
-  const hasCustomIcon = Boolean(conversation.icon);
+  const appText = useSemanticColor('appText');
 
   return (
     <Pressable
-      className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-xl mb-2 active:opacity-75 shadow-xs"
+      className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-xl mb-2.5 active:opacity-75 shadow-xs"
       onPress={() => onPress(conversation.id)}
     >
-      <View className="w-9 h-9 rounded-lg bg-app-bg items-center justify-center mr-3">
-        {hasCustomIcon ? (
-          <Text className="text-base">{conversation.icon}</Text>
+      <View className="w-9 h-9 rounded-lg bg-app-bg border border-app-border/60 items-center justify-center mr-3.5">
+        {conversation.icon ? (
+          <ConversationIcon icon={conversation.icon} size={16} color={appText} />
         ) : (
-          <Text className="text-xs font-bold text-app-muted">
+          <Text className="text-xs font-semibold text-app-muted">
             {getInitialLetter(conversation.title)}
           </Text>
         )}
       </View>
       <View className="flex-1 min-w-0">
         <Text
-          className="text-sm font-semibold text-app-text tracking-tight"
+          className="text-[15px] font-semibold text-app-text tracking-tight"
           numberOfLines={1}
         >
           {displayTitle}
         </Text>
-        <Text className="text-[11px] text-app-muted mt-0.5 font-medium">
+        <Text className="text-xs text-app-muted mt-0.5 font-normal">
           {relativeTime}
         </Text>
       </View>

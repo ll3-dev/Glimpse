@@ -3,7 +3,7 @@ import {
   BookOpen,
   MessageSquare,
   RotateCcw,
-  Newspaper,
+  Sparkles,
   Settings,
   Plus,
   Network,
@@ -43,7 +43,7 @@ export function AppSidebar() {
     },
     {
       label: '다이제스트',
-      icon: Newspaper,
+      icon: Sparkles,
       path: '/digest',
       badge: recommendations.length > 0 ? recommendations.length : undefined,
       badgeColor: 'bg-tag-peach-bg text-tag-peach-text',

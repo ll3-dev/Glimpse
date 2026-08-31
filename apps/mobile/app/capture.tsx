@@ -14,6 +14,7 @@ import { ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { shareIntentToFormState } from '@/src/features/capture/form/intent-to-form';
 import { toast } from '@/src/stores/toast.store';
+import * as Haptics from 'expo-haptics';
 import type { KnowledgeItemType } from '@glimpse/shared';
 
 export default function CaptureScreen() {
@@ -48,6 +49,26 @@ export default function CaptureScreen() {
     resetShareIntent();
   }, [hasShareIntent, shareIntent, resetShareIntent]);
 
+  const handleBackPress = () => {
+    const hasContent = formState.title.trim() || formState.body.trim() || formState.imageUri;
+    if (hasContent) {
+      Alert.alert(
+        '작성 취소',
+        '작성 중인 내용이 저장되지 않습니다. 나가시겠습니까?',
+        [
+          { text: '계속 작성', style: 'cancel' },
+          {
+            text: '나가기',
+            style: 'destructive',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } else {
+      router.back();
+    }
+  };
+
   const handleSave = () => {
     if (isPending) return;
 
@@ -80,6 +101,7 @@ export default function CaptureScreen() {
         },
         {
           onSuccess: () => {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             toast.success('기록이 저장되었습니다');
             router.back();
           },
@@ -99,6 +121,7 @@ export default function CaptureScreen() {
       },
       {
         onSuccess: () => {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           toast.success('기록이 저장되었습니다');
           router.back();
         },
@@ -113,7 +136,7 @@ export default function CaptureScreen() {
     <View 
       className="flex-1 bg-app-bg" 
       style={{ 
-        paddingTop: Platform.OS === 'ios' ? 8 : insets.top 
+        paddingTop: Math.max(insets.top, 8) 
       }}
     >
       <KeyboardAvoidingView
@@ -124,7 +147,7 @@ export default function CaptureScreen() {
           title="새 기록"
           leftElement={
             <Pressable
-              onPress={() => router.back()}
+              onPress={handleBackPress}
               className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
               accessibilityRole="button"
               accessibilityLabel="닫기"

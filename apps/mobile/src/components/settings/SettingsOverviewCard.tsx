@@ -54,31 +54,31 @@ export function SettingsOverviewCard() {
   }
 
   return (
-    <Card className="mb-6 p-4 border border-app-border bg-app-surface">
+    <Card className="mb-6 p-4 rounded-2xl border border-app-border bg-app-surface">
       <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center gap-2">
-          <View className="w-8 h-8 rounded-full bg-app-bg items-center justify-center border border-app-border/50">
+        <View className="flex-row items-center gap-2.5">
+          <View className="w-9 h-9 rounded-xl bg-app-bg items-center justify-center border border-app-border/60">
             {icon}
           </View>
           <View>
-            <Text className="text-[11px] font-semibold uppercase tracking-wider text-app-muted">
+            <Text className="text-[10px] font-semibold uppercase tracking-wider text-app-muted">
               {messages.settings.aiOverviewTitle}
             </Text>
-            <Text className="text-sm font-bold text-app-text">
+            <Text className="text-sm font-bold text-app-text tracking-tight">
               {title}
             </Text>
           </View>
         </View>
         <Badge variant={badgeVariant} className="px-2 py-0.5">
-          <Text className="text-[10px] font-medium">{badgeText}</Text>
+          <Text className="text-[11px] font-medium">{badgeText}</Text>
         </Badge>
       </View>
 
-      <Text className="text-xs text-app-muted leading-relaxed pl-10">
+      <Text className="text-xs text-app-muted leading-relaxed pl-11">
         {description}
       </Text>
 
-      <View className="mt-3 pt-2.5 border-t border-app-border/40 flex-row items-center gap-1.5 pl-10">
+      <View className="mt-3 pt-2.5 border-t border-app-border/60 flex-row items-center gap-1.5 pl-11">
         <ShieldCheck size={13} color={appMuted} />
         <Text className="text-[11px] text-app-subtle font-medium">
           {appleConfig.enabled || (localLLMEnabled && localLLMReady)

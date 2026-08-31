@@ -27,8 +27,8 @@ const STATUS_CONFIG: Record<
   Exclude<RecommendationStatus, 'pending'>,
   { label: string; backgroundClassName: string; textClassName: string }
 > = {
-  accepted: { label: '연결 완료', backgroundClassName: 'bg-app-bg border border-app-border', textClassName: 'text-app-text' },
-  ignored: { label: '거절함', backgroundClassName: 'bg-app-bg border border-app-border', textClassName: 'text-app-subtle' },
+  accepted: { label: '연결 완료', backgroundClassName: 'bg-tag-mint-bg border border-tag-mint-text/20', textClassName: 'text-tag-mint-text' },
+  ignored: { label: '거절됨', backgroundClassName: 'bg-tag-rose-bg border border-tag-rose-text/20', textClassName: 'text-tag-rose-text' },
   dismissed: { label: '숨김', backgroundClassName: 'bg-app-bg border border-app-border', textClassName: 'text-app-muted' },
 };
 
@@ -39,7 +39,7 @@ function StatusBadge({ status }: { status: RecommendationStatus }) {
 
   return (
     <View className={cn('rounded-md px-2 py-0.5', config.backgroundClassName)}>
-      <Text className={cn('text-[10px] font-medium tracking-tight', config.textClassName)}>
+      <Text className={cn('text-[11px] font-medium tracking-tight', config.textClassName)}>
         {config.label}
       </Text>
     </View>
@@ -67,7 +67,7 @@ export function RecommendationCard({
   const IconB = typeConfigB.Icon;
 
   return (
-    <Card className="mb-2 p-4 border border-app-border bg-app-surface shadow-xs">
+    <Card className="mb-4 p-4 rounded-2xl border border-app-border bg-app-surface shadow-xs">
       {/* Status Badge */}
       {isResponded && (
         <View className="mb-3 flex-row">
@@ -79,13 +79,13 @@ export function RecommendationCard({
       <Pressable
         onPress={onPressItemA}
         disabled={!onPressItemA}
-        className="mb-2 flex-row items-center rounded-lg p-2.5 -mx-1 bg-app-bg border border-app-border active:opacity-80"
+        className="mb-2 flex-row items-center rounded-xl p-3 bg-app-bg/60 border border-app-border active:opacity-80"
       >
         <View className="mr-3 h-8 w-8 items-center justify-center rounded-lg bg-app-surface border border-app-border">
-          <IconA size={15} color={appMuted} />
+          <IconA size={14} color={appMuted} />
         </View>
         <View className="flex-1 min-w-0">
-          <Text className="text-[10px] font-semibold text-app-muted uppercase tracking-tight">
+          <Text className="text-[10px] font-medium text-app-muted uppercase tracking-wider">
             {typeConfigA.label}
           </Text>
           <Text className="text-sm font-semibold text-app-text" numberOfLines={1}>
@@ -105,13 +105,13 @@ export function RecommendationCard({
       <Pressable
         onPress={onPressItemB}
         disabled={!onPressItemB}
-        className="mb-3 flex-row items-center rounded-lg p-2.5 -mx-1 bg-app-bg border border-app-border active:opacity-80"
+        className="mb-3 flex-row items-center rounded-xl p-3 bg-app-bg/60 border border-app-border active:opacity-80"
       >
         <View className="mr-3 h-8 w-8 items-center justify-center rounded-lg bg-app-surface border border-app-border">
-          <IconB size={15} color={appMuted} />
+          <IconB size={14} color={appMuted} />
         </View>
         <View className="flex-1 min-w-0">
-          <Text className="text-[10px] font-semibold text-app-muted uppercase tracking-tight">
+          <Text className="text-[10px] font-medium text-app-muted uppercase tracking-wider">
             {typeConfigB.label}
           </Text>
           <Text className="text-sm font-semibold text-app-text" numberOfLines={1}>
@@ -121,8 +121,8 @@ export function RecommendationCard({
       </Pressable>
 
       {/* Reason */}
-      <View className="mb-4 rounded-lg border border-app-border bg-app-bg px-3.5 py-2.5">
-        <Text className="text-xs leading-5 text-app-text font-medium">
+      <View className="mb-4 rounded-xl border border-app-border bg-app-bg/40 px-3.5 py-2.5">
+        <Text className="text-xs leading-relaxed text-app-text font-normal">
           {recommendation.reason}
         </Text>
       </View>
@@ -132,7 +132,9 @@ export function RecommendationCard({
         <View className="flex-row gap-2">
           <Pressable
             onPress={onAccept}
-            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg bg-app-text py-2.5 active:opacity-80"
+            className="flex-1 h-10 flex-row items-center justify-center gap-1.5 rounded-xl bg-app-text active:opacity-85"
+            accessibilityRole="button"
+            accessibilityLabel="연결 수락"
           >
             <Check size={14} color={appBg} />
             <Text className="text-xs font-semibold text-app-bg">수락</Text>
@@ -140,17 +142,21 @@ export function RecommendationCard({
 
           <Pressable
             onPress={onIgnore}
-            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg bg-app-surface border border-app-border py-2.5 active:bg-app-bg"
+            className="flex-1 h-10 flex-row items-center justify-center gap-1.5 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+            accessibilityRole="button"
+            accessibilityLabel="연결 거절"
           >
             <X size={14} color={appMuted} />
-            <Text className="text-xs font-semibold text-app-muted">거절</Text>
+            <Text className="text-xs font-medium text-app-muted">거절</Text>
           </Pressable>
 
           <Pressable
             onPress={onDismiss}
-            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg bg-app-surface border border-app-border py-2.5 active:bg-app-bg"
+            className="flex-1 h-10 flex-row items-center justify-center gap-1.5 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+            accessibilityRole="button"
+            accessibilityLabel="다음에 보기"
           >
-            <Text className="text-xs font-semibold text-app-subtle">나중에</Text>
+            <Text className="text-xs font-medium text-app-subtle">나중에</Text>
           </Pressable>
         </View>
       )}

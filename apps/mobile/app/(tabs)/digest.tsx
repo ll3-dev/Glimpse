@@ -13,6 +13,7 @@ import { useRecommendationsQuery, useRecommendationActionsMutation } from '@/src
 import { RecommendationCard } from '@/src/components/digest';
 import { QueryStateScrollView } from '@glimpse/ui/common';
 import { ScreenHeader } from '@glimpse/ui/primitives';
+import * as Haptics from 'expo-haptics';
 
 export default function DigestScreen() {
   const router = useRouter();
@@ -54,9 +55,18 @@ export default function DigestScreen() {
             recommendation={rec.recommendation}
             onPressItemA={() => router.push(`/library/${rec.itemA.id}`)}
             onPressItemB={() => router.push(`/library/${rec.itemB.id}`)}
-            onAccept={() => accept(rec.recommendation.id)}
-            onIgnore={() => ignore(rec.recommendation.id)}
-            onDismiss={() => dismiss(rec.recommendation.id)}
+            onAccept={() => {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              accept(rec.recommendation.id);
+            }}
+            onIgnore={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              ignore(rec.recommendation.id);
+            }}
+            onDismiss={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              dismiss(rec.recommendation.id);
+            }}
           />
         )}
       />

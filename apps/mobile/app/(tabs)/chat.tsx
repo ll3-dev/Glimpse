@@ -84,12 +84,12 @@ export default function ChatScreen() {
           {[1, 2, 3, 4, 5].map((i) => (
             <View
               key={i}
-              className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-md mb-2"
+              className="flex-row items-center p-4 bg-app-surface border border-app-border rounded-xl mb-2.5"
             >
-              <Skeleton width={40} height={40} radius={20} />
-              <View className="flex-1 ml-3">
-                <Skeleton width="70%" height={16} className="mb-1" />
-                <Skeleton width={60} height={12} />
+              <Skeleton width={36} height={36} radius={8} />
+              <View className="flex-1 ml-3.5">
+                <Skeleton width="65%" height={16} className="mb-1.5" radius={4} />
+                <Skeleton width={80} height={12} radius={4} />
               </View>
             </View>
           ))}
@@ -120,6 +120,7 @@ export default function ChatScreen() {
             onPress: handleCreateConversation,
             disabled: isCreating,
             pendingLabel: "생성 중...",
+            icon: Plus,
           }}
         />
       )}

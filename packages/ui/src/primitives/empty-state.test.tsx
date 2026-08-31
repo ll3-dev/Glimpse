@@ -50,6 +50,21 @@ describe('EmptyState', () => {
     expect(html).toContain('새 대화 시작');
   });
 
+  test('action 아이콘을 렌더하고 아이콘 없으면 여백을 넣지 않는다', () => {
+    const withIcon = markup({
+      icon: Icon,
+      title: '비어 있습니다',
+      action: { label: '새 대화 시작', onPress: () => {}, icon: Icon },
+    });
+    const withoutIcon = markup({
+      icon: Icon,
+      title: '비어 있습니다',
+      action: { label: '새 대화 시작', onPress: () => {} },
+    });
+    expect(withIcon).toContain('ml-2');
+    expect(withoutIcon).not.toContain('ml-2');
+  });
+
   test('disabled이면 pendingLabel을 우선 렌더한다', () => {
     const html = markup({
       icon: Icon,
@@ -75,10 +90,10 @@ describe('EmptyState', () => {
     expect(html).toContain('새 대화 시작');
   });
 
-  test('compact는 py-8, 기본은 py-24 여백을 쓴다', () => {
+  test('compact는 py-10, 기본은 py-24 여백을 쓴다', () => {
     const compact = markup({ icon: Icon, title: '비어 있습니다', compact: true });
     const regular = markup({ icon: Icon, title: '비어 있습니다' });
-    expect(compact).toContain('py-8');
+    expect(compact).toContain('py-10');
     expect(regular).toContain('py-24');
     expect(compact).not.toContain('py-24');
   });

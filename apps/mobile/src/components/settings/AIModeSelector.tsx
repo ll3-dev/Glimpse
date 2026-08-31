@@ -56,10 +56,10 @@ export function AIModeSelector({ selectedMode, onSelectMode }: AIModeSelectorPro
             accessibilityLabel={mode.title}
             accessibilityState={{ checked: isSelected }}
             onPress={() => onSelectMode(mode.id)}
-            className={`min-h-14 p-3.5 rounded-xl border transition-colors active:opacity-80 ${
+            className={`min-h-14 p-3.5 rounded-xl border active:opacity-80 ${
               isSelected
                 ? 'border-app-text bg-app-bg'
-                : 'border-transparent bg-app-bg/40'
+                : 'border-app-border bg-app-surface'
             }`}
           >
             <View className="flex-row items-center justify-between">

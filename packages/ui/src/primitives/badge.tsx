@@ -5,12 +5,12 @@ import { cn } from "../lib/cn";
 import { TextClassContext } from "./text";
 
 const badgeVariants = cva(
-  "web:inline-flex items-center rounded px-2 py-0.5 border border-transparent web:transition-colors web:focus:outline-none web:focus:ring-2 web:focus:ring-ring web:focus:ring-offset-2",
+  "web:inline-flex items-center rounded-md px-2 py-0.5 border border-transparent web:transition-colors web:focus:outline-none web:focus:ring-2 web:focus:ring-ring web:focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "bg-app-border/40 text-app-muted web:hover:opacity-80 active:opacity-80",
+          "bg-app-border/50 text-app-muted web:hover:opacity-80 active:opacity-80",
         secondary:
           "bg-app-bg border-app-border text-app-muted web:hover:opacity-80 active:opacity-80",
         destructive:
@@ -30,7 +30,7 @@ const badgeVariants = cva(
   }
 );
 
-const badgeTextVariants = cva("text-[10px] font-medium tracking-tight", {
+const badgeTextVariants = cva("text-[11px] font-medium tracking-tight", {
   variants: {
     variant: {
       default: "text-app-muted",

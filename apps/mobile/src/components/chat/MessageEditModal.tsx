@@ -72,7 +72,7 @@ export function MessageEditModal({
           >
             <View className="mb-4 flex-row items-center justify-between px-1">
               <Text className="text-lg font-bold text-app-text">메시지 수정</Text>
-              <Pressable onPress={handleClose} className="h-7 w-7 items-center justify-center rounded-full bg-app-bg">
+              <Pressable onPress={handleClose} className="h-9 w-9 items-center justify-center rounded-full bg-app-bg border border-app-border active:opacity-70">
                 <X size={16} color={appMuted} />
               </Pressable>
             </View>

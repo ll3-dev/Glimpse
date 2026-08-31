@@ -8,7 +8,15 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, SquarePen, MessageCircle } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  SquarePen,
+  MessageCircle,
+  Sparkles,
+  Brain,
+  FileText,
+  Compass,
+} from 'lucide-react-native';
 import {
   useConversationsQuery,
   useMessagesQuery,
@@ -21,6 +29,7 @@ import {
   ChatStreamingMessage,
   ChatDetailDialogs,
 } from "@/src/components/chat";
+import { ConversationIcon } from "@/src/components/chat/chatConversationIcons";
 import { useChat } from '@/src/hooks/chat/useChat';
 import { useChatAISetup } from "@/src/hooks/chat/useChatAISetup";
 import { useMessageActions } from "@/src/hooks/chat/useMessageActions";
@@ -29,6 +38,7 @@ import { useChatNavigation } from "@/src/hooks/chat/useChatNavigation";
 import { ScreenHeader } from "@glimpse/ui/primitives/screen-header";
 import { EmptyState } from "@glimpse/ui/primitives/empty-state";
 import { useSemanticColor } from "@glimpse/ui";
+import * as Haptics from 'expo-haptics';
 
 export default function ChatDetailScreen() {
   const { id, contextItem: contextItemId } = useLocalSearchParams<{ id: string; contextItem?: string }>();
@@ -89,6 +99,7 @@ export default function ChatDetailScreen() {
     const ready = await aiSetup.ensureReady();
     if (!ready) return false;
 
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const didSend = await sendMessage(text);
     if (didSend) {
       setTimeout(() => {
@@ -99,15 +110,16 @@ export default function ChatDetailScreen() {
   };
 
   const conversationTitle = conversation?.title?.trim() || "새 대화";
-  const conversationIcon = conversation?.icon ?? null;
-  const headerTitle = conversationIcon
-    ? `${conversationIcon} ${conversationTitle}`
-    : conversationTitle;
 
   return (
     <View className="bg-app-bg flex-1" style={{ paddingTop: insets.top }}>
       <ScreenHeader
-        title={headerTitle}
+        title={conversationTitle}
+        icon={
+          conversation?.icon ? (
+            <ConversationIcon icon={conversation.icon} size={18} color={appText} />
+          ) : undefined
+        }
         leftElement={
           <Pressable
             accessibilityRole="button"
@@ -176,15 +188,73 @@ export default function ChatDetailScreen() {
           )}
 
           {!isLoadingMessages && (!messages || messages.length === 0) && (
-            <EmptyState
-              icon={MessageCircle}
-              compact
-              title={
-                contextItem
-                  ? "이 항목에 대해 질문해 보세요"
-                  : "메시지를 입력해 대화를 시작하세요"
-              }
-            />
+            <View className="flex-1">
+              <EmptyState
+                icon={MessageCircle}
+                compact
+                title={
+                  contextItem
+                    ? "이 항목에 대해 질문해 보세요"
+                    : "메시지를 입력해 대화를 시작하세요"
+                }
+              />
+
+              {/* Starter Prompt Chips */}
+              <View className="w-full gap-2 px-6">
+                {contextItem ? (
+                  <>
+                    <Pressable
+                      onPress={() => void handleSend("이 항목의 핵심 내용을 세 줄로 요약해줘")}
+                      className="flex-row items-center p-3 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+                    >
+                      <FileText size={15} color={appText} style={{ marginRight: 10 }} />
+                      <Text className="text-xs font-medium text-app-text flex-1">
+                        이 항목의 핵심 내용을 세 줄로 요약해줘
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => void handleSend("이 항목과 연관될 만한 아이디어나 지식을 제안해줘")}
+                      className="flex-row items-center p-3 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+                    >
+                      <Compass size={15} color={appText} style={{ marginRight: 10 }} />
+                      <Text className="text-xs font-medium text-app-text flex-1">
+                        이 항목과 연관될 만한 아이디어 제안해줘
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <Pressable
+                      onPress={() => void handleSend("최근 저장한 지식들의 주요 흐름을 요약해줘")}
+                      className="flex-row items-center p-3 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+                    >
+                      <FileText size={15} color={appText} style={{ marginRight: 10 }} />
+                      <Text className="text-xs font-medium text-app-text flex-1">
+                        최근 저장한 지식들의 주요 흐름을 요약해줘
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => void handleSend("오늘 복습할 내용 중에서 3문제 퀴즈를 내줘")}
+                      className="flex-row items-center p-3 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+                    >
+                      <Brain size={15} color={appText} style={{ marginRight: 10 }} />
+                      <Text className="text-xs font-medium text-app-text flex-1">
+                        오늘 복습할 내용으로 3문제 퀴즈 내줘
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => void handleSend("보관함 지식 간의 숨겨진 연결점을 찾아줘")}
+                      className="flex-row items-center p-3 rounded-xl bg-app-surface border border-app-border active:bg-app-bg"
+                    >
+                      <Sparkles size={15} color={appText} style={{ marginRight: 10 }} />
+                      <Text className="text-xs font-medium text-app-text flex-1">
+                        보관함 지식 간의 숨겨진 연결점 찾아줘
+                      </Text>
+                    </Pressable>
+                  </>
+                )}
+              </View>
+            </View>
           )}
 
           {/* Streaming response */}

@@ -90,18 +90,18 @@
     --success: #1a7f37;
 
     /* Tag Tints */
-    --tag-mint-bg: #edf7f0;
-    --tag-mint-text: #24663b;
-    --tag-peach-bg: #fcf2e8;
-    --tag-peach-text: #8a5020;
-    --tag-sky-bg: #eef5fb;
-    --tag-sky-text: #255d88;
-    --tag-lavender-bg: #f3effa;
-    --tag-lavender-text: #584578;
-    --tag-rose-bg: #faebeb;
-    --tag-rose-text: #9c3838;
+    --tag-mint-bg: #d9f3e1;
+    --tag-mint-text: #1a7f37;
+    --tag-peach-bg: #ffe8d4;
+    --tag-peach-text: #a04100;
+    --tag-sky-bg: #dcecfa;
+    --tag-sky-text: #0969da;
+    --tag-lavender-bg: #e6e0f5;
+    --tag-lavender-text: #6e3ab7;
+    --tag-rose-bg: #fde0ec;
+    --tag-rose-text: #cf222e;
     --tag-neutral-bg: #f0eeec;
-    --tag-neutral-text: #64625d;
+    --tag-neutral-text: #787774;
 
     /* Base Tokens */
     --background: #f7f6f3;

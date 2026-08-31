@@ -19,6 +19,7 @@ import { useForegroundLabeling, useKnowledgeItemsQuery } from '@/src/hooks';
 import { EmptyState, ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { getDisplayLabels } from '@/src/features/labeling';
+import * as Haptics from 'expo-haptics';
 import type { KnowledgeItem } from '@glimpse/shared';
 import type { LibraryFilterType } from '@/src/components/library/LibraryFilterBar';
 
@@ -32,8 +33,14 @@ export default function LibraryScreen() {
   const appText = useSemanticColor('appText');
   const appBg = useSemanticColor('appBg');
 
-  const { data: items } = useKnowledgeItemsQuery();
+  const { data: items, isLoading, isFetching, refetch } = useKnowledgeItemsQuery();
+  const isRefreshing = isFetching && !isLoading;
   useForegroundLabeling(items);
+
+  const handleRefresh = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await refetch();
+  }, [refetch]);
 
   // Extract all unique tags & labels from items
   const availableTags = useMemo(() => {
@@ -193,11 +200,16 @@ export default function LibraryScreen() {
           ListEmptyComponent={
             <EmptyState icon={BookOpen} title={emptyState.title} description={emptyState.description} />
           }
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
         />
       </View>
 
       <Pressable
-        onPress={() => router.push('/capture')}
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/capture');
+        }}
         className="absolute right-6 w-14 h-14 rounded-full bg-app-text items-center justify-center shadow-lg active:opacity-90"
         style={{ bottom: insets.bottom + 16 }}
       >

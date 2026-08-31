@@ -9,7 +9,7 @@ const cardVariants = cva("border bg-app-surface", {
     variant: {
       default: "rounded-xl border-app-border",
       muted: "rounded-xl border-transparent bg-app-bg",
-      elevated: "rounded-2xl border-app-border shadow-sm shadow-black/5",
+      elevated: "rounded-2xl border-app-border bg-app-surface",
     },
   },
   defaultVariants: {
@@ -43,7 +43,7 @@ function CardHeader({
 }) {
   return (
     <View
-      className={cn("flex flex-col space-y-1 p-4", className)}
+      className={cn("flex flex-col gap-1 p-4", className)}
       {...props}
     />
   );
@@ -60,7 +60,7 @@ function CardTitle({
       role="heading"
       aria-level={3}
       className={cn(
-        "text-base text-app-text font-semibold leading-tight tracking-tight",
+        "text-[15px] text-app-text font-semibold leading-tight tracking-tight",
         className
       )}
       {...props}
@@ -76,7 +76,7 @@ function CardDescription({
 }) {
   return (
     <Text
-      className={cn("text-xs text-app-muted font-medium", className)}
+      className={cn("text-xs text-app-muted font-normal leading-relaxed", className)}
       {...props}
     />
   );
