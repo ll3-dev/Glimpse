@@ -589,6 +589,9 @@ pub struct MdnsSdBackend { /* desktop */ }
 
 ## 세션 종료 전 GUI 체크리스트 (수동)
 
+> 수동 게이트는 `thoughts/shared/research/2026-08-31_remaining-manual-gates.md`의
+> "이관 분"으로 통합 추적된다 (2026-08-31 정합화). 아래 목록은 이관 당시 스냅샷.
+
 - [ ] ShareExtension: 사파리 공유 → 저장 → 라이브러리 표시
 - [ ] 데스크톱 그래프: 증분 실행 후 엣지 생성·노드 클릭 하이라이트
 - [ ] 모바일 상세: 연결된 노트 섹션 표시·탭 이동

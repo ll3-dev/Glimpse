@@ -261,6 +261,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Runtime proven / external blocked
 
+> 이 섹션의 항목 중 추적이 필요한 것은
+> `thoughts/shared/research/2026-08-31_remaining-manual-gates.md`의 "이관 분"으로
+> 통합 추적된다 (2026-08-31 정합화).
+
 - Apple Intelligence는 iOS 26 지원 물리 기기에서 실제 생성·취소·오류 복구를 확인해야 한다.
 - Android/iOS 로컬 모델의 장시간 thermal/memory와 백그라운드 복귀는 물리 기기 확인이 필요하다.
 - App Store/Google Play 서명·제출, Tauri updater 공개 HTTPS endpoint/서명 키, 공개 privacy/support URL은 외부 자격증명과 URL이 필요하다.

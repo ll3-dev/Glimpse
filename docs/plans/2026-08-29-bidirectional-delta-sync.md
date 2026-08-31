@@ -617,6 +617,10 @@ Expected: 전부 PASS
 5. 동기화 직후 데스크톱 강제 종료 → 재시작 시 데이터 이상 없음 + `backups/pre-sync/` 존재 확인
 6. 네트워크 단절(기기 와이파이 off) 중 모바일 캡처 → 복구 후 자동 전파 확인
 
+> 이 수동 E2E 게이트 1~6은
+> `thoughts/shared/research/2026-08-31_remaining-manual-gates.md`의 "이관 분"으로
+> 통합 추적된다 (2026-08-31 정합화). 위 목록은 이관 당시 스냅샷.
+
 **Step 4: Commit**
 
 ```bash

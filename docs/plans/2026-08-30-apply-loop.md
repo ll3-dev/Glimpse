@@ -1127,6 +1127,9 @@ struct GlimpseShortcuts: AppShortcutsProvider {
 
 ## 전체 게이트 체크리스트 (세션 종료 전)
 
+> 수동 게이트는 `thoughts/shared/research/2026-08-31_remaining-manual-gates.md`의
+> "이관 분"으로 통합 추적된다 (2026-08-31 정합화). 아래 목록은 이관 당시 스냅샷.
+
 - [ ] `bun test` (모바일 전체) + `bun test apps/desktop` 단위 — 회귀 0
 - [ ] `bun run lint`
 - [ ] 데스크톱 typecheck
