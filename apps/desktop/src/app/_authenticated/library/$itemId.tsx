@@ -37,7 +37,13 @@ function LibraryItemPage() {
     );
   }
 
-  return <KnowledgeItemDetail item={item} onBack={() => navigate({ to: '/library' })} />;
+  return (
+    <KnowledgeItemDetail
+      item={item}
+      onBack={() => navigate({ to: '/library' })}
+      onOpenGraph={() => navigate({ to: '/graph', search: { focus: item.id } })}
+    />
+  );
 }
 
 export const Route = createFileRoute('/_authenticated/library/$itemId')({

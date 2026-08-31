@@ -1,16 +1,66 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { useMemo, useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useCoreClient, useKnowledgeItemsQuery, queryKeys } from '@glimpse/hooks';
+import {
+  queryKeys,
+  useCoreClient,
+  useKnowledgeItemsQuery,
+  useRespondToRecommendationMutation,
+} from '@glimpse/hooks';
+import { selectTodayDiscoveries } from '@glimpse/features';
+import type {
+  FeedbackActionType,
+  KnowledgeItem,
+  Recommendation,
+  RecommendationStatus,
+} from '@glimpse/shared';
 import { Network } from 'lucide-react';
+import { GraphDiscoveryCard } from '@/components/graph/GraphDiscoveryCard';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
+
+type GraphSearch = { focus?: string };
+
+const ACTION_STATUS: Record<FeedbackActionType, RecommendationStatus> = {
+  accept: 'accepted',
+  ignore: 'ignored',
+  dismiss: 'dismissed',
+};
+const EMPTY_ITEMS: KnowledgeItem[] = [];
+const EMPTY_RECOMMENDATIONS: Recommendation[] = [];
 
 function GraphScreen() {
   const coreClient = useCoreClient();
+  const navigate = useNavigate();
+  const { focus } = Route.useSearch();
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(focus ?? null);
+  const respondMutation = useRespondToRecommendationMutation();
   const items = useKnowledgeItemsQuery();
   const recommendations = useQuery({
     queryKey: queryKeys.recommendations.graph,
     queryFn: () => coreClient.listRecommendations(),
   });
+  const itemList = items.data ?? EMPTY_ITEMS;
+  const edgeList = recommendations.data ?? EMPTY_RECOMMENDATIONS;
+  const discovery = useMemo(
+    () => selectTodayDiscoveries(itemList, edgeList, 1)[0],
+    [edgeList, itemList],
+  );
+
+  const openItem = (itemId: string) => {
+    void navigate({ to: '/library/$itemId', params: { itemId } });
+  };
+  const respondTo = (recommendationId: string, action: FeedbackActionType) => {
+    respondMutation.mutate({
+      recommendationId,
+      status: ACTION_STATUS[action],
+      feedbackEvent: {
+        id: crypto.randomUUID(),
+        recommendationId,
+        action,
+        createdAt: Date.now(),
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -25,14 +75,35 @@ function GraphScreen() {
             동기화된 지식을 AI가 분석하여 지식 간의 유기적 연결 관계를 시각화합니다.
           </p>
         </div>
+        {discovery ? (
+          <GraphDiscoveryCard
+            discovery={discovery}
+            isResponding={respondMutation.isPending}
+            onOpenItem={openItem}
+            onFocus={setFocusedNodeId}
+            onAccept={() => respondTo(discovery.recommendation.id, 'accept')}
+            onIgnore={() => respondTo(discovery.recommendation.id, 'ignore')}
+            onDismiss={() => respondTo(discovery.recommendation.id, 'dismiss')}
+          />
+        ) : null}
         <KnowledgeGraph
-          items={items.data ?? []}
-          recommendations={recommendations.data ?? []}
+          items={itemList}
+          recommendations={edgeList}
           isLoading={items.isLoading || recommendations.isLoading}
+          focusedNodeId={focusedNodeId}
+          isResponding={respondMutation.isPending}
+          onFocusChange={setFocusedNodeId}
+          onOpenItem={openItem}
+          onRespond={respondTo}
         />
       </div>
     </div>
   );
 }
 
-export const Route = createFileRoute('/_authenticated/graph')({ component: GraphScreen });
+export const Route = createFileRoute('/_authenticated/graph')({
+  validateSearch: (search: Record<string, unknown>): GraphSearch => ({
+    focus: typeof search.focus === 'string' && search.focus.length > 0 ? search.focus : undefined,
+  }),
+  component: GraphScreen,
+});

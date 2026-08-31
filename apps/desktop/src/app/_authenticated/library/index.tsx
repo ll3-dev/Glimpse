@@ -5,7 +5,8 @@ import { filterKnowledgeItems } from '@glimpse/features/search';
 import { useDesktopSemanticRerank } from '@/features/search/useSemanticRerank';
 import { SearchBar } from '@/components/library/SearchBar';
 import { KnowledgeItemList } from '@/components/library/KnowledgeItemList';
-import { BookOpen, Sparkles } from 'lucide-react';
+import { BookOpen, Network, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 function LibraryPage() {
   const { data: items, isLoading } = useKnowledgeItemsQuery();
@@ -46,9 +47,21 @@ function LibraryPage() {
             저장된 지식과 메모를 확인하고 검색합니다.
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <BookOpen className="h-3.5 w-3.5" />
-          <span>{filteredItems.length}개의 지식</span>
+        <div className="flex items-center gap-2">
+          {searchQuery && filteredItems[0] ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate({ to: '/graph', search: { focus: filteredItems[0].id } })}
+            >
+              <Network className="h-3.5 w-3.5" />
+              그래프로 보기
+            </Button>
+          ) : null}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>{filteredItems.length}개의 지식</span>
+          </div>
         </div>
       </div>
 
