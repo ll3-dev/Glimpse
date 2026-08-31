@@ -69,6 +69,15 @@
 
 ## Phase 2 — 모바일 그래프 뷰
 
+> **✅ 완료 (2026-08-31, 0b8d938·3bca5ab·1cac6bf·93e47bc·e05c288)** —
+> shared 레이아웃 전환, 시맨틱 차트 토큰, 모바일 그래프 캔버스·선택 바·연결 탭을
+> 구현했다. iPhone 17 시뮬레이터에서 `ll3.kr://graph` 직접 딥링크로 연결 탭의 제목,
+> 설명, 빈 상태, 선택된 탭을 렌더 확인했다(`/tmp/glimpse-graph-deeplink.png`). 계획의
+> 임시 `index` redirect 방식은 hidden route와 `lazy: false` 조합에서 화면 본문이
+> 비는 테스트 하네스 문제를 만들어 사용하지 않았고, 원래 `./library` redirect를
+> 복원했다. 최종 검증은 모바일 전체 테스트 **652 pass/0 fail**, lint, 모바일·데스크톱
+> typecheck exit 0이다.
+
 목표: 데스크톱에만 있는 지식 그래프를 모바일에 제공해 기능 갭을 해소한다.
 
 ### 아키텍처

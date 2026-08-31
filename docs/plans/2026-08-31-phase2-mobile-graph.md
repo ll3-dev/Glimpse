@@ -1,5 +1,14 @@
 # Phase 2 — 모바일 그래프 뷰 구현 플랜
 
+> **상태: 완료 (2026-08-31)**
+>
+> - 구현 커밋: `0b8d938`, `3bca5ab`, `1cac6bf`, `93e47bc`, `e05c288`
+> - 시뮬레이터: iPhone 17에서 `ll3.kr://graph` 직접 딥링크로 연결 탭 빈 상태 렌더 확인
+> - 자동 검증: 모바일 전체 테스트 652 pass/0 fail, lint, 모바일·데스크톱 typecheck 통과
+> - 계획 변경: 임시 `index` redirect는 hidden route + `lazy: false`에서 본문이 비는
+>   테스트 하네스 문제를 유발해 폐기했다. 원래 `./library` redirect를 복원하고 실제
+>   공개 딥링크로 화면을 검증했다.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 데스크톱의 지식 그래프를 모바일 "연결" 탭으로 제공하고, 레이아웃 로직을 `packages/shared`로 승격해 쌍둥이 드리프트를 차단한다.
