@@ -5,9 +5,7 @@ import { useCoreClient, useKnowledgeItemsQuery, queryKeys } from '@glimpse/hooks
 import { backoffDurationMs } from '@glimpse/shared';
 import type { CoreClient, KnowledgeItem } from '@glimpse/shared';
 import { generateKnowledgeGraph } from '@/features/graph/generate-knowledge-graph';
-import { computeGraphSourceDigest } from '@/features/graph/graph-source-window';
 
-const GRAPH_DIGEST_KEY = 'glimpse_graph_source_digest_v1';
 const GRAPH_FAILURE_KEY = 'glimpse_graph_failure_backoff_v1';
 const GRAPH_CONSECUTIVE_FAILURES_KEY = 'glimpse_graph_consecutive_failures_v1';
 /** After this many consecutive failures, stop auto-retrying until manual run. */
@@ -23,28 +21,30 @@ interface CycleContext {
 }
 
 /**
- * Drain the incremental backlog: one generator cycle per invocation,
- * chaining with the same spacing while the generator reports remaining
- * backlog AND made progress. The no-progress guard stops tagless-item
- * batches from looping forever. Storing the window digest only after the
- * backlog is fully drained keeps a mid-drain crash from marking the source
- * as done — the effect re-runs and resumes the chain on next tick.
+ * Drain the incremental backlog: a zero-edge completed batch still writes
+ * watermarks, so progress is measured by processedCount rather than edges.
  */
-async function runCycle(context: CycleContext, digest: string): Promise<void> {
+async function runCycle(context: CycleContext): Promise<void> {
   let result;
   try {
     result = await generateKnowledgeGraph(context.coreClient, context.items);
   } finally {
     void context.onSuccess();
   }
-  if (result.remainingBacklog > 0 && result.createdCount > 0) {
+  if (shouldContinueGraphDrain(result)) {
     await new Promise((resolve) => window.setTimeout(resolve, CYCLE_SPACING_MS));
-    await runCycle(context, digest);
+    await runCycle(context);
     return;
   }
-  localStorage.setItem(GRAPH_DIGEST_KEY, digest);
   localStorage.removeItem(GRAPH_FAILURE_KEY);
   localStorage.removeItem(GRAPH_CONSECUTIVE_FAILURES_KEY);
+}
+
+export function shouldContinueGraphDrain(result: {
+  remainingBacklog: number;
+  processedCount: number;
+}): boolean {
+  return result.remainingBacklog > 0 && result.processedCount > 0;
 }
 
 export function useKnowledgeGraphAutomation() {
@@ -81,12 +81,7 @@ export function useKnowledgeGraphAutomation() {
   }, [queryClient]);
 
   useEffect(() => {
-    if (items.length < 2 || running.current) return;
-    // The digest reflects the source window the generator consumes. Backlog
-    // draining is handled by the chain inside runCycle — the effect only
-    // needs to fire when the window content itself changes.
-    const digest = computeGraphSourceDigest(items);
-    if (localStorage.getItem(GRAPH_DIGEST_KEY) === digest) return;
+    if (items.length === 0 || running.current) return;
     // After a failed generation, wait out an exponential backoff before
     // retrying the same input instead of re-running the LLM on every tick.
     const failedAt = Number(localStorage.getItem(GRAPH_FAILURE_KEY) ?? 0);
@@ -113,7 +108,7 @@ export function useKnowledgeGraphAutomation() {
         onSuccess: () =>
           queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all }),
       };
-      void runCycle(context, digest)
+      void runCycle(context)
         .catch((error: unknown) => {
           console.error('[graph] knowledge graph generation failed:', error);
           localStorage.setItem(GRAPH_FAILURE_KEY, String(Date.now()));
