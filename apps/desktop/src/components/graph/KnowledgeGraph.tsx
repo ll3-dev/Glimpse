@@ -1,7 +1,7 @@
 import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { Network, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { layoutGraph } from '@/features/graph/layout';
+import { layoutGraph } from '@glimpse/shared';
 
 interface KnowledgeGraphProps {
   items: KnowledgeItem[];

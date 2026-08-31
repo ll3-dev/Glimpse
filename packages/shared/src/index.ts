@@ -243,4 +243,5 @@ export interface DataImportSummary {
 export * from './local-model-registry';
 export * from './diagnostics';
 export * from './backoff';
+export * from './graph-layout';
 export * from './core-client/create-rustra-core-client';

@@ -1,4 +1,4 @@
-import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
+import type { KnowledgeItem, Recommendation } from './index';
 
 export interface GraphNode {
   id: string;
