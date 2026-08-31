@@ -17,7 +17,7 @@ describe('mobile graph focus navigation source contract', () => {
     expect(library).toContain("params: { focusId: rerankedItems[0].id }");
     expect(detail).toContain("params: { focusId: item.id }");
     expect(graph).toContain('useLocalSearchParams<{ focusId?: string | string[] }>()');
-    expect(graph).toContain("router.setParams({ focusId: itemId ?? '' })");
+    expect(graph).toMatch(/router\.setParams\(\{ focusId: itemId \?\? (['"])\1 \}\)/);
     expect(graph).toContain('layoutFocusedGraph(items, recommendations, focusedNodeId)');
   });
 

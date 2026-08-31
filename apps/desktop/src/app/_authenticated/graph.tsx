@@ -8,12 +8,7 @@ import {
   useRespondToRecommendationMutation,
 } from '@glimpse/hooks';
 import { selectTodayDiscoveries } from '@glimpse/features';
-import type {
-  FeedbackActionType,
-  KnowledgeItem,
-  Recommendation,
-  RecommendationStatus,
-} from '@glimpse/shared';
+import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { Network } from 'lucide-react';
 import { GraphDiscoveryCard } from '@/components/graph/GraphDiscoveryCard';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
@@ -21,11 +16,6 @@ import { recordDesktopGraphDiscoveryOpen } from '@/features/graph/graph-metrics.
 
 type GraphSearch = { focus?: string };
 
-const ACTION_STATUS: Record<FeedbackActionType, RecommendationStatus> = {
-  accept: 'accepted',
-  ignore: 'ignored',
-  dismiss: 'dismissed',
-};
 const EMPTY_ITEMS: KnowledgeItem[] = [];
 const EMPTY_RECOMMENDATIONS: Recommendation[] = [];
 
@@ -54,14 +44,14 @@ function GraphScreen() {
     recordDesktopGraphDiscoveryOpen();
     openItem(itemId);
   };
-  const respondTo = (recommendationId: string, action: FeedbackActionType) => {
+  const hideRecommendation = (recommendationId: string) => {
     respondMutation.mutate({
       recommendationId,
-      status: ACTION_STATUS[action],
+      status: 'ignored',
       feedbackEvent: {
         id: crypto.randomUUID(),
         recommendationId,
-        action,
+        action: 'ignore',
         createdAt: Date.now(),
       },
     });
@@ -83,12 +73,8 @@ function GraphScreen() {
         {discovery ? (
           <GraphDiscoveryCard
             discovery={discovery}
-            isResponding={respondMutation.isPending}
             onOpenItem={openDiscoveryItem}
             onFocus={setFocusedNodeId}
-            onAccept={() => respondTo(discovery.recommendation.id, 'accept')}
-            onIgnore={() => respondTo(discovery.recommendation.id, 'ignore')}
-            onDismiss={() => respondTo(discovery.recommendation.id, 'dismiss')}
           />
         ) : null}
         <KnowledgeGraph
@@ -99,7 +85,7 @@ function GraphScreen() {
           isResponding={respondMutation.isPending}
           onFocusChange={setFocusedNodeId}
           onOpenItem={openItem}
-          onRespond={respondTo}
+          onHideRecommendation={hideRecommendation}
         />
       </div>
     </div>

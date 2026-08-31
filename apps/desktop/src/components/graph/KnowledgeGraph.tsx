@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Network, X } from 'lucide-react';
-import type { FeedbackActionType, KnowledgeItem, Recommendation } from '@glimpse/shared';
+import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { layoutFocusedGraph, layoutGraph } from '@glimpse/shared';
 import { Button } from '@/components/ui/button';
 import { GraphCanvas } from './GraphCanvas';
@@ -14,7 +14,7 @@ type KnowledgeGraphProps = {
   isResponding: boolean;
   onFocusChange: (nodeId: string | null) => void;
   onOpenItem: (itemId: string) => void;
-  onRespond: (recommendationId: string, action: FeedbackActionType) => void;
+  onHideRecommendation: (recommendationId: string) => void;
 };
 
 export function KnowledgeGraph({
@@ -25,7 +25,7 @@ export function KnowledgeGraph({
   isResponding,
   onFocusChange,
   onOpenItem,
-  onRespond,
+  onHideRecommendation,
 }: KnowledgeGraphProps) {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const { nodes, edges } = useMemo(
@@ -40,9 +40,6 @@ export function KnowledgeGraph({
     : 0;
   const selectedEdge = selectedEdgeId ? edges.find(({ id }) => id === selectedEdgeId) : null;
   const activeEdgeId = selectedEdge?.id ?? null;
-  const selectedRecommendation = activeEdgeId
-    ? recommendations.find(({ id }) => id === activeEdgeId)
-    : undefined;
 
   if (isLoading) {
     return <div className="h-[560px] animate-pulse rounded-2xl border border-border/80 bg-card shadow-2xs" />;
@@ -91,12 +88,9 @@ export function KnowledgeGraph({
       {selectedEdge ? (
         <GraphEdgeInspector
           edge={selectedEdge}
-          recommendation={selectedRecommendation}
           isResponding={isResponding}
           onOpenItem={onOpenItem}
-          onAccept={() => onRespond(selectedEdge.id, 'accept')}
-          onIgnore={() => onRespond(selectedEdge.id, 'ignore')}
-          onDismiss={() => onRespond(selectedEdge.id, 'dismiss')}
+          onHide={() => onHideRecommendation(selectedEdge.id)}
           onClose={() => setSelectedEdgeId(null)}
         />
       ) : null}

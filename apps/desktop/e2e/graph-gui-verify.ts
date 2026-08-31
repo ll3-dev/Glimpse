@@ -4,8 +4,8 @@ import { tauriStubInitScript } from './smoke-stubs';
 /**
  * Phase C 그래프 GUI 검증 (Tauri IPC 스텁 위 프로덕션 번들).
  *
- * 검증 범위 — 검색→포커스 진입, 상세→포커스 진입, 발견 카드 피드백,
- * 포커스 레이아웃 전환. 스텁 데이터는 smoke-stubs 기본값(빈 목록)과 달리
+ * 검증 범위 — 검색→포커스 진입, 상세→포커스 진입, 무검수 발견 카드,
+ * 잘못된 연결 숨기기, 포커스 레이아웃 전환. 스텁 데이터는 smoke-stubs 기본값(빈 목록)과 달리
  * 이 파일 안에서 fixture 3개 + pending 연결 2개를 주입한다.
  */
 
@@ -89,7 +89,7 @@ const fixtureInitScript = `
 `;
 
 test.describe('Phase C 그래프 GUI', () => {
-  test('검색→포커스 진입과 피드백 반영', async ({ page }) => {
+  test('검색→포커스 진입과 무검수 새 연결 표시', async ({ page }) => {
     await page.addInitScript(fixtureInitScript);
     const consoleErrors: string[] = [];
     page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
@@ -107,31 +107,26 @@ test.describe('Phase C 그래프 GUI', () => {
     await page.getByRole('button', { name: '그래프로 보기' }).click();
     await expect(page).toHaveURL(/\/graph\?focus=/);
 
-    // 3. 발견 카드 — pending 근거와 피드백 액션 노출
+    // 3. 발견 카드 — pending 연결은 사용자의 수락 없이 바로 노출한다.
     //    (focus 진입이 이미 '에이'를 선택 중이라 SVG <title>이 먼저 매칭될 수
     //     있으므로, 카드 문단의 근거는 접근성 스냅샷에서 확인 가능한 카드 UI
     //     요소들로 검증한다)
     await expect(page.getByText('오늘의 발견')).toBeVisible();
-    await expect(page.getByRole('button', { name: '연결 수락' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '연결 무시' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '연결 나중에 보기' })).toBeVisible();
+    await expect(page.getByRole('paragraph').filter({ hasText: '비와 씨의 공통 맥락' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '연결 수락' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '연결 무시' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '연결 나중에 보기' })).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).__glimpseRespondCalls.length)).toBe(0);
 
-    // 4. 수락 → respondToRecommendation 스텁 호출 기록 확인.
-    //    fixture의 두 pending 중 rec-2가 더 최신이므로 발견 규칙상 rec-2가
-    //    카드에 노출된다(근거 품질 동률 → 최신성 우선).
-    await page.getByRole('button', { name: '연결 수락' }).click();
-    await expect
-      .poll(() => page.evaluate(() => (window as any).__glimpseRespondCalls.length))
-      .toBe(1);
-    const call = (await page.evaluate(() => (window as any).__glimpseRespondCalls))[0];
-    expect(call.recommendationId).toBe('rec-2');
-    expect(call.status).toBe('accepted');
+    // 4. 발견을 누르면 별도 승인 없이 해당 연결의 맥락으로 바로 이동한다.
+    await page.getByRole('button', { name: '그래프에서 보기' }).click();
+    await expect(page.getByText(/지식 항목 비\s*·\s*연결/)).toBeVisible();
 
     await page.screenshot({ path: '/tmp/gui-graph-focus.png', fullPage: false });
     expect(consoleErrors.filter((e) => !/smoke stub rejects|Failed to load resource/.test(e))).toEqual([]);
   });
 
-  test('상세→그래프 CTA와 엣지 클릭 근거', async ({ page }) => {
+  test('상세→그래프 CTA와 잘못된 연결 숨기기', async ({ page }) => {
     await page.addInitScript(fixtureInitScript);
     await page.goto('/library/gui-a');
     await expect(page.getByText('지식 항목 에이').first()).toBeVisible();
@@ -148,6 +143,19 @@ test.describe('Phase C 그래프 GUI', () => {
     await edgeHit.click({ force: true });
     const inspector = page.getByText(/연결 근거|같은 테스트 태그|공통 맥락/).first();
     await expect(inspector).toBeVisible({ timeout: 5_000 });
+
+    // 올바른 연결은 아무 작업도 필요 없다. 틀린 경우에만 단일 교정 동작을
+    // 제공하고, 그 동작은 학습 가능한 ignore 피드백으로 저장한다.
+    await expect(page.getByRole('button', { name: '수락' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '나중에' })).toHaveCount(0);
+    await page.getByRole('button', { name: '이 연결 숨기기' }).click();
+    await expect
+      .poll(() => page.evaluate(() => (window as any).__glimpseRespondCalls.length))
+      .toBe(1);
+    const call = (await page.evaluate(() => (window as any).__glimpseRespondCalls))[0];
+    expect(call.recommendationId).toBe('rec-1');
+    expect(call.status).toBe('ignored');
+    expect(call.feedbackEvent.action).toBe('ignore');
 
     await page.screenshot({ path: '/tmp/gui-graph-edge.png', fullPage: false });
   });

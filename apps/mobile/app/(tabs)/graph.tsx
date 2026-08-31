@@ -67,9 +67,6 @@ export default function GraphScreen() {
   const selectedNode = focusedNodeId ? nodes.find((node) => node.id === focusedNodeId) : null;
   const selectedEdge = selectedEdgeId ? edges.find((edge) => edge.id === selectedEdgeId) : null;
   const activeEdgeId = selectedEdge?.id ?? null;
-  const selectedRecommendation = selectedEdgeId
-    ? recommendations.find(({ id }) => id === selectedEdgeId)
-    : undefined;
   const discovery = useMemo(
     () => selectTodayDiscoveries(items, recommendations, 1)[0],
     [items, recommendations],
@@ -83,8 +80,8 @@ export default function GraphScreen() {
   const setFocusedNodeId = (itemId: string | null) => {
     router.setParams({ focusId: itemId ?? '' });
   };
-  const respondTo = (recommendationId: string, action: 'accept' | 'ignore' | 'dismiss') => {
-    respond({ recommendationId, action });
+  const hideRecommendation = (recommendationId: string) => {
+    respond({ recommendationId, action: 'ignore' });
   };
 
   if (items.length === 0) {
@@ -109,15 +106,11 @@ export default function GraphScreen() {
       {discovery ? (
         <GraphDiscoveryCard
           discovery={discovery}
-          isResponding={isResponding}
           onOpenItem={onOpenDiscoveryItem}
           onFocus={(itemId) => {
             setFocusedNodeId(itemId);
             setSelectedEdgeId(null);
           }}
-          onAccept={() => respondTo(discovery.recommendation.id, 'accept')}
-          onIgnore={() => respondTo(discovery.recommendation.id, 'ignore')}
-          onDismiss={() => respondTo(discovery.recommendation.id, 'dismiss')}
         />
       ) : null}
       <View className="flex-1" style={{ borderTopWidth: 1, borderTopColor: appBorder }}>
@@ -141,12 +134,9 @@ export default function GraphScreen() {
       {selectedEdge ? (
         <GraphEdgeInspector
           edge={selectedEdge}
-          recommendation={selectedRecommendation}
           isResponding={isResponding}
           onOpenNode={openItem}
-          onAccept={() => respondTo(selectedEdge.id, 'accept')}
-          onIgnore={() => respondTo(selectedEdge.id, 'ignore')}
-          onDismiss={() => respondTo(selectedEdge.id, 'dismiss')}
+          onHide={() => hideRecommendation(selectedEdge.id)}
           onClose={() => setSelectedEdgeId(null)}
         />
       ) : selection && selectedNode ? (

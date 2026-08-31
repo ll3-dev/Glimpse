@@ -1,30 +1,22 @@
-import type { GraphEdge, Recommendation } from '@glimpse/shared';
-import { Check, X } from 'lucide-react';
+import type { GraphEdge } from '@glimpse/shared';
+import { EyeOff, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type GraphEdgeInspectorProps = {
   edge: GraphEdge;
-  recommendation?: Recommendation;
   isResponding: boolean;
   onOpenItem: (itemId: string) => void;
-  onAccept: () => void;
-  onIgnore: () => void;
-  onDismiss: () => void;
+  onHide: () => void;
   onClose: () => void;
 };
 
 export function GraphEdgeInspector({
   edge,
-  recommendation,
   isResponding,
   onOpenItem,
-  onAccept,
-  onIgnore,
-  onDismiss,
+  onHide,
   onClose,
 }: GraphEdgeInspectorProps) {
-  const pending = recommendation?.status === 'pending';
-
   return (
     <div className="border-t border-border bg-muted/20 px-5 py-3">
       <div className="flex items-start gap-3">
@@ -44,17 +36,9 @@ export function GraphEdgeInspector({
             <span className="truncate">{node.label}</span>
           </Button>
         ))}
-        {pending ? (
-          <>
-            <Button size="sm" disabled={isResponding} onClick={onAccept}>
-              <Check className="h-3.5 w-3.5" /> 수락
-            </Button>
-            <Button variant="outline" size="sm" disabled={isResponding} onClick={onIgnore}>무시</Button>
-            <Button variant="ghost" size="sm" disabled={isResponding} onClick={onDismiss}>나중에</Button>
-          </>
-        ) : (
-          <span className="text-[11px] font-medium text-tag-mint-text">수락한 연결</span>
-        )}
+        <Button variant="ghost" size="sm" disabled={isResponding} onClick={onHide}>
+          <EyeOff className="h-3.5 w-3.5" /> 이 연결 숨기기
+        </Button>
       </div>
     </div>
   );
