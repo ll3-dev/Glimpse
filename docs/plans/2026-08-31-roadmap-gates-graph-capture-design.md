@@ -21,6 +21,14 @@
 
 ## Phase 1 — 검증·배포 게이트 소화
 
+> **✅ 완료 (2026-08-31, 3465ddd·289fbb0)** — 자동 게이트 최종 확인:
+> lint·typecheck(모바일·데스크톱) exit 0, JS 테스트 646 pass/0 fail,
+> Rust 157 pass/0 fail, clippy `-D warnings` clean, `sync:e2e` ALL PASSED.
+> iOS 시뮬레이터 검증은 런치·렌더 확인(`glimpse-01-launch.png`: 탭 바 4개·AI 미설정
+> 화면 정상)까지만 가능 — 라이브러리 탭 전환 딥링크는 expo-dev-client에 가로채져
+> 자동화 불가. 잔여 수동 항목은
+> [`2026-08-31_remaining-manual-gates.md`](/Users/loopy/dev/ll3/Glimpse/thoughts/shared/research/2026-08-31_remaining-manual-gates.md) 참조.
+
 목표: 자동으로 증명 가능한 게이트를 전부 소화하고, 사람 손이 필요한 게이트를
 정확히 분리해 문서로 남긴다.
 
