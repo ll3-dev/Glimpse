@@ -9,7 +9,7 @@
 
 - Phase A — 현재 그래프 마감: 완료
 - Phase B — Living Graph 기반: 완료
-- Phase C — 발견·탐색 UX: 진행 예정
+- Phase C — 발견·탐색 UX: 구현 완료, 데스크톱 UI 수동 게이트 잔여
 - Phase D — 품질과 기술 증거: 진행 예정
 - Phase E — 데스크톱 캡처 동선: 진행 예정
 
