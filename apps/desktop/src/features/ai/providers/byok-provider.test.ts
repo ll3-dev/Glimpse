@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { tauriCoreMocks } from '../../../test/tauri-core-mock';
 
 /**
  * BYOK 스트리밍 에러 매핑 검증.
@@ -23,7 +24,9 @@ const invokeMock = mock(async (cmd: string, args?: { account?: string }) => {
   }
   return null;
 });
-mock.module('@tauri-apps/api/core', () => ({ invoke: invokeMock }));
+// 부분 mock(invoke만)은 프로세스 전역 오염으로 이후 테스트의 event.js 로드를
+// 깨뜨린다 — transformCallback 등 나머지 export를 포함한 완전 mock을 쓴다.
+mock.module('@tauri-apps/api/core', () => tauriCoreMocks(invokeMock));
 
 // Tauri 런타임 감지 — loadSettings 가 키체인을 쓰게
 (globalThis as Record<string, unknown>).window = { __TAURI_INTERNALS__: {} };

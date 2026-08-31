@@ -1,4 +1,5 @@
 import { describe, expect, test, mock, beforeEach } from 'bun:test';
+import { tauriCoreMocks } from '../test/tauri-core-mock';
 
 /**
  * 데스크톱 설정 저장의 키 분리 검증.
@@ -34,9 +35,9 @@ function setTauriWindow(present: boolean) {
   }
 }
 
-mock.module('@tauri-apps/api/core', () => ({
-  invoke: invokeMock,
-}));
+// 부분 mock(invoke만)은 프로세스 전역 오염으로 이후 테스트의 event.js 로드를
+// 깨뜨린다 — 완전 mock 팩토리를 쓴다.
+mock.module('@tauri-apps/api/core', () => tauriCoreMocks(invokeMock));
 
 const storage = new Map<string, string>();
 const localStorageStub = {

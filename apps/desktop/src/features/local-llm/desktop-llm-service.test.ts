@@ -1,4 +1,5 @@
 import { describe, expect, test, mock } from 'bun:test';
+import { tauriCoreMocks } from '../../test/tauri-core-mock';
 
 /**
  * 임베딩 TS↔Rust IPC 계약 고정 테스트.
@@ -14,8 +15,9 @@ import { describe, expect, test, mock } from 'bun:test';
  */
 
 // bun이 @tauri-apps/api/core 실모듈(EJS 번들)을 로드하면 실패하므로,
-// 기존 desktop 테스트 선례(settings-storage/byok-provider)처럼 mock으로 대체한다.
-mock.module('@tauri-apps/api/core', () => ({ invoke: async () => null }));
+// 기존 desktop 테스트 선례처럼 mock으로 대체한다. 부분 mock(invoke만)은
+// 프로세스 전역 오염으로 이후 테스트의 event.js 로드를 깨뜨린다 — 완전 mock.
+mock.module('@tauri-apps/api/core', () => tauriCoreMocks(async () => null));
 mock.module('@tauri-apps/api/event', () => ({ listen: async () => () => {} }));
 
 // 정적 import는 호이스팅돼 다른 테스트 파일과 함께 실행될 때 mock 등록 전에
