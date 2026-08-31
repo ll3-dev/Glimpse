@@ -8,19 +8,38 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Network } from 'lucide-react-native';
-import { useKnowledgeItemsQuery, useAllRecommendationsQuery } from '@/src/hooks';
-import { GraphCanvas, GraphSelectionBar, computeGraphSelection } from '@/src/components/graph';
-import { layoutGraph } from '@glimpse/shared';
+import {
+  useAllRecommendationsQuery,
+  useKnowledgeItemsQuery,
+  useRecommendationActionsMutation,
+} from '@/src/hooks';
+import {
+  GraphCanvas,
+  GraphDiscoveryCard,
+  GraphEdgeInspector,
+  GraphSelectionBar,
+  computeGraphSelection,
+} from '@/src/components/graph';
+import { selectTodayDiscoveries } from '@glimpse/features';
+import { layoutFocusedGraph, layoutGraph } from '@glimpse/shared';
 import { EmptyState, ScreenHeader, useSemanticColor } from '@glimpse/ui';
+
+function readParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export default function GraphScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ focusId?: string | string[] }>();
+  const routeFocusId = readParam(params.focusId);
   const insets = useSafeAreaInsets();
   const { data: items = [] } = useKnowledgeItemsQuery();
   const { data: recommendations = [] } = useAllRecommendationsQuery();
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const { respond, isPending: isResponding } = useRecommendationActionsMutation();
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(routeFocusId ?? null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
 
   const appBorder = useSemanticColor('appBorder');
   const appText = useSemanticColor('appText');
@@ -34,14 +53,30 @@ export default function GraphScreen() {
   ];
 
   const { nodes, edges } = useMemo(
-    () => layoutGraph(items, recommendations),
-    [items, recommendations],
+    () => focusedNodeId
+      ? layoutFocusedGraph(items, recommendations, focusedNodeId)
+      : layoutGraph(items, recommendations),
+    [focusedNodeId, items, recommendations],
   );
   const selection = useMemo(
-    () => computeGraphSelection(selectedNodeId, edges),
-    [selectedNodeId, edges],
+    () => computeGraphSelection(focusedNodeId, edges),
+    [focusedNodeId, edges],
   );
-  const selectedNode = selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : null;
+  const selectedNode = focusedNodeId ? nodes.find((node) => node.id === focusedNodeId) : null;
+  const selectedEdge = selectedEdgeId ? edges.find((edge) => edge.id === selectedEdgeId) : null;
+  const activeEdgeId = selectedEdge?.id ?? null;
+  const selectedRecommendation = selectedEdgeId
+    ? recommendations.find(({ id }) => id === selectedEdgeId)
+    : undefined;
+  const discovery = useMemo(
+    () => selectTodayDiscoveries(items, recommendations, 1)[0],
+    [items, recommendations],
+  );
+
+  const openItem = (itemId: string) => router.push(`/library/${itemId}`);
+  const respondTo = (recommendationId: string, action: 'accept' | 'ignore' | 'dismiss') => {
+    respond({ recommendationId, action });
+  };
 
   if (items.length === 0) {
     return (
@@ -62,27 +97,57 @@ export default function GraphScreen() {
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
     >
       <ScreenHeader title="연결" subtitle={`${nodes.length}개 지식 · ${edges.length}개 연결`} />
+      {discovery ? (
+        <GraphDiscoveryCard
+          discovery={discovery}
+          isResponding={isResponding}
+          onOpenItem={openItem}
+          onFocus={(itemId) => {
+            setFocusedNodeId(itemId);
+            setSelectedEdgeId(null);
+          }}
+          onAccept={() => respondTo(discovery.recommendation.id, 'accept')}
+          onIgnore={() => respondTo(discovery.recommendation.id, 'ignore')}
+          onDismiss={() => respondTo(discovery.recommendation.id, 'dismiss')}
+        />
+      ) : null}
       <View className="flex-1" style={{ borderTopWidth: 1, borderTopColor: appBorder }}>
         <GraphCanvas
           nodes={nodes}
           edges={edges}
-          selectedNodeId={selectedNodeId}
+          selectedNodeId={focusedNodeId}
+          selectedEdgeId={activeEdgeId}
           palette={palette}
-          onPressNode={(id) => setSelectedNodeId((cur) => (cur === id ? null : id))}
+          onPressNode={(id) => {
+            setFocusedNodeId((current) => (current === id ? null : id));
+            setSelectedEdgeId(null);
+          }}
+          onPressEdge={(id) => setSelectedEdgeId((current) => (current === id ? null : id))}
           lineColor={appBorder}
           strokeColor={appMuted}
           labelColor={appText}
           selectedStrokeColor={appText}
         />
       </View>
-      {selection && selectedNode && (
+      {selectedEdge ? (
+        <GraphEdgeInspector
+          edge={selectedEdge}
+          recommendation={selectedRecommendation}
+          isResponding={isResponding}
+          onOpenNode={openItem}
+          onAccept={() => respondTo(selectedEdge.id, 'accept')}
+          onIgnore={() => respondTo(selectedEdge.id, 'ignore')}
+          onDismiss={() => respondTo(selectedEdge.id, 'dismiss')}
+          onClose={() => setSelectedEdgeId(null)}
+        />
+      ) : selection && selectedNode ? (
         <GraphSelectionBar
           selection={selection}
           nodeLabel={selectedNode.label}
-          onOpenDetail={() => router.push(`/library/${selectedNode.id}`)}
-          onClear={() => setSelectedNodeId(null)}
+          onOpenDetail={() => openItem(selectedNode.id)}
+          onClear={() => setFocusedNodeId(null)}
         />
-      )}
+      ) : null}
     </View>
   );
 }

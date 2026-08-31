@@ -7,3 +7,5 @@ export * from './LibraryDetailHeaderActions';
 export * from './ConnectedNotesSection';
 export * from './library-sort-options';
 export * from './LibraryActiveFilterBar';
+export * from './LibraryCaptureFab';
+export * from './LibraryScreenHeader';

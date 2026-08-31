@@ -1,23 +1,23 @@
-import { View, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { useCallback, useState, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookOpen, Settings } from 'lucide-react-native';
+import { BookOpen } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { Plus } from '@glimpse/ui/icons';
 import {
   KnowledgeItemCard,
+  LibraryCaptureFab,
   LibraryFilterBar,
   LibrarySearchInput,
   LibraryActiveFilterBar,
+  LibraryScreenHeader,
   SORT_OPTIONS,
   type SortOrder,
 } from '@/src/components/library';
-import { resolveLibrarySearch } from '@/src/features/library';
+import { collectAvailableKnowledgeTags, resolveLibrarySearch } from '@/src/features/library';
 import { useMobileSemanticRerank } from '@/src/features/search/useMobileSemanticRerank';
 import { useForegroundLabeling, useKnowledgeItemsQuery } from '@/src/hooks';
-import { EmptyState, ScreenHeader } from '@glimpse/ui/primitives';
-import { useSemanticColor } from '@glimpse/ui';
+import { EmptyState } from '@glimpse/ui/primitives';
 import { getDisplayLabels } from '@/src/features/labeling';
 import * as Haptics from 'expo-haptics';
 import type { KnowledgeItem } from '@glimpse/shared';
@@ -30,8 +30,6 @@ export default function LibraryScreen() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const appText = useSemanticColor('appText');
-  const appBg = useSemanticColor('appBg');
 
   const { data: items, isLoading, isFetching, refetch } = useKnowledgeItemsQuery();
   const isRefreshing = isFetching && !isLoading;
@@ -42,23 +40,7 @@ export default function LibraryScreen() {
     await refetch();
   }, [refetch]);
 
-  // Extract all unique tags & labels from items
-  const availableTags = useMemo(() => {
-    if (!items) return [];
-    const tagSet = new Set<string>();
-    for (const item of items) {
-      if (item.tags) {
-        for (const t of item.tags) {
-          tagSet.add(t);
-        }
-      }
-      const labels = getDisplayLabels(item);
-      for (const l of labels) {
-        tagSet.add(l);
-      }
-    }
-    return Array.from(tagSet);
-  }, [items]);
+  const availableTags = useMemo(() => collectAvailableKnowledgeTags(items), [items]);
 
   const { filteredItems, emptyState } = useMemo(() => {
     const searchResolved = resolveLibrarySearch(items, searchQuery);
@@ -156,19 +138,9 @@ export default function LibraryScreen() {
 
   return (
     <View className="flex-1 bg-app-bg" style={{ paddingTop: insets.top }}>
-      <ScreenHeader
-        title="보관함"
-        subtitle={items && items.length > 0 ? `${items.length}개의 지식` : undefined}
-        rightElement={
-          <Pressable
-            className="h-10 w-10 items-center justify-center rounded-full active:bg-app-border/40"
-            onPress={() => router.push('/settings')}
-            accessibilityRole="button"
-            accessibilityLabel="설정"
-          >
-            <Settings size={20} color={appText} />
-          </Pressable>
-        }
+      <LibraryScreenHeader
+        itemCount={items?.length ?? 0}
+        onOpenSettings={() => router.push('/settings')}
       />
       <LibrarySearchInput value={searchQuery} onChangeText={setSearchQuery} />
 
@@ -187,6 +159,11 @@ export default function LibraryScreen() {
           itemCount={filteredItems.length}
           selectedTag={selectedTag}
           onResetFilters={handleResetFilters}
+          onOpenGraph={
+            searchQuery.trim().length > 0 && rerankedItems[0]
+              ? () => router.push({ pathname: '/graph', params: { focusId: rerankedItems[0].id } })
+              : undefined
+          }
         />
       )}
 
@@ -205,16 +182,13 @@ export default function LibraryScreen() {
         />
       </View>
 
-      <Pressable
+      <LibraryCaptureFab
+        bottomInset={insets.bottom}
         onPress={() => {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push('/capture');
         }}
-        className="absolute right-6 w-14 h-14 rounded-full bg-app-text items-center justify-center shadow-lg active:opacity-90"
-        style={{ bottom: insets.bottom + 16 }}
-      >
-        <Plus color={appBg} size={28} />
-      </Pressable>
+      />
     </View>
   );
 }

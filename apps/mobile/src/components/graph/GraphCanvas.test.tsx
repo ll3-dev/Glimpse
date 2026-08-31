@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { GraphEdge, GraphNode } from '@glimpse/shared';
+import { createElement, type SVGProps } from 'react';
 
 /**
  * GraphCanvas 렌더 검증.
@@ -11,8 +12,21 @@ import type { GraphEdge, GraphNode } from '@glimpse/shared';
  *   요소 개수·라벨·디밍 투명도를 검증한다.
  */
 
-const svgHosts: Record<string, string> = {
-  Svg: 'svg', G: 'g', Line: 'line', Circle: 'circle', Text: 'text',
+function LineHost({
+  accessible: _accessible,
+  accessibilityLabel: _accessibilityLabel,
+  onPress: _onPress,
+  ...props
+}: SVGProps<SVGLineElement> & {
+  accessible?: boolean;
+  accessibilityLabel?: string;
+  onPress?: () => void;
+}) {
+  return createElement('line', props);
+}
+
+const svgHosts: Record<string, string | typeof LineHost> = {
+  Svg: 'svg', G: 'g', Line: LineHost, Circle: 'circle', Text: 'text',
 };
 mock.module('react-native-svg', () => svgHosts);
 mock.module('@glimpse/ui', () => ({
@@ -32,14 +46,16 @@ describe('GraphCanvas', () => {
     { id: 'e1', source: nodes[0], target: nodes[1], reason: '근거' },
   ];
 
-  const render = (selectedNodeId: string | null) =>
+  const render = (selectedNodeId: string | null, selectedEdgeId: string | null = null) =>
     renderToStaticMarkup(
       <GraphCanvas
         nodes={nodes}
         edges={edges}
         selectedNodeId={selectedNodeId}
+        selectedEdgeId={selectedEdgeId}
         palette={['red', 'orange', 'green', 'blue', 'purple']}
         onPressNode={() => {}}
+        onPressEdge={() => {}}
         lineColor="gray"
         strokeColor="silver"
         labelColor="black"
@@ -58,5 +74,11 @@ describe('GraphCanvas', () => {
   test('선택 시 비인접 노드가 디밍된다', () => {
     // c는 a와 인접하지 않으므로 디밍 투명도가 적용된다
     expect(render('a')).toContain('0.35');
+  });
+
+  test('선택한 엣지는 강조 색과 두께로 렌더한다', () => {
+    const markup = render(null, 'e1');
+    expect(markup).toContain('stroke="navy"');
+    expect(markup).toContain('stroke-width="3"');
   });
 });

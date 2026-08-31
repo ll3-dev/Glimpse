@@ -6,9 +6,11 @@ type GraphCanvasProps = {
   nodes: GraphNode[];
   edges: GraphEdge[];
   selectedNodeId: string | null;
+  selectedEdgeId: string | null;
   /** 노드 인덱스 → 점 색상 (화면에서 팔레트 토큰 해석해 주입) */
   palette: string[];
   onPressNode: (id: string) => void;
+  onPressEdge: (id: string) => void;
   /** 시맨틱 해석된 기본 색상 (선·원 스트로크·라벨) */
   lineColor: string;
   strokeColor: string;
@@ -30,8 +32,10 @@ export function GraphCanvas({
   nodes,
   edges,
   selectedNodeId,
+  selectedEdgeId,
   palette,
   onPressNode,
+  onPressEdge,
   lineColor,
   strokeColor,
   labelColor,
@@ -43,29 +47,47 @@ export function GraphCanvas({
     connectedNodeIds.add(edge.source.id);
     connectedNodeIds.add(edge.target.id);
   }
+  const selectedEdge = selectedEdgeId ? edges.find(({ id }) => id === selectedEdgeId) : null;
 
   return (
     <Svg width="100%" height="100%" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet">
       {edges.map((edge) => {
-        const isActive = selection?.activeEdgeIds.has(edge.id) ?? false;
-        const dimmed = selection != null && !isActive;
+        const isSelected = edge.id === selectedEdgeId;
+        const isActive = isSelected || (selection?.activeEdgeIds.has(edge.id) ?? false);
+        const dimmed = selectedEdgeId != null ? !isSelected : selection != null && !isActive;
         return (
-          <Line
-            key={edge.id}
-            x1={edge.source.x}
-            y1={edge.source.y}
-            x2={edge.target.x}
-            y2={edge.target.y}
-            stroke={isActive ? selectedStrokeColor : lineColor}
-            strokeWidth={isActive ? 2.5 : 1.5}
-            opacity={dimmed ? DIMMED_OPACITY : 0.7}
-          />
+          <G key={edge.id}>
+            <Line
+              x1={edge.source.x}
+              y1={edge.source.y}
+              x2={edge.target.x}
+              y2={edge.target.y}
+              stroke={isActive ? selectedStrokeColor : lineColor}
+              strokeWidth={isSelected ? 3 : isActive ? 2.5 : 1.5}
+              opacity={dimmed ? DIMMED_OPACITY : 0.7}
+            />
+            <Line
+              x1={edge.source.x}
+              y1={edge.source.y}
+              x2={edge.target.x}
+              y2={edge.target.y}
+              stroke="transparent"
+              strokeWidth={20}
+              onPress={() => onPressEdge(edge.id)}
+              accessible
+              accessibilityLabel={`${edge.source.label}와 ${edge.target.label} 연결 보기`}
+            />
+          </G>
         );
       })}
       {nodes.map((node, index) => {
         const isSelected = node.id === selection?.selectedId;
         const isNeighbor = selection?.connectedIds.has(node.id) ?? false;
-        const dimmed = selection != null && !isNeighbor;
+        const belongsToSelectedEdge =
+          selectedEdge?.source.id === node.id || selectedEdge?.target.id === node.id;
+        const dimmed = selectedEdge
+          ? !belongsToSelectedEdge
+          : selection != null && !isNeighbor;
         return (
           <G key={node.id} onPress={() => onPressNode(node.id)} opacity={dimmed ? DIMMED_OPACITY : 1}>
             <Circle

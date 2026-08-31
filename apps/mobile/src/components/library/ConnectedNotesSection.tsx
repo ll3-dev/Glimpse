@@ -16,9 +16,8 @@ interface ConnectedNotesSectionProps {
 }
 
 /**
- * 보관함 상세 하단 "연결된 노트" 섹션 — 데스크톱 그래프 엣지의 모바일
- * 읽기 전용 뷰. 엣지 생성은 데스크톱 전담(설계: 2026-08-30), 노드 탭 시
- * 해당 아이템 상세로 이동.
+ * 보관함 상세 하단 "연결된 노트" 섹션 — Living Graph가 생성하고 동기화한
+ * 엣지의 읽기 뷰. 노드 탭 시 해당 아이템 상세로 이동한다.
  */
 export function ConnectedNotesSection({ itemId, edges, items }: ConnectedNotesSectionProps) {
   const router = useRouter();

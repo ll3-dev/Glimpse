@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { ArrowLeft, MessageCircle, SearchX } from 'lucide-react-native';
+import { ArrowLeft, MessageCircle, Network, SearchX } from 'lucide-react-native';
 import {
   Alert,
   ScrollView,
@@ -157,6 +157,16 @@ export default function LibraryDetailScreen() {
           contentInset={{ bottom: insets.bottom }}
         >
           <KnowledgeItemDetailCard item={item} displayLabels={displayLabels} />
+
+          <Pressable
+            onPress={() => router.push({ pathname: '/graph', params: { focusId: item.id } })}
+            className="mb-4 h-11 flex-row items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface active:bg-app-border/30"
+            accessibilityRole="button"
+            accessibilityLabel="현재 항목을 그래프에서 보기"
+          >
+            <Network size={15} color={appText} />
+            <Text className="text-sm font-semibold text-app-text">그래프에서 주변 보기</Text>
+          </Pressable>
 
           <ConnectedNotesSection
             itemId={item.id}
