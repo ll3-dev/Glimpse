@@ -10,11 +10,13 @@
 - Phase A — 현재 그래프 마감: 완료
 - Phase B — Living Graph 기반: 완료
 - Phase C — 발견·탐색 UX: 구현 완료, 데스크톱 UI 수동 게이트 잔여
-- Phase D — 품질과 기술 증거: 진행 예정
+- Phase D — 품질과 기술 증거: 완료
 - Phase E — 데스크톱 캡처 동선: 진행 예정
 
 Phase B의 현재 트리 검증 근거는
 `thoughts/shared/research/2026-08-31_living-graph-phase-b-verification.md`에 기록한다.
+Phase D의 로컬 집계·receipt와 현재 트리 검증 근거는
+`thoughts/shared/research/2026-08-31_living-graph-phase-d-verification.md`에 기록한다.
 
 ## 1. 목표
 

@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-31T08:55:29.659Z",
+  "buildFingerprint": "7239b36c1b019d7c6aaef6d92c479cbe432702a8c716d6df1ea35ba954f8ba26",
+  "inputFingerprint": "904fd15dee15e22c467edb773160fed47da0150cc62ab63c1bb7d0521c238aaa",
+  "evidenceScope": "synthetic-pure-planner-and-aggregation",
+  "runtime": {
+    "engine": "bun",
+    "version": "1.4.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "repetitions": 60,
+  "operationsPerSample": 500,
+  "scenarios": [
+    {
+      "name": "cold_start",
+      "quality": {
+        "analysis": {
+          "targetCount": 24,
+          "completedCount": 0,
+          "failedCount": 0,
+          "backlogCount": 24,
+          "actionableBacklogCount": 24,
+          "deferredCount": 0,
+          "reanalysisSkippedCount": 0
+        },
+        "connections": {
+          "generatedCount": 12,
+          "visibleCount": 6,
+          "connectedItemCount": 12,
+          "isolatedItemCount": 12,
+          "statusCounts": {
+            "pending": 3,
+            "accepted": 3,
+            "ignored": 3,
+            "dismissed": 3
+          },
+          "statusRatios": {
+            "pending": 0.25,
+            "accepted": 0.25,
+            "ignored": 0.25,
+            "dismissed": 0.25
+          }
+        },
+        "feedbackEventCount": 4
+      },
+      "timingMs": {
+        "min": 0.001716,
+        "p50": 0.002841,
+        "p95": 0.005485,
+        "max": 0.006913
+      }
+    },
+    {
+      "name": "unchanged",
+      "quality": {
+        "analysis": {
+          "targetCount": 24,
+          "completedCount": 24,
+          "failedCount": 0,
+          "backlogCount": 0,
+          "actionableBacklogCount": 0,
+          "deferredCount": 0,
+          "reanalysisSkippedCount": 24
+        },
+        "connections": {
+          "generatedCount": 12,
+          "visibleCount": 6,
+          "connectedItemCount": 12,
+          "isolatedItemCount": 12,
+          "statusCounts": {
+            "pending": 3,
+            "accepted": 3,
+            "ignored": 3,
+            "dismissed": 3
+          },
+          "statusRatios": {
+            "pending": 0.25,
+            "accepted": 0.25,
+            "ignored": 0.25,
+            "dismissed": 0.25
+          }
+        },
+        "feedbackEventCount": 4
+      },
+      "timingMs": {
+        "min": 0.004606,
+        "p50": 0.005588,
+        "p95": 0.007621,
+        "max": 0.009795
+      }
+    },
+    {
+      "name": "updated",
+      "quality": {
+        "analysis": {
+          "targetCount": 24,
+          "completedCount": 21,
+          "failedCount": 0,
+          "backlogCount": 3,
+          "actionableBacklogCount": 3,
+          "deferredCount": 0,
+          "reanalysisSkippedCount": 21
+        },
+        "connections": {
+          "generatedCount": 12,
+          "visibleCount": 6,
+          "connectedItemCount": 12,
+          "isolatedItemCount": 12,
+          "statusCounts": {
+            "pending": 3,
+            "accepted": 3,
+            "ignored": 3,
+            "dismissed": 3
+          },
+          "statusRatios": {
+            "pending": 0.25,
+            "accepted": 0.25,
+            "ignored": 0.25,
+            "dismissed": 0.25
+          }
+        },
+        "feedbackEventCount": 4
+      },
+      "timingMs": {
+        "min": 0.004183,
+        "p50": 0.004818,
+        "p95": 0.005767,
+        "max": 0.006534
+      }
+    },
+    {
+      "name": "deleted",
+      "quality": {
+        "analysis": {
+          "targetCount": 23,
+          "completedCount": 23,
+          "failedCount": 0,
+          "backlogCount": 0,
+          "actionableBacklogCount": 0,
+          "deferredCount": 0,
+          "reanalysisSkippedCount": 23
+        },
+        "connections": {
+          "generatedCount": 11,
+          "visibleCount": 5,
+          "connectedItemCount": 10,
+          "isolatedItemCount": 13,
+          "statusCounts": {
+            "pending": 2,
+            "accepted": 3,
+            "ignored": 3,
+            "dismissed": 3
+          },
+          "statusRatios": {
+            "pending": 0.18181818181818182,
+            "accepted": 0.2727272727272727,
+            "ignored": 0.2727272727272727,
+            "dismissed": 0.2727272727272727
+          }
+        },
+        "feedbackEventCount": 4
+      },
+      "timingMs": {
+        "min": 0.004563,
+        "p50": 0.005477,
+        "p95": 0.006669,
+        "max": 0.006962
+      }
+    },
+    {
+      "name": "synced",
+      "quality": {
+        "analysis": {
+          "targetCount": 26,
+          "completedCount": 24,
+          "failedCount": 0,
+          "backlogCount": 2,
+          "actionableBacklogCount": 2,
+          "deferredCount": 0,
+          "reanalysisSkippedCount": 24
+        },
+        "connections": {
+          "generatedCount": 12,
+          "visibleCount": 6,
+          "connectedItemCount": 12,
+          "isolatedItemCount": 14,
+          "statusCounts": {
+            "pending": 3,
+            "accepted": 3,
+            "ignored": 3,
+            "dismissed": 3
+          },
+          "statusRatios": {
+            "pending": 0.25,
+            "accepted": 0.25,
+            "ignored": 0.25,
+            "dismissed": 0.25
+          }
+        },
+        "feedbackEventCount": 4
+      },
+      "timingMs": {
+        "min": 0.004405,
+        "p50": 0.004934,
+        "p95": 0.005958,
+        "max": 0.006632
+      }
+    }
+  ]
+}

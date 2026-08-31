@@ -1,6 +1,8 @@
 # Living Knowledge Graph Phase D 구현 계획
 
-- 상태: 구현 중
+- 상태: 구현 및 검증 완료
+- 완료 시각: 2026-08-31 17:56 KST
+- 검증 기록: `thoughts/shared/research/2026-08-31_living-graph-phase-d-verification.md`
 - 선행 단계: Phase C 구현 완료, 데스크톱 UI 수동 게이트 잔여 (`f9d0ad4`)
 
 > **For Codex:** `superpowers:test-driven-development`로 집계와 시나리오의 실패 테스트를
