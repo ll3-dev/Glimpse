@@ -1,135 +1,120 @@
 import { describe, expect, mock, test } from 'bun:test';
-import type { Recommendation } from '@glimpse/shared';
+import type {
+  GraphAnalysisCommitInput,
+  GraphAnalysisRecord,
+  KnowledgeItem,
+  Recommendation,
+} from '@glimpse/shared';
 import {
   createRefreshRecommendations,
-  filterNewRecommendations,
-  isRecommendationRefreshDue,
   type RecommendationRefreshDeps,
 } from './refreshRecommendations';
 
-const existingRecommendation = (itemAId: string, itemBId: string): Recommendation => ({
-  id: `${itemAId}-${itemBId}`,
-  itemA_id: itemAId,
-  itemB_id: itemBId,
-  reason: null,
-  status: 'pending',
-  createdAt: 1,
-  respondedAt: null,
-});
+function item(id: string, tags: string[], updatedAt = 1): KnowledgeItem {
+  return {
+    id, type: 'note', title: id, body: null, url: null, summary: null, tags,
+    createdAt: 1, updatedAt, stability: null, difficulty: null,
+    lastReviewedAt: null, nextReviewAt: null,
+  };
+}
 
-describe('refreshRecommendations', () => {
-  test('treats reverse item order as the same recommendation pair', () => {
-    const filtered = filterNewRecommendations(
-      [
-        { itemAId: 'b', itemBId: 'a', reason: 'duplicate' },
-        { itemAId: 'a', itemBId: 'c', reason: 'new' },
-        { itemAId: 'c', itemBId: 'a', reason: 'same new pair' },
-      ],
-      [existingRecommendation('a', 'b')]
-    );
+function record(itemId: string, itemUpdatedAt = 1): GraphAnalysisRecord {
+  return {
+    itemId, itemUpdatedAt, analyzerVersion: 'living-graph-v1', analyzedAt: 10,
+    edgeCount: 0, status: 'completed', failureCount: 0,
+  };
+}
 
-    expect(filtered).toEqual([{ itemAId: 'a', itemBId: 'c', reason: 'new' }]);
-  });
+function deps(overrides: Partial<RecommendationRefreshDeps> = {}): RecommendationRefreshDeps {
+  return {
+    now: () => 100,
+    createId: (() => {
+      let id = 0;
+      return () => `edge-${id++}`;
+    })(),
+    batchLimit: 4,
+    listItems: async () => [item('a', ['rust']), item('b', ['rust'])],
+    listAnalysisRecords: async () => [],
+    listRecommendations: async () => [],
+    proposeEdges: async () => [],
+    commitAnalysis: async (input) => ({
+      savedRecommendations: input.recommendations.length,
+      savedAnalysisRecords: input.records.length,
+    }),
+    ...overrides,
+  };
+}
 
-  test('uses cadence to decide when a refresh is due', () => {
-    expect(isRecommendationRefreshDue(100, null, 50)).toBe(true);
-    expect(isRecommendationRefreshDue(149, 100, 50)).toBe(false);
-    expect(isRecommendationRefreshDue(150, 100, 50)).toBe(true);
-  });
-
-  test('merges AI edge proposals on top of tag overlap and falls back when AI yields nothing', async () => {
-    const setLastRefreshAt = mock(() => undefined);
-    const save = mock(async () => ({ success: true } as const));
-    const deps: RecommendationRefreshDeps = {
-      now: () => 1_000,
-      getCadence: () => 100,
-      getLastRefreshAt: () => null,
-      setLastRefreshAt,
-      listRecommendations: async () => [],
-      generate: async () => ({
-        success: true,
-        recommendations: [{ itemAId: 'a', itemBId: 'c', reason: 'Shared 1 tag(s)' }],
-      }),
-      save,
-      listWeeklyItems: async () => [
-        { id: 'a', title: 'A', summary: null, tags: null, body: null },
-        { id: 'b', title: 'B', summary: null, tags: null, body: null },
-      ],
-      proposeEdges: async () => [
-        { itemAId: 'a', itemBId: 'b', reason: 'AI가 찾은 연결' },
-      ],
-    };
-
-    const merged = await createRefreshRecommendations(deps)();
-    expect(merged).toMatchObject({ success: true, skipped: false, createdCount: 2 });
-    expect(save).toHaveBeenCalledWith([
-      { itemAId: 'a', itemBId: 'b', reason: 'AI가 찾은 연결' },
-      { itemAId: 'a', itemBId: 'c', reason: 'Shared 1 tag(s)' },
-    ]);
-
-    // AI empty (no model / failure) → tag overlap alone still refreshes.
-    const fallback = await createRefreshRecommendations({
-      ...deps,
-      setLastRefreshAt: mock(() => undefined),
-      proposeEdges: async () => [],
-    })({ force: true });
-    expect(fallback).toMatchObject({ success: true, createdCount: 1 });
-  });
-
-  test('generates, deduplicates, saves, and records a successful refresh', async () => {
-    const setLastRefreshAt = mock(() => undefined);
-    const save = mock(async () => ({ success: true } as const));
-    const deps: RecommendationRefreshDeps = {
-      now: () => 1_000,
-      getCadence: () => 100,
-      getLastRefreshAt: () => null,
-      setLastRefreshAt,
-      listRecommendations: async () => [existingRecommendation('a', 'b')],
-      generate: async () => ({
-        success: true,
-        recommendations: [
-          { itemAId: 'b', itemBId: 'a', reason: 'old' },
-          { itemAId: 'a', itemBId: 'c', reason: 'new' },
-        ],
-      }),
-      save,
-    };
-
-    const result = await createRefreshRecommendations(deps)();
-
-    expect(result).toEqual({
-      success: true,
-      skipped: false,
-      createdCount: 1,
-      generatedCount: 2,
+describe('mobile Living Graph refresh', () => {
+  test('AI가 비어도 태그 폴백과 원자 커밋으로 연결·워터마크를 저장한다', async () => {
+    const commits: GraphAnalysisCommitInput[] = [];
+    const commitAnalysis = mock(async (input: GraphAnalysisCommitInput) => {
+      commits.push(input);
+      return {
+        savedRecommendations: input.recommendations.length,
+        savedAnalysisRecords: input.records.length,
+      };
     });
-    expect(save).toHaveBeenCalledWith([
-      { itemAId: 'a', itemBId: 'c', reason: 'new' },
-    ]);
-    expect(setLastRefreshAt).toHaveBeenCalledWith(1_000);
+
+    const result = await createRefreshRecommendations(deps({ commitAnalysis }))();
+
+    expect(result).toMatchObject({
+      success: true, skipped: false, createdCount: 1, processedCount: 2,
+      source: 'tag-overlap',
+    });
+    expect(commits[0].recommendations[0]).toMatchObject({ itemA_id: 'a', itemB_id: 'b' });
+    expect(commits[0].records.map(({ status, edgeCount }) => ({ status, edgeCount })))
+      .toEqual([
+        { status: 'completed', edgeCount: 1 },
+        { status: 'completed', edgeCount: 1 },
+      ]);
   });
 
-  test('does not advance the schedule when saving fails', async () => {
-    const setLastRefreshAt = mock(() => undefined);
-    const deps: RecommendationRefreshDeps = {
-      now: () => 1_000,
-      getCadence: () => 100,
-      getLastRefreshAt: () => null,
-      setLastRefreshAt,
-      listRecommendations: async () => [],
-      generate: async () => ({
-        success: true,
-        recommendations: [{ itemAId: 'a', itemBId: 'b', reason: 'new' }],
-      }),
-      save: async () => ({
-        success: false,
-        error: { code: 'DATABASE_ERROR', message: 'failed' },
-      }),
+  test('0-edge 항목도 completed로 기록하고 다음 실행은 no_dirty로 건너뛴다', async () => {
+    let records: GraphAnalysisRecord[] = [];
+    const refresh = createRefreshRecommendations(deps({
+      listItems: async () => [item('solo', [])],
+      listAnalysisRecords: async () => records,
+      commitAnalysis: async (input) => {
+        records = input.records;
+        return { savedRecommendations: 0, savedAnalysisRecords: input.records.length };
+      },
+    }));
+
+    expect(await refresh()).toMatchObject({
+      success: true, skipped: false, createdCount: 0, processedCount: 1,
+    });
+    expect(records[0]).toMatchObject({ itemId: 'solo', edgeCount: 0, status: 'completed' });
+    expect(await refresh()).toEqual({
+      success: true, skipped: true, reason: 'no_dirty', createdCount: 0,
+      processedCount: 0, remainingBacklog: 0,
+    });
+  });
+
+  test('수정된 항목만 4개 배치로 처리하고 기존 ignored pair를 재생성하지 않는다', async () => {
+    const items = Array.from({ length: 6 }, (_, index) => item(`i${index}`, ['x'], index + 2));
+    const existing: Recommendation = {
+      id: 'ignored', itemA_id: 'i5', itemB_id: 'clean', reason: null,
+      status: 'ignored', createdAt: 1, respondedAt: 1,
     };
+    const commits: GraphAnalysisCommitInput[] = [];
+    const result = await createRefreshRecommendations(deps({
+      listItems: async () => [...items, item('clean', ['x'], 1)],
+      listAnalysisRecords: async () => [record('clean')],
+      listRecommendations: async () => [existing],
+      commitAnalysis: async (input) => {
+        commits.push(input);
+        return {
+          savedRecommendations: input.recommendations.length,
+          savedAnalysisRecords: input.records.length,
+        };
+      },
+    }))();
 
-    const result = await createRefreshRecommendations(deps)();
-
-    expect(result.success).toBe(false);
-    expect(setLastRefreshAt).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ processedCount: 4, remainingBacklog: 2 });
+    expect(commits[0].records.map(({ itemId }) => itemId)).toEqual(['i5', 'i4', 'i3', 'i2']);
+    expect(commits[0].recommendations.some(
+      (edge) => [edge.itemA_id, edge.itemB_id].sort().join('|') === 'clean|i5',
+    )).toBe(false);
   });
 });

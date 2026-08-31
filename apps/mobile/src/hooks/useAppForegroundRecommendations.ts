@@ -3,10 +3,23 @@ import { AppState } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { refreshRecommendations } from '@/src/features/recommendation';
 import { queryKeys } from '@/src/lib/query-keys';
+import { useKnowledgeItemsQuery } from './queries/useKnowledgeItems';
 import { useTimeoutScheduler } from './useTimeoutScheduler';
+
+export function buildMobileGraphSourceKey(
+  items: readonly { id: string; updatedAt: number }[],
+): string {
+  return JSON.stringify(
+    items
+      .map(({ id, updatedAt }) => [id, updatedAt] as const)
+      .sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
 
 export function useAppForegroundRecommendations(): void {
   const queryClient = useQueryClient();
+  const { data: items = [] } = useKnowledgeItemsQuery();
+  const sourceKey = buildMobileGraphSourceKey(items);
   const isScheduledRef = useRef(false);
   const { schedule, cancel } = useTimeoutScheduler();
 
@@ -23,7 +36,7 @@ export function useAppForegroundRecommendations(): void {
       const refresh = async () => {
         try {
           const result = await refreshRecommendations();
-          if (active && result.success && result.createdCount > 0) {
+          if (active && result.success && result.processedCount > 0) {
             // pending뿐 아니라 연결된 노트 섹션까지 갱신.
             await queryClient.invalidateQueries({
               queryKey: queryKeys.recommendations.all,
@@ -59,5 +72,5 @@ export function useAppForegroundRecommendations(): void {
       }
       isScheduledRef.current = false;
     };
-  }, [cancel, queryClient, schedule]);
+  }, [cancel, queryClient, schedule, sourceKey]);
 }

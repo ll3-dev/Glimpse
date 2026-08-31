@@ -1,157 +1,132 @@
-import type { Recommendation } from '@glimpse/shared';
+import type {
+  GraphAnalysisCommitInput,
+  GraphAnalysisCommitResult,
+  GraphAnalysisRecord,
+  KnowledgeItem,
+  Recommendation,
+} from '@glimpse/shared';
+import {
+  buildCompletedGraphAnalysisRecords,
+  LIVING_GRAPH_ANALYZER_VERSION,
+  materializeGraphRecommendations,
+  planLivingGraphCycle,
+  proposeGraphEdgesByTagOverlap,
+  type ProposedGraphEdge,
+} from '@glimpse/features';
 import { mobileCoreClient } from '@/src/features/core';
-import { storage, StorageKeys } from '@/src/lib/storage';
 import { logger } from '@/src/utils/logger';
-import { generateRecommendations, saveRecommendations } from './generateRecommendations';
-import { getCadence } from './updateRecommendationCadence';
 import { proposeEdgesWithAI } from './proposeEdgesWithAI';
-import type { GeneratedRecommendation } from './generateRecommendations.types';
 
-const DEFAULT_GENERATION_LIMIT = 100;
-const DEFAULT_SAVE_LIMIT = 10;
+const MOBILE_GRAPH_BATCH_LIMIT = 4;
+const MAX_NEW_EDGES = 8;
 
 export interface RecommendationRefreshDeps {
   now: () => number;
-  getCadence: () => number;
-  getLastRefreshAt: () => number | null;
-  setLastRefreshAt: (timestamp: number) => void;
+  createId: () => string;
+  batchLimit: number;
+  listItems: () => Promise<KnowledgeItem[]>;
+  listAnalysisRecords: () => Promise<GraphAnalysisRecord[]>;
   listRecommendations: () => Promise<Recommendation[]>;
-  generate: (input: { since: number; limit: number }) => ReturnType<typeof generateRecommendations>;
-  save: (recommendations: GeneratedRecommendation[]) => ReturnType<typeof saveRecommendations>;
-  /** Optional LLM edge proposals merged on top of tag-overlap results. */
-  proposeEdges?: (items: KnowledgeItemRef[]) => Promise<GeneratedRecommendation[]>;
-  listWeeklyItems?: (since: number) => Promise<KnowledgeItemRef[]>;
+  proposeEdges: (items: KnowledgeItem[]) => Promise<ProposedGraphEdge[]>;
+  commitAnalysis: (input: GraphAnalysisCommitInput) => Promise<GraphAnalysisCommitResult>;
 }
-
-type KnowledgeItemRef = {
-  id: string;
-  title: string | null;
-  summary: string | null;
-  tags: string[] | null;
-  body?: string | null;
-};
 
 export type RecommendationRefreshResult =
-  | { success: true; skipped: true; reason: 'not_due'; createdCount: 0 }
-  | { success: true; skipped: false; createdCount: number; generatedCount: number }
-  | { success: false; error: { code: string; message: string } };
-
-function recommendationPairKey(itemAId: string, itemBId: string): string {
-  return [itemAId, itemBId].sort().join('\u0000');
-}
-
-export function filterNewRecommendations(
-  generated: GeneratedRecommendation[],
-  existing: Recommendation[]
-): GeneratedRecommendation[] {
-  const existingPairs = new Set(
-    existing.map((recommendation) =>
-      recommendationPairKey(recommendation.itemA_id, recommendation.itemB_id)
-    )
-  );
-
-  const nextPairs = new Set<string>();
-  return generated.filter((recommendation) => {
-    const key = recommendationPairKey(recommendation.itemAId, recommendation.itemBId);
-    if (existingPairs.has(key) || nextPairs.has(key)) {
-      return false;
+  | {
+      success: true;
+      skipped: true;
+      reason: 'no_dirty';
+      createdCount: 0;
+      processedCount: 0;
+      remainingBacklog: 0;
     }
-    nextPairs.add(key);
-    return true;
-  });
-}
-
-export function isRecommendationRefreshDue(
-  now: number,
-  lastRefreshAt: number | null,
-  cadence: number
-): boolean {
-  return lastRefreshAt === null || now >= lastRefreshAt + cadence;
-}
-
-function getPersistedLastRefreshAt(): number | null {
-  return storage.getNumber(StorageKeys.RECOMMENDATION_LAST_REFRESH_AT) ?? null;
-}
-
-function setPersistedLastRefreshAt(timestamp: number): void {
-  storage.set(StorageKeys.RECOMMENDATION_LAST_REFRESH_AT, timestamp);
-}
+  | {
+      success: true;
+      skipped: false;
+      createdCount: number;
+      processedCount: number;
+      generatedCount: number;
+      remainingBacklog: number;
+      source: 'mobile-ai' | 'tag-overlap';
+    }
+  | { success: false; error: { code: string; message: string } };
 
 function getDefaultDeps(): RecommendationRefreshDeps {
   return {
     now: Date.now,
-    getCadence,
-    getLastRefreshAt: getPersistedLastRefreshAt,
-    setLastRefreshAt: setPersistedLastRefreshAt,
+    createId: () => crypto.randomUUID(),
+    batchLimit: MOBILE_GRAPH_BATCH_LIMIT,
+    listItems: () => mobileCoreClient.listKnowledgeItems(),
+    listAnalysisRecords: () => mobileCoreClient.listGraphAnalysisRecords(),
     listRecommendations: () => mobileCoreClient.listRecommendations(),
-    generate: generateRecommendations,
-    save: saveRecommendations,
-    listWeeklyItems: (since) => mobileCoreClient.listWeeklyKnowledgeItems(since),
-    proposeEdges: (items) => proposeEdgesWithAI(items as never),
+    proposeEdges: (items) => proposeEdgesWithAI(items),
+    commitAnalysis: (input) => mobileCoreClient.commitGraphAnalysis(input),
   };
 }
 
 export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
   return async (options: { force?: boolean } = {}): Promise<RecommendationRefreshResult> => {
-    const now = deps.now();
-    if (
-      !options.force &&
-      !isRecommendationRefreshDue(now, deps.getLastRefreshAt(), deps.getCadence())
-    ) {
-      return { success: true, skipped: true, reason: 'not_due', createdCount: 0 };
-    }
-
     try {
-      const generated = await deps.generate({
-        since: now - 7 * 24 * 60 * 60 * 1000,
-        limit: DEFAULT_GENERATION_LIMIT,
+      const now = deps.now();
+      const [items, storedRecords, existing] = await Promise.all([
+        deps.listItems(),
+        deps.listAnalysisRecords(),
+        deps.listRecommendations(),
+      ]);
+      const plan = planLivingGraphCycle(
+        items,
+        options.force ? [] : storedRecords,
+        { now, batchLimit: deps.batchLimit },
+      );
+      if (plan.toAnalyze.length === 0) {
+        return {
+          success: true,
+          skipped: true,
+          reason: 'no_dirty',
+          createdCount: 0,
+          processedCount: 0,
+          remainingBacklog: 0,
+        };
+      }
+
+      const aiInput = [...plan.toAnalyze, ...plan.analyzedPool];
+      let source: 'mobile-ai' | 'tag-overlap' = 'mobile-ai';
+      let proposed = await deps.proposeEdges(aiInput);
+      let additions = materializeGraphRecommendations(proposed, existing, items, {
+        now,
+        createId: deps.createId,
+        limit: MAX_NEW_EDGES,
       });
-      if (generated.success === false) {
-        return { success: false, error: generated.error };
+      if (additions.length === 0) {
+        source = 'tag-overlap';
+        proposed = proposeGraphEdgesByTagOverlap(
+          plan.toAnalyze,
+          plan.analyzedPool,
+          existing,
+          MAX_NEW_EDGES,
+        );
+        additions = materializeGraphRecommendations(proposed, existing, items, {
+          now,
+          createId: deps.createId,
+          limit: MAX_NEW_EDGES,
+        });
       }
 
-      // AI edge proposals enrich tag overlap when a chat target is
-      // configured; empty results (no model / failure) keep tag-only output.
-      let aiEdges: GeneratedRecommendation[] = [];
-      if (deps.proposeEdges && deps.listWeeklyItems) {
-        try {
-          const weeklyItems = await deps.listWeeklyItems(now - 7 * 24 * 60 * 60 * 1000);
-          const proposed = await deps.proposeEdges(weeklyItems);
-          aiEdges = proposed.map((edge) => ({
-            itemAId: edge.itemAId,
-            itemBId: edge.itemBId,
-            reason: edge.reason,
-          }));
-        } catch (error) {
-          logger.warn('AI edge proposal skipped', { error: String(error) });
-        }
-      }
-
-      const existing = await deps.listRecommendations();
-      const recommendations = filterNewRecommendations(
-        [...aiEdges, ...generated.recommendations],
-        existing
-      ).slice(0, DEFAULT_SAVE_LIMIT);
-
-      if (recommendations.length > 0) {
-        const saved = await deps.save(recommendations);
-        if (!saved.success) {
-          return {
-            success: false,
-            error: saved.error ?? {
-              code: 'RECOMMENDATION_ERROR',
-              message: '추천 저장에 실패했습니다.',
-            },
-          };
-        }
-      }
-
-      deps.setLastRefreshAt(now);
+      const records = buildCompletedGraphAnalysisRecords(
+        plan.toAnalyze,
+        [...existing, ...additions],
+        now,
+        LIVING_GRAPH_ANALYZER_VERSION,
+      );
+      const committed = await deps.commitAnalysis({ records, recommendations: additions });
       return {
         success: true,
         skipped: false,
-        createdCount: recommendations.length,
-        generatedCount: generated.recommendations.length,
+        createdCount: committed.savedRecommendations,
+        processedCount: committed.savedAnalysisRecords,
+        generatedCount: proposed.length,
+        remainingBacklog: plan.remainingBacklog,
+        source,
       };
     } catch (error) {
       return {
@@ -168,20 +143,20 @@ export function createRefreshRecommendations(deps: RecommendationRefreshDeps) {
 let refreshPromise: Promise<RecommendationRefreshResult> | null = null;
 
 export function refreshRecommendations(
-  options: { force?: boolean } = {}
+  options: { force?: boolean } = {},
 ): Promise<RecommendationRefreshResult> {
-  if (refreshPromise) {
-    return refreshPromise;
-  }
+  if (refreshPromise) return refreshPromise;
 
   refreshPromise = createRefreshRecommendations(getDefaultDeps())(options)
     .then((result) => {
       if (result.success === false) {
-        logger.warn('Recommendation refresh failed', result.error);
+        logger.warn('Living Graph refresh failed', result.error);
       } else if (result.skipped === false) {
-        logger.info('Recommendation refresh complete', {
+        logger.info('Living Graph refresh complete', {
           createdCount: result.createdCount,
-          generatedCount: result.generatedCount,
+          processedCount: result.processedCount,
+          remainingBacklog: result.remainingBacklog,
+          source: result.source,
         });
       }
       return result;
