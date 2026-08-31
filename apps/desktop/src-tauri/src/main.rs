@@ -104,6 +104,12 @@ fn main() {
                 eprintln!("[shell] failed to hide main window: {error}");
             }
         }
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { .. } => {
+            if let Err(error) = shell::show_main_window(app_handle) {
+                eprintln!("[shell] failed to reopen main window: {error}");
+            }
+        }
         tauri::RunEvent::ExitRequested { .. } => {
             if let Some(state) = app_handle.try_state::<state::DesktopRuntimeState>() {
                 for model_id in state.downloading_model_ids() {

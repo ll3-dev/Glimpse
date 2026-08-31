@@ -100,7 +100,7 @@ pub fn hide_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     Ok(())
 }
 
-fn reveal_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+pub fn show_main_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_minimized()? {
             window.unminimize()?;
@@ -115,14 +115,14 @@ fn navigate<R: Runtime>(
     app: &AppHandle<R>,
     target: ShellNavigationTarget,
 ) -> tauri::Result<()> {
-    reveal_main_window(app)?;
+    show_main_window(app)?;
     app.emit(SHELL_NAVIGATION_EVENT, target.payload())?;
     Ok(())
 }
 
 fn handle_action<R: Runtime>(app: &AppHandle<R>, action: ShellAction) -> tauri::Result<()> {
     match action {
-        ShellAction::Show => reveal_main_window(app),
+        ShellAction::Show => show_main_window(app),
         ShellAction::Navigate(target) => navigate(app, target),
         ShellAction::Quit => {
             app.exit(0);
