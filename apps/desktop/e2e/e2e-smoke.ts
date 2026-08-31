@@ -32,18 +32,18 @@ test.describe('desktop web smoke', () => {
     await expect(page).toHaveURL(/\/library$/);
 
     // Sidebar nav (buttons wired to navigate) + page header = shell mounted.
-    for (const nav of ['Library', 'Chat', 'Review', 'Digest', 'Graph']) {
+    for (const nav of ['보관함', '채팅', '다시 보기', '다이제스트', '지식 그래프']) {
       await expect(page.getByRole('button', { name: nav })).toBeVisible();
     }
-    await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '보관함' })).toBeVisible();
 
     // Empty library (stubbed listKnowledgeItems → []), not a spinner.
     await expect(
-      page.getByText(/0 items?/),
+      page.getByText('0개의 지식'),
     ).toBeVisible();
 
     // Never land in the ErrorBoundary fallback.
-    await expect(page.getByText(/something went wrong/i)).toHaveCount(0);
+    await expect(page.getByText('오류가 발생했습니다')).toHaveCount(0);
   });
 
   test('shell mounts without fatal errors or unexpected invoke failures', async ({
@@ -54,7 +54,7 @@ test.describe('desktop web smoke', () => {
     // so post-mount invokes are exercised too.
     await page.waitForTimeout(1_500);
 
-    await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '보관함' })).toBeVisible();
 
     // Uncaught exceptions always fail; console errors must all be accounted
     // for by the stub-rejection allowlist below (features that legitimately

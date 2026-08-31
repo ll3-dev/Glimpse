@@ -49,6 +49,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test:e2e": "playwright test",
+    "test:e2e:shell-capture": "playwright test --config playwright.shell-capture.config.ts",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:dev:llm": "tauri dev --features llm",

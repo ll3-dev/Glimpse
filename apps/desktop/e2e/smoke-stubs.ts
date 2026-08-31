@@ -83,12 +83,21 @@ export const tauriStubInitScript = `
     const rejecting = new Set(${JSON.stringify(REJECTING_NATIVE_COMMANDS)});
     const secretStore = new Map();
     let callbackSeq = 0;
+    let eventListenerSeq = 0;
     const eventHandlers = new Map();
     window.__glimpseSmokeInvokedCommands = [];
     window.__glimpseSmokeEmitEvent = (event, payload) => {
-      for (const handler of eventHandlers.get(event) ?? []) {
+      for (const handler of (eventHandlers.get(event) ?? new Map()).values()) {
         handler({ event, id: 0, payload });
       }
+    };
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = {
+      unregisterListener(event, eventId) {
+        const listeners = eventHandlers.get(event);
+        if (!listeners) return;
+        listeners.delete(eventId);
+        if (listeners.size === 0) eventHandlers.delete(event);
+      },
     };
     window.__TAURI_INTERNALS__ = {
       transformCallback(callback, once) {
@@ -110,13 +119,19 @@ export const tauriStubInitScript = `
           const handlerId = args && args.handler ? Number(args.handler) : 0;
           const handler = window[\`_callback_\${handlerId}\`];
           if (typeof handler === 'function') {
-            const list = eventHandlers.get(event) ?? [];
-            list.push(handler);
-            eventHandlers.set(event, list);
+            const eventId = ++eventListenerSeq;
+            const listeners = eventHandlers.get(event) ?? new Map();
+            listeners.set(eventId, handler);
+            eventHandlers.set(event, listeners);
+            return Promise.resolve(eventId);
           }
-          return Promise.resolve(0);
+          return Promise.resolve(++eventListenerSeq);
         }
         if (cmd === 'plugin:event|unlisten') {
+          window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(
+            args && args.event ? String(args.event) : '',
+            args && args.eventId ? Number(args.eventId) : 0,
+          );
           return Promise.resolve(undefined);
         }
         window.__glimpseSmokeInvokedCommands.push(cmd);
