@@ -27,6 +27,7 @@ import type {
   Conversation,
   CoreClient,
   FeedbackEvent,
+  GraphAnalysisRecord,
   KnowledgeItem,
   Message,
   Recommendation,
@@ -43,6 +44,7 @@ import type {
 import {
   addMessage,
   calculateTagOverlap,
+  commitGraphAnalysis,
   createConversation,
   deleteAllData,
   deleteConversation,
@@ -57,6 +59,7 @@ import {
   initializeReviewSchedule,
   listConversationMessages,
   listConversations,
+  listGraphAnalysisRecords,
   listKnowledgeItems,
   listKnowledgeItemsByIds,
   listPendingKnowledgeItemsForLabeling,
@@ -142,6 +145,19 @@ export function createRustraCoreClient(deps: RustraCoreClientDeps): CoreClient {
     },
 
     // -- Recommendations --
+    listGraphAnalysisRecords: async () => {
+      const { records } = await listGraphAnalysisRecords({});
+      return records.map((record) => ({
+        itemId: record.itemId,
+        itemUpdatedAt: Number(record.itemUpdatedAt),
+        analyzerVersion: record.analyzerVersion,
+        analyzedAt: Number(record.analyzedAt),
+        edgeCount: Number(record.edgeCount),
+        status: record.status as GraphAnalysisRecord['status'],
+        failureCount: Number(record.failureCount),
+      }));
+    },
+    commitGraphAnalysis: async (input) => commitGraphAnalysis(input),
     saveRecommendations: async (recommendations) => {
       await saveRecommendations({ recommendations });
     },

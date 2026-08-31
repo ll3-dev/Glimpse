@@ -2,7 +2,68 @@
 
 use rustra::prelude::*;
 
-use crate::io::{recommendation_status_from_wire, FeedbackEventIo, RecommendationIo};
+use crate::io::{
+    recommendation_status_from_wire, FeedbackEventIo, GraphAnalysisRecordIo, RecommendationIo,
+};
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ListGraphAnalysisRecordsInput {}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ListGraphAnalysisRecordsOutput {
+    pub records: Vec<GraphAnalysisRecordIo>,
+}
+
+#[command]
+pub fn list_graph_analysis_records(
+    _input: ListGraphAnalysisRecordsInput,
+) -> Result<ListGraphAnalysisRecordsOutput> {
+    let core = crate::state::core_state();
+    let records = core
+        .list_graph_analysis_records()
+        .map_err(crate::error::to_rustra_err)?;
+    Ok(ListGraphAnalysisRecordsOutput {
+        records: records.into_iter().map(Into::into).collect(),
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitGraphAnalysisInput {
+    pub records: Vec<GraphAnalysisRecordIo>,
+    pub recommendations: Vec<RecommendationIo>,
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitGraphAnalysisOutput {
+    pub saved_recommendations: usize,
+    pub saved_analysis_records: usize,
+}
+
+#[command]
+pub fn commit_graph_analysis(input: CommitGraphAnalysisInput) -> Result<CommitGraphAnalysisOutput> {
+    let core = crate::state::core_state();
+    let records = input
+        .records
+        .into_iter()
+        .map(<_ as TryInto<glimpse_core::GraphAnalysisRecord>>::try_into)
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let recommendations = input
+        .recommendations
+        .into_iter()
+        .map(<_ as TryInto<glimpse_core::Recommendation>>::try_into)
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let result = core
+        .commit_graph_analysis(&records, &recommendations)
+        .map_err(crate::error::to_rustra_err)?;
+    Ok(CommitGraphAnalysisOutput {
+        saved_recommendations: result.saved_recommendations,
+        saved_analysis_records: result.saved_analysis_records,
+    })
+}
 
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -113,6 +174,8 @@ pub fn recommendation_package() -> rustra::Package {
 pub(crate) fn register_commands(builder: rustra::PackageBuilder) -> rustra::PackageBuilder {
     rustra::register!(
         builder,
+        list_graph_analysis_records,
+        commit_graph_analysis,
         save_recommendations,
         list_recommendations,
         list_pending_recommendations,

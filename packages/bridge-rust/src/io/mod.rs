@@ -33,7 +33,7 @@ pub use conversation::{ConversationIo, ConversationPatchIo};
 pub use knowledge::{KnowledgeItemIo, KnowledgeItemPatchIo};
 pub use message::{MessageIo, MessagePatchIo};
 pub(crate) use recommendation_feedback::recommendation_status_from_wire;
-pub use recommendation_feedback::{FeedbackEventIo, RecommendationIo};
+pub use recommendation_feedback::{FeedbackEventIo, GraphAnalysisRecordIo, RecommendationIo};
 pub use review::{
     CalculateTagOverlapInputIo, CoreKnowledgeItemLikeIo, InitializeReviewScheduleInputIo,
     InitializeReviewScheduleOutputIo,

@@ -18,6 +18,26 @@ export type CoreKnowledgeItemLikeIo = {
   createdAt?: number | bigint | null;
 };
 
+export type GraphAnalysisRecordIo = {
+  itemId: string;
+  itemUpdatedAt: number | bigint;
+  analyzerVersion: string;
+  analyzedAt: number | bigint;
+  edgeCount: number | bigint;
+  status: string;
+  failureCount: number | bigint;
+};
+
+export type RecommendationIo = {
+  id: string;
+  itemA_id: string;
+  itemB_id: string;
+  reason?: string | null;
+  status: string;
+  createdAt: number | bigint;
+  respondedAt?: number | bigint | null;
+};
+
 export type ConversationIo = {
   id: string;
   title?: string | null;
@@ -60,16 +80,6 @@ export type BackoffState = {
   invalidated: boolean;
   /** Timestamp (ms) until which auto-sync should hold off. */
   holdUntil: number | bigint;
-};
-
-export type RecommendationIo = {
-  id: string;
-  itemA_id: string;
-  itemB_id: string;
-  reason?: string | null;
-  status: string;
-  createdAt: number | bigint;
-  respondedAt?: number | bigint | null;
 };
 
 export type FeedbackEventIo = {
@@ -148,6 +158,16 @@ export type CalculateTagOverlapInput = {
 
 export type CalculateTagOverlapOutput = {
   overlap: number;
+};
+
+export type CommitGraphAnalysisInput = {
+  records: GraphAnalysisRecordIo[];
+  recommendations: RecommendationIo[];
+};
+
+export type CommitGraphAnalysisOutput = {
+  savedRecommendations: number;
+  savedAnalysisRecords: number;
 };
 
 export type CreateConversationInput = {
@@ -287,6 +307,12 @@ export type ListConversationsInput = Record<string, unknown>;
 
 export type ListConversationsOutput = {
   conversations: ConversationIo[];
+};
+
+export type ListGraphAnalysisRecordsInput = Record<string, unknown>;
+
+export type ListGraphAnalysisRecordsOutput = {
+  records: GraphAnalysisRecordIo[];
 };
 
 export type ListKnowledgeItemsInput = Record<string, unknown>;

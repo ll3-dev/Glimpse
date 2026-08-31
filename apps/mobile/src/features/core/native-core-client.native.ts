@@ -97,6 +97,10 @@ export const nativeCoreClient: CoreClient = {
 
   saveRecommendations: (recommendations) =>
     selectDelegate().then((c) => c.saveRecommendations(recommendations)),
+  listGraphAnalysisRecords: () =>
+    selectDelegate().then((c) => c.listGraphAnalysisRecords()),
+  commitGraphAnalysis: (input) =>
+    selectDelegate().then((c) => c.commitGraphAnalysis(input)),
   listRecommendations: () => selectDelegate().then((c) => c.listRecommendations()),
   listPendingRecommendations: () =>
     selectDelegate().then((c) => c.listPendingRecommendations()),

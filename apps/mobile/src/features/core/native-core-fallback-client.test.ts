@@ -28,6 +28,43 @@ const item: KnowledgeItem = {
 };
 
 describe('fallback core data portability', () => {
+  test('graph analysis commit is zero-edge safe, pair-idempotent, and delete-aware', async () => {
+    const client = createFallbackCoreClient();
+    await client.saveKnowledgeItem({ ...item, id: 'a' });
+    await client.saveKnowledgeItem({ ...item, id: 'b' });
+    const records = ['a', 'b'].map((itemId, index) => ({
+      itemId,
+      itemUpdatedAt: 1,
+      analyzerVersion: 'living-graph-v1',
+      analyzedAt: 10,
+      edgeCount: index,
+      status: 'completed' as const,
+      failureCount: 0,
+    }));
+
+    const result = await client.commitGraphAnalysis({
+      records,
+      recommendations: [
+        {
+          id: 'first', itemA_id: 'a', itemB_id: 'b', reason: 'same',
+          status: 'pending', createdAt: 10, respondedAt: null,
+        },
+        {
+          id: 'reverse', itemA_id: 'b', itemB_id: 'a', reason: 'same',
+          status: 'pending', createdAt: 10, respondedAt: null,
+        },
+      ],
+    });
+
+    expect(result).toEqual({ savedRecommendations: 1, savedAnalysisRecords: 2 });
+    expect(await client.listGraphAnalysisRecords()).toEqual(records);
+    expect(await client.listRecommendations()).toHaveLength(1);
+
+    await client.deleteKnowledgeItem('a');
+    expect(await client.listGraphAnalysisRecords()).toEqual([]);
+    expect(await client.listRecommendations()).toEqual([]);
+  });
+
   test('exports, deletes, and imports the versioned JSON format', async () => {
     const client = createFallbackCoreClient();
     await client.saveKnowledgeItem(item);

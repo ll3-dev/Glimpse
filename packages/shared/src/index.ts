@@ -28,6 +28,7 @@ export type KnowledgeItemLabelSource =
   | 'stub'
   | 'byok';
 export type RecommendationStatus = 'pending' | 'accepted' | 'ignored' | 'dismissed';
+export type GraphAnalysisStatus = 'completed' | 'failed';
 export type FeedbackActionType = 'accept' | 'ignore' | 'dismiss';
 export type MessageRole = 'user' | 'assistant';
 export type EmbeddingSourceType = 'message' | 'knowledge_item';
@@ -72,6 +73,26 @@ export interface Recommendation {
 
 export type NewRecommendation = Recommendation;
 export type RecommendationPatch = Partial<Omit<Recommendation, 'id' | 'createdAt'>>;
+
+export interface GraphAnalysisRecord {
+  itemId: string;
+  itemUpdatedAt: number;
+  analyzerVersion: string;
+  analyzedAt: number;
+  edgeCount: number;
+  status: GraphAnalysisStatus;
+  failureCount: number;
+}
+
+export interface GraphAnalysisCommitInput {
+  records: GraphAnalysisRecord[];
+  recommendations: Recommendation[];
+}
+
+export interface GraphAnalysisCommitResult {
+  savedRecommendations: number;
+  savedAnalysisRecords: number;
+}
 
 export interface FeedbackEvent {
   id: string;
@@ -201,6 +222,8 @@ export interface CoreClient {
   ): Promise<Message>;
   deleteMessage(messageId: string, deletedAt: number): Promise<void>;
   saveRecommendations(recommendations: Recommendation[]): Promise<void>;
+  listGraphAnalysisRecords(): Promise<GraphAnalysisRecord[]>;
+  commitGraphAnalysis(input: GraphAnalysisCommitInput): Promise<GraphAnalysisCommitResult>;
   listRecommendations(): Promise<Recommendation[]>;
   listPendingRecommendations(): Promise<Recommendation[]>;
   respondToRecommendation(

@@ -1,4 +1,4 @@
-import type { AddMessageInput, AddMessageOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CreateConversationInput, CreateConversationOutput, DeleteAllDataInput, DeleteAllDataOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput, EndpointCandidatesInput, EndpointCandidatesOutput, ExportDataInput, ExportDataOutput, ExportDeltaInput, ExportDeltaOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, ImportDataInput, ImportDataOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, IsHoldingOffInput, IsHoldingOffOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, MergeDataInput, MergeDataOutput, MergeDeltaInput, MergeDeltaOutput, NormalizeBaseUrlInput, NormalizeBaseUrlOutput, RecordFailureInput, RecordFailureOutput, RecordSuccessInput, RecordSuccessOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, SyncDataRevisionInput, SyncDataRevisionOutput, SyncDiscoverInput, SyncDiscoverOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
+import type { AddMessageInput, AddMessageOutput, CalculateTagOverlapInput, CalculateTagOverlapOutput, CommitGraphAnalysisInput, CommitGraphAnalysisOutput, CreateConversationInput, CreateConversationOutput, DeleteAllDataInput, DeleteAllDataOutput, DeleteConversationInput, DeleteConversationOutput, DeleteKnowledgeItemInput, DeleteKnowledgeItemOutput, DeleteMessageInput, DeleteMessageOutput, DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput, EndpointCandidatesInput, EndpointCandidatesOutput, ExportDataInput, ExportDataOutput, ExportDeltaInput, ExportDeltaOutput, GetDueKnowledgeItemsInput, GetDueKnowledgeItemsOutput, GetKnowledgeItemByIdInput, GetKnowledgeItemByIdOutput, ImportDataInput, ImportDataOutput, InitializeCoreInput, InitializeCoreOutput, InitializeReviewScheduleInput, InitializeReviewScheduleOutput, IsHoldingOffInput, IsHoldingOffOutput, ListConversationMessagesInput, ListConversationMessagesOutput, ListConversationsInput, ListConversationsOutput, ListGraphAnalysisRecordsInput, ListGraphAnalysisRecordsOutput, ListKnowledgeItemsByIdsInput, ListKnowledgeItemsInput, ListKnowledgeItemsOutput, ListKnowledgeItemsOutputByIds, ListPendingKnowledgeItemsForLabelingInput, ListPendingKnowledgeItemsForLabelingOutput, ListPendingRecommendationsInput, ListPendingRecommendationsOutput, ListRecentFeedbackEventsInput, ListRecentFeedbackEventsOutput, ListRecommendationsInput, ListRecommendationsOutput, ListWeeklyKnowledgeItemsInput, ListWeeklyKnowledgeItemsOutput, LogRecommendationFeedbackInput, LogRecommendationFeedbackOutput, MergeDataInput, MergeDataOutput, MergeDeltaInput, MergeDeltaOutput, NormalizeBaseUrlInput, NormalizeBaseUrlOutput, RecordFailureInput, RecordFailureOutput, RecordSuccessInput, RecordSuccessOutput, RespondToRecommendationInput, RespondToRecommendationOutput, SaveKnowledgeItemInput, SaveKnowledgeItemOutput, SaveRecommendationsInput, SaveRecommendationsOutput, SyncDataRevisionInput, SyncDataRevisionOutput, SyncDiscoverInput, SyncDiscoverOutput, UpdateConversationInput, UpdateConversationOutput, UpdateKnowledgeItemInput, UpdateKnowledgeItemOutput, UpdateMessageInput, UpdateMessageOutput } from './types.js';
 import { createGeneratedFields2, invokeGenerated, invokeGeneratedFields1 } from '@rustra/types';
 import type { InvokeOptions } from '@rustra/types';
 
@@ -8,9 +8,14 @@ export function addMessage(input: AddMessageInput, options?: InvokeOptions): Pro
 addMessage.commandId = 'addMessage';
 
 export function calculateTagOverlap(input: CalculateTagOverlapInput, options?: InvokeOptions): Promise<CalculateTagOverlapOutput> {
-  return invokeGenerated<CalculateTagOverlapOutput>(31, 'calculateTagOverlap', input, options);
+  return invokeGenerated<CalculateTagOverlapOutput>(33, 'calculateTagOverlap', input, options);
 }
 calculateTagOverlap.commandId = 'calculateTagOverlap';
+
+export function commitGraphAnalysis(input: CommitGraphAnalysisInput, options?: InvokeOptions): Promise<CommitGraphAnalysisOutput> {
+  return invokeGenerated<CommitGraphAnalysisOutput>(28, 'commitGraphAnalysis', input, options);
+}
+commitGraphAnalysis.commandId = 'commitGraphAnalysis';
 
 export function createConversation(input: CreateConversationInput, options?: InvokeOptions): Promise<CreateConversationOutput> {
   return invokeGenerated<CreateConversationOutput>(1, 'createConversation', input, options);
@@ -34,7 +39,7 @@ export const deleteMessage = createGeneratedFields2<DeleteMessageInput, DeleteMe
 /**
  * Discovery host + port → plain-http base URL, bracketing bare IPv6.
  */
-export const discoveryBaseUrl = createGeneratedFields2<DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput>(37, 'discoveryBaseUrl', "host", "port", 'discoveryBaseUrl');
+export const discoveryBaseUrl = createGeneratedFields2<DiscoveryBaseUrlInput, DiscoveryBaseUrlOutput>(39, 'discoveryBaseUrl', "host", "port", 'discoveryBaseUrl');
 
 /**
  * The tailnet endpoint remains valid across network changes, while a cached
@@ -42,7 +47,7 @@ export const discoveryBaseUrl = createGeneratedFields2<DiscoveryBaseUrlInput, Di
  * tailnet first, deduped, empties dropped.
  */
 export function endpointCandidates(input: EndpointCandidatesInput, options?: InvokeOptions): Promise<EndpointCandidatesOutput> {
-  return invokeGenerated<EndpointCandidatesOutput>(35, 'endpointCandidates', input, options);
+  return invokeGenerated<EndpointCandidatesOutput>(37, 'endpointCandidates', input, options);
 }
 endpointCandidates.commandId = 'endpointCandidates';
 
@@ -93,12 +98,12 @@ importData.commandId = 'importData';
  * race impossible in practice — the bootstrap promise is memoized.
  */
 export function initializeCore(input: InitializeCoreInput, options?: InvokeOptions): Promise<InitializeCoreOutput> {
-  return invokeGeneratedFields1<InitializeCoreOutput>(33, 'initializeCore', input, input["dbPath"], options);
+  return invokeGeneratedFields1<InitializeCoreOutput>(35, 'initializeCore', input, input["dbPath"], options);
 }
 initializeCore.commandId = 'initializeCore';
 
 export function initializeReviewSchedule(input: InitializeReviewScheduleInput, options?: InvokeOptions): Promise<InitializeReviewScheduleOutput> {
-  return invokeGenerated<InitializeReviewScheduleOutput>(32, 'initializeReviewSchedule', input, options);
+  return invokeGenerated<InitializeReviewScheduleOutput>(34, 'initializeReviewSchedule', input, options);
 }
 initializeReviewSchedule.commandId = 'initializeReviewSchedule';
 
@@ -106,7 +111,7 @@ initializeReviewSchedule.commandId = 'initializeReviewSchedule';
  * Manual (user-triggered) syncs ignore backoff; auto syncs respect it.
  */
 export function isHoldingOff(input: IsHoldingOffInput, options?: InvokeOptions): Promise<IsHoldingOffOutput> {
-  return invokeGenerated<IsHoldingOffOutput>(40, 'isHoldingOff', input, options);
+  return invokeGenerated<IsHoldingOffOutput>(42, 'isHoldingOff', input, options);
 }
 isHoldingOff.commandId = 'isHoldingOff';
 
@@ -119,6 +124,11 @@ export function listConversations(input: ListConversationsInput, options?: Invok
   return invokeGenerated<ListConversationsOutput>(2, 'listConversations', input, options);
 }
 listConversations.commandId = 'listConversations';
+
+export function listGraphAnalysisRecords(input: ListGraphAnalysisRecordsInput, options?: InvokeOptions): Promise<ListGraphAnalysisRecordsOutput> {
+  return invokeGenerated<ListGraphAnalysisRecordsOutput>(27, 'listGraphAnalysisRecords', input, options);
+}
+listGraphAnalysisRecords.commandId = 'listGraphAnalysisRecords';
 
 export function listKnowledgeItems(input: ListKnowledgeItemsInput, options?: InvokeOptions): Promise<ListKnowledgeItemsOutput> {
   return invokeGenerated<ListKnowledgeItemsOutput>(15, 'listKnowledgeItems', input, options);
@@ -136,7 +146,7 @@ export function listPendingKnowledgeItemsForLabeling(input: ListPendingKnowledge
 listPendingKnowledgeItemsForLabeling.commandId = 'listPendingKnowledgeItemsForLabeling';
 
 export function listPendingRecommendations(input: ListPendingRecommendationsInput, options?: InvokeOptions): Promise<ListPendingRecommendationsOutput> {
-  return invokeGenerated<ListPendingRecommendationsOutput>(29, 'listPendingRecommendations', input, options);
+  return invokeGenerated<ListPendingRecommendationsOutput>(31, 'listPendingRecommendations', input, options);
 }
 listPendingRecommendations.commandId = 'listPendingRecommendations';
 
@@ -146,7 +156,7 @@ export function listRecentFeedbackEvents(input: ListRecentFeedbackEventsInput, o
 listRecentFeedbackEvents.commandId = 'listRecentFeedbackEvents';
 
 export function listRecommendations(input: ListRecommendationsInput, options?: InvokeOptions): Promise<ListRecommendationsOutput> {
-  return invokeGenerated<ListRecommendationsOutput>(28, 'listRecommendations', input, options);
+  return invokeGenerated<ListRecommendationsOutput>(30, 'listRecommendations', input, options);
 }
 listRecommendations.commandId = 'listRecommendations';
 
@@ -184,7 +194,7 @@ mergeDelta.commandId = 'mergeDelta';
  * Trims, strips trailing slashes, and defaults schemeless hosts to https.
  */
 export function normalizeBaseUrl(input: NormalizeBaseUrlInput, options?: InvokeOptions): Promise<NormalizeBaseUrlOutput> {
-  return invokeGeneratedFields1<NormalizeBaseUrlOutput>(36, 'normalizeBaseUrl', input, input["value"], options);
+  return invokeGeneratedFields1<NormalizeBaseUrlOutput>(38, 'normalizeBaseUrl', input, input["value"], options);
 }
 normalizeBaseUrl.commandId = 'normalizeBaseUrl';
 
@@ -192,17 +202,17 @@ normalizeBaseUrl.commandId = 'normalizeBaseUrl';
  * `authRejected` freezes the controller until an explicit reset (re-pairing).
  */
 export function recordSyncFailure(input: RecordFailureInput, options?: InvokeOptions): Promise<RecordFailureOutput> {
-  return invokeGenerated<RecordFailureOutput>(38, 'recordSyncFailure', input, options);
+  return invokeGenerated<RecordFailureOutput>(40, 'recordSyncFailure', input, options);
 }
 recordSyncFailure.commandId = 'recordSyncFailure';
 
 export function recordSyncSuccess(input: RecordSuccessInput, options?: InvokeOptions): Promise<RecordSuccessOutput> {
-  return invokeGenerated<RecordSuccessOutput>(39, 'recordSyncSuccess', input, options);
+  return invokeGenerated<RecordSuccessOutput>(41, 'recordSyncSuccess', input, options);
 }
 recordSyncSuccess.commandId = 'recordSyncSuccess';
 
 export function respondToRecommendation(input: RespondToRecommendationInput, options?: InvokeOptions): Promise<RespondToRecommendationOutput> {
-  return invokeGenerated<RespondToRecommendationOutput>(30, 'respondToRecommendation', input, options);
+  return invokeGenerated<RespondToRecommendationOutput>(32, 'respondToRecommendation', input, options);
 }
 respondToRecommendation.commandId = 'respondToRecommendation';
 
@@ -212,7 +222,7 @@ export function saveKnowledgeItem(input: SaveKnowledgeItemInput, options?: Invok
 saveKnowledgeItem.commandId = 'saveKnowledgeItem';
 
 export function saveRecommendations(input: SaveRecommendationsInput, options?: InvokeOptions): Promise<SaveRecommendationsOutput> {
-  return invokeGenerated<SaveRecommendationsOutput>(27, 'saveRecommendations', input, options);
+  return invokeGenerated<SaveRecommendationsOutput>(29, 'saveRecommendations', input, options);
 }
 saveRecommendations.commandId = 'saveRecommendations';
 
@@ -227,7 +237,7 @@ export function syncDataRevision(input: SyncDataRevisionInput, options?: InvokeO
 syncDataRevision.commandId = 'syncDataRevision';
 
 export function syncDiscover(input: SyncDiscoverInput, options?: InvokeOptions): Promise<SyncDiscoverOutput> {
-  return invokeGeneratedFields1<SyncDiscoverOutput>(34, 'syncDiscover', input, input["timeoutMs"], options);
+  return invokeGeneratedFields1<SyncDiscoverOutput>(36, 'syncDiscover', input, input["timeoutMs"], options);
 }
 syncDiscover.commandId = 'syncDiscover';
 

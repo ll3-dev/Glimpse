@@ -4,6 +4,9 @@ import type {
   Message,
   Recommendation,
   FeedbackEvent,
+  GraphAnalysisCommitInput,
+  GraphAnalysisCommitResult,
+  GraphAnalysisRecord,
 } from '@glimpse/shared';
 
 /**
@@ -16,6 +19,7 @@ export class InMemoryStorage {
   private messages = new Map<string, Message[]>();
   private recommendations = new Map<string, Recommendation>();
   private feedbackEvents: FeedbackEvent[] = [];
+  private graphAnalysis = new Map<string, GraphAnalysisRecord>();
 
   /** Monotonic write counter — the in-memory twin of the Rust
    * `sync_data_revision` sync-table trigger counter, consumed by
@@ -51,6 +55,24 @@ export class InMemoryStorage {
   }
 
   deleteKnowledgeItem(id: string): boolean {
+    const touchingRecommendationIds = new Set<string>();
+    const affectedItemIds = new Set([id]);
+    for (const recommendation of this.recommendations.values()) {
+      if (recommendation.itemA_id === id || recommendation.itemB_id === id) {
+        touchingRecommendationIds.add(recommendation.id);
+        affectedItemIds.add(recommendation.itemA_id);
+        affectedItemIds.add(recommendation.itemB_id);
+      }
+    }
+    for (const recommendationId of touchingRecommendationIds) {
+      this.recommendations.delete(recommendationId);
+    }
+    this.feedbackEvents = this.feedbackEvents.filter(
+      (event) => !touchingRecommendationIds.has(event.recommendationId),
+    );
+    for (const itemId of affectedItemIds) {
+      this.graphAnalysis.delete(itemId);
+    }
     const removed = this.knowledgeItems.delete(id);
     if (removed) this.touch();
     return removed;
@@ -132,6 +154,58 @@ export class InMemoryStorage {
     this.touch();
   }
 
+  getAllGraphAnalysisRecords(): GraphAnalysisRecord[] {
+    return Array.from(this.graphAnalysis.values()).sort((left, right) =>
+      left.itemId.localeCompare(right.itemId),
+    );
+  }
+
+  commitGraphAnalysis(input: GraphAnalysisCommitInput): GraphAnalysisCommitResult {
+    for (const record of input.records) {
+      if (!this.knowledgeItems.has(record.itemId)) {
+        throw new Error(`Graph analysis item not found: ${record.itemId}`);
+      }
+    }
+    for (const recommendation of input.recommendations) {
+      if (
+        recommendation.itemA_id === recommendation.itemB_id ||
+        !this.knowledgeItems.has(recommendation.itemA_id) ||
+        !this.knowledgeItems.has(recommendation.itemB_id)
+      ) {
+        throw new Error(`Graph recommendation has an invalid endpoint: ${recommendation.id}`);
+      }
+    }
+
+    const pairKey = (left: string, right: string) =>
+      left < right ? `${left}\u0000${right}` : `${right}\u0000${left}`;
+    const existingPairs = new Set(
+      this.recommendations.values().map((recommendation) =>
+        pairKey(recommendation.itemA_id, recommendation.itemB_id),
+      ),
+    );
+    let savedRecommendations = 0;
+    for (const recommendation of input.recommendations) {
+      const key = pairKey(recommendation.itemA_id, recommendation.itemB_id);
+      if (existingPairs.has(key)) continue;
+      existingPairs.add(key);
+      const [itemA_id, itemB_id] = [recommendation.itemA_id, recommendation.itemB_id].sort();
+      this.recommendations.set(recommendation.id, {
+        ...recommendation,
+        itemA_id,
+        itemB_id,
+      });
+      savedRecommendations += 1;
+    }
+    for (const record of input.records) {
+      this.graphAnalysis.set(record.itemId, record);
+    }
+    if (savedRecommendations > 0 || input.records.length > 0) this.touch();
+    return {
+      savedRecommendations,
+      savedAnalysisRecords: input.records.length,
+    };
+  }
+
   getAllRecommendations(): Recommendation[] {
     return Array.from(this.recommendations.values());
   }
@@ -166,6 +240,7 @@ export class InMemoryStorage {
     this.messages.clear();
     this.recommendations.clear();
     this.feedbackEvents = [];
+    this.graphAnalysis.clear();
     this.touch();
   }
 }

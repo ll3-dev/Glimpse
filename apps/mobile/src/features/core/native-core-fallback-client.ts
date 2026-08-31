@@ -249,6 +249,14 @@ export function createFallbackCoreClient(
       }
     },
 
+    async listGraphAnalysisRecords() {
+      return storage.getAllGraphAnalysisRecords();
+    },
+
+    async commitGraphAnalysis(input) {
+      return storage.commitGraphAnalysis(input);
+    },
+
     async listRecommendations(): Promise<Recommendation[]> {
       return storage.getAllRecommendations();
     },

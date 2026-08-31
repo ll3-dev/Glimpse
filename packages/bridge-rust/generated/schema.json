@@ -79,7 +79,7 @@
     },
     {
       "name": "calculateTagOverlap",
-      "commandId": 31,
+      "commandId": 33,
       "inputType": "CalculateTagOverlapInput",
       "outputType": "CalculateTagOverlapOutput",
       "inputSchema": {
@@ -139,6 +139,136 @@
               "format": "int64"
             },
             "createdAt": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "commitGraphAnalysis",
+      "commandId": 28,
+      "inputType": "CommitGraphAnalysisInput",
+      "outputType": "CommitGraphAnalysisOutput",
+      "inputSchema": {
+        "title": "CommitGraphAnalysisInput",
+        "type": "object",
+        "required": [
+          "recommendations",
+          "records"
+        ],
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/GraphAnalysisRecordIo"
+            }
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/RecommendationIo"
+            }
+          }
+        }
+      },
+      "outputSchema": {
+        "title": "CommitGraphAnalysisOutput",
+        "type": "object",
+        "required": [
+          "savedAnalysisRecords",
+          "savedRecommendations"
+        ],
+        "properties": {
+          "savedRecommendations": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "savedAnalysisRecords": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      },
+      "definitions": {
+        "GraphAnalysisRecordIo": {
+          "type": "object",
+          "required": [
+            "analyzedAt",
+            "analyzerVersion",
+            "edgeCount",
+            "failureCount",
+            "itemId",
+            "itemUpdatedAt",
+            "status"
+          ],
+          "properties": {
+            "itemId": {
+              "type": "string"
+            },
+            "itemUpdatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "analyzerVersion": {
+              "type": "string"
+            },
+            "analyzedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "edgeCount": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "status": {
+              "type": "string"
+            },
+            "failureCount": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        },
+        "RecommendationIo": {
+          "type": "object",
+          "required": [
+            "createdAt",
+            "id",
+            "itemA_id",
+            "itemB_id",
+            "status"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "itemA_id": {
+              "type": "string"
+            },
+            "itemB_id": {
+              "type": "string"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "respondedAt": {
               "type": [
                 "integer",
                 "null"
@@ -319,7 +449,7 @@
     },
     {
       "name": "discoveryBaseUrl",
-      "commandId": 37,
+      "commandId": 39,
       "inputType": "DiscoveryBaseUrlInput",
       "outputType": "DiscoveryBaseUrlOutput",
       "inputSchema": {
@@ -356,7 +486,7 @@
     },
     {
       "name": "endpointCandidates",
-      "commandId": 35,
+      "commandId": 37,
       "inputType": "EndpointCandidatesInput",
       "outputType": "EndpointCandidatesOutput",
       "inputSchema": {
@@ -884,7 +1014,7 @@
     },
     {
       "name": "initializeCore",
-      "commandId": 33,
+      "commandId": 35,
       "inputType": "InitializeCoreInput",
       "outputType": "InitializeCoreOutput",
       "inputSchema": {
@@ -917,7 +1047,7 @@
     },
     {
       "name": "initializeReviewSchedule",
-      "commandId": 32,
+      "commandId": 34,
       "inputType": "InitializeReviewScheduleInput",
       "outputType": "InitializeReviewScheduleOutput",
       "inputSchema": {
@@ -977,7 +1107,7 @@
     },
     {
       "name": "isHoldingOff",
-      "commandId": 40,
+      "commandId": 42,
       "inputType": "IsHoldingOffInput",
       "outputType": "IsHoldingOffOutput",
       "inputSchema": {
@@ -1185,6 +1315,72 @@
                 "integer",
                 "null"
               ],
+              "format": "int64"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "listGraphAnalysisRecords",
+      "commandId": 27,
+      "inputType": "ListGraphAnalysisRecordsInput",
+      "outputType": "ListGraphAnalysisRecordsOutput",
+      "inputSchema": {
+        "title": "ListGraphAnalysisRecordsInput",
+        "type": "object"
+      },
+      "outputSchema": {
+        "title": "ListGraphAnalysisRecordsOutput",
+        "type": "object",
+        "required": [
+          "records"
+        ],
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/GraphAnalysisRecordIo"
+            }
+          }
+        }
+      },
+      "definitions": {
+        "GraphAnalysisRecordIo": {
+          "type": "object",
+          "required": [
+            "analyzedAt",
+            "analyzerVersion",
+            "edgeCount",
+            "failureCount",
+            "itemId",
+            "itemUpdatedAt",
+            "status"
+          ],
+          "properties": {
+            "itemId": {
+              "type": "string"
+            },
+            "itemUpdatedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "analyzerVersion": {
+              "type": "string"
+            },
+            "analyzedAt": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "edgeCount": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "status": {
+              "type": "string"
+            },
+            "failureCount": {
+              "type": "integer",
               "format": "int64"
             }
           }
@@ -1742,7 +1938,7 @@
     },
     {
       "name": "listPendingRecommendations",
-      "commandId": 29,
+      "commandId": 31,
       "inputType": "ListPendingRecommendationsInput",
       "outputType": "ListPendingRecommendationsOutput",
       "inputSchema": {
@@ -1871,7 +2067,7 @@
     },
     {
       "name": "listRecommendations",
-      "commandId": 28,
+      "commandId": 30,
       "inputType": "ListRecommendationsInput",
       "outputType": "ListRecommendationsOutput",
       "inputSchema": {
@@ -2294,7 +2490,7 @@
     },
     {
       "name": "normalizeBaseUrl",
-      "commandId": 36,
+      "commandId": 38,
       "inputType": "NormalizeBaseUrlInput",
       "outputType": "NormalizeBaseUrlOutput",
       "inputSchema": {
@@ -2325,7 +2521,7 @@
     },
     {
       "name": "recordSyncFailure",
-      "commandId": 38,
+      "commandId": 40,
       "inputType": "RecordFailureInput",
       "outputType": "RecordFailureOutput",
       "inputSchema": {
@@ -2391,7 +2587,7 @@
     },
     {
       "name": "recordSyncSuccess",
-      "commandId": 39,
+      "commandId": 41,
       "inputType": "RecordSuccessInput",
       "outputType": "RecordSuccessOutput",
       "inputSchema": {
@@ -2452,7 +2648,7 @@
     },
     {
       "name": "respondToRecommendation",
-      "commandId": 30,
+      "commandId": 32,
       "inputType": "RespondToRecommendationInput",
       "outputType": "RespondToRecommendationOutput",
       "inputSchema": {
@@ -2689,7 +2885,7 @@
     },
     {
       "name": "saveRecommendations",
-      "commandId": 27,
+      "commandId": 29,
       "inputType": "SaveRecommendationsInput",
       "outputType": "SaveRecommendationsOutput",
       "inputSchema": {
@@ -2781,7 +2977,7 @@
     },
     {
       "name": "syncDiscover",
-      "commandId": 34,
+      "commandId": 36,
       "inputType": "SyncDiscoverInput",
       "outputType": "SyncDiscoverOutput",
       "inputSchema": {

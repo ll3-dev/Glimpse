@@ -38,6 +38,8 @@ export const mobileCoreClient: MobileCoreClient = {
   deleteMessage: (messageId, deletedAt) => nativeCoreClient.deleteMessage(messageId, deletedAt),
 
   saveRecommendations: (recommendations) => nativeCoreClient.saveRecommendations(recommendations),
+  listGraphAnalysisRecords: () => nativeCoreClient.listGraphAnalysisRecords(),
+  commitGraphAnalysis: (input) => nativeCoreClient.commitGraphAnalysis(input),
   listRecommendations: () => nativeCoreClient.listRecommendations(),
   listPendingRecommendations: () => nativeCoreClient.listPendingRecommendations(),
   respondToRecommendation: (recommendationId: string, status, event) =>

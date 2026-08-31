@@ -1,6 +1,8 @@
 //! Recommendation and FeedbackEvent wire mirrors.
 
-use glimpse_core::{FeedbackEvent, Recommendation, RecommendationStatus};
+use glimpse_core::{
+    FeedbackEvent, GraphAnalysisRecord, GraphAnalysisStatus, Recommendation, RecommendationStatus,
+};
 use rustra::RustraError;
 use serde::{Deserialize, Serialize};
 
@@ -51,6 +53,51 @@ impl TryFrom<RecommendationIo> for Recommendation {
             status: parse_enum("status", recommendation.status)?,
             created_at: recommendation.created_at,
             responded_at: recommendation.responded_at,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphAnalysisRecordIo {
+    pub item_id: String,
+    pub item_updated_at: i64,
+    pub analyzer_version: String,
+    pub analyzed_at: i64,
+    pub edge_count: i64,
+    pub status: String,
+    pub failure_count: i64,
+}
+
+impl From<GraphAnalysisRecord> for GraphAnalysisRecordIo {
+    fn from(record: GraphAnalysisRecord) -> Self {
+        Self {
+            item_id: record.item_id,
+            item_updated_at: record.item_updated_at,
+            analyzer_version: record.analyzer_version,
+            analyzed_at: record.analyzed_at,
+            edge_count: record.edge_count,
+            status: enum_to_value(record.status)
+                .as_str()
+                .unwrap_or("failed")
+                .to_string(),
+            failure_count: record.failure_count,
+        }
+    }
+}
+
+impl TryFrom<GraphAnalysisRecordIo> for GraphAnalysisRecord {
+    type Error = RustraError;
+
+    fn try_from(record: GraphAnalysisRecordIo) -> Result<Self, RustraError> {
+        Ok(Self {
+            item_id: record.item_id,
+            item_updated_at: record.item_updated_at,
+            analyzer_version: record.analyzer_version,
+            analyzed_at: record.analyzed_at,
+            edge_count: record.edge_count,
+            status: parse_enum::<GraphAnalysisStatus>("status", record.status)?,
+            failure_count: record.failure_count,
         })
     }
 }

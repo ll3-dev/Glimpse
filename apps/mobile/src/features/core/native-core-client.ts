@@ -48,6 +48,8 @@ export const nativeCoreClient: CoreClient = {
 
   saveRecommendations: (recommendations) =>
     getDelegate().saveRecommendations(recommendations),
+  listGraphAnalysisRecords: () => getDelegate().listGraphAnalysisRecords(),
+  commitGraphAnalysis: (input) => getDelegate().commitGraphAnalysis(input),
   listRecommendations: () => getDelegate().listRecommendations(),
   listPendingRecommendations: () => getDelegate().listPendingRecommendations(),
   respondToRecommendation: (recommendationId, status, feedbackEvent) =>

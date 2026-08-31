@@ -4,6 +4,9 @@ import type {
   CoreKnowledgeItemLike,
   DataImportSummary,
   FeedbackEvent,
+  GraphAnalysisCommitInput,
+  GraphAnalysisCommitResult,
+  GraphAnalysisRecord,
   GetDueKnowledgeItemsInput,
   InitializeReviewScheduleInput,
   InitializeReviewScheduleOutput,
@@ -58,6 +61,8 @@ export interface MobileCoreClient {
   deleteMessage(messageId: string, deletedAt: number): Promise<void>;
 
   // Recommendations
+  listGraphAnalysisRecords(): Promise<GraphAnalysisRecord[]>;
+  commitGraphAnalysis(input: GraphAnalysisCommitInput): Promise<GraphAnalysisCommitResult>;
   saveRecommendations(recommendations: Recommendation[]): Promise<void>;
   listRecommendations(): Promise<Recommendation[]>;
   listPendingRecommendations(): Promise<Recommendation[]>;

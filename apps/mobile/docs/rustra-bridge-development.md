@@ -18,7 +18,7 @@ TS CoreClient adapter (src/features/core/rustra-core-client.ts)
        └─ global rustra engine (configure() at bootstrap)
             └─ rustra-jsi module (modules/rustra-jsi/) — JSI HostObject
                  └─ rustra_ffi_invoke_json (packages/bridge-rust staticlib)
-                      └─ glimpse.core package (40 rustra commands)
+                      └─ glimpse.core package (42 rustra commands)
                            └─ glimpse-core SharedCore (single SQLite connection)
 ```
 
@@ -71,6 +71,11 @@ The mobile `initialize` maps to the `initializeCore` command — it opens the
 DB at the given path inside the bridge global, so exactly one SQLite
 connection exists per process (the Tauri desktop host does the equivalent in
 its setup hook instead).
+
+Living Graph의 로컬 분석 상태는 `listGraphAnalysisRecords`로 읽고,
+`commitGraphAnalysis`로 엣지와 워터마크를 원자적으로 저장한다. 이 두 명령도 모바일과
+데스크톱이 같은 `glimpse.core` 계약을 사용하며, 워터마크 자체는 동기화·내보내기하지 않는
+파생 상태다.
 
 ## Rules
 

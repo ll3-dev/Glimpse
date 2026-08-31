@@ -385,6 +385,65 @@ fn recommendation_commands_roundtrip() {
     assert_eq!(updated["status"], "accepted");
 }
 
+#[test]
+fn graph_analysis_commands_commit_zero_edge_and_camel_case_records() {
+    let _guard = setup();
+    let core = glimpse_bridge::glimpse_package();
+    for id in ["graph-a", "graph-b"] {
+        core.invoke_json(
+            "saveKnowledgeItem",
+            json!({
+                "item": {
+                    "id": id, "type": "note", "title": id, "body": null, "url": null,
+                    "summary": null, "tags": null, "labels": null,
+                    "provisionalLabels": null, "labelStatus": null, "labelSource": null,
+                    "labelVersion": null, "labelScore": null, "labelRequestedAt": null,
+                    "labelCompletedAt": null, "labelError": null, "createdAt": 10,
+                    "updatedAt": 20, "stability": null, "difficulty": null,
+                    "lastReviewedAt": null, "nextReviewAt": null
+                }
+            }),
+        )
+        .expect("graph item should seed");
+    }
+
+    let committed = core
+        .invoke_json(
+            "commitGraphAnalysis",
+            json!({
+                "records": [
+                    {
+                        "itemId": "graph-a", "itemUpdatedAt": 20,
+                        "analyzerVersion": "living-graph-v1", "analyzedAt": 30,
+                        "edgeCount": 1, "status": "completed", "failureCount": 0
+                    },
+                    {
+                        "itemId": "graph-b", "itemUpdatedAt": 20,
+                        "analyzerVersion": "living-graph-v1", "analyzedAt": 30,
+                        "edgeCount": 0, "status": "completed", "failureCount": 0
+                    }
+                ],
+                "recommendations": [{
+                    "id": "graph-edge", "itemA_id": "graph-b", "itemB_id": "graph-a",
+                    "reason": "related", "status": "pending", "createdAt": 30,
+                    "respondedAt": null
+                }]
+            }),
+        )
+        .expect("graph analysis should commit");
+    assert_eq!(committed["savedRecommendations"], 1);
+    assert_eq!(committed["savedAnalysisRecords"], 2);
+
+    let listed = core
+        .invoke_json("listGraphAnalysisRecords", json!({}))
+        .expect("graph analysis should list");
+    let records = listed["records"].as_array().expect("records array");
+    assert_eq!(records.len(), 2);
+    assert_eq!(records[0]["itemId"], "graph-a");
+    assert_eq!(records[1]["edgeCount"], 0);
+    assert!(records[0].get("item_id").is_none());
+}
+
 // ============================================================================
 // Feedback
 // ============================================================================
@@ -502,7 +561,7 @@ fn glimpse_core_package_dispatches_across_all_domains() {
         .expect("calculateTagOverlap via unified package should succeed");
     assert_eq!(overlap["overlap"], 1);
 
-    // schema exposes all 40 commands (calculateNextReview was removed in
+    // schema exposes all 42 commands (calculateNextReview was removed in
     // favor of the shared TS review scheduler), including deterministic data
     // merging and incremental delta application (mergeDelta), the
     // upstream delta path (exportDelta, syncDataRevision), LAN peer
@@ -513,8 +572,8 @@ fn glimpse_core_package_dispatches_across_all_domains() {
     let commands = schema["commands"].as_array().expect("commands array");
     assert_eq!(
         commands.len(),
-        40,
-        "unified package must expose 40 commands"
+        42,
+        "unified package must expose 42 commands"
     );
 }
 
