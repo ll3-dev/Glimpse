@@ -33,12 +33,11 @@ function readParam(value: string | string[] | undefined): string | undefined {
 export default function GraphScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ focusId?: string | string[] }>();
-  const routeFocusId = readParam(params.focusId);
+  const focusedNodeId = readParam(params.focusId) || null;
   const insets = useSafeAreaInsets();
   const { data: items = [] } = useKnowledgeItemsQuery();
   const { data: recommendations = [] } = useAllRecommendationsQuery();
   const { respond, isPending: isResponding } = useRecommendationActionsMutation();
-  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(routeFocusId ?? null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
 
   const appBorder = useSemanticColor('appBorder');
@@ -76,6 +75,9 @@ export default function GraphScreen() {
   );
 
   const openItem = (itemId: string) => router.push(`/library/${itemId}`);
+  const setFocusedNodeId = (itemId: string | null) => {
+    router.setParams({ focusId: itemId ?? '' });
+  };
   const respondTo = (recommendationId: string, action: 'accept' | 'ignore' | 'dismiss') => {
     respond({ recommendationId, action });
   };
@@ -121,7 +123,7 @@ export default function GraphScreen() {
           selectedEdgeId={activeEdgeId}
           palette={palette}
           onPressNode={(id) => {
-            setFocusedNodeId((current) => (current === id ? null : id));
+            setFocusedNodeId(focusedNodeId === id ? null : id);
             setSelectedEdgeId(null);
           }}
           onPressEdge={(id) => setSelectedEdgeId((current) => (current === id ? null : id))}
