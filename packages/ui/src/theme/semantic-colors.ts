@@ -16,9 +16,14 @@ export type SemanticColorName =
   | 'tagSkyText'
   | 'tagLavenderText'
   | 'tagRoseText'
-  | 'tagNeutralText';
+  | 'tagNeutralText'
+  | 'chart1'
+  | 'chart2'
+  | 'chart3'
+  | 'chart4'
+  | 'chart5';
 
-const CSS_VARIABLES: Record<SemanticColorName, string> = {
+export const CSS_VARIABLES: Record<SemanticColorName, string> = {
   appBg: '--color-app-bg',
   appSurface: '--color-app-surface',
   appCard: '--color-app-card',
@@ -35,6 +40,11 @@ const CSS_VARIABLES: Record<SemanticColorName, string> = {
   tagLavenderText: '--color-tag-lavender-text',
   tagRoseText: '--color-tag-rose-text',
   tagNeutralText: '--color-tag-neutral-text',
+  chart1: '--color-chart-1',
+  chart2: '--color-chart-2',
+  chart3: '--color-chart-3',
+  chart4: '--color-chart-4',
+  chart5: '--color-chart-5',
 };
 
 // Native CSS variables are available after Uniwind initializes. Keeping the
@@ -56,6 +66,11 @@ const FALLBACKS: Record<SemanticColorName, string> = {
   tagLavenderText: '#584578',
   tagRoseText: '#9c3838',
   tagNeutralText: '#64625d',
+  chart1: '#2383e2',
+  chart2: '#1a7f37',
+  chart3: '#a04100',
+  chart4: '#6e3ab7',
+  chart5: '#eb5757',
 };
 
 export function useSemanticColor(name: SemanticColorName): string {
