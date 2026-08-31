@@ -6,6 +6,8 @@ import { configureRustraEngine } from '@glimpse/bridge-generated';
 import { createTauriEngine } from '@rustra/tauri';
 import { invoke } from '@tauri-apps/api/core';
 import { createRustraCoreClient } from './features/core/rustra-core-client';
+import { captureDiagnostic } from '@glimpse/shared';
+import { listenForDesktopShellNavigation } from './features/shell/desktop-shell-navigation';
 
 // Route every generated rustra command through the single `rustra_dispatch`
 // Tauri command registered in src-tauri/src/main.rs. The wrapper adapts
@@ -18,6 +20,16 @@ configureRustraEngine(
 
 const coreClient = createRustraCoreClient();
 const router = createRouter({ routeTree });
+
+void listenForDesktopShellNavigation((target) => {
+  if (target === 'capture') {
+    void router.navigate({ to: '/capture' });
+    return;
+  }
+  void router.navigate({ to: '/graph', search: {} });
+}).catch((error: unknown) => {
+  captureDiagnostic('warning', 'Desktop shell navigation listener registration failed', error);
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

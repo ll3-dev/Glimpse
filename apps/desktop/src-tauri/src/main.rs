@@ -6,6 +6,7 @@ mod llm;
 mod models;
 mod secrets;
 mod services;
+mod shell;
 mod state;
 mod sync;
 
@@ -13,6 +14,7 @@ use tauri::Manager;
 
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(shell::global_shortcut_plugin())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .manage(state::DesktopRuntimeStateInner::from_defaults())
@@ -56,6 +58,7 @@ fn main() {
             glimpse_bridge::glimpse_package().set_event_sink(Some(
                 rustra::tauri_support::tauri_event_sink(app.handle().clone()),
             ));
+            shell::setup(app)?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -90,13 +93,24 @@ fn main() {
     // 종료 핸들러: 진행 중 다운로드에 취소 플래그를 설정해 chunk 루프가
     // 빠르게 빠져나오게 한다. SQLite 연결은 bridge 전역이 소유하며 프로세스
     // 종료 시 OS 가 정리한다(WAL 모드라 트랜잭션 커밋 후에는 일관성 유지).
-    app.run(|app_handle, event| {
-        if let tauri::RunEvent::ExitRequested { .. } = event {
+    app.run(|app_handle, event| match event {
+        tauri::RunEvent::WindowEvent {
+            label,
+            event: tauri::WindowEvent::CloseRequested { api, .. },
+            ..
+        } if label == "main" => {
+            api.prevent_close();
+            if let Err(error) = shell::hide_main_window(app_handle) {
+                eprintln!("[shell] failed to hide main window: {error}");
+            }
+        }
+        tauri::RunEvent::ExitRequested { .. } => {
             if let Some(state) = app_handle.try_state::<state::DesktopRuntimeState>() {
                 for model_id in state.downloading_model_ids() {
                     state.download_cancels.request(&model_id);
                 }
             }
         }
+        _ => {}
     });
 }

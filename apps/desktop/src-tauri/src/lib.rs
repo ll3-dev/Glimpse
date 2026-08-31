@@ -10,5 +10,6 @@ pub mod llm;
 pub mod models;
 pub mod secrets;
 pub mod services;
+pub mod shell;
 pub mod state;
 pub mod sync;
