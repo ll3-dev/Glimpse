@@ -16,7 +16,7 @@ const svgHosts: Record<string, string> = {
 };
 mock.module('react-native-svg', () => svgHosts);
 mock.module('@glimpse/ui', () => ({
-  useSemanticColor: (_name: string) => '#787774',
+  useSemanticColor: (_name: string) => 'gray',
 }));
 
 const { renderToStaticMarkup } = await import('react-dom/server');
@@ -38,12 +38,12 @@ describe('GraphCanvas', () => {
         nodes={nodes}
         edges={edges}
         selectedNodeId={selectedNodeId}
-        palette={['#1', '#2', '#3', '#4', '#5']}
+        palette={['red', 'orange', 'green', 'blue', 'purple']}
         onPressNode={() => {}}
-        lineColor="#L"
-        strokeColor="#S"
-        labelColor="#T"
-        selectedStrokeColor="#H"
+        lineColor="gray"
+        strokeColor="silver"
+        labelColor="black"
+        selectedStrokeColor="navy"
       />,
     );
 
