@@ -98,6 +98,7 @@ export {
 } from './capture';
 export * from './search';
 export * from './labeling';
+export * from './graph';
 export {
   parseEdges,
   sanitizeEdges,
