@@ -5,6 +5,10 @@ import {
   BackgroundTaskStatus,
 } from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
+import {
+  acquireLocalLLMKeepAlive,
+  releaseLocalLLMKeepAlive,
+} from '@/src/features/ai/local-llm/background-keepalive';
 import { runForegroundLabeling } from './runForegroundLabeling';
 
 export const LABELING_BACKGROUND_TASK = 'glimpse-labeling-background-task';
@@ -23,10 +27,17 @@ export interface LabelingBackgroundTaskRegistrationResult {
 
 if (!TaskManager.isTaskDefined(LABELING_BACKGROUND_TASK)) {
   TaskManager.defineTask(LABELING_BACKGROUND_TASK, async () => {
-    const result = await runForegroundLabeling(DEFAULT_BACKGROUND_LABELING_BATCH_SIZE);
-    return result.success
-      ? BackgroundTaskResult.Success
-      : BackgroundTaskResult.Failed;
+    // 작업이 로컬 LLM을 사용하는 동안 백그라운드 언로드 타이머가
+    // 실행되지 않도록 keep-alive를 보류한다. 종료 경로와 무관하게 해제된다.
+    acquireLocalLLMKeepAlive();
+    try {
+      const result = await runForegroundLabeling(DEFAULT_BACKGROUND_LABELING_BATCH_SIZE);
+      return result.success
+        ? BackgroundTaskResult.Success
+        : BackgroundTaskResult.Failed;
+    } finally {
+      releaseLocalLLMKeepAlive();
+    }
   });
 }
 

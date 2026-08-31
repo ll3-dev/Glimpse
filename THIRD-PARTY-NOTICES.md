@@ -1,0 +1,1298 @@
+# Third-Party Notices
+
+이 애플리케이션은 다음 서드파티 소프트웨어를 포함하거나 사용합니다. 각 소프트웨어는 해당 라이선스의 조건에 따라 제공되며, 이 문서는 그 출처와 라이선스를 안내하기 위한 것입니다. 각 라이선스의 전문은 해당 패키지의 배포본에 동봉되어 있습니다.
+
+> 이 문서는 `bun run licenses:generate`로 생성되었습니다. 수동 편집 대신 스크립트를 다시 실행해 갱신하세요.
+
+총 1221개 패키지, 22개 라이선스 그룹.
+
+## (BSD-3-Clause OR GPL-2.0) (1)
+
+- node-forge@1.4.0 — https://github.com/digitalbazaar/forge
+
+## (MIT AND Zlib) (1)
+
+- pako@3.0.1
+
+## (MIT OR Apache-2.0) (1)
+
+- fb-dotslash@0.5.8 — https://dotslash-cli.com/
+
+## (MIT OR CC0-1.0) (3)
+
+- type-fest@0.7.1
+- type-fest@5.5.0
+- type-fest@0.21.3
+
+## (MIT OR GPL-2.0) (1)
+
+- xdate@0.8.3 — http://arshaw.com/xdate/
+
+## 0BSD (2)
+
+- jsc-safe-url@0.2.4 — https://github.com/robhogan/jsc-safe-url#readme
+- tslib@2.8.1 — https://www.typescriptlang.org/
+
+## Apache-2.0 (39)
+
+- @eslint/config-array@0.21.1 — https://github.com/eslint/rewrite/tree/main/packages/config-array#readme
+- @eslint/config-array@0.23.5 — https://github.com/eslint/rewrite/tree/main/packages/config-array#readme
+- @eslint/config-helpers@0.4.2 — https://github.com/eslint/rewrite/tree/main/packages/config-helpers#readme
+- @eslint/config-helpers@0.7.0 — https://github.com/eslint/rewrite/tree/main/packages/config-helpers#readme
+- @eslint/core@0.17.0 — https://github.com/eslint/rewrite/tree/main/packages/core#readme
+- @eslint/core@1.2.1 — https://github.com/eslint/rewrite/tree/main/packages/core#readme
+- @eslint/object-schema@2.1.7 — https://github.com/eslint/rewrite/tree/main/packages/object-schema#readme
+- @eslint/object-schema@3.0.5 — https://github.com/eslint/rewrite/tree/main/packages/object-schema#readme
+- @eslint/plugin-kit@0.4.1 — https://github.com/eslint/rewrite/tree/main/packages/plugin-kit#readme
+- @eslint/plugin-kit@0.7.2 — https://github.com/eslint/rewrite/tree/main/packages/plugin-kit#readme
+- @humanfs/core@0.19.1 — https://github.com/humanwhocodes/humanfs#readme
+- @humanfs/node@0.16.7 — https://github.com/humanwhocodes/humanfs#readme
+- @humanwhocodes/module-importer@1.0.1
+- @humanwhocodes/retry@0.4.3
+- @playwright/test@1.62.1 — https://playwright.dev
+- aria-query@5.3.0 — https://github.com/A11yance/aria-query#readme
+- baseline-browser-mapping@2.9.19
+- bser@2.1.1 — https://facebook.github.io/watchman/docs/bser.html
+- chrome-launcher@0.15.2
+- chromium-edge-launcher@0.3.0
+- class-variance-authority@0.7.1 — https://github.com/joe-bell/cva#readme
+- detect-libc@2.1.2
+- doctrine@2.1.0 — https://github.com/eslint/doctrine
+- eslint-visitor-keys@4.2.1 — https://github.com/eslint/js/blob/main/packages/eslint-visitor-keys/README.md
+- eslint-visitor-keys@5.0.1 — https://github.com/eslint/js/blob/main/packages/eslint-visitor-keys/README.md
+- eslint-visitor-keys@3.4.3 — https://github.com/eslint/eslint-visitor-keys#readme
+- exponential-backoff@3.1.3 — https://github.com/coveooss/exponential-backoff#readme
+- fb-watchman@2.0.2 — https://facebook.github.io/watchman/
+- human-signals@2.1.0 — https://git.io/JeluP
+- human-signals@8.0.1 — https://www.github.com/ehmicky/human-signals
+- lighthouse-logger@1.4.2
+- marky@1.3.0 — https://github.com/nolanlawson/marky#readme
+- playwright@1.62.1 — https://playwright.dev
+- playwright-core@1.62.1 — https://playwright.dev
+- recyclerlistview@4.2.3 — https://github.com/Flipkart/recyclerlistview
+- typescript@5.9.3 — https://www.typescriptlang.org/
+- typescript@6.0.3 — https://www.typescriptlang.org/
+- walker@1.0.8 — https://github.com/daaku/nodejs-walker
+- xcode@3.0.1
+
+## Apache-2.0 OR MIT (3)
+
+- @tauri-apps/api@2.10.1 — https://github.com/tauri-apps/tauri#readme
+- @tauri-apps/cli@2.10.1 — https://github.com/tauri-apps/tauri#readme
+- @tauri-apps/cli-darwin-arm64@2.10.1 — https://github.com/tauri-apps/tauri#readme
+
+## BlueOak-1.0.0 (11)
+
+- @isaacs/cliui@9.0.0
+- glob@13.0.3
+- glob@13.0.1
+- isexe@3.1.5
+- jackspeak@4.2.3
+- lru-cache@11.2.6
+- minimatch@10.2.4
+- minimatch@10.2.6
+- minimatch@10.2.0
+- path-scurry@2.0.1
+- sax@1.4.4
+
+## BSD-2-Clause (24)
+
+- css-select@5.2.2
+- css-what@6.2.2
+- domelementtype@2.3.0
+- domhandler@5.0.3
+- domutils@3.2.2
+- dotenv@17.3.1 — https://github.com/motdotla/dotenv#readme
+- entities@4.5.0
+- entities@7.0.1
+- eslint-scope@9.1.2 — https://github.com/eslint/js/blob/main/packages/eslint-scope/README.md
+- eslint-scope@8.4.0 — https://github.com/eslint/js/blob/main/packages/eslint-scope/README.md
+- espree@10.4.0 — https://github.com/eslint/js/blob/main/packages/espree/README.md
+- espree@11.2.0 — https://github.com/eslint/js/blob/main/packages/espree/README.md
+- esprima@4.0.1 — http://esprima.org
+- esrecurse@4.3.0 — https://github.com/estools/esrecurse
+- estraverse@5.3.0 — https://github.com/estools/estraverse
+- esutils@2.0.3 — https://github.com/estools/esutils
+- fontfaceobserver@2.3.0 — https://fontfaceobserver.com/
+- json-schema-typed@8.0.2 — https://github.com/RemyRylan/json-schema-typed/tree/main/dist/node
+- nth-check@2.1.1 — https://github.com/fb55/nth-check
+- regjsparser@0.13.0 — https://github.com/jviereck/regjsparser
+- stringify-object@5.0.0
+- terser@5.46.0 — https://terser.org
+- uri-js@4.4.1 — https://github.com/garycourt/uri-js
+- webidl-conversions@3.0.1
+
+## BSD-3-Clause (16)
+
+- @dotenvx/dotenvx@1.58.0 — https://github.com/dotenvx/dotenvx
+- @expo/xcpretty@4.4.4 — https://github.com/expo/expo-cli
+- @react-native/debugger-frontend@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/debugger-frontend#readme
+- diff@8.0.4
+- esquery@1.7.0 — https://github.com/estools/esquery/
+- fast-uri@3.1.5 — https://github.com/fastify/fast-uri
+- hoist-non-react-statics@3.3.2
+- hyphenate-style-name@1.1.0 — https://github.com/rexxars/hyphenate-style-name#readme
+- makeerror@1.0.12
+- qs@6.15.3 — https://github.com/ljharb/qs
+- source-map@0.6.1 — https://github.com/mozilla/source-map
+- source-map@0.5.7 — https://github.com/mozilla/source-map
+- source-map@0.7.6 — https://github.com/mozilla/source-map
+- source-map-js@1.2.1 — https://github.com/7rulnik/source-map-js
+- tmpl@1.0.5 — https://github.com/daaku/nodejs-tmpl
+- tough-cookie@6.0.1 — https://github.com/salesforce/tough-cookie
+
+## CC-BY-4.0 (1)
+
+- caniuse-lite@1.0.30001769
+
+## CC0-1.0 (1)
+
+- mdn-data@2.0.14 — https://developer.mozilla.org
+
+## ISC (48)
+
+- @isaacs/ttlcache@1.4.1
+- @ungap/structured-clone@1.3.0 — https://github.com/ungap/structured-clone#readme
+- ansis@4.2.0
+- anymatch@3.1.3 — https://github.com/micromatch/anymatch
+- boolbase@1.0.0 — https://github.com/fb55/boolbase
+- cli-width@4.1.0 — https://github.com/knownasilya/cli-width
+- cliui@8.0.1
+- electron-to-chromium@1.5.286
+- eslint-import-resolver-typescript@3.10.1
+- fastq@1.20.1 — https://github.com/mcollina/fastq#readme
+- flatted@3.4.4 — https://github.com/WebReflection/flatted#readme
+- get-caller-file@2.0.5 — https://github.com/stefanpenner/get-caller-file#readme
+- glob-parent@5.1.2
+- glob-parent@6.0.2
+- graceful-fs@4.2.11
+- hosted-git-info@7.0.2 — https://github.com/npm/hosted-git-info
+- inherits@2.0.4
+- isexe@2.0.0 — https://github.com/isaacs/isexe#readme
+- lru-cache@10.4.3
+- lru-cache@5.1.1
+- lucide-react@1.7.0 — https://lucide.dev
+- lucide-react-native@0.563.0 — https://lucide.dev
+- minimatch@3.1.2
+- minipass@7.1.2
+- mute-stream@2.0.0
+- npm-package-arg@11.0.3 — https://github.com/npm/npm-package-arg
+- once@1.4.0
+- picocolors@1.1.1
+- proc-log@4.2.0
+- react-native-nitro-buffer@0.2.2 — https://github.com/iwater/react-native-nitro-buffer#readme
+- react-native-nitro-crypto@0.3.2 — https://github.com/iwater/react-native-nitro-crypto
+- semver@7.7.3
+- semver@7.8.5
+- semver@6.3.1
+- setprototypeof@1.2.0 — https://github.com/wesleytodd/setprototypeof
+- signal-exit@3.0.7 — https://github.com/tapjs/signal-exit
+- signal-exit@4.1.0
+- ts-object-utils@0.0.5 — https://github.com/naqvitalha/ts-object-utils#readme
+- validate-npm-package-name@5.0.1 — https://github.com/npm/validate-npm-package-name
+- validate-npm-package-name@7.0.2 — https://github.com/npm/validate-npm-package-name
+- which@4.0.0
+- which@2.0.2
+- wrappy@1.0.2 — https://github.com/npm/wrappy
+- y18n@5.0.8 — https://github.com/yargs/y18n
+- yallist@3.1.1
+- yaml@2.9.0 — https://eemeli.org/yaml/
+- yargs-parser@21.1.1
+- zod-to-json-schema@3.25.2
+
+## MIT (1057)
+
+- @babel/code-frame@7.29.7 — https://babel.dev/docs/en/next/babel-code-frame
+- @babel/code-frame@7.29.0 — https://babel.dev/docs/en/next/babel-code-frame
+- @babel/compat-data@7.29.7
+- @babel/compat-data@7.29.0
+- @babel/core@7.29.0 — https://babel.dev/docs/en/next/babel-core
+- @babel/generator@7.29.8 — https://babel.dev/docs/en/next/babel-generator
+- @babel/generator@7.29.1 — https://babel.dev/docs/en/next/babel-generator
+- @babel/helper-annotate-as-pure@7.29.7 — https://babel.dev/docs/en/next/babel-helper-annotate-as-pure
+- @babel/helper-annotate-as-pure@7.27.3 — https://babel.dev/docs/en/next/babel-helper-annotate-as-pure
+- @babel/helper-compilation-targets@7.29.7
+- @babel/helper-compilation-targets@7.28.6
+- @babel/helper-create-class-features-plugin@7.29.7
+- @babel/helper-create-class-features-plugin@7.28.6
+- @babel/helper-create-regexp-features-plugin@7.28.5
+- @babel/helper-define-polyfill-provider@0.6.6
+- @babel/helper-globals@7.29.7
+- @babel/helper-globals@7.28.0
+- @babel/helper-member-expression-to-functions@7.28.5 — https://babel.dev/docs/en/next/babel-helper-member-expression-to-functions
+- @babel/helper-member-expression-to-functions@7.29.7 — https://babel.dev/docs/en/next/babel-helper-member-expression-to-functions
+- @babel/helper-module-imports@7.28.6 — https://babel.dev/docs/en/next/babel-helper-module-imports
+- @babel/helper-module-transforms@7.29.7 — https://babel.dev/docs/en/next/babel-helper-module-transforms
+- @babel/helper-module-transforms@7.28.6 — https://babel.dev/docs/en/next/babel-helper-module-transforms
+- @babel/helper-optimise-call-expression@7.29.7 — https://babel.dev/docs/en/next/babel-helper-optimise-call-expression
+- @babel/helper-optimise-call-expression@7.27.1 — https://babel.dev/docs/en/next/babel-helper-optimise-call-expression
+- @babel/helper-plugin-utils@7.29.7 — https://babel.dev/docs/en/next/babel-helper-plugin-utils
+- @babel/helper-plugin-utils@7.28.6 — https://babel.dev/docs/en/next/babel-helper-plugin-utils
+- @babel/helper-remap-async-to-generator@7.27.1 — https://babel.dev/docs/en/next/babel-helper-remap-async-to-generator
+- @babel/helper-replace-supers@7.29.7 — https://babel.dev/docs/en/next/babel-helper-replace-supers
+- @babel/helper-replace-supers@7.28.6 — https://babel.dev/docs/en/next/babel-helper-replace-supers
+- @babel/helper-skip-transparent-expression-wrappers@7.29.7
+- @babel/helper-skip-transparent-expression-wrappers@7.27.1
+- @babel/helper-string-parser@7.27.1 — https://babel.dev/docs/en/next/babel-helper-string-parser
+- @babel/helper-validator-identifier@7.28.5
+- @babel/helper-validator-option@7.29.7
+- @babel/helper-validator-option@7.27.1
+- @babel/helper-wrap-function@7.28.6 — https://babel.dev/docs/en/next/babel-helper-wrap-function
+- @babel/helpers@7.28.6 — https://babel.dev/docs/en/next/babel-helpers
+- @babel/parser@7.29.8 — https://babel.dev/docs/en/next/babel-parser
+- @babel/parser@7.29.0 — https://babel.dev/docs/en/next/babel-parser
+- @babel/plugin-proposal-decorators@7.29.0 — https://babel.dev/docs/en/next/babel-plugin-proposal-decorators
+- @babel/plugin-proposal-export-default-from@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-proposal-export-default-from
+- @babel/plugin-syntax-decorators@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-syntax-decorators
+- @babel/plugin-syntax-dynamic-import@7.8.3
+- @babel/plugin-syntax-export-default-from@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-syntax-export-default-from
+- @babel/plugin-syntax-flow@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-syntax-flow
+- @babel/plugin-syntax-jsx@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-syntax-jsx
+- @babel/plugin-syntax-jsx@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-syntax-jsx
+- @babel/plugin-syntax-nullish-coalescing-operator@7.8.3
+- @babel/plugin-syntax-optional-chaining@7.8.3
+- @babel/plugin-syntax-typescript@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-syntax-typescript
+- @babel/plugin-syntax-typescript@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-syntax-typescript
+- @babel/plugin-transform-arrow-functions@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-arrow-functions
+- @babel/plugin-transform-async-generator-functions@7.29.0 — https://babel.dev/docs/en/next/babel-plugin-transform-async-generator-functions
+- @babel/plugin-transform-async-to-generator@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-async-to-generator
+- @babel/plugin-transform-block-scoping@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-block-scoping
+- @babel/plugin-transform-class-properties@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-transform-class-properties
+- @babel/plugin-transform-class-properties@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-class-properties
+- @babel/plugin-transform-class-static-block@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-class-static-block
+- @babel/plugin-transform-classes@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-transform-classes
+- @babel/plugin-transform-classes@7.28.4 — https://babel.dev/docs/en/next/babel-plugin-transform-classes
+- @babel/plugin-transform-destructuring@7.28.5 — https://babel.dev/docs/en/next/babel-plugin-transform-destructuring
+- @babel/plugin-transform-export-namespace-from@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-export-namespace-from
+- @babel/plugin-transform-flow-strip-types@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-flow-strip-types
+- @babel/plugin-transform-for-of@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-for-of
+- @babel/plugin-transform-logical-assignment-operators@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-logical-assignment-operators
+- @babel/plugin-transform-modules-commonjs@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-transform-modules-commonjs
+- @babel/plugin-transform-modules-commonjs@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-modules-commonjs
+- @babel/plugin-transform-named-capturing-groups-regex@7.29.0 — https://babel.dev/docs/en/next/babel-plugin-transform-named-capturing-groups-regex
+- @babel/plugin-transform-nullish-coalescing-operator@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-transform-nullish-coalescing-operator
+- @babel/plugin-transform-nullish-coalescing-operator@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-nullish-coalescing-operator
+- @babel/plugin-transform-object-rest-spread@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-object-rest-spread
+- @babel/plugin-transform-optional-catch-binding@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-optional-catch-binding
+- @babel/plugin-transform-optional-chaining@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-transform-optional-chaining
+- @babel/plugin-transform-optional-chaining@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-optional-chaining
+- @babel/plugin-transform-parameters@7.27.7 — https://babel.dev/docs/en/next/babel-plugin-transform-parameters
+- @babel/plugin-transform-private-methods@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-private-methods
+- @babel/plugin-transform-private-property-in-object@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-private-property-in-object
+- @babel/plugin-transform-react-display-name@7.28.0 — https://babel.dev/docs/en/next/babel-plugin-transform-react-display-name
+- @babel/plugin-transform-react-jsx@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-react-jsx
+- @babel/plugin-transform-react-jsx-development@7.27.1
+- @babel/plugin-transform-react-jsx-self@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-react-jsx-self
+- @babel/plugin-transform-react-jsx-source@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-react-jsx-source
+- @babel/plugin-transform-react-pure-annotations@7.27.1
+- @babel/plugin-transform-regenerator@7.29.0 — https://babel.dev/docs/en/next/babel-plugin-transform-regenerator
+- @babel/plugin-transform-runtime@7.29.0 — https://babel.dev/docs/en/next/babel-plugin-transform-runtime
+- @babel/plugin-transform-shorthand-properties@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-shorthand-properties
+- @babel/plugin-transform-template-literals@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-template-literals
+- @babel/plugin-transform-typescript@7.29.7 — https://babel.dev/docs/en/next/babel-plugin-transform-typescript
+- @babel/plugin-transform-typescript@7.28.6 — https://babel.dev/docs/en/next/babel-plugin-transform-typescript
+- @babel/plugin-transform-unicode-regex@7.27.1 — https://babel.dev/docs/en/next/babel-plugin-transform-unicode-regex
+- @babel/preset-typescript@7.29.7 — https://babel.dev/docs/en/next/babel-preset-typescript
+- @babel/preset-typescript@7.27.1 — https://babel.dev/docs/en/next/babel-preset-typescript
+- @babel/runtime@7.28.6 — https://babel.dev/docs/en/next/babel-runtime
+- @babel/template@7.29.7 — https://babel.dev/docs/en/next/babel-template
+- @babel/template@7.28.6 — https://babel.dev/docs/en/next/babel-template
+- @babel/traverse@7.29.8 — https://babel.dev/docs/en/next/babel-traverse
+- @babel/traverse@7.29.0 — https://babel.dev/docs/en/next/babel-traverse
+- @babel/types@7.29.8 — https://babel.dev/docs/en/next/babel-types
+- @babel/types@7.29.0 — https://babel.dev/docs/en/next/babel-types
+- @base-ui/react@1.3.0 — https://base-ui.com
+- @base-ui/utils@0.2.6
+- @ecies/ciphers@0.2.5
+- @egjs/hammerjs@2.0.17 — http://naver.github.io/egjs
+- @esbuild/darwin-arm64@0.27.4
+- @eslint-community/eslint-utils@4.9.1 — https://github.com/eslint-community/eslint-utils#readme
+- @eslint-community/regexpp@4.12.2 — https://github.com/eslint-community/regexpp#readme
+- @eslint/eslintrc@3.3.3 — https://github.com/eslint/eslintrc#readme
+- @eslint/js@9.39.2 — https://eslint.org
+- @expo/cli@57.0.19 — https://github.com/expo/expo/tree/main/packages/@expo/cli
+- @expo/code-signing-certificates@0.0.6 — https://github.com/expo/code-signing-certificates/tree/main#readme
+- @expo/config@57.0.9 — https://github.com/expo/expo/tree/main/packages/@expo/config#readme
+- @expo/config-plugins@57.0.9 — https://docs.expo.dev/guides/config-plugins/
+- @expo/config-types@57.0.2 — https://github.com/expo/expo/tree/main/packages/@expo/config-types#readme
+- @expo/devcert@1.2.1 — https://github.com/expo/devcert#readme
+- @expo/devtools@57.0.1 — https://github.com/expo/expo/tree/main/packages/@expo/devtools#readme
+- @expo/dom-webview@57.0.1 — https://github.com/expo/expo/tree/main/packages/@expo/dom-webview
+- @expo/env@2.4.2 — https://github.com/expo/expo/tree/main/packages/@expo/env#readme
+- @expo/expo-modules-macros-plugin@0.6.1 — https://github.com/expo/expo-modules-macros-plugin
+- @expo/fingerprint@0.20.10 — https://github.com/expo/expo/tree/main/packages/@expo/fingerprint#readme
+- @expo/image-utils@0.11.5 — https://github.com/expo/expo/tree/main/packages/%40expo/image-utils#readme
+- @expo/inline-modules@0.1.7
+- @expo/json-file@11.0.1 — https://github.com/expo/expo/tree/main/packages/@expo/json-file#readme
+- @expo/local-build-cache-provider@57.0.8 — https://github.com/expo/expo/tree/main/packages/@expo/local-build-cache-provider#readme
+- @expo/log-box@57.0.4 — https://github.com/expo/expo/tree/main/packages/@expo/log-box
+- @expo/metro@56.0.2
+- @expo/metro-config@57.0.11 — https://github.com/expo/expo/tree/main/packages/@expo/metro-config#readme
+- @expo/metro-file-map@57.0.2 — https://github.com/expo/expo/tree/main/packages/@expo/metro-file-map#readme
+- @expo/metro-runtime@57.0.14 — https://github.com/expo/expo/tree/main/packages/@expo/metro-runtime
+- @expo/osascript@2.7.1 — https://github.com/expo/expo/tree/main/packages/@expo/osascript#readme
+- @expo/package-manager@1.13.1 — https://github.com/expo/expo/tree/main/packages/@expo/package-manager#readme
+- @expo/plist@0.4.8 — https://github.com/expo/expo/tree/main/packages/@expo/plist#readme
+- @expo/plist@0.8.1 — https://github.com/expo/expo/tree/main/packages/@expo/plist#readme
+- @expo/prebuild-config@57.0.15 — https://github.com/expo/expo/tree/main/packages/@expo/prebuild-config#readme
+- @expo/require-utils@57.0.5 — https://github.com/expo/expo/tree/main/packages/@expo/require-utils#readme
+- @expo/router-server@57.0.8 — https://docs.expo.dev/routing/introduction/
+- @expo/schema-utils@57.0.2 — https://github.com/expo/expo/tree/main/packages/@expo/schema-utils#readme
+- @expo/sdk-runtime-versions@1.0.0
+- @expo/spawn-async@1.8.0 — https://github.com/expo/spawn-async#readme
+- @expo/sudo-prompt@9.3.2 — https://github.com/expo/sudo-prompt
+- @expo/ui@57.0.14 — https://docs.expo.dev/versions/latest/sdk/ui/
+- @expo/vector-icons@15.0.3 — https://expo.github.io/vector-icons
+- @expo/ws-tunnel@2.0.0
+- @floating-ui/core@1.7.5 — https://floating-ui.com
+- @floating-ui/dom@1.7.5 — https://floating-ui.com
+- @floating-ui/dom@1.7.6 — https://floating-ui.com
+- @floating-ui/react-dom@2.1.7 — https://floating-ui.com/docs/react-dom
+- @floating-ui/react-dom@2.1.8 — https://floating-ui.com/docs/react-dom
+- @floating-ui/utils@0.2.11 — https://floating-ui.com
+- @happy-dom/global-registrator@20.11.8 — https://github.com/capricorn86/happy-dom/tree/master/packages/global-registrator
+- @hono/node-server@1.19.15 — https://github.com/honojs/node-server
+- @inquirer/ansi@1.0.2 — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/ansi/README.md
+- @inquirer/confirm@5.1.21 — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/confirm/README.md
+- @inquirer/core@10.3.2 — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/core/README.md
+- @inquirer/figures@1.0.15
+- @inquirer/type@3.0.10
+- @jest/schemas@29.6.3
+- @jest/types@29.6.3
+- @jridgewell/gen-mapping@0.3.13 — https://github.com/jridgewell/sourcemaps/tree/main/packages/gen-mapping
+- @jridgewell/remapping@2.3.5 — https://github.com/jridgewell/sourcemaps/tree/main/packages/remapping
+- @jridgewell/resolve-uri@3.1.2
+- @jridgewell/source-map@0.3.11 — https://github.com/jridgewell/sourcemaps/tree/main/packages/source-map
+- @jridgewell/sourcemap-codec@1.5.5 — https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec
+- @jridgewell/trace-mapping@0.3.31 — https://github.com/jridgewell/sourcemaps/tree/main/packages/trace-mapping
+- @modelcontextprotocol/sdk@1.28.0 — https://modelcontextprotocol.io
+- @mswjs/interceptors@0.41.3
+- @noble/ciphers@1.3.0 — https://paulmillr.com/noble/
+- @noble/curves@1.9.7 — https://paulmillr.com/noble/
+- @noble/hashes@1.8.0 — https://paulmillr.com/noble/
+- @nodelib/fs.scandir@2.1.5
+- @nodelib/fs.stat@2.0.5
+- @nodelib/fs.walk@1.2.8
+- @nolyfill/is-core-module@1.0.39
+- @open-draft/deferred-promise@2.2.0
+- @open-draft/logger@0.3.0
+- @open-draft/until@2.1.0
+- @radix-ui/primitive@1.1.3 — https://radix-ui.com/primitives
+- @radix-ui/react-alert-dialog@1.1.15 — https://radix-ui.com/primitives
+- @radix-ui/react-arrow@1.1.7 — https://radix-ui.com/primitives
+- @radix-ui/react-collection@1.1.7 — https://radix-ui.com/primitives
+- @radix-ui/react-compose-refs@1.1.2 — https://radix-ui.com/primitives
+- @radix-ui/react-context@1.1.3 — https://radix-ui.com/primitives
+- @radix-ui/react-context@1.1.2 — https://radix-ui.com/primitives
+- @radix-ui/react-dialog@1.1.15 — https://radix-ui.com/primitives
+- @radix-ui/react-direction@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-dismissable-layer@1.1.11 — https://radix-ui.com/primitives
+- @radix-ui/react-focus-guards@1.1.3 — https://radix-ui.com/primitives
+- @radix-ui/react-focus-scope@1.1.7 — https://radix-ui.com/primitives
+- @radix-ui/react-id@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-popper@1.2.8 — https://radix-ui.com/primitives
+- @radix-ui/react-portal@1.1.9 — https://radix-ui.com/primitives
+- @radix-ui/react-presence@1.1.5 — https://radix-ui.com/primitives
+- @radix-ui/react-primitive@2.1.4 — https://radix-ui.com/primitives
+- @radix-ui/react-primitive@2.1.3 — https://radix-ui.com/primitives
+- @radix-ui/react-progress@1.1.8 — https://radix-ui.com/primitives
+- @radix-ui/react-roving-focus@1.1.11 — https://radix-ui.com/primitives
+- @radix-ui/react-separator@1.1.8 — https://radix-ui.com/primitives
+- @radix-ui/react-slot@1.2.3 — https://radix-ui.com/primitives
+- @radix-ui/react-slot@1.2.4 — https://radix-ui.com/primitives
+- @radix-ui/react-tabs@1.1.13 — https://radix-ui.com/primitives
+- @radix-ui/react-tooltip@1.2.8 — https://radix-ui.com/primitives
+- @radix-ui/react-use-callback-ref@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-use-controllable-state@1.2.2 — https://radix-ui.com/primitives
+- @radix-ui/react-use-effect-event@0.0.2 — https://radix-ui.com/primitives
+- @radix-ui/react-use-escape-keydown@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-use-layout-effect@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-use-rect@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-use-size@1.1.1 — https://radix-ui.com/primitives
+- @radix-ui/react-visually-hidden@1.2.3 — https://radix-ui.com/primitives
+- @radix-ui/rect@1.1.1 — https://radix-ui.com/primitives
+- @react-native-masked-view/masked-view@0.3.2 — https://github.com/react-native-masked-view/masked-view#readme
+- @react-native-reusables/cli@0.6.3
+- @react-native/assets-registry@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/assets#readme
+- @react-native/babel-plugin-codegen@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/babel-plugin-codegen#readme
+- @react-native/babel-plugin-codegen@0.87.1 — https://github.com/react/react-native/tree/HEAD/packages/babel-plugin-codegen#readme
+- @react-native/babel-preset@0.87.1
+- @react-native/codegen@0.87.1 — https://github.com/react/react-native/tree/HEAD/packages/react-native-codegen#readme
+- @react-native/codegen@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/react-native-codegen#readme
+- @react-native/community-cli-plugin@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/community-cli-plugin#readme
+- @react-native/debugger-shell@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/debugger-shell#readme
+- @react-native/dev-middleware@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/dev-middleware#readme
+- @react-native/gradle-plugin@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/gradle-plugin#readme
+- @react-native/js-polyfills@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/polyfills#readme
+- @react-native/js-polyfills@0.87.1 — https://github.com/react/react-native/tree/HEAD/packages/polyfills#readme
+- @react-native/metro-babel-transformer@0.87.1
+- @react-native/metro-config@0.87.1 — https://github.com/react/react-native/tree/HEAD/packages/metro-config#readme
+- @react-native/normalize-colors@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/normalize-color#readme
+- @react-native/normalize-colors@0.74.89 — https://github.com/facebook/react-native/tree/HEAD/packages/normalize-color#readme
+- @react-native/virtualized-lists@0.86.3 — https://github.com/react/react-native/tree/HEAD/packages/virtualized-lists#readme
+- @react-navigation/bottom-tabs@7.18.16
+- @react-navigation/core@7.21.12 — https://reactnavigation.org
+- @react-navigation/elements@2.9.38 — https://reactnavigation.org
+- @react-navigation/native@7.3.16 — https://reactnavigation.org
+- @react-navigation/routers@7.6.4 — https://reactnavigation.org/docs/custom-routers/
+- @rn-primitives/alert-dialog@1.2.0
+- @rn-primitives/avatar@1.2.0
+- @rn-primitives/hooks@1.3.0
+- @rn-primitives/portal@1.3.0
+- @rn-primitives/progress@1.2.0
+- @rn-primitives/separator@1.2.0
+- @rn-primitives/slot@1.2.0
+- @rn-primitives/tabs@1.2.0
+- @rn-primitives/tooltip@1.2.0
+- @rn-primitives/types@1.2.0
+- @rolldown/pluginutils@1.0.0-rc.3 — https://rolldown.rs/
+- @rollup/rollup-darwin-arm64@4.60.0 — https://rollupjs.org/
+- @rtsao/scc@1.1.0
+- @rustra/react-native@0.4.0 — https://github.com/loopy-lim/rustra#readme
+- @rustra/tauri@0.4.0 — https://github.com/loopy-lim/rustra#readme
+- @rustra/types@0.4.0 — https://github.com/loopy-lim/rustra#readme
+- @sec-ant/readable-stream@0.4.1 — https://github.com/Sec-ant/readable-stream
+- @shopify/flash-list@2.0.2 — https://shopify.github.io/flash-list/
+- @sinclair/typebox@0.27.10
+- @sindresorhus/merge-streams@4.0.0
+- @standard-schema/spec@1.1.0 — https://standardschema.dev
+- @tailwindcss/node@4.1.17 — https://tailwindcss.com
+- @tailwindcss/node@4.2.2 — https://tailwindcss.com
+- @tailwindcss/oxide@4.1.17
+- @tailwindcss/oxide@4.2.2
+- @tailwindcss/oxide-darwin-arm64@4.1.17
+- @tailwindcss/oxide-darwin-arm64@4.2.2
+- @tailwindcss/vite@4.2.2 — https://tailwindcss.com
+- @tanstack/history@1.161.6 — https://tanstack.com/router
+- @tanstack/query-core@5.95.2 — https://tanstack.com/query
+- @tanstack/react-query@5.95.2 — https://tanstack.com/query
+- @tanstack/react-router@1.168.7 — https://tanstack.com/router
+- @tanstack/react-store@0.9.3 — https://tanstack.com/store
+- @tanstack/router-cli@1.166.22 — https://tanstack.com/router
+- @tanstack/router-core@1.168.6 — https://tanstack.com/router
+- @tanstack/router-generator@1.166.21 — https://tanstack.com/router
+- @tanstack/router-plugin@1.167.8 — https://tanstack.com/router
+- @tanstack/router-utils@1.161.6 — https://tanstack.com/router
+- @tanstack/router-vite-plugin@1.166.23 — https://tanstack.com/router
+- @tanstack/store@0.9.3 — https://tanstack.com/store
+- @tanstack/virtual-file-routes@1.161.7 — https://tanstack.com/router
+- @testing-library/dom@10.4.1 — https://github.com/testing-library/dom-testing-library#readme
+- @testing-library/react@16.3.2 — https://github.com/testing-library/react-testing-library#readme
+- @ts-morph/common@0.27.0
+- @types/aria-query@5.0.4 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/aria-query
+- @types/babel__core@7.20.5 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/babel__core
+- @types/babel__generator@7.27.0 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/babel__generator
+- @types/babel__template@7.4.4 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/babel__template
+- @types/babel__traverse@7.28.0 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/babel__traverse
+- @types/esrecurse@4.3.1 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/esrecurse
+- @types/estree@1.0.8 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/estree
+- @types/hammerjs@2.0.46 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/hammerjs
+- @types/istanbul-lib-coverage@2.0.6 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/istanbul-lib-coverage
+- @types/istanbul-lib-report@3.0.3 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/istanbul-lib-report
+- @types/istanbul-reports@3.0.4 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/istanbul-reports
+- @types/json-schema@7.0.15 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/json-schema
+- @types/json5@0.0.29
+- @types/node@25.2.3 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
+- @types/pako@3.0.0
+- @types/react@19.2.14 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react
+- @types/react-dom@19.2.3 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom
+- @types/react-test-renderer@19.1.0 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-test-renderer
+- @types/statuses@2.0.6 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/statuses
+- @types/validate-npm-package-name@4.0.2 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/validate-npm-package-name
+- @types/whatwg-mimetype@3.0.2 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/whatwg-mimetype
+- @types/ws@8.18.1 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ws
+- @types/yargs@17.0.35 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/yargs
+- @types/yargs-parser@21.0.3 — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/yargs-parser
+- @typescript-eslint/eslint-plugin@8.68.0 — https://typescript-eslint.io/packages/eslint-plugin
+- @typescript-eslint/parser@8.68.0 — https://typescript-eslint.io/packages/parser
+- @typescript-eslint/project-service@8.68.0 — https://typescript-eslint.io
+- @typescript-eslint/project-service@8.67.0 — https://typescript-eslint.io
+- @typescript-eslint/scope-manager@8.68.0 — https://typescript-eslint.io/packages/scope-manager
+- @typescript-eslint/scope-manager@8.67.0 — https://typescript-eslint.io/packages/scope-manager
+- @typescript-eslint/tsconfig-utils@8.68.0 — https://typescript-eslint.io
+- @typescript-eslint/tsconfig-utils@8.67.0 — https://typescript-eslint.io
+- @typescript-eslint/type-utils@8.68.0 — https://typescript-eslint.io
+- @typescript-eslint/types@8.68.0 — https://typescript-eslint.io
+- @typescript-eslint/types@8.67.0 — https://typescript-eslint.io
+- @typescript-eslint/typescript-estree@8.68.0 — https://typescript-eslint.io/packages/typescript-estree
+- @typescript-eslint/typescript-estree@8.67.0 — https://typescript-eslint.io/packages/typescript-estree
+- @typescript-eslint/utils@8.68.0 — https://typescript-eslint.io/packages/utils
+- @typescript-eslint/utils@8.67.0 — https://typescript-eslint.io/packages/utils
+- @typescript-eslint/visitor-keys@8.68.0 — https://typescript-eslint.io
+- @typescript-eslint/visitor-keys@8.67.0 — https://typescript-eslint.io
+- @unrs/resolver-binding-darwin-arm64@1.11.1 — https://github.com/unrs/unrs-resolver#readme
+- @vitejs/plugin-react@5.2.0 — https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#readme
+- @xmldom/xmldom@0.8.13 — https://github.com/xmldom/xmldom
+- abort-controller@3.0.0 — https://github.com/mysticatea/abort-controller#readme
+- accepts@2.0.0
+- accepts@1.3.8
+- acorn@8.15.0 — https://github.com/acornjs/acorn
+- acorn@8.18.0 — https://github.com/acornjs/acorn
+- acorn-jsx@5.3.2 — https://github.com/acornjs/acorn-jsx
+- agent-base@7.1.4
+- agent-cli-detector@0.1.6 — https://github.com/expo/agent-cli-detector#readme
+- ajv@6.12.6 — https://github.com/ajv-validator/ajv
+- ajv@8.18.0 — https://ajv.js.org
+- ajv@6.15.0 — https://github.com/ajv-validator/ajv
+- ajv-formats@3.0.1 — https://github.com/ajv-validator/ajv-formats#readme
+- anser@1.4.10 — https://github.com/IonicaBizau/anser#readme
+- ansi-escapes@4.3.2
+- ansi-regex@6.2.2
+- ansi-regex@5.0.1
+- ansi-regex@4.1.1
+- ansi-styles@4.3.0
+- ansi-styles@3.2.1
+- ansi-styles@5.2.0
+- arg@5.0.2
+- aria-hidden@1.2.6 — https://github.com/theKashey/aria-hidden#readme
+- array-buffer-byte-length@1.0.2 — https://github.com/inspect-js/array-buffer-byte-length#readme
+- array-includes@3.1.9
+- array.prototype.findlast@1.2.5 — https://github.com/es-shims/Array.prototype.findLast#readme
+- array.prototype.findlastindex@1.2.6 — https://github.com/es-shims/Array.prototype.findLastIndex#readme
+- array.prototype.flat@1.3.3
+- array.prototype.flatmap@1.3.3
+- array.prototype.tosorted@1.1.4 — https://github.com/es-shims/Array.prototype.toSorted#readme
+- arraybuffer.prototype.slice@1.0.4 — https://github.com/es-shims/ArrayBuffer.prototype.slice#readme
+- asap@2.0.6
+- ast-types@0.16.1 — http://github.com/benjamn/ast-types
+- async-function@1.0.0 — https://github.com/ljharb/async-function#readme
+- available-typed-arrays@1.0.7 — https://github.com/inspect-js/available-typed-arrays#readme
+- babel-dead-code-elimination@1.0.12
+- babel-plugin-inline-import@3.0.0
+- babel-plugin-polyfill-corejs2@0.4.15
+- babel-plugin-polyfill-corejs3@0.13.0
+- babel-plugin-polyfill-regenerator@0.6.6
+- babel-plugin-react-compiler@1.0.0
+- babel-plugin-react-native-web@0.21.2
+- babel-plugin-syntax-hermes-parser@0.36.1
+- babel-plugin-syntax-hermes-parser@0.36.0
+- babel-plugin-transform-flow-enums@0.0.2
+- babel-preset-expo@57.0.9 — https://github.com/expo/expo/tree/main/packages/babel-preset-expo#readme
+- badgin@1.2.3 — https://github.com/jaulz/badgin
+- balanced-match@1.0.2 — https://github.com/juliangruber/balanced-match
+- balanced-match@4.0.2
+- base-64@0.1.0 — http://mths.be/base64
+- base64-js@1.5.1 — https://github.com/beatgammit/base64-js
+- binary-extensions@2.3.0
+- body-parser@2.2.2
+- bplist-creator@0.1.0
+- bplist-parser@0.3.1 — https://github.com/nearinfinity/node-bplist-parser
+- bplist-parser@0.3.2 — https://github.com/nearinfinity/node-bplist-parser
+- brace-expansion@5.0.2
+- brace-expansion@1.1.12 — https://github.com/juliangruber/brace-expansion
+- brace-expansion@5.0.9
+- braces@3.0.3 — https://github.com/micromatch/braces
+- browserslist@4.28.1
+- buffer-from@1.1.2
+- buffer-image-size@0.6.4
+- bun-types@1.4.0 — https://bun.com
+- bundle-name@4.1.0
+- bytes@3.1.2
+- call-bind@1.0.8 — https://github.com/ljharb/call-bind#readme
+- call-bind-apply-helpers@1.0.2 — https://github.com/ljharb/call-bind-apply-helpers#readme
+- call-bound@1.0.4 — https://github.com/ljharb/call-bound#readme
+- callsites@3.1.0
+- camelcase@6.3.0
+- chalk@5.6.2
+- chalk@4.1.2
+- chalk@2.4.2
+- chokidar@3.6.0 — https://github.com/paulmillr/chokidar
+- ci-info@3.9.0 — https://github.com/watson/ci-info
+- ci-info@2.0.0 — https://github.com/watson/ci-info
+- cli-cursor@2.1.0
+- cli-cursor@5.0.0
+- cli-spinners@2.9.2
+- client-only@0.0.1 — https://reactjs.org/
+- clone@1.0.4
+- clsx@2.1.1
+- code-block-writer@13.0.3 — https://github.com/dsherret/code-block-writer#readme
+- color@4.2.3
+- color-convert@2.0.1
+- color-convert@1.9.3
+- color-name@1.1.4 — https://github.com/colorjs/color-name
+- color-name@1.1.3 — https://github.com/dfcreative/color-name
+- color-string@1.9.1
+- commander@11.1.0
+- commander@7.2.0
+- commander@14.0.3
+- commander@12.1.0
+- commander@2.20.3
+- compressible@2.0.18
+- compression@1.8.1
+- concat-map@0.0.1
+- connect@3.7.0
+- content-disposition@1.0.1
+- content-type@1.0.5
+- convert-source-map@2.0.0 — https://github.com/thlorenz/convert-source-map
+- cookie@0.7.2
+- cookie@1.1.1
+- cookie-es@2.0.0
+- cookie-signature@1.2.2
+- core-js-compat@3.48.0 — https://core-js.io
+- cors@2.8.6
+- cosmiconfig@9.0.1 — https://github.com/cosmiconfig/cosmiconfig#readme
+- cross-fetch@3.2.0 — https://github.com/lquixada/cross-fetch
+- cross-spawn@7.0.6 — https://github.com/moxystudio/node-cross-spawn
+- css-in-js-utils@3.1.0
+- css-tree@1.1.3
+- cssesc@3.0.0 — https://mths.be/cssesc
+- csstype@3.2.3
+- culori@4.0.2
+- data-uri-to-buffer@4.0.1 — https://github.com/TooTallNate/node-data-uri-to-buffer
+- data-view-buffer@1.0.2 — https://github.com/inspect-js/data-view-buffer#readme
+- data-view-byte-length@1.0.2 — https://github.com/inspect-js/data-view-byte-length#readme
+- data-view-byte-offset@1.0.1 — https://github.com/inspect-js/data-view-byte-offset#readme
+- date-fns@4.1.0
+- debug@4.4.3
+- debug@3.2.7
+- debug@2.6.9
+- decode-uri-component@0.2.2
+- dedent@1.7.2 — https://github.com/dmnd/dedent
+- deep-is@0.1.4
+- deepmerge@4.3.1 — https://github.com/TehShrike/deepmerge
+- default-browser@5.5.0
+- default-browser-id@5.0.1
+- defaults@1.0.4
+- define-data-property@1.1.4 — https://github.com/ljharb/define-data-property#readme
+- define-lazy-prop@3.0.0
+- define-properties@1.2.1
+- depd@2.0.0
+- dequal@2.0.3
+- destroy@1.2.0
+- detect-node-es@1.1.0 — https://github.com/thekashey/detect-node
+- dnssd-advertise@1.1.6
+- dom-accessibility-api@0.5.16
+- dom-serializer@2.0.0
+- dunder-proto@1.0.1 — https://github.com/es-shims/dunder-proto#readme
+- eciesjs@0.4.18
+- ee-first@1.1.1
+- effect@3.22.1 — https://effect.website
+- emoji-regex@10.6.0 — https://mths.be/emoji-regex
+- emoji-regex@8.0.0 — https://mths.be/emoji-regex
+- encodeurl@2.0.0
+- encodeurl@1.0.2
+- enhanced-resolve@5.19.0 — http://github.com/webpack/enhanced-resolve
+- env-paths@2.2.1
+- error-ex@1.3.4
+- error-stack-parser@2.1.4 — https://www.stacktracejs.com
+- es-abstract@1.24.1
+- es-define-property@1.0.1 — https://github.com/ljharb/es-define-property#readme
+- es-errors@1.3.0 — https://github.com/ljharb/es-errors#readme
+- es-iterator-helpers@1.2.2 — https://github.com/es-shims/iterator-helpers#readme
+- es-object-atoms@1.1.1 — https://github.com/ljharb/es-object-atoms#readme
+- es-set-tostringtag@2.1.0 — https://github.com/es-shims/es-set-tostringtag#readme
+- es-shim-unscopables@1.1.0 — https://github.com/ljharb/es-shim-unscopables#readme
+- es-to-primitive@1.3.0
+- esbuild@0.27.4
+- escalade@3.2.0
+- escape-html@1.0.3
+- escape-string-regexp@4.0.0
+- escape-string-regexp@1.0.5
+- eslint@9.39.2 — https://eslint.org
+- eslint@10.9.1 — https://eslint.org
+- eslint-config-expo@57.0.2 — https://github.com/expo/expo/tree/main/packages/eslint-config-expo
+- eslint-config-prettier@10.1.8 — https://github.com/prettier/eslint-config-prettier#readme
+- eslint-import-resolver-node@0.3.9 — https://github.com/import-js/eslint-plugin-import
+- eslint-module-utils@2.12.1 — https://github.com/import-js/eslint-plugin-import#readme
+- eslint-plugin-expo@1.1.0
+- eslint-plugin-import@2.32.0 — https://github.com/import-js/eslint-plugin-import
+- eslint-plugin-react@7.37.5 — https://github.com/jsx-eslint/eslint-plugin-react
+- eslint-plugin-react-hooks@7.1.1 — https://react.dev/
+- etag@1.8.1
+- event-target-shim@5.0.1 — https://github.com/mysticatea/event-target-shim
+- eventsource@3.0.7 — https://github.com/EventSource/eventsource#readme
+- eventsource-parser@3.0.6 — https://github.com/rexxars/eventsource-parser#readme
+- execa@5.1.1
+- execa@9.6.1
+- expo@57.0.17 — https://github.com/expo/expo/tree/main/packages/expo
+- expo-application@57.0.2 — https://docs.expo.dev/versions/latest/sdk/application/
+- expo-asset@57.0.15 — https://docs.expo.dev/versions/latest/sdk/asset/
+- expo-background-task@57.0.14 — https://docs.expo.dev/versions/latest/sdk/background-task/
+- expo-blur@57.0.2 — https://docs.expo.dev/versions/latest/sdk/blur-view/
+- expo-build-properties@57.0.15 — https://docs.expo.dev/versions/latest/sdk/build-properties
+- expo-clipboard@57.0.1 — https://docs.expo.dev/versions/latest/sdk/clipboard
+- expo-constants@57.0.15 — https://docs.expo.dev/versions/latest/sdk/constants/
+- expo-device@57.0.1 — https://docs.expo.dev/versions/latest/sdk/device/
+- expo-file-system@57.0.6 — https://docs.expo.dev/versions/latest/sdk/filesystem/
+- expo-font@57.0.1 — https://docs.expo.dev/versions/latest/sdk/font/
+- expo-glass-effect@57.0.1 — https://docs.expo.dev/versions/latest/sdk/glass-effect/
+- expo-haptics@57.0.2 — https://docs.expo.dev/versions/latest/sdk/haptics/
+- expo-image@57.0.3 — https://docs.expo.dev/versions/latest/sdk/image/
+- expo-image-loader@57.0.1 — https://github.com/expo/expo/tree/main/packages/expo-image-loader
+- expo-image-picker@57.0.14 — https://docs.expo.dev/versions/latest/sdk/imagepicker/
+- expo-keep-awake@57.0.1 — https://docs.expo.dev/versions/latest/sdk/keep-awake/
+- expo-linking@57.0.8 — https://docs.expo.dev/versions/latest/sdk/linking
+- expo-modules-autolinking@57.0.12 — https://github.com/expo/expo/tree/main/packages/expo-modules-autolinking#readme
+- expo-modules-core@57.0.14 — https://github.com/expo/expo/tree/main/packages/expo-modules-core
+- expo-modules-jsi@57.0.6 — https://github.com/expo/expo/tree/main/packages/expo-modules-jsi
+- expo-navigation-bar@57.0.2 — https://docs.expo.dev/versions/latest/sdk/navigation-bar
+- expo-network@57.0.1 — https://docs.expo.dev/versions/latest/sdk/network/
+- expo-notifications@57.0.15 — https://docs.expo.dev/versions/latest/sdk/notifications/
+- expo-router@57.0.17 — https://docs.expo.dev/routing/introduction/
+- expo-secure-store@57.0.2 — https://docs.expo.dev/versions/latest/sdk/securestore/
+- expo-server@57.0.3 — https://github.com/expo/expo/tree/main/packages/expo-server#readme
+- expo-share-extension@5.0.6 — https://github.com/MaxAst/expo-share-extension#readme
+- expo-share-intent@8.0.1 — https://github.com/achorein/expo-share-intent/
+- expo-splash-screen@57.0.8 — https://docs.expo.dev/versions/latest/sdk/splash-screen/
+- expo-status-bar@57.0.1 — https://docs.expo.dev/versions/latest/sdk/status-bar/
+- expo-symbols@57.0.2 — https://docs.expo.dev/versions/latest/sdk/symbols/
+- expo-system-ui@57.0.3 — https://docs.expo.dev/versions/latest/sdk/system-ui
+- expo-task-manager@57.0.14 — https://docs.expo.dev/versions/latest/sdk/task-manager/
+- expo-web-browser@57.0.2 — https://docs.expo.dev/versions/latest/sdk/webbrowser/
+- express@5.2.1 — https://expressjs.com/
+- express-rate-limit@8.3.1 — https://github.com/express-rate-limit/express-rate-limit
+- fast-check@3.23.2 — https://fast-check.dev/
+- fast-deep-equal@3.1.3 — https://github.com/epoberezkin/fast-deep-equal#readme
+- fast-glob@3.3.3
+- fast-json-stable-stringify@2.1.0 — https://github.com/epoberezkin/fast-json-stable-stringify
+- fast-levenshtein@2.0.6
+- fbjs@3.0.5
+- fbjs-css-vars@1.0.2
+- fdir@6.5.0 — https://github.com/thecodrr/fdir#readme
+- fetch-blob@3.2.0 — https://github.com/node-fetch/fetch-blob#readme
+- fetch-nodeshim@0.4.10
+- figures@6.1.0
+- file-entry-cache@8.0.0
+- fill-range@7.1.1 — https://github.com/jonschlinkert/fill-range
+- filter-obj@1.1.0
+- finalhandler@1.1.2
+- finalhandler@2.1.1
+- find-up@5.0.0
+- flat-cache@4.0.1
+- flow-enums-runtime@0.0.6
+- for-each@0.3.5 — https://github.com/Raynos/for-each
+- formdata-polyfill@4.0.10 — https://github.com/jimmywarting/FormData#readme
+- forwarded@0.2.0
+- fresh@2.0.0
+- fresh@0.5.2
+- fs-extra@11.3.4 — https://github.com/jprichardson/node-fs-extra
+- fsevents@2.3.2 — https://github.com/fsevents/fsevents
+- fsevents@2.3.3 — https://github.com/fsevents/fsevents
+- function-bind@1.1.2 — https://github.com/Raynos/function-bind
+- function.prototype.name@1.1.8
+- functions-have-names@1.2.3 — https://github.com/inspect-js/functions-have-names#readme
+- fuzzysort@3.1.0
+- generator-function@2.0.1 — https://github.com/TimothyGu/generator-function#readme
+- gensync@1.0.0-beta.2 — https://github.com/loganfsmyth/gensync
+- get-east-asian-width@1.5.0
+- get-intrinsic@1.3.0 — https://github.com/ljharb/get-intrinsic#readme
+- get-nonce@1.0.1 — https://github.com/theKashey/get-nonce
+- get-own-enumerable-keys@1.0.0
+- get-proto@1.0.1 — https://github.com/ljharb/get-proto#readme
+- get-stream@6.0.1
+- get-stream@9.0.1
+- get-symbol-description@1.1.0 — https://github.com/inspect-js/get-symbol-description#readme
+- get-tsconfig@4.13.6
+- getenv@2.0.0 — https://github.com/ctavan/node-getenv
+- globals@17.11.0
+- globals@14.0.0
+- globals@16.5.0
+- globalthis@1.0.4
+- gopd@1.2.0 — https://github.com/ljharb/gopd#readme
+- graphql@16.13.2 — https://github.com/graphql/graphql-js
+- happy-dom@20.11.8 — https://github.com/capricorn86/happy-dom
+- has-bigints@1.1.0 — https://github.com/ljharb/has-bigints#readme
+- has-flag@4.0.0
+- has-flag@3.0.0
+- has-property-descriptors@1.0.2 — https://github.com/inspect-js/has-property-descriptors#readme
+- has-proto@1.2.0 — https://github.com/inspect-js/has-proto#readme
+- has-symbols@1.1.0 — https://github.com/ljharb/has-symbols#readme
+- has-tostringtag@1.0.2 — https://github.com/inspect-js/has-tostringtag#readme
+- hasown@2.0.2 — https://github.com/inspect-js/hasOwn#readme
+- headers-polyfill@4.0.3
+- hermes-compiler@250829098.0.17
+- hermes-estree@0.36.1
+- hermes-estree@0.36.0
+- hermes-estree@0.35.0
+- hermes-estree@0.25.1
+- hermes-parser@0.25.1
+- hermes-parser@0.36.1
+- hermes-parser@0.36.0
+- hermes-parser@0.35.0
+- hono@4.13.3 — https://hono.dev
+- http-errors@2.0.1
+- https-proxy-agent@7.0.6
+- iconv-lite@0.7.2 — https://github.com/pillarjs/iconv-lite
+- ignore@5.3.2
+- ignore@7.0.5
+- image-size@1.2.1
+- import-fresh@3.3.1
+- imurmurhash@0.1.4 — https://github.com/jensyt/imurmurhash-js
+- inline-style-prefixer@7.0.1
+- internal-slot@1.1.0 — https://github.com/ljharb/internal-slot#readme
+- invariant@2.2.4
+- ip-address@10.5.0
+- ipaddr.js@1.9.1
+- is-array-buffer@3.0.5 — https://github.com/inspect-js/is-array-buffer#readme
+- is-arrayish@0.3.4
+- is-arrayish@0.2.1
+- is-async-function@2.1.1
+- is-bigint@1.1.0 — https://github.com/inspect-js/is-bigint#readme
+- is-binary-path@2.1.0
+- is-boolean-object@1.2.2
+- is-bun-module@2.0.0 — https://github.com/SunsetTechuila/is-bun-module
+- is-callable@1.2.7
+- is-core-module@2.16.1 — https://github.com/inspect-js/is-core-module
+- is-data-view@1.0.2 — https://github.com/inspect-js/is-data-view#readme
+- is-date-object@1.1.0
+- is-docker@3.0.0
+- is-docker@2.2.1
+- is-extglob@2.1.1 — https://github.com/jonschlinkert/is-extglob
+- is-finalizationregistry@1.1.1 — https://github.com/inspect-js/is-finalizationregistry#readme
+- is-fullwidth-code-point@3.0.0
+- is-generator-function@1.1.2
+- is-glob@4.0.3 — https://github.com/micromatch/is-glob
+- is-in-ssh@1.0.0
+- is-inside-container@1.0.0
+- is-interactive@2.0.0
+- is-map@2.0.3 — https://github.com/inspect-js/is-map#readme
+- is-negative-zero@2.0.3 — https://github.com/inspect-js/is-negative-zero
+- is-node-process@1.2.0
+- is-number@7.0.0 — https://github.com/jonschlinkert/is-number
+- is-number-object@1.1.1 — https://github.com/inspect-js/is-number-object#readme
+- is-obj@3.0.0
+- is-plain-obj@4.1.0
+- is-promise@4.0.0
+- is-regex@1.2.1 — https://github.com/inspect-js/is-regex
+- is-regexp@3.1.0
+- is-set@2.0.3 — https://github.com/inspect-js/is-set#readme
+- is-shared-array-buffer@1.0.4 — https://github.com/inspect-js/is-shared-array-buffer#readme
+- is-stream@2.0.1
+- is-stream@4.0.1
+- is-string@1.1.1
+- is-symbol@1.1.1
+- is-typed-array@1.1.15
+- is-unicode-supported@2.1.0
+- is-unicode-supported@1.3.0
+- is-weakmap@2.0.2 — https://github.com/inspect-js/is-weakmap#readme
+- is-weakref@1.1.1 — https://github.com/inspect-js/is-weakref#readme
+- is-weakset@2.0.4 — https://github.com/inspect-js/is-weakset#readme
+- is-wsl@3.1.1
+- is-wsl@2.2.0
+- isarray@2.0.5 — https://github.com/juliangruber/isarray
+- iterator.prototype@1.1.5 — https://github.com/ljharb/Iterator.prototype#readme
+- jest-get-type@29.6.3
+- jest-util@29.7.0
+- jest-validate@29.7.0
+- jest-worker@29.7.0
+- jimp-compact@0.16.1
+- jiti@2.6.1
+- jose@6.2.2 — https://github.com/panva/jose
+- js-tokens@4.0.0
+- js-yaml@4.1.1
+- jsesc@3.1.0 — https://mths.be/jsesc
+- json-buffer@3.0.1 — https://github.com/dominictarr/json-buffer
+- json-parse-even-better-errors@2.3.1
+- json-schema-traverse@1.0.0 — https://github.com/epoberezkin/json-schema-traverse#readme
+- json-schema-traverse@0.4.1 — https://github.com/epoberezkin/json-schema-traverse#readme
+- json-stable-stringify-without-jsonify@1.0.1 — https://github.com/samn/json-stable-stringify
+- json5@1.0.2 — http://json5.org/
+- json5@2.2.3 — http://json5.org/
+- jsonfile@6.2.0
+- jsx-ast-utils@3.3.5
+- keyv@4.5.4 — https://github.com/jaredwray/keyv
+- kleur@3.0.3
+- kleur@4.1.5
+- lan-network@0.2.1
+- leven@3.1.0
+- levn@0.4.1 — https://github.com/gkz/levn
+- lines-and-columns@1.2.4 — https://github.com/eventualbuddha/lines-and-columns#readme
+- llama.rn@0.12.9 — https://github.com/mybigday/llama.rn#readme
+- locate-path@6.0.0
+- lodash@4.18.1 — https://lodash.com/
+- lodash.debounce@4.0.8 — https://lodash.com/
+- lodash.merge@4.6.2 — https://lodash.com/
+- lodash.throttle@4.1.1 — https://lodash.com/
+- log-symbols@2.2.0
+- log-symbols@6.0.0
+- loose-envify@1.4.0 — https://github.com/zertosh/loose-envify
+- lz-string@1.5.0 — http://pieroxy.net/blog/pages/lz-string/index.html
+- magic-string@0.30.21
+- math-intrinsics@1.1.0 — https://github.com/es-shims/math-intrinsics#readme
+- media-typer@1.1.0
+- memoize-one@6.0.0
+- memoize-one@5.2.1
+- merge-descriptors@2.0.0
+- merge-stream@2.0.0
+- merge2@1.4.1 — https://github.com/teambition/merge2
+- metro@0.87.0
+- metro@0.84.5
+- metro-babel-transformer@0.87.0
+- metro-babel-transformer@0.84.5
+- metro-cache@0.84.5
+- metro-cache@0.87.0
+- metro-cache-key@0.87.0
+- metro-cache-key@0.84.5
+- metro-config@0.87.0
+- metro-config@0.84.5
+- metro-core@0.87.0
+- metro-core@0.84.5
+- metro-file-map@0.87.0
+- metro-file-map@0.84.5
+- metro-minify-terser@0.84.5
+- metro-minify-terser@0.87.0
+- metro-resolver@0.84.5
+- metro-resolver@0.87.0
+- metro-runtime@0.84.5
+- metro-runtime@0.87.0
+- metro-source-map@0.87.0
+- metro-source-map@0.84.5
+- metro-symbolicate@0.87.0
+- metro-symbolicate@0.84.5
+- metro-transform-plugins@0.84.5
+- metro-transform-plugins@0.87.0
+- metro-transform-worker@0.84.5
+- metro-transform-worker@0.87.0
+- micromatch@4.0.8 — https://github.com/micromatch/micromatch
+- mime@1.6.0
+- mime-db@1.52.0
+- mime-db@1.54.0
+- mime-types@3.0.2
+- mime-types@2.1.35
+- mimic-fn@2.1.0
+- mimic-fn@1.2.0
+- mimic-function@5.0.1
+- minimist@1.2.8 — https://github.com/minimistjs/minimist
+- mkdirp@1.0.4
+- moment@2.30.1 — https://momentjs.com
+- ms@2.1.3
+- ms@2.0.0
+- msw@2.12.14 — https://mswjs.io
+- multitars@1.0.2
+- nanoid@3.3.18
+- nanoid@3.3.11
+- napi-postinstall@0.3.4
+- natural-compare@1.4.0
+- negotiator@1.0.0
+- negotiator@0.6.3
+- negotiator@0.6.4
+- node-domexception@1.0.0 — https://github.com/jimmywarting/node-domexception#readme
+- node-fetch@3.3.2 — https://github.com/node-fetch/node-fetch
+- node-fetch@2.7.0 — https://github.com/bitinn/node-fetch
+- node-int64@0.4.0
+- node-releases@2.0.27
+- normalize-path@3.0.0 — https://github.com/jonschlinkert/normalize-path
+- npm-run-path@4.0.1
+- npm-run-path@6.0.0
+- nullthrows@1.1.1
+- ob1@0.87.0
+- ob1@0.84.5
+- object-assign@4.1.1
+- object-inspect@1.13.4 — https://github.com/inspect-js/object-inspect
+- object-keys@1.1.1
+- object-treeify@1.1.33 — https://github.com/blackflux/object-treeify#readme
+- object.assign@4.1.7
+- object.entries@1.1.9
+- object.fromentries@2.0.8
+- object.groupby@1.0.3 — https://github.com/es-shims/Object.groupBy#readme
+- object.values@1.2.1
+- on-finished@2.3.0
+- on-finished@2.4.1
+- on-headers@1.1.0
+- onetime@5.1.2
+- onetime@2.0.1
+- onetime@7.0.0
+- open@7.4.2
+- open@11.0.0
+- optionator@0.9.4 — https://github.com/gkz/optionator
+- ora@8.2.0
+- ora@3.4.0
+- outvariant@1.4.3
+- own-keys@1.0.1 — https://github.com/ljharb/own-keys#readme
+- p-limit@3.1.0
+- p-locate@5.0.0
+- parent-module@1.0.1
+- parse-json@5.2.0
+- parse-ms@4.0.0
+- parse-png@2.1.0
+- parseurl@1.3.3
+- path-browserify@1.0.1 — https://github.com/browserify/path-browserify
+- path-exists@4.0.0
+- path-extra@1.0.3 — https://github.com/jprichardson/node-path-extra
+- path-key@4.0.0
+- path-key@3.1.1
+- path-parse@1.0.7 — https://github.com/jbgutierrez/path-parse#readme
+- path-to-regexp@6.3.0
+- path-to-regexp@8.4.0
+- pathe@2.0.3
+- picomatch@4.0.3 — https://github.com/micromatch/picomatch
+- picomatch@2.3.1 — https://github.com/micromatch/picomatch
+- picomatch@4.0.7 — https://github.com/micromatch/picomatch
+- pkce-challenge@5.0.1 — https://github.com/crouchcd/pkce-challenge#readme
+- plist@3.1.0
+- pngjs@3.4.0 — https://github.com/lukeapage/pngjs
+- possible-typed-array-names@1.1.0 — https://github.com/ljharb/possible-typed-array-names#readme
+- postcss@8.5.26 — https://postcss.org/
+- postcss@8.5.8 — https://postcss.org/
+- postcss-selector-parser@7.1.1 — https://github.com/postcss/postcss-selector-parser
+- postcss-value-parser@4.2.0 — https://github.com/TrySound/postcss-value-parser
+- powershell-utils@0.1.0
+- prelude-ls@1.2.1 — http://preludels.com
+- prettier@3.8.1 — https://prettier.io
+- prettier-plugin-tailwindcss@0.7.2
+- pretty-format@29.7.0
+- pretty-format@27.5.1
+- pretty-ms@9.3.0
+- progress@2.0.3
+- promise@8.3.0
+- promise@7.3.1
+- prompts@2.4.2
+- prop-types@15.8.1 — https://facebook.github.io/react/
+- proxy-addr@2.0.7
+- punycode@2.3.1 — https://mths.be/punycode
+- pure-rand@6.1.0 — https://github.com/dubzzz/pure-rand#readme
+- query-string@7.1.3
+- queue@6.0.2
+- queue-microtask@1.2.3 — https://github.com/feross/queue-microtask
+- range-parser@1.2.1
+- raw-body@3.0.2
+- react@19.2.3 — https://react.dev/
+- react-devtools-core@6.1.5
+- react-dom@19.2.3 — https://react.dev/
+- react-fast-compare@3.2.2 — https://github.com/FormidableLabs/react-fast-compare
+- react-freeze@1.0.4
+- react-is@19.2.4 — https://react.dev/
+- react-is@16.13.1 — https://reactjs.org/
+- react-is@18.3.1 — https://reactjs.org/
+- react-is@17.0.2 — https://reactjs.org/
+- react-native@0.86.3 — https://reactnative.dev/
+- react-native-blob-util@0.24.7
+- react-native-calendars@1.1314.0
+- react-native-drawer-layout@4.2.10 — https://reactnavigation.org/docs/drawer-layout/
+- react-native-gesture-handler@2.32.0 — https://docs.swmansion.com/react-native-gesture-handler/
+- react-native-is-edge-to-edge@1.3.1 — https://github.com/zoontek/react-native-edge-to-edge
+- react-native-mmkv@4.3.2 — https://github.com/mrousavy/react-native-mmkv#readme
+- react-native-nitro-modules@0.35.10 — https://nitro.margelo.com
+- react-native-reanimated@4.5.1 — https://docs.swmansion.com/react-native-reanimated
+- react-native-safe-area-context@5.7.0 — https://github.com/AppAndFlow/react-native-safe-area-context#readme
+- react-native-screens@4.26.2 — https://github.com/software-mansion/react-native-screens#readme
+- react-native-svg@15.15.4 — https://github.com/react-native-community/react-native-svg
+- react-native-swipe-gestures@1.0.5
+- react-native-web@0.21.2
+- react-native-worklets@0.10.1 — https://docs.swmansion.com/react-native-worklets
+- react-refresh@0.14.2 — https://reactjs.org/
+- react-refresh@0.18.0 — https://react.dev/
+- react-remove-scroll@2.7.2
+- react-remove-scroll-bar@2.3.8
+- react-style-singleton@2.2.3 — https://github.com/theKashey/react-style-singleton#readme
+- readdirp@3.6.0 — https://github.com/paulmillr/readdirp
+- recast@0.23.11 — http://github.com/benjamn/recast
+- reflect.getprototypeof@1.0.10 — https://github.com/es-shims/Reflect.getPrototypeOf
+- regenerate@1.4.2 — https://mths.be/regenerate
+- regenerate-unicode-properties@10.2.2 — https://github.com/mathiasbynens/regenerate-unicode-properties
+- regenerator-runtime@0.13.11
+- regexp.prototype.flags@1.5.4
+- regexpu-core@6.4.0 — https://mths.be/regexpu
+- regjsgen@0.8.0 — https://github.com/bnjmnt4n/regjsgen
+- require-directory@2.1.1 — https://github.com/troygoode/node-require-directory/
+- require-from-string@2.0.2
+- require-resolve@0.0.2 — https://github.com/qiu8310/require-resolve
+- reselect@5.1.1
+- resolve@2.0.0-next.5
+- resolve@1.22.11
+- resolve-from@4.0.0
+- resolve-from@5.0.0
+- resolve-pkg-maps@1.0.0
+- resolve-workspace-root@2.0.1 — https://github.com/byCedric/resolve-workspace-root#readme
+- restore-cursor@2.0.0
+- restore-cursor@5.1.0
+- rettime@0.10.1
+- reusify@1.1.0 — https://github.com/mcollina/reusify#readme
+- rollup@4.60.0 — https://rollupjs.org/
+- router@2.2.0
+- run-applescript@7.1.0
+- run-parallel@1.2.0 — https://github.com/feross/run-parallel
+- safe-array-concat@1.1.3 — https://github.com/ljharb/safe-array-concat#readme
+- safe-buffer@5.2.1 — https://github.com/feross/safe-buffer
+- safe-push-apply@1.0.0 — https://github.com/ljharb/safe-push-apply#readme
+- safe-regex-test@1.1.0 — https://github.com/ljharb/safe-regex-test#readme
+- safer-buffer@2.1.2
+- sandbox-cli-detector@0.2.0
+- scheduler@0.27.0 — https://react.dev/
+- send@1.2.1
+- send@0.19.2
+- serialize-error@2.1.0
+- seroval@1.6.2 — https://github.com/lxsmnsyc/seroval/tree/main/packages/seroval
+- seroval-plugins@1.5.1 — https://github.com/lxsmnsyc/seroval/tree/main/packages/plugins
+- serve-static@1.16.3
+- serve-static@2.2.1
+- server-only@0.0.1 — https://reactjs.org/
+- set-function-length@1.2.2 — https://github.com/ljharb/set-function-length#readme
+- set-function-name@2.0.2 — https://github.com/ljharb/set-function-name#readme
+- set-proto@1.0.0 — https://github.com/ljharb/set-proto#readme
+- setimmediate@1.0.5
+- sf-symbols-typescript@2.2.0
+- shadcn@4.1.1
+- shallowequal@1.1.0
+- shebang-command@2.0.0
+- shebang-regex@3.0.0
+- shell-quote@1.10.0 — https://github.com/ljharb/shell-quote
+- side-channel@1.1.1 — https://github.com/ljharb/side-channel#readme
+- side-channel@1.1.0 — https://github.com/ljharb/side-channel#readme
+- side-channel-list@1.0.0 — https://github.com/ljharb/side-channel-list#readme
+- side-channel-list@1.0.1 — https://github.com/ljharb/side-channel-list#readme
+- side-channel-map@1.0.1 — https://github.com/ljharb/side-channel-map#readme
+- side-channel-weakmap@1.0.2 — https://github.com/ljharb/side-channel-weakmap#readme
+- simple-plist@1.3.1 — https://github.com/wollardj/simple-plist.git
+- simple-swizzle@0.2.4
+- sisteransi@1.0.5
+- slugify@1.6.6 — https://github.com/simov/slugify
+- source-map-support@0.5.21
+- split-on-first@1.1.0
+- stable-hash@0.0.5
+- stackframe@1.3.4 — https://www.stacktracejs.com
+- stacktrace-parser@0.1.11 — https://github.com/errwischt/stacktrace-parser
+- standard-navigation@0.0.8 — https://github.com/react-navigation/standard-navigation#readme
+- standard-navigation@0.0.5 — https://github.com/react-navigation/standard-navigation#readme
+- statuses@2.0.2
+- statuses@1.5.0
+- stdin-discarder@0.2.2
+- stop-iteration-iterator@1.1.0 — https://github.com/ljharb/stop-iteration-iterator#readme
+- strict-event-emitter@0.5.1
+- strict-uri-encode@2.0.0
+- string-width@7.2.0
+- string-width@4.2.3
+- string.prototype.matchall@4.0.12 — https://github.com/es-shims/String.prototype.matchAll#readme
+- string.prototype.repeat@1.0.0 — https://mths.be/repeat
+- string.prototype.trim@1.2.10
+- string.prototype.trimend@1.0.9
+- string.prototype.trimstart@1.0.8
+- strip-ansi@7.2.0
+- strip-ansi@6.0.1
+- strip-ansi@5.2.0
+- strip-bom@3.0.0
+- strip-final-newline@2.0.0
+- strip-final-newline@4.0.0
+- strip-json-comments@3.1.1
+- structured-headers@0.4.1 — https://github.com/evert/structured-header#readme
+- styleq@0.1.3
+- supports-color@8.1.1
+- supports-color@7.2.0
+- supports-color@5.5.0
+- supports-hyperlinks@2.3.0
+- supports-preserve-symlinks-flag@1.0.0 — https://github.com/inspect-js/node-supports-preserve-symlinks-flag#readme
+- tabbable@6.4.0 — https://github.com/focus-trap/tabbable#readme
+- tagged-tag@1.0.0
+- tailwind-merge@3.5.0 — https://github.com/dcastil/tailwind-merge
+- tailwindcss@4.1.17 — https://tailwindcss.com
+- tailwindcss@4.2.2 — https://tailwindcss.com
+- tapable@2.3.0 — https://github.com/webpack/tapable
+- terminal-link@2.1.1
+- throat@5.0.0
+- tiny-invariant@1.3.3
+- tinyglobby@0.2.15 — https://superchupu.dev/tinyglobby
+- tldts@7.0.27 — https://github.com/remusao/tldts#readme
+- tldts-core@7.0.27 — https://github.com/remusao/tldts#readme
+- to-regex-range@5.0.1 — https://github.com/micromatch/to-regex-range
+- toidentifier@1.0.1
+- toqr@0.1.1
+- tr46@0.0.3 — https://github.com/Sebmaster/tr46.js#readme
+- ts-api-utils@2.5.0
+- ts-morph@26.0.0 — https://github.com/dsherret/ts-morph#readme
+- tsconfig-paths@4.2.0
+- tsconfig-paths@3.15.0
+- tsx@4.21.0 — https://tsx.is
+- tw-animate-css@1.4.0 — https://github.com/Wombosvideo/tw-animate-css#readme
+- type-check@0.4.0 — https://github.com/gkz/type-check
+- type-is@2.0.1
+- typed-array-buffer@1.0.3 — https://github.com/inspect-js/typed-array-buffer#readme
+- typed-array-byte-length@1.0.3 — https://github.com/inspect-js/typed-array-byte-length#readme
+- typed-array-byte-offset@1.0.4 — https://github.com/inspect-js/typed-array-byte-offset#readme
+- typed-array-length@1.0.7 — https://github.com/inspect-js/typed-array-length#readme
+- typescript-eslint@8.68.0 — https://typescript-eslint.io/packages/typescript-eslint
+- ua-parser-js@0.7.41 — https://uaparser.dev
+- ua-parser-js@1.0.41 — https://uaparser.dev
+- unbox-primitive@1.1.0 — https://github.com/ljharb/unbox-primitive#readme
+- undici-types@7.16.0 — https://undici.nodejs.org
+- unicode-canonical-property-names-ecmascript@2.0.1 — https://github.com/mathiasbynens/unicode-canonical-property-names-ecmascript
+- unicode-match-property-ecmascript@2.0.0 — https://github.com/mathiasbynens/unicode-match-property-ecmascript
+- unicode-match-property-value-ecmascript@2.2.1 — https://github.com/mathiasbynens/unicode-match-property-value-ecmascript
+- unicode-property-aliases-ecmascript@2.2.0 — https://github.com/mathiasbynens/unicode-property-aliases-ecmascript
+- unicorn-magic@0.3.0
+- unimodules-app-loader@57.0.1 — https://github.com/expo/expo/tree/main/packages/unimodules-app-loader
+- universalify@2.0.1 — https://github.com/RyanZim/universalify#readme
+- uniwind@1.3.1 — https://uniwind.dev
+- unpipe@1.0.0
+- unplugin@2.3.11 — https://unplugin.unjs.io
+- unrs-resolver@1.11.1 — https://github.com/unrs/unrs-resolver#readme
+- until-async@3.0.2 — https://github.com/kettanaito/until-async
+- update-browserslist-db@1.2.3
+- use-callback-ref@1.3.3
+- use-latest-callback@0.2.6
+- use-sidecar@1.1.3 — https://github.com/theKashey/use-sidecar
+- use-sync-external-store@1.6.0
+- util-deprecate@1.0.2 — https://github.com/TooTallNate/util-deprecate
+- utils-merge@1.0.1
+- uuid@7.0.3
+- valibot@1.4.2 — https://valibot.dev
+- vary@1.1.2
+- vaul@1.1.2 — https://vaul.emilkowal.ski/
+- vite@7.3.6 — https://vite.dev
+- vlq@1.0.1
+- warn-once@0.1.1
+- wcwidth@1.0.1 — https://github.com/timoxley/wcwidth#readme
+- web-streams-polyfill@3.3.3 — https://github.com/MattiasBuelens/web-streams-polyfill#readme
+- webpack-virtual-modules@0.6.2 — https://github.com/sysgears/webpack-virtual-modules#readme
+- whatwg-fetch@3.6.20
+- whatwg-mimetype@3.0.0
+- whatwg-url@5.0.0
+- whatwg-url-minimum@0.1.2
+- which-boxed-primitive@1.1.1 — https://github.com/inspect-js/which-boxed-primitive#readme
+- which-builtin-type@1.2.1 — https://github.com/inspect-js/which-builtin-type#readme
+- which-collection@1.0.2 — https://github.com/inspect-js/which-collection#readme
+- which-typed-array@1.1.20
+- word-wrap@1.2.5 — https://github.com/jonschlinkert/word-wrap
+- wrap-ansi@7.0.0
+- wrap-ansi@6.2.0
+- ws@7.5.10 — https://github.com/websockets/ws
+- ws@8.21.3 — https://github.com/websockets/ws
+- wsl-utils@0.3.1
+- x-path@0.0.2 — https://github.com/node-x-extras/x-path
+- xml2js@0.6.0 — https://github.com/Leonidas-from-XIV/node-xml2js
+- xmlbuilder@11.0.1 — http://github.com/oozcitak/xmlbuilder-js
+- xmlbuilder@15.1.1 — http://github.com/oozcitak/xmlbuilder-js
+- yargs@17.7.2 — https://yargs.js.org/
+- yocto-queue@0.1.0
+- yoctocolors@2.1.2
+- yoctocolors-cjs@2.1.3
+- zod@4.3.6 — https://zod.dev
+- zod@3.25.76 — https://zod.dev
+- zod-validation-error@4.0.2
+- zustand@5.0.11 — https://github.com/pmndrs/zustand
+
+## MIT AND Apache-2.0 (1)
+
+- @expo-google-fonts/material-symbols@0.4.25 — https://github.com/expo/google-fonts/tree/master/font-packages/material-symbols#readme
+
+## MIT OR Apache-2.0 (1)
+
+- @tauri-apps/plugin-notification@2.3.3
+
+## MPL-2.0 (4)
+
+- lightningcss@1.32.0
+- lightningcss@1.30.2
+- lightningcss-darwin-arm64@1.30.2
+- lightningcss-darwin-arm64@1.32.0
+
+## OFL-1.1 (1)
+
+- @fontsource-variable/geist@5.2.8 — https://fontsource.org/fonts/geist
+
+## Python-2.0 (1)
+
+- argparse@2.0.1
+
+## UNKNOWN (1)
+
+- @toss/hangul@1.7.1
+
+## Unlicense (3)
+
+- big-integer@1.6.52
+- isbot@5.1.36 — https://isbot.js.org
+- stream-buffers@2.2.0
+
+## AI 모델 라이선스
+
+이 애플리케이션이 사용하는 온디바이스 AI 모델(GGUF 등)은 앱에 번들되지 않고 런타임에 사용자가 다운로드합니다. 따라서 위 서드파티 패키지 목록에 포함되지 않으며, 각 모델의 라이선스는 앱 내 모델 카탈로그(`packages/shared/src/local-model-registry.ts`)의 항목별로 표시됩니다. 모델을 다운로드해 사용하기 전에 해당 라이선스를 확인하세요.

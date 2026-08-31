@@ -1,6 +1,7 @@
 {
   "name": "glimpse-workspace",
   "private": true,
+  "license": "MIT",
   "packageManager": "bun@1.4.0",
   "workspaces": [
     "apps/*",
@@ -49,7 +50,8 @@
     "bridge:generate": "cargo run -p glimpse-bridge --bin generate",
     "test": "bun run --cwd apps/mobile test",
     "test:coverage": "bun run --cwd apps/mobile test:coverage",
-    "audit:critical": "bun audit --audit-level=critical"
+    "audit:critical": "bun audit --audit-level=critical",
+    "licenses:generate": "bun run scripts/generate-notices.ts"
   },
   "patchedDependencies": {
     "expo-modules-jsi@57.0.6": "patches/expo-modules-jsi@57.0.6.patch"

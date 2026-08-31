@@ -40,6 +40,7 @@ describe("RECOMMENDED_MODELS on mobile", () => {
 
   it("exposes the researched mobile catalog in recommendation order", () => {
     expect(RECOMMENDED_MODELS.map((model) => model.id)).toEqual([
+      "qwen3.5-2b-q4",
       "lfm2.5-2.6b-q4",
       "kanana-2-3b-instruct-q4",
       "qwen3-edgerazor-1.7b-tq1",
@@ -48,7 +49,6 @@ describe("RECOMMENDED_MODELS on mobile", () => {
       "g9v3-3b-q4",
       "nanbeige4.2-3b-q4",
       "kanana-2-1.3b-instruct-q8",
-      "qwen3.5-2b-q4",
       "lfm2.5-350m-q4",
       "qwen3.5-0.8b-q4",
       "lfm2.5-1.2b-instruct-q4",

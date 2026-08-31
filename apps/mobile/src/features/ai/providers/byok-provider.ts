@@ -21,7 +21,10 @@ import {
   getModel,
   getProvider,
 } from '@/src/features/settings/byok.selectors';
-import type { BYOKProviderType } from '@/src/stores/settings/byok.store';
+import {
+  ensureBYOKHydrated,
+  type BYOKProviderType,
+} from '@/src/stores/settings/byok.store';
 import {
   DEFAULT_OPENAI_BASE_URL,
   getDefaultByokModel,
@@ -43,6 +46,7 @@ type BYOKRequestContext = {
   baseUrl: string | null;
   modelOverride: string | null;
   fetchFn: typeof fetch;
+  timeoutMs: number;
 };
 
 /**
@@ -59,8 +63,15 @@ export interface BYOKProviderConfig {
   getModel?: () => string | null;
   /** Get provider type (defaults to getProvider selector) */
   getProvider?: () => BYOKProviderType | null;
+  /**
+   * Ensure BYOK settings are restored before reading the store
+   * (defaults to ensureBYOKHydrated) — 콜드스타트 복원 레이스 방지용
+   */
+  hydrate?: () => Promise<void>;
   /** Custom fetch function for testing */
   fetch?: typeof fetch;
+  /** Request timeout in ms (defaults to 30s) */
+  timeoutMs?: number;
 }
 
 /**
@@ -135,6 +146,8 @@ function mapErrorToCode(status: number): AIProviderErrorCode {
   return 'AI_PROVIDER_NETWORK_ERROR';
 }
 
+const BYOK_TIMEOUT_MS = 30_000;
+
 function createBYOKError(
   code: AIProviderErrorCode,
   message: string,
@@ -178,24 +191,46 @@ function callAPIEffect(
   prompt: string,
 ): Effect.Effect<string, AIProviderError> {
   return Effect.gen(function* (_) {
-    const { provider, apiKey, baseUrl, modelOverride, fetchFn } = context;
+    const { provider, apiKey, baseUrl, modelOverride, fetchFn, timeoutMs } = context;
     const config = API_CONFIGS[provider];
     const model = modelOverride ?? config.defaultModel;
     const endpoint = resolveEndpoint(provider, config, model, apiKey, baseUrl);
 
+    // AbortSignal.timeout은 React Native 런타임에 존재하지 않는다(polyfill에
+    // static timeout이 없음). 플래그 기반 AbortController로 대체한다 —
+    // RN fetch(whatwg-fetch)는 abort 시 항상 AbortError로 거부하므로
+    // 타임아웃 여부는 에러 이름이 아닌 timedOut 플래그로 판정한다.
+    let timedOut = false;
     const response = yield* _(
       Effect.tryPromise({
-        try: () =>
-          fetchFn(endpoint, {
-            method: 'POST',
-            headers: config.buildHeaders(apiKey),
-            body: config.buildBody(prompt, model),
-          }),
+        try: async () => {
+          const controller = new AbortController();
+          const timer = setTimeout(() => {
+            timedOut = true;
+            controller.abort();
+          }, timeoutMs);
+          try {
+            return await fetchFn(endpoint, {
+              method: 'POST',
+              headers: config.buildHeaders(apiKey),
+              body: config.buildBody(prompt, model),
+              signal: controller.signal,
+            });
+          } finally {
+            clearTimeout(timer);
+          }
+        },
         catch: (error) =>
-          createBYOKError('AI_PROVIDER_NETWORK_ERROR', 'Network error during API call', {
-            provider,
-            cause: error,
-          }),
+          createBYOKError(
+            timedOut ? 'AI_PROVIDER_TIMEOUT' : 'AI_PROVIDER_NETWORK_ERROR',
+            timedOut
+              ? `API request timed out after ${timeoutMs}ms`
+              : 'Network error during API call',
+            {
+              provider,
+              cause: error,
+            },
+          ),
       }),
     );
 
@@ -236,7 +271,8 @@ function resolveRequestContext(
   getProviderType: () => BYOKProviderType | null,
   getBaseUrlValue: () => string | null,
   getModelValue: () => string | null,
-  fetchFn: typeof fetch
+  fetchFn: typeof fetch,
+  timeoutMs: number
 ): BYOKRequestContext | AIProviderError {
   if (!checkIsReady()) {
     return createBYOKError('AI_PROVIDER_UNAVAILABLE', 'BYOK is not configured or disabled');
@@ -255,6 +291,7 @@ function resolveRequestContext(
     baseUrl: getBaseUrlValue(),
     modelOverride: getModelValue(),
     fetchFn,
+    timeoutMs,
   };
 }
 
@@ -272,7 +309,9 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
   const getBaseUrlValue = config.getBaseUrl ?? getBaseUrl;
   const getModelValue = config.getModel ?? getModel;
   const getProviderType = config.getProvider ?? getProvider;
+  const hydrate = config.hydrate ?? ensureBYOKHydrated;
   const fetchFn = config.fetch ?? fetch;
+  const timeoutMs = config.timeoutMs ?? BYOK_TIMEOUT_MS;
 
   return {
     name: 'byok',
@@ -285,13 +324,28 @@ export function createBYOKProvider(config: BYOKProviderConfig = {}): MetadataPro
       input: MetadataInput,
     ): Effect.Effect<MetadataOutput, AIProviderError> {
       return Effect.gen(function* (_) {
+        // 콜드스타트 직후 SecureStore 복원이 끝나지 않은 상태에서
+        // 스토어를 읽어 UNAVAILABLE로 거부되는 레이스 방지 — 채팅 경로와 동일 게이트.
+        yield* _(
+          Effect.tryPromise({
+            try: () => hydrate(),
+            catch: (error) =>
+              createBYOKError(
+                'AI_PROVIDER_UNAVAILABLE',
+                'Failed to restore BYOK settings',
+                { cause: error },
+              ),
+          }),
+        );
+
         const requestContext = resolveRequestContext(
           checkIsReady,
           getKey,
           getProviderType,
           getBaseUrlValue,
           getModelValue,
-          fetchFn
+          fetchFn,
+          timeoutMs
         );
 
         if ('code' in requestContext) {

@@ -32,6 +32,16 @@ function streamingResponse(status: number): Response {
   return new Response('err', { status });
 }
 
+/** abort 신호를 존중하는 hanging fetch — 타임아웃 분류 검증용(모바일과 동일 접근). */
+function createSignalAwareHangingFetch(): typeof fetch {
+  return ((url: string, init?: RequestInit) =>
+    new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => {
+        reject(new DOMException('The operation was aborted.', 'AbortError'));
+      });
+    })) as unknown as typeof fetch;
+}
+
 describe('BYOK 스트리밍 에러 매핑', () => {
   beforeEach(() => {
     storage.clear();
@@ -98,5 +108,113 @@ describe('BYOK 스트리밍 에러 매핑', () => {
     );
 
     expect(result).toBeNull();
+  });
+});
+
+describe('BYOK 타임아웃', () => {
+  beforeEach(() => {
+    storage.clear();
+    storage.set(
+      'glimpse_desktop_settings_v1',
+      JSON.stringify({
+        aiProvider: 'byok',
+        byok: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+        localLlm: { enabled: false, selectedModel: null },
+      }),
+    );
+  });
+
+  test('complete() 무한 대기 요청은 AI_PROVIDER_TIMEOUT로 분류되어 throw', async () => {
+    const { createBYOKProvider } = await import('./byok-provider');
+    const provider = createBYOKProvider({
+      provider: 'openai',
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+      fetchFn: createSignalAwareHangingFetch(),
+      timeoutMs: 20,
+    });
+
+    let thrown: unknown = null;
+    try {
+      await provider.complete({ prompt: 'hi' });
+    } catch (e) {
+      thrown = e;
+    }
+
+    expect(thrown).not.toBeNull();
+    const err = thrown as { code?: string };
+    expect(err.code).toBe('AI_PROVIDER_TIMEOUT');
+  });
+
+  test('complete() AbortSignal.timeout 없이도 동작한다 — 회귀 방지', async () => {
+    // 모바일과 동일: RN polyfill에는 AbortSignal.timeout가 없다. 데스크톱은
+    // Tauri 웹뷰라 존재하지만, realm 이식성을 위해 플래그 패턴을 유지한다.
+    const signalStatic = AbortSignal as unknown as { timeout?: unknown };
+    const originalTimeout = signalStatic.timeout;
+    delete signalStatic.timeout;
+
+    try {
+      const { createBYOKProvider } = await import('./byok-provider');
+      const provider = createBYOKProvider({
+        provider: 'openai',
+        apiKey: 'sk-test',
+        model: 'gpt-4o-mini',
+        fetchFn: createSignalAwareHangingFetch(),
+        timeoutMs: 20,
+      });
+
+      let thrown: unknown = null;
+      try {
+        await provider.complete({ prompt: 'hi' });
+      } catch (e) {
+        thrown = e;
+      }
+
+      expect(thrown).not.toBeNull();
+      expect((thrown as { code?: string }).code).toBe('AI_PROVIDER_TIMEOUT');
+    } finally {
+      signalStatic.timeout = originalTimeout;
+    }
+  });
+
+  test('completeBYOKStream() 멍텅구리 fetch는 null 폴백 — 비스트리밍으로 강등', async () => {
+    const { completeBYOKStream } = await import('./byok-provider');
+    const started = Date.now();
+
+    const result = await completeBYOKStream(
+      [{ role: 'user', content: 'hi' }],
+      { onToken: () => {}, onDone: () => {} },
+      {
+        provider: 'openai',
+        apiKey: 'sk-test',
+        model: 'gpt-4o-mini',
+        fetchFn: createSignalAwareHangingFetch(),
+        timeoutMs: 20,
+      },
+    );
+
+    expect(result).toBeNull();
+    // 타임아웃 경계에서 잘랐다 — 30초 기본값을 기다리지 않는다
+    expect(Date.now() - started).toBeLessThan(5_000);
+  });
+
+  test('비스트리밍 프로바이더(google — buildStreamBody 없음)는 fetch 전에 즉시 null', async () => {
+    const { completeBYOKStream } = await import('./byok-provider');
+    const fetchMock = mock(async () => streamingResponse(200));
+
+    const result = await completeBYOKStream(
+      [{ role: 'user', content: 'hi' }],
+      { onToken: () => {}, onDone: () => {} },
+      {
+        provider: 'google',
+        apiKey: 'g-key',
+        model: 'gemini-pro',
+        fetchFn: fetchMock as unknown as typeof fetch,
+        timeoutMs: 20,
+      },
+    );
+
+    expect(result).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

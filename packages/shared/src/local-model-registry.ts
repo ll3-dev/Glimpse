@@ -27,6 +27,9 @@ export type GGUFSource = "publisher" | "community";
 
 export type MobileModelRuntime = "llama-rn" | "bitnet-cpp" | "mnn";
 
+/** 라이선스 성격 — permissive(Apache/MIT 등 허용적) 또는 custom(조건부 허용) */
+export type ModelLicenseKind = "permissive" | "custom";
+
 export interface MobileModelProfile {
   /** Display order in the curated mobile catalog */
   rank: number;
@@ -75,6 +78,8 @@ export interface LocalModelDefinition {
   description?: string;
   /** Model license identifier shown before download */
   license?: string;
+  /** 라이선스 성격 — permissive(Apache/MIT 등 허용적) 또는 custom(조건부 허용) */
+  licenseKind: ModelLicenseKind;
   /** Base-model release month, displayed as YYYY.MM */
   releasedAt?: string;
   /** Whether the GGUF was published by the model owner or a converter */
@@ -101,14 +106,15 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 7월 공개된 휴대폰용 에이전트·RAG 균형형",
     license: "LFM 1.0",
+    licenseKind: "custom",
     releasedAt: "2026.07",
     ggufSource: "publisher",
     mobileProfile: {
-      rank: 1,
+      rank: 1.5,
       tier: "balanced",
-      recommended: true,
-      strengths: ["기본 추천", "한국어", "도구·추론"],
-      caveat: "깊게 생각한 뒤 답해 첫 응답은 조금 느릴 수 있어요",
+      strengths: ["한국어", "도구·추론"],
+      caveat:
+        "깊게 생각한 뒤 답해 첫 응답은 조금 느릴 수 있어요 · 커스텀 라이선스(LFM 1.0)라 상용 배포 시 라이선스 확인이 필요해요",
     },
   },
   {
@@ -125,6 +131,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 7월 공개된 카카오의 최신 한국어·영어 3B 모델",
     license: "Kanana Open License",
+    licenseKind: "custom",
     releasedAt: "2026.07",
     ggufSource: "community",
     sourceModelRepo: "kakaocorp/kanana-2-3b-instruct",
@@ -150,6 +157,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     description:
       "Qwen3를 1.58-bit로 다시 학습해 크기를 크게 낮춘 2026년 엣지 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.04",
     ggufSource: "publisher",
     sourceModelRepo: "zhangsq-nju/Qwen3-1.7B-EdgeRazor-1.58bit",
@@ -179,6 +187,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 5월 공개된 온디바이스·엣지용 최신 1B 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.05",
     ggufSource: "publisher",
     mobileProfile: {
@@ -202,6 +211,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "저사양 휴대폰에서도 시험하기 좋은 178MB Qwen3 1.58-bit 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.04",
     ggufSource: "publisher",
     sourceModelRepo: "zhangsq-nju/Qwen3-0.6B-EdgeRazor-1.58bit",
@@ -231,6 +241,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 7월 공개된 로컬 대화·코딩·도구 사용 품질형",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.07",
     ggufSource: "community",
     sourceModelRepo: "ai9stars/G9v3-3B",
@@ -255,6 +266,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 7월 공개된 에이전트·코딩·장문 추론 3B 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.07",
     ggufSource: "community",
     sourceModelRepo: "Nanbeige/Nanbeige4.2-3B",
@@ -279,6 +291,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 7월 공개된 카카오의 최신 초경량 한국어 모델",
     license: "Kanana Open License",
+    licenseKind: "custom",
     releasedAt: "2026.07",
     ggufSource: "community",
     sourceModelRepo: "kakaocorp/kanana-2-1.3b-instruct",
@@ -303,13 +316,15 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "201개 언어를 지원하는 2026년 다국어 대화·추론 균형형",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.03",
     ggufSource: "community",
     sourceModelRepo: "Qwen/Qwen3.5-2B",
     mobileProfile: {
-      rank: 7,
+      rank: 1,
       tier: "balanced",
-      strengths: ["다국어", "한국어", "범용 추론"],
+      recommended: true,
+      strengths: ["기본 추천", "다국어", "한국어", "범용 추론"],
       caveat: "현재 앱에서는 텍스트 기능만 사용해요",
     },
   },
@@ -327,6 +342,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "2026년 공개 모델 중 가장 가벼운 태그·짧은 요약용",
     license: "LFM 1.0",
+    licenseKind: "custom",
     releasedAt: "2026.03",
     ggufSource: "publisher",
     mobileProfile: {
@@ -350,6 +366,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "201개 언어와 긴 문맥을 지원하는 2026년 초경량 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.03",
     ggufSource: "community",
     sourceModelRepo: "Qwen/Qwen3.5-0.8B",
@@ -374,6 +391,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "1GB 미만으로 빠른 요약·태그·가벼운 대화에 적합",
     license: "LFM 1.0",
+    licenseKind: "custom",
     releasedAt: "2026.01",
     ggufSource: "publisher",
     mobileProfile: {
@@ -397,6 +415,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "Qwen 3.5 소형군에서 답변 품질을 우선한 4B 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.03",
     ggufSource: "community",
     sourceModelRepo: "Qwen/Qwen3.5-4B",
@@ -423,6 +442,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "한국어를 포함한 다국어 지시 이행을 중시한 품질형",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2025.12",
     ggufSource: "publisher",
     mobileProfile: {
@@ -446,6 +466,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "수학·논리 문제의 단계적 추론을 우선한 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2025.12",
     ggufSource: "community",
     sourceModelRepo: "mistralai/Ministral-3-3B-Reasoning-2512",
@@ -470,6 +491,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "문서·RAG·도구 사용을 중시한 IBM의 3B 기업용 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2025.09",
     ggufSource: "publisher",
     mobileProfile: {
@@ -493,6 +515,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "0.6B만 활성화하는 온디바이스 전용 4B MoE 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2025.07",
     ggufSource: "publisher",
     mobileProfile: {
@@ -516,6 +539,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "LG AI Research의 작고 빠른 한국어·영어 추론 모델",
     license: "EXAONE AI Model License 1.1",
+    licenseKind: "custom",
     releasedAt: "2025.07",
     ggufSource: "publisher",
     mobileProfile: {
@@ -539,6 +563,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "네이버의 한국어 중심 장문·도구 사용 1.5B 모델",
     license: "HyperCLOVA X SEED License",
+    licenseKind: "custom",
     releasedAt: "2025.04",
     ggufSource: "community",
     sourceModelRepo: "naver-hyperclovax/HyperCLOVAX-SEED-Text-Instruct-1.5B",
@@ -566,6 +591,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     description:
       "작은 크기에서 긴 문맥과 선택형 추론을 제공하는 Hugging Face 3B 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2025.07",
     ggufSource: "community",
     sourceModelRepo: "HuggingFaceTB/SmolLM3-3B",
@@ -592,6 +618,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "휴대폰·태블릿 실행을 목표로 설계된 Google의 모바일 우선 모델",
     license: "Gemma",
+    licenseKind: "custom",
     releasedAt: "2025.06",
     ggufSource: "community",
     sourceModelRepo: "google/gemma-3n-E2B-it",
@@ -618,6 +645,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "8B 가중치 중 약 1B만 활성화하는 2026년 고성능 엣지 MoE 모델",
     license: "LFM 1.0",
+    licenseKind: "custom",
     releasedAt: "2026.05",
     ggufSource: "publisher",
     mobileProfile: {
@@ -646,6 +674,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "201개 언어와 높은 추론 품질을 제공하는 Qwen 3.5 고성능 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2026.03",
     ggufSource: "community",
     sourceModelRepo: "Qwen/Qwen3.5-9B",
@@ -672,6 +701,7 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     platform: "both",
     description: "에이전트·도구 사용·코딩을 중시한 Mistral의 고품질 소형 모델",
     license: "Apache-2.0",
+    licenseKind: "permissive",
     releasedAt: "2025.12",
     ggufSource: "community",
     sourceModelRepo: "mistralai/Ministral-3-8B-Instruct-2512",
@@ -697,6 +727,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "reasoning", "code"],
     platform: "desktop",
     description: "수학/코딩 추론 (2025.12)",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
   },
   {
     id: "phi-4-reasoning-vision-15b-q4",
@@ -711,6 +743,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "reasoning", "vision"],
     platform: "desktop",
     description: "이미지+텍스트 추론, SigLIP-2 (2026.01)",
+    license: "MIT",
+    licenseKind: "permissive",
   },
   {
     id: "magistral-small-2509-q4",
@@ -725,6 +759,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "reasoning"],
     platform: "desktop",
     description: "[THINK] 토큰으로 긴 추론, 24B (2025.09)",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
   },
   {
     id: "devstral-small-2-24b-q4",
@@ -739,6 +775,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "code", "tools"],
     platform: "desktop",
     description: "에이전트 코딩, 함수호출 (2025.11)",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
   },
 
   // ── Desktop-only large ─────────────────────────────────────────
@@ -755,6 +793,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "tools", "vision", "reasoning"],
     platform: "desktop",
     description: "대형 범용, 멀티모달 (2026.02)",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
   },
   {
     id: "glm-4.7-flash-q4",
@@ -769,6 +809,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "tools", "reasoning"],
     platform: "desktop",
     description: "Zhipu AI, 한/영/중, 에이전트 (2026.01)",
+    license: "MIT",
+    licenseKind: "permissive",
   },
   {
     id: "qwen3.5-35b-a3b-q4",
@@ -783,6 +825,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["chat", "tools", "vision", "reasoning"],
     platform: "desktop",
     description: "MoE 3B 활성, 1M 확장, 최고 가성비 (2026.02)",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
   },
 
   // ── Embedding ──────────────────────────────────────────────────
@@ -799,6 +843,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["embedding"],
     platform: "both",
     description: "텍스트 임베딩, 768차원",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
     // 검색 재정렬용 온디바이스 임베딩 프로파일 — llama.rn 전용 컨텍스트
     mobileProfile: {
       rank: 90,
@@ -823,6 +869,8 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     capabilities: ["embedding"],
     platform: "desktop",
     description: "MoE 임베딩, 효율적",
+    license: "Apache-2.0",
+    licenseKind: "permissive",
   },
 ];
 

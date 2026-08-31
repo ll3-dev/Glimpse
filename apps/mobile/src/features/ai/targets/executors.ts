@@ -13,7 +13,10 @@ import { localLLMProvider } from '../providers/local-llm-provider';
 import { stubProvider } from '../metadata/stub-provider';
 import { deriveRuleBasedLabels, RULE_BASED_LABELER_VERSION } from '@/src/features/labeling/rule-based-labeler';
 import { LABEL_TAXONOMY, type LabelingResult } from '@/src/features/labeling/types';
-import { getSelectedLocalModel } from '@/src/features/settings/local-llm.selectors';
+import {
+  getAvailableLocalModels,
+  getSelectedLocalModel,
+} from '@/src/features/settings/local-llm.selectors';
 import { getLocalLLMRuntime } from '@/src/hooks/chat/chatRuntime';
 import type { LlamaPromptInput } from '@/src/features/ai/llama-service';
 import { getApiKey, getBaseUrl, getModel, getProvider } from '@/src/features/settings/byok.selectors';
@@ -130,8 +133,9 @@ function getLabelVersion(target: AITarget): string {
     case 'local':
       return 'local-label-v1';
     case 'rules':
-    case 'byok':
       return RULE_BASED_LABELER_VERSION;
+    case 'byok':
+      return 'byok-label-v1';
   }
 }
 
@@ -153,12 +157,22 @@ function buildChatMessages(input: ChatExecutionInput): LocalLLMMessage[] {
   ];
 }
 
-function resolveLocalChatContext(input: ChatExecutionInput): Result<LocalChatContext> {
-  const model = getSelectedLocalModel();
+function resolveLocalChatContext(target: AITarget, input: ChatExecutionInput): Result<LocalChatContext> {
+  // 대상 ID에 핀된 모델이 있으면 그 모델을 우선하고, 없으면 기존처럼 선택된 모델로 폴백한다.
+  const pinnedModelId = target.kind === 'local' && target.modelId ? target.modelId : null;
+  const model = pinnedModelId
+    ? getAvailableLocalModels().find((candidate) => candidate.id === pinnedModelId) ?? getSelectedLocalModel()
+    : getSelectedLocalModel();
+
   if (!model?.path) {
     return {
       success: false,
-      error: appError('GENERATION_ERROR', '선택된 로컬 채팅 모델이 없습니다.'),
+      error: appError(
+        'GENERATION_ERROR',
+        pinnedModelId
+          ? '고정된 로컬 채팅 모델을 사용할 수 없습니다.'
+          : '선택된 로컬 채팅 모델이 없습니다.'
+      ),
     };
   }
 
@@ -177,10 +191,11 @@ function resolveLocalChatContext(input: ChatExecutionInput): Result<LocalChatCon
   };
 }
 
-function resolveBYOKChatConfig(): Result<BYOKChatConfig> {
+function resolveBYOKChatConfig(target: AITarget): Result<BYOKChatConfig> {
   const provider = getProvider();
   const apiKey = getApiKey();
-  const model = getModel();
+  const modelOverride = target.kind === 'byok' && target.model ? target.model : null;
+  const model = modelOverride ?? getModel();
 
   if (!provider || !apiKey || !model) {
     return {
@@ -313,8 +328,8 @@ export async function executeLabelingTarget(
   };
 }
 
-async function executeLocalChatTarget(input: ChatExecutionInput): Promise<Result<string>> {
-  const localChat = resolveLocalChatContext(input);
+async function executeLocalChatTarget(target: AITarget, input: ChatExecutionInput): Promise<Result<string>> {
+  const localChat = resolveLocalChatContext(target, input);
   if (!localChat.success) {
     return isFailure(localChat)
       ? { success: false, error: localChat.error }
@@ -329,11 +344,11 @@ async function executeLocalChatTarget(input: ChatExecutionInput): Promise<Result
   return { success: true, data: result.text.trim() };
 }
 
-async function executeBYOKChatTarget(input: ChatExecutionInput): Promise<Result<string>> {
+async function executeBYOKChatTarget(target: AITarget, input: ChatExecutionInput): Promise<Result<string>> {
   // 콜드스타트 직후 SecureStore 복원이 끝나지 않은 경우 키 null로
   // 거부되는 레이스 방지 — BYOK 경로 진입 시 복원 완료를 보장한다.
   await ensureBYOKHydrated();
-  const byokConfig = resolveBYOKChatConfig();
+  const byokConfig = resolveBYOKChatConfig(target);
   if (!byokConfig.success) {
     return isFailure(byokConfig)
       ? { success: false, error: byokConfig.error }
@@ -374,9 +389,9 @@ export async function executeChatTarget(
 ): Promise<Result<string>> {
   switch (target.kind) {
     case 'local':
-      return executeLocalChatTarget(input);
+      return executeLocalChatTarget(target, input);
     case 'byok':
-      return executeBYOKChatTarget(input);
+      return executeBYOKChatTarget(target, input);
     case 'stub':
       return executionError('채팅 모델이 설정되지 않았습니다. 설정에서 로컬 모델 또는 BYOK를 연결해 주세요.', target);
     case 'apple':
@@ -455,15 +470,15 @@ export function executeChatTargetEffect(
     case 'rules':
       return executionEffectError('Rules target does not support chat generation', target);
     case 'local':
-      return executeLocalChatTargetEffect(input);
+      return executeLocalChatTargetEffect(target, input);
     case 'byok':
-      return executeBYOKChatTargetEffect(input);
+      return executeBYOKChatTargetEffect(target, input);
   }
 }
 
-function executeLocalChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
+function executeLocalChatTargetEffect(target: AITarget, input: ChatExecutionInput): Effect.Effect<string, AppError> {
   return Effect.gen(function* (_) {
-    const localChat = resolveLocalChatContext(input);
+    const localChat = resolveLocalChatContext(target, input);
     if (!localChat.success) {
       return yield* _(Effect.fail(
         isFailure(localChat)
@@ -485,14 +500,14 @@ function executeLocalChatTargetEffect(input: ChatExecutionInput): Effect.Effect<
   });
 }
 
-function executeBYOKChatTargetEffect(input: ChatExecutionInput): Effect.Effect<string, AppError> {
+function executeBYOKChatTargetEffect(target: AITarget, input: ChatExecutionInput): Effect.Effect<string, AppError> {
   return Effect.gen(function* (_) {
     // BYOK 경로 진입 시 SecureStore 복원 완료 보장 — 콜드스타트 레이스 방지
     yield* _(Effect.tryPromise({
       try: () => ensureBYOKHydrated(),
       catch: () => appError('GENERATION_ERROR', 'BYOK 설정을 복원하는 데 실패했습니다.'),
     }));
-    const byokConfig = resolveBYOKChatConfig();
+    const byokConfig = resolveBYOKChatConfig(target);
     if (!byokConfig.success) {
       return yield* _(Effect.fail(
         isFailure(byokConfig)

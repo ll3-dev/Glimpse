@@ -98,14 +98,10 @@ export async function generateChatResponse(
   // Local LLM and BYOK providers handle multi-turn differently, but the
   // CompletionRequest interface accepts a single prompt. For chat we join
   // the conversation into a structured prompt.
-  let lastUserMsg: { role: string; content: string } | undefined;
   const systemLines: string[] = [];
   const nonSystemMessages: { role: string; content: string }[] = [];
 
   for (const m of messages) {
-    if (m.role === 'user') {
-      lastUserMsg = m;
-    }
     if (m.role === 'system') {
       systemLines.push(m.content);
     } else {
@@ -128,13 +124,12 @@ export async function generateChatResponse(
 
   // Strip any "Assistant: " prefix the model might echo
   const text = response.text.replace(/^Assistant:\s*/i, '').trim();
-  if (text) {
-    return text;
+  if (!text) {
+    // 빈 응답을 가짜 답변으로 포장하지 않는다 — 사용자에게 원인(프로바이더
+    // 문제)이 보이도록 reject 하고 채팅 UI의 기존 에러 경로로 표시한다.
+    throw new Error('AI 응답이 비어 있습니다. 설정에서 다른 프로바이더를 선택해 주세요.');
   }
-
-  return lastUserMsg?.content
-    ? `I received your message about "${(lastUserMsg?.content ?? '').slice(0, 50)}..."`
-    : '[No response]';
+  return text;
 }
 
 /**
