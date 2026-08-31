@@ -9,14 +9,20 @@
 
 - Phase A — 현재 그래프 마감: 완료
 - Phase B — Living Graph 기반: 완료
-- Phase C — 발견·탐색 UX: 구현 완료, 데스크톱 UI 수동 게이트 잔여
+- Phase C — 발견·탐색 UX: 구현·브라우저 GUI 자동 검증 완료, 네이티브 UI 수동 게이트 잔여
 - Phase D — 품질과 기술 증거: 완료
-- Phase E — 데스크톱 캡처 동선: 진행 예정
+- Phase E — 데스크톱 캡처 동선: 구현·자동·패키지 런타임 검증 완료, OS 물리 입력 수동 게이트 잔여
 
 Phase B의 현재 트리 검증 근거는
 `thoughts/shared/research/2026-08-31_living-graph-phase-b-verification.md`에 기록한다.
 Phase D의 로컬 집계·receipt와 현재 트리 검증 근거는
 `thoughts/shared/research/2026-08-31_living-graph-phase-d-verification.md`에 기록한다.
+Phase E의 shell·캡처→그래프 E2E·macOS 패키지 런타임 근거는
+`thoughts/shared/research/2026-08-31_living-graph-phase-e-verification.md`에 기록한다.
+
+모든 Phase의 기능 구현은 끝났지만 전체 프로그램 완료는 아직 선언하지 않는다. Phase C의
+실제 Tauri 그래프 조작과 Phase E의 물리 전역 단축키·트레이 메뉴 클릭이 수동 게이트로
+남아 있기 때문이다.
 
 ## 1. 목표
 

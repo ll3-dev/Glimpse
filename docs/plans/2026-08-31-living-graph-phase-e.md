@@ -1,6 +1,6 @@
 # Living Knowledge Graph Phase E 구현 계획
 
-- 상태: 구현 중
+- 상태: 구현·자동 검증 완료, OS 물리 입력 수동 게이트 잔여
 - 선행 단계: Phase D 완료 (`94a45b0`)
 
 > **For Codex:** Rust shell action과 프런트 이벤트 라우팅을 실패 테스트로 먼저 고정하고,
@@ -76,3 +76,15 @@ dirty 항목을 처리한다.
    가능한 범위까지 실제 실행한다.
 3. OS 접근성 권한이나 물리 키 입력에 의존해 자동화하지 못한 항목은 담당자·명령·기대
    결과를 수동 게이트로 남기고 전체 완료로 과장하지 않는다.
+
+## 구현 결과
+
+- `6232f1e`: Tauri 전역 단축키·트레이·닫기 시 숨김과 제한된 shell navigation 이벤트
+- `530eab7`: shell capture 저장→Living Graph 0-edge 완료→sync 재검증 멱등 E2E
+- `c94e581`: macOS app 아이콘·ad-hoc 서명 계약과 Dock 재실행 창 복원
+- 상세 증거: `thoughts/shared/research/2026-08-31_living-graph-phase-e-verification.md`
+
+패키지 앱의 실행, 닫기 후 프로세스 유지, Dock 재실행 복원은 실제 macOS UI에서
+확인했다. Computer Use가 macOS 상태 메뉴를 노출하지 않고 전역 단축키 합성도 지원하지
+않아 트레이 메뉴 실제 클릭과 다른 앱이 전면인 상태의 `Cmd+Shift+K` 입력은 수동 게이트로
+남긴다. 이 두 항목을 통과하기 전에는 전체 프로그램 완료를 주장하지 않는다.
