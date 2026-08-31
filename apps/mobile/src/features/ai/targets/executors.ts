@@ -49,6 +49,47 @@ type BYOKRequest = {
   init: RequestInit;
 };
 
+const DEFAULT_BYOK_CHAT_TIMEOUT_MS = 30_000;
+let byokChatTimeoutMs = DEFAULT_BYOK_CHAT_TIMEOUT_MS;
+/** 마지막 fetch가 타임아웃으로 중단됐는지 — catch 분류용 모듈 플래그. */
+let timedOut = false;
+
+/** 테스트 전용 — 타임아웃을 짧게 줄여 타임아웃 경로를 실제로 태운다. */
+export function setBYOKChatTimeoutForTests(ms: number): void {
+  byokChatTimeoutMs = ms;
+}
+
+export function resetBYOKChatTimeoutForTests(): void {
+  byokChatTimeoutMs = DEFAULT_BYOK_CHAT_TIMEOUT_MS;
+}
+
+/**
+ * BYOK 채팅 fetch에 타임아웃을 부착한다.
+ *
+ * AbortSignal.timeout은 React Native 런타임에 존재하지 않는다(polyfill에
+ * static timeout이 없음 — byok-provider.ts와 동일한 근거). 플래그 기반
+ * AbortController로 대체하고, 타임아웃 여부는 에러 이름이 아닌 timedOut
+ * 플래그로 판정한다. abort 시 RN fetch는 AbortError로 거부하므로 호출부의
+ * catch에서도 판정할 수 있게 timedOut을 외부로 노출한다.
+ */
+async function fetchWithBYOKTimeout(
+  endpoint: string,
+  init: RequestInit
+): Promise<{ response: Response; timedOut: boolean }> {
+  timedOut = false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, byokChatTimeoutMs);
+  try {
+    const response = await fetch(endpoint, { ...init, signal: controller.signal });
+    return { response, timedOut };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 type BYOKChatConfig = {
   provider: BYOKProvider;
   apiKey: string;
@@ -362,12 +403,31 @@ async function executeBYOKChatTarget(target: AITarget, input: ChatExecutionInput
     byokConfig.data.baseUrl,
     input
   );
-  const response = await fetch(request.endpoint, request.init);
+  const { response, timedOut: fetchTimedOut } = await fetchWithBYOKTimeout(
+    request.endpoint,
+    request.init
+  ).catch((e) => {
+    // abort 시 RN fetch는 AbortError로 거부한다 — 플래그로 타임아웃을 분류한다.
+    if (!timedOut) {
+      throw e;
+    }
+    return { response: null, timedOut: true };
+  });
 
-  if (!response.ok) {
+  if (fetchTimedOut) {
     return {
       success: false,
-      error: appError('GENERATION_ERROR', `BYOK 채팅 요청이 실패했습니다 (${response.status})`),
+      error: appError(
+        'GENERATION_ERROR',
+        `BYOK 채팅 요청이 ${byokChatTimeoutMs / 1000}초 안에 응답하지 않았습니다. 네트워크 상태를 확인하거나 나중에 다시 시도해 주세요.`
+      ),
+    };
+  }
+
+  if (!response || !response.ok) {
+    return {
+      success: false,
+      error: appError('GENERATION_ERROR', `BYOK 채팅 요청이 실패했습니다 (${response?.status ?? 0})`),
     };
   }
 
@@ -524,10 +584,26 @@ function executeBYOKChatTargetEffect(target: AITarget, input: ChatExecutionInput
       input
     );
 
-    const response = yield* _(Effect.tryPromise({
-      try: () => fetch(request.endpoint, request.init),
-      catch: (e) => appError('GENERATION_ERROR', 'BYOK 채팅 네트워크 오류', { cause: e }),
+    const { response, timedOut: fetchTimedOut } = yield* _(Effect.tryPromise({
+      try: () => fetchWithBYOKTimeout(request.endpoint, request.init),
+      // abort 시 RN fetch는 AbortError로 거부하므로 catch에서 플래그로 분류한다.
+      catch: (e) =>
+        timedOut
+          ? appError(
+              'GENERATION_ERROR',
+              `BYOK 채팅 요청이 ${byokChatTimeoutMs / 1000}초 안에 응답하지 않았습니다. 네트워크 상태를 확인하거나 나중에 다시 시도해 주세요.`
+            )
+          : appError('GENERATION_ERROR', 'BYOK 채팅 네트워크 오류', { cause: e }),
     }));
+
+    if (fetchTimedOut) {
+      return yield* _(Effect.fail(
+        appError(
+          'GENERATION_ERROR',
+          `BYOK 채팅 요청이 ${byokChatTimeoutMs / 1000}초 안에 응답하지 않았습니다. 네트워크 상태를 확인하거나 나중에 다시 시도해 주세요.`
+        )
+      ));
+    }
 
     if (!response.ok) {
       return yield* _(Effect.fail(

@@ -4,6 +4,9 @@ import {
   executeMetadataTargetEffect,
   executeLabelingTargetEffect,
   executeChatTargetEffect,
+  executeChatTarget,
+  setBYOKChatTimeoutForTests,
+  resetBYOKChatTimeoutForTests,
 } from './executors';
 import type { KnowledgeItem } from '@glimpse/shared';
 import type { LocalLLMRuntime } from '@/src/features/ai/local-llm';
@@ -288,6 +291,64 @@ describe('Effect-based Executors', () => {
 
       const body = JSON.parse(String(byokRequests[0]?.init?.body ?? '{}')) as { model?: string };
       expect(body.model).toBe('pinned-gpt');
+    });
+
+    test('byok chat fetch that outlives the timeout fails with a timeout message', async () => {
+      // 회귀 방지: BYOK 채팅 fetch는 타임아웃이 없어 hang 시 영원히 대기했다.
+      // signal-aware hanging fetch로 실제 타임아웃 경로를 태운다.
+      setBYOKChatTimeoutForTests(20);
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = ((url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        })) as unknown as typeof fetch;
+
+      try {
+        const effect = executeChatTargetEffect(
+          { kind: 'byok', provider: 'openai', model: 'store-model', id: 'byok.openai:store-model' },
+          { userText: '안녕하세요, 타임아웃 검증 메시지입니다.' }
+        );
+        const exit = await Effect.runPromiseExit(effect);
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
+          expect(error?.message).toContain('응답하지 않았습니다');
+        }
+      } finally {
+        globalThis.fetch = originalFetch;
+        resetBYOKChatTimeoutForTests();
+      }
+    });
+  });
+
+  describe('executeChatTarget (async) BYOK timeout', () => {
+    test('byok chat fetch that outlives the timeout returns a timeout failure', async () => {
+      setBYOKChatTimeoutForTests(20);
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = ((url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        })) as unknown as typeof fetch;
+
+      try {
+        const result = await executeChatTarget(
+          { kind: 'byok', provider: 'openai', model: 'store-model', id: 'byok.openai:store-model' },
+          { userText: '안녕하세요, 비동기 경로 타임아웃 검증입니다.' }
+        );
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.message).toContain('응답하지 않았습니다');
+        }
+      } finally {
+        globalThis.fetch = originalFetch;
+        resetBYOKChatTimeoutForTests();
+      }
     });
   });
 });
