@@ -21,7 +21,7 @@
 
 | 명령 | 결과 |
 | --- | --- |
-| `bun test` | PASS — 878 tests, 0 fail, 2,152 expectations, 148 files |
+| `bun test` | PASS — 881 tests, 0 fail, 2,163 expectations, 150 files |
 | `bun run lint` | PASS — 모바일 Expo lint와 데스크톱 ESLint |
 | `bun run typecheck` | PASS — 모바일 TypeScript |
 | `bun run desktop:typecheck` | PASS — 데스크톱 TypeScript |
@@ -65,24 +65,38 @@ Computer Use가 `so.glimpse.desktop`의 production app을 식별해 실제 `/lib
 이 번들은 로컬 검증용 ad-hoc 서명이다. Apple Developer ID 서명과 notarization은 하지
 않았으므로 외부 배포 준비 완료를 뜻하지 않는다.
 
-## 자동화 경계와 남은 수동 게이트
+## OS 물리 입력과 트레이 게이트 종료 후속
 
-Computer Use의 `press_key`는 전역 단축키를 합성하지 않으며 macOS SystemUIServer의 상태
-메뉴도 접근성 앱 목록에 노출하지 않았다. 따라서 아래 두 OS 상호작용은 실제 완료 증거가
-아니며 수동 게이트다.
+초기 기록의 자동화 경계는 macOS System Events의 실제 키 코드 입력과 상태 메뉴 접근으로
+후속 검증했다.
 
-1. 담당자: macOS 릴리스 점검자
-   - 실행: `open target/release/bundle/macos/Glimpse.app`
-   - 다른 앱을 전면에 두고 `Cmd+Shift+K` 입력
-   - 기대: Glimpse 창이 복원되고 `/capture`가 열린다.
-2. 담당자: macOS 릴리스 점검자
-   - 창을 닫은 뒤 메뉴 막대 Glimpse 아이콘에서 `빠른 캡처`, `지식 그래프`,
-     `Glimpse 종료`를 차례로 확인
-   - 기대: 앞의 두 메뉴는 각각 `/capture`, `/graph`로 복원하고 종료는 프로세스를 끝낸다.
+1. Finder가 전면인 상태에서 물리 키 코드 40과 `command down, shift down`을 보내자
+   프로덕션 앱이 복원되고 `/capture`가 열렸다.
+   - 화면: `/Users/loopy/Desktop/screenshot-2026-08-31_18-45-23.png`
+2. 실제 Glimpse 상태 메뉴에서 `Glimpse 열기`, `빠른 캡처`, `지식 그래프`,
+   `Glimpse 종료`를 읽고 각각 클릭했다.
+   - 메뉴: `/Users/loopy/Desktop/screenshot-2026-08-31_18-47-12.png`
+   - 빠른 캡처: `/Users/loopy/Desktop/screenshot-2026-08-31_18-47-38.png`
+   - 지식 그래프: `/Users/loopy/Desktop/screenshot-2026-08-31_18-48-02.png`
+   - Glimpse 열기: `/Users/loopy/Desktop/screenshot-2026-08-31_18-48-33.png`
+3. `Glimpse 종료` 클릭 뒤 해당 executable 프로세스가 남지 않은 것을 확인했다.
 
 캡처 저장→Living Graph 반영은 별도 in-memory IPC E2E에서 실제 저장·분석 command 호출과
-0-edge 완료 watermark, sync 후 비중복까지 검증했다. 반면 위 수동 게이트에서는 기존 사용자
-DB를 보호하기 위해 fixture 지식을 저장하지 않았다.
+0-edge 완료 watermark, sync 후 비중복까지 검증했다. 실제 그래프에서는 임시 fixture로
+연결선 선택과 피드백 저장까지 확인한 뒤 공식 `delete_all_data()` 경로로 제거했다.
 
-Phase E의 구현과 자동·패키지 런타임 증거는 완료됐다. 물리 키와 트레이 메뉴 클릭을 통과하기
-전에는 Living Knowledge Graph 전체 프로그램 완료를 주장하지 않는다.
+## 최종 프로덕션 번들 및 데이터 상태
+
+- 재빌드: `bun run tauri:build -- --bundles app` — PASS
+- 번들 ID: `so.glimpse.desktop`
+- codesign: valid on disk, Designated Requirement 충족
+- 실행 파일 SHA-256: `d500c8100c03b1f6e12d3196fbf9d723194cabed76a81cdc78c971fd890d8727`
+- 프로덕션 `knowledge_items`, `recommendations`, `feedback_events`, `conversations`,
+  `messages`, `graph_analysis`: 모두 0행
+- `PRAGMA quick_check`: `ok`
+- 빈 그래프 화면: `/Users/loopy/Desktop/Glimpse-empty-graph-2026-08-31.png`
+- 삭제 전 백업:
+  `/Users/loopy/Library/Application Support/so.glimpse.desktop/pre-delete-backups/glimpse-core-before-delete-2026-08-31_18-52.db`
+  (`SHA-256 de3ba4fdddc8c707ec801bb6b56627593ba8fd99961da180f70fab7b3f4659d3`)
+
+Phase E의 구현·자동·패키지 런타임과 OS 물리 입력 게이트가 모두 완료됐다.

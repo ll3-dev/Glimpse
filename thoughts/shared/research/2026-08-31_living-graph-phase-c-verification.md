@@ -11,9 +11,10 @@
   pending이 없을 때만 최근 accepted로 폴백한다.
 - `layoutFocusedGraph`는 focus를 중앙, 1-hop 이웃을 안쪽 링, 나머지 context를 바깥
   링에 배치하며 36개 제한에서도 focus와 이웃을 우선 보존한다.
-- 모바일과 데스크톱은 오늘의 발견 카드에서 두 지식 상세, 그래프 포커스, 수락·무시·
-  나중에 액션을 제공한다.
-- 연결선을 선택하면 근거와 양 endpoint 상세 이동 및 pending 피드백 액션을 보여준다.
+- 모바일과 데스크톱은 오늘의 발견 카드에서 두 지식 상세와 그래프 포커스를 제공하며,
+  pending 연결도 별도 수락 없이 즉시 표시한다.
+- 연결선을 선택하면 근거와 양 endpoint 상세 이동을 보여주고, 잘못된 경우에만 단일
+  `이 연결 숨기기` 액션을 제공한다.
 - 모바일 `focusId`는 URL params가 진실 소스여서 이미 마운트된 탭으로 재진입해도 최신
   검색/상세 focus를 사용한다. 데스크톱은 검증된 `focus` search를 초기 포커스로 쓴다.
 - 데스크톱 SVG 노드와 연결선은 클릭뿐 아니라 Enter/Space 키로도 선택할 수 있다.
@@ -88,5 +89,38 @@ row가 각각 0개임을 다시 조회했다. Simulator 외관도 라이트로 �
   조작은 수동 미완료로 남긴다.
 - 원격 AI 계정과 iOS/Android 실기기 장시간 전환은 실행하지 않았다.
 
-따라서 Phase C 구현과 자동 계약은 완료됐지만, 전체 Living Knowledge Graph 프로그램
-완료는 아직 주장하지 않는다.
+## 무검수 UX와 네이티브 게이트 종료 후속 (2026-08-31 19:14 KST)
+
+초기 검증의 수락·무시·나중에 UI는 실제 사용에서 연결마다 관리 작업을 만들었다. 후속
+변경은 데이터 계약을 유지하면서 제품 기본 동작을 다음과 같이 뒤집었다.
+
+- pending 연결은 사용자의 수락 없이 모바일·데스크톱 그래프에 바로 표시한다.
+- `오늘의 발견`을 간결한 제목 쌍·한 줄 근거·그래프 이동으로 축소한다.
+- 올바른 연결은 아무 동작도 요구하지 않는다.
+- 잘못된 연결에만 `이 연결 숨기기`를 제공하고 `ignored/ignore` 피드백으로 저장한다.
+
+TDD 근거:
+
+- 데스크톱 Playwright E2E는 기존 화면의 `연결 수락` 1개와 인스펙터의 `수락` 2개 때문에
+  RED가 된 뒤 새 UI에서 2/2 GREEN으로 전환됐다.
+- 모바일 `GraphFeedback.test.tsx`는 실제 컴포넌트를 렌더해 기존 검수 버튼과 숨기기
+  부재로 2/2 RED가 된 뒤 새 UI에서 2/2 GREEN으로 전환됐다.
+- 데스크톱 캡처: `/Users/loopy/Desktop/Glimpse-auto-graph-2026-08-31.png`,
+  `/Users/loopy/Desktop/Glimpse-hide-wrong-connection-2026-08-31.png`.
+
+실제 `Glimpse.app`에서는 검색·그래프 노드·연결선을 Computer Use로 조작해 포커스와
+피드백 저장을 확인했다. 이후 사용자 승인에 따라 프로덕션 콘텐츠를 모두 삭제했고,
+재빌드한 앱에서 `/graph` 빈 상태와 0개 지식을 다시 확인했다. 따라서 Phase C의
+데스크톱 네이티브 수동 게이트도 종료한다.
+
+## 현재 트리 모바일 네이티브 재검증 (2026-08-31 19:35 KST)
+
+- `bun run --cwd apps/mobile build:bridge:ios`로 현재 42-command Rust 정적 라이브러리를
+  xcframework에 다시 반영했다.
+- 재생성 전 개발 앱에서 발생한 `command not found: listGraphAnalysisRecords` 경고는
+  TypeScript/Rust 소스 누락이 아니라 오래된 iOS 정적 라이브러리 때문이었다. 재빌드 후
+  같은 iPhone 17 Simulator 런타임에서 해당 경고가 재발하지 않았다.
+- `bun run ios`는 Build Succeeded, 0 errors, 기존 duplicate `-lc++` linker warning 1건으로
+  설치와 `kr.ll3.glimpse` 실행까지 완료했다.
+- 개발 LogBox에는 이번 범위와 무관한 기존 require cycle 2건(search, chat)이 남는다.
+  release 그래프 기능과 직접 관련된 native command 경고는 해소됐다.

@@ -1,6 +1,6 @@
 # Living Knowledge Graph Phase E 구현 계획
 
-- 상태: 구현·자동 검증 완료, OS 물리 입력 수동 게이트 잔여
+- 상태: 완료 — 자동 검증, 패키지 런타임, OS 물리 입력·트레이 실제 조작 통과
 - 선행 단계: Phase D 완료 (`94a45b0`)
 
 > **For Codex:** Rust shell action과 프런트 이벤트 라우팅을 실패 테스트로 먼저 고정하고,
@@ -84,7 +84,7 @@ dirty 항목을 처리한다.
 - `c94e581`: macOS app 아이콘·ad-hoc 서명 계약과 Dock 재실행 창 복원
 - 상세 증거: `thoughts/shared/research/2026-08-31_living-graph-phase-e-verification.md`
 
-패키지 앱의 실행, 닫기 후 프로세스 유지, Dock 재실행 복원은 실제 macOS UI에서
-확인했다. Computer Use가 macOS 상태 메뉴를 노출하지 않고 전역 단축키 합성도 지원하지
-않아 트레이 메뉴 실제 클릭과 다른 앱이 전면인 상태의 `Cmd+Shift+K` 입력은 수동 게이트로
-남긴다. 이 두 항목을 통과하기 전에는 전체 프로그램 완료를 주장하지 않는다.
+패키지 앱의 실행, 닫기 후 프로세스 유지, Dock 재실행 복원뿐 아니라 다른 앱이 전면인
+상태의 실제 `Cmd+Shift+K` 입력과 macOS 상태 메뉴의 `Glimpse 열기`, `빠른 캡처`,
+`지식 그래프`, `Glimpse 종료` 클릭을 모두 확인했다. 각 메뉴의 창 복원·라우팅과 종료 후
+프로세스 소멸까지 검증해 OS 물리 입력 수동 게이트를 닫았다.
