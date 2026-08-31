@@ -8,11 +8,37 @@ import { describe, expect, mock, test } from 'bun:test';
  *   (실제 RN을 로드해 spread하면 named-export 정적 링크 검증과 충돌한다.)
  * - useSemanticColor는 uniwind JSI에 의존하므로 모듈 자체를 고정 스텁으로 대체한다
  *   (실제 uniwind를 로드하면 RN named-export 정적 링크 검증과 충돌한다).
+ *   mock.module은 프로세스 전역이라 진짜 export까지 지우면 이후 로드되는
+ *   semantic-colors.test.ts의 CSS_VARIABLES import가 깨진다 — 스텁이 모듈의
+ *   전체 퍼블릭 표면을 보존하도록 CSS_VARIABLES를 함께 제공한다.
  * - bun test 환경엔 DOM이 없으므로 react-dom/server로 정적 마크업을 렌더해
  *   카피/props 반영을 검증한다.
  */
 
 mock.module('../theme/semantic-colors', () => ({
+  CSS_VARIABLES: {
+    appBg: '--color-app-bg',
+    appSurface: '--color-app-surface',
+    appCard: '--color-app-card',
+    appBorder: '--color-app-border',
+    appText: '--color-app-text',
+    appMuted: '--color-app-muted',
+    appSubtle: '--color-app-subtle',
+    appPrimary: '--color-app-primary',
+    appAccent: '--color-app-accent',
+    primaryForeground: '--color-primary-foreground',
+    tagMintText: '--color-tag-mint-text',
+    tagPeachText: '--color-tag-peach-text',
+    tagSkyText: '--color-tag-sky-text',
+    tagLavenderText: '--color-tag-lavender-text',
+    tagRoseText: '--color-tag-rose-text',
+    tagNeutralText: '--color-tag-neutral-text',
+    chart1: '--color-chart-1',
+    chart2: '--color-chart-2',
+    chart3: '--color-chart-3',
+    chart4: '--color-chart-4',
+    chart5: '--color-chart-5',
+  },
   useSemanticColor: (_name: string) => '#787774',
 }));
 
