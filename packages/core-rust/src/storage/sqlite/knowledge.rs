@@ -273,6 +273,7 @@ impl SqliteStorage {
                 chrono::Utc::now().timestamp_millis(),
             )
             .and_then(|_| {
+                self.prune_graph_data_for_item(id)?;
                 self.conn
                     .execute("DELETE FROM knowledge_items WHERE id = ?1", params![id])?;
                 Ok(())

@@ -393,6 +393,9 @@ impl SqliteStorage {
         // cannot happen here — the SELECT yields no row at all) behaves like
         // the full path: nothing live to delete.
         if clock.flatten().is_none_or(|live_clock| live_clock <= deleted_at) {
+            if entity_type == ENTITY_KNOWLEDGE_ITEM {
+                self.prune_graph_data_for_item(entity_id)?;
+            }
             if let Some((child_table, child_column)) = child_delete {
                 self.conn.execute(
                     &format!("DELETE FROM {child_table} WHERE {child_column} = ?1"),
@@ -891,8 +894,8 @@ fn sort_by_id<T>(records: &mut [T], id: impl Fn(&T) -> &String) {
 #[cfg(test)]
 mod tests {
     use crate::models::{
-        Conversation, DataExport, KnowledgeItem, KnowledgeItemType, Message,
-        Recommendation, RecommendationStatus, SyncTombstone,
+        Conversation, DataExport, GraphAnalysisRecord, GraphAnalysisStatus, KnowledgeItem,
+        KnowledgeItemType, Message, Recommendation, RecommendationStatus, SyncTombstone,
     };
     use crate::storage::sqlite::SqliteStorage;
 
@@ -1274,6 +1277,48 @@ mod tests {
                 .and_then(|row| row.title.clone()),
             Some("reborn".into())
         );
+    }
+
+    #[test]
+    fn apply_delta_knowledge_tombstone_prunes_touching_graph_data() {
+        let storage = SqliteStorage::in_memory().expect("storage should initialize");
+        storage
+            .replace_all_data(&snapshot(vec![item("old", 100, "old"), item("peer", 100, "peer")]))
+            .expect("fixture should import");
+        let analysis = |item_id: &str| GraphAnalysisRecord {
+            item_id: item_id.into(),
+            item_updated_at: 100,
+            analyzer_version: "living-graph-v1".into(),
+            analyzed_at: 200,
+            edge_count: 1,
+            status: GraphAnalysisStatus::Completed,
+            failure_count: 0,
+        };
+        storage
+            .commit_graph_analysis(
+                &[analysis("old"), analysis("peer")],
+                &[Recommendation {
+                    id: "edge".into(),
+                    item_a_id: "old".into(),
+                    item_b_id: "peer".into(),
+                    reason: Some("related".into()),
+                    status: RecommendationStatus::Pending,
+                    created_at: 200,
+                    responded_at: None,
+                }],
+            )
+            .expect("graph fixture should commit");
+
+        let mut delta = snapshot(vec![]);
+        delta.tombstones.push(SyncTombstone {
+            entity_type: ENTITY_KNOWLEDGE_ITEM.into(),
+            entity_id: "old".into(),
+            deleted_at: 500,
+        });
+        storage.apply_delta(&delta).expect("delta should apply");
+
+        assert!(storage.list_recommendations().unwrap().is_empty());
+        assert!(storage.list_graph_analysis_records().unwrap().is_empty());
     }
 
     #[test]

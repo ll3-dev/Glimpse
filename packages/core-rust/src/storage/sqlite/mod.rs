@@ -2,6 +2,7 @@
 
 mod conversation;
 mod feedback;
+mod graph_analysis;
 mod knowledge;
 mod message;
 mod portability;
@@ -24,7 +25,8 @@ const SCHEMA_SQL: &str = include_str!("../schema.sql");
 const MIGRATION_V2_SQL: &str = include_str!("../migrations/0002_unique_recommendation_pairs.sql");
 const MIGRATION_V3_SQL: &str = include_str!("../migrations/0003_sync_tombstones.sql");
 const MIGRATION_V4_SQL: &str = include_str!("../migrations/0004_delta_sync.sql");
-const SCHEMA_VERSION: i64 = 4;
+const MIGRATION_V5_SQL: &str = include_str!("../migrations/0005_graph_analysis.sql");
+const SCHEMA_VERSION: i64 = 5;
 
 /// SQLite-based storage backend.
 pub struct SqliteStorage {
@@ -110,6 +112,13 @@ impl SqliteStorage {
 
         if current_version < 4 {
             if let Err(error) = self.conn.execute_batch(MIGRATION_V4_SQL) {
+                return Err(error.into());
+            }
+            current_version = 4;
+        }
+
+        if current_version < 5 {
+            if let Err(error) = self.conn.execute_batch(MIGRATION_V5_SQL) {
                 return Err(error.into());
             }
         }
@@ -233,6 +242,38 @@ mod tests {
         assert_eq!(schema_version, SCHEMA_VERSION);
         assert_eq!(foreign_keys, 1);
         assert_eq!(busy_timeout, 5_000);
+    }
+
+    #[test]
+    fn initializes_graph_analysis_schema() {
+        let storage = SqliteStorage::in_memory().expect("in-memory database should initialize");
+
+        let schema_version: i64 = storage
+            .conn
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .expect("schema version should be readable");
+        let columns: Vec<String> = storage
+            .conn
+            .prepare("SELECT name FROM pragma_table_info('graph_analysis') ORDER BY cid")
+            .expect("graph analysis schema should be queryable")
+            .query_map([], |row| row.get(0))
+            .expect("graph analysis columns should query")
+            .collect::<std::result::Result<_, _>>()
+            .expect("graph analysis columns should collect");
+
+        assert_eq!(schema_version, 5);
+        assert_eq!(
+            columns,
+            vec![
+                "item_id",
+                "item_updated_at",
+                "analyzer_version",
+                "analyzed_at",
+                "edge_count",
+                "status",
+                "failure_count",
+            ]
+        );
     }
 
     #[test]

@@ -1,9 +1,25 @@
 use crate::error::Result;
-use crate::models::{FeedbackEvent, Recommendation, RecommendationStatus};
+use crate::models::{
+    FeedbackEvent, GraphAnalysisCommitResult, GraphAnalysisRecord, Recommendation,
+    RecommendationStatus,
+};
 
 use super::SharedCore;
 
 impl SharedCore {
+    pub fn list_graph_analysis_records(&self) -> Result<Vec<GraphAnalysisRecord>> {
+        self.client().list_graph_analysis_records()
+    }
+
+    pub fn commit_graph_analysis(
+        &self,
+        records: &[GraphAnalysisRecord],
+        recommendations: &[Recommendation],
+    ) -> Result<GraphAnalysisCommitResult> {
+        self.client()
+            .commit_graph_analysis(records, recommendations)
+    }
+
     pub fn save_recommendations(&self, recommendations: &[Recommendation]) -> Result<()> {
         self.client().save_recommendations(recommendations)
     }

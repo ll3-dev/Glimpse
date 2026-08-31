@@ -51,6 +51,13 @@ pub enum RecommendationStatus {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+pub enum GraphAnalysisStatus {
+    Completed,
+    Failed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum FeedbackActionType {
     Accept,
     Ignore,
@@ -255,6 +262,25 @@ pub struct Recommendation {
 }
 
 pub type NewRecommendation = Recommendation;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphAnalysisRecord {
+    pub item_id: String,
+    pub item_updated_at: i64,
+    pub analyzer_version: String,
+    pub analyzed_at: i64,
+    pub edge_count: i64,
+    pub status: GraphAnalysisStatus,
+    pub failure_count: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphAnalysisCommitResult {
+    pub saved_recommendations: usize,
+    pub saved_analysis_records: usize,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecommendationPatch {

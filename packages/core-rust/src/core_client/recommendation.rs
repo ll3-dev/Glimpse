@@ -1,11 +1,26 @@
 //! Recommendation operations for CoreClient.
 
 use crate::error::Result;
-use crate::models::{Recommendation, RecommendationStatus};
+use crate::models::{
+    GraphAnalysisCommitResult, GraphAnalysisRecord, Recommendation, RecommendationStatus,
+};
 
 use super::CoreClientImpl;
 
 impl CoreClientImpl {
+    pub fn list_graph_analysis_records(&self) -> Result<Vec<GraphAnalysisRecord>> {
+        self.storage.list_graph_analysis_records()
+    }
+
+    pub fn commit_graph_analysis(
+        &self,
+        records: &[GraphAnalysisRecord],
+        recommendations: &[Recommendation],
+    ) -> Result<GraphAnalysisCommitResult> {
+        self.storage
+            .commit_graph_analysis(records, recommendations)
+    }
+
     pub fn save_recommendations(&self, recommendations: &[Recommendation]) -> Result<()> {
         self.storage.insert_recommendations(recommendations)
     }
