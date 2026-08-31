@@ -71,6 +71,27 @@ describe('resolveLocalLLMPreset', () => {
     expect(prompt).toEndWith('<|im_start|>assistant\n<think>\n');
     expect(preset.sanitizeOutput('<think>검토 중</think>\n최종 답변<|im_end|>')).toBe('최종 답변');
   });
+
+  test('qwen preset injects /no_think suppression and strips stray think blocks', () => {
+    // Qwen3는 reasoning 모델 — 억제 지시 없이는 사고에 생성 예산을 다
+    // 써서 최종 답이 빈 문자열로 끊긴다(데스크톱 실측).
+    const model = createModel({
+      id: 'qwen3.5-2b-q4',
+      family: 'qwen-chatml',
+    });
+    const preset = resolveLocalLLMPreset(model);
+    const prompt = preset.buildChatPrompt([{ role: 'user', content: '안녕' }]);
+
+    expect(prompt).toContain('/no_think');
+    expect(prompt).toContain('질문에 곧바로 답변하세요');
+    const instruction = preset.buildInstructionPrompt('summary', '요약해줘');
+    expect(instruction).toContain('/no_think');
+
+    // 억제가 안 먹힌 케이스 대비 — sanitize가 think 블록을 제거한다.
+    expect(preset.sanitizeOutput('<think>긴 사고...</think>최종 답변')).toBe('최종 답변');
+    // 닫힘 없이 잘린 사고 블록은 사고 전체를 답으로 오인하지 않게 제거.
+    expect(preset.sanitizeOutput('<think>사고만 하다 끊김')).toBe('');
+  });
 });
 
 describe('createLocalLLMRuntime', () => {

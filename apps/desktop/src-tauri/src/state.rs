@@ -39,6 +39,13 @@ impl DownloadCancelFlags {
     }
 }
 
+/// Qwen3 등 reasoning 모델의 사고 블록 억제 지시 — `/no_think`는
+/// Qwen 채팅 템플릿의 표준 스위치다. 실측에서 Qwen3.5는 짧은 인사에도
+/// 수백~수천 토큰을 <think>에 소진해 max_tokens가 사고만에 끊기면
+/// 최종 답이 빈 문자열이 됐다(엔진 strip_think_block 규칙상). 채팅
+/// UX는 즉답이 기본이므로 시스템 메시지에 항상 억제 지시를 심는다.
+const THINK_SUPPRESSION: &str = "\n\n질문에 곧바로 답변하세요. 사고 과정(/no_think)은 출력하지 마세요.";
+
 fn format_messages_to_prompt(
     messages: &[crate::models::CompletionMessage],
     model_family: Option<&str>,
@@ -50,16 +57,36 @@ fn format_messages_to_prompt(
     let family = model_family.unwrap_or("qwen-chatml");
     if family == "qwen-chatml" || family == "qwen" {
         let mut prompt = String::new();
+
+        // 시스템 메시지가 없으면 기본 시스템 프롬프트를 심는다 — thinking
+        // 억제 지시가 채팅마다 확실히 도달하려면 시스템 슬롯이 있어야 한다.
+        let has_system = messages
+            .iter()
+            .any(|msg| msg.role.eq_ignore_ascii_case("system"));
+        if !has_system {
+            prompt.push_str(&format!(
+                "<|im_start|>system\n당신은 도움이 되는 AI 어시스턴트입니다. 한국어로 친근하고 자연스럽게 대화해 주세요.{}<|im_end|>\n",
+                THINK_SUPPRESSION
+            ));
+        }
+
         for msg in messages {
             let role = match msg.role.as_str() {
                 "system" => "system",
                 "assistant" => "assistant",
                 _ => "user",
             };
-            prompt.push_str(&format!(
-                "<|im_start|>{}\n{}\n<|im_end|>\n",
-                role, msg.content
-            ));
+            if role == "system" {
+                prompt.push_str(&format!(
+                    "<|im_start|>system\n{}{}<|im_end|>\n",
+                    msg.content, THINK_SUPPRESSION
+                ));
+            } else {
+                prompt.push_str(&format!(
+                    "<|im_start|>{}\n{}\n<|im_end|>\n",
+                    role, msg.content
+                ));
+            }
         }
         prompt.push_str("<|im_start|>assistant\n");
         prompt
@@ -433,5 +460,55 @@ impl DesktopRuntimeStateInner {
             .lock()
             .map(|health| health.clone())
             .map_err(|_| "health lock poisoned".to_string())
+    }
+}
+
+#[cfg(test)]
+mod prompt_tests {
+    use super::format_messages_to_prompt;
+    use crate::models::CompletionMessage;
+
+    fn msg(role: &str, content: &str) -> CompletionMessage {
+        CompletionMessage {
+            role: role.into(),
+            content: content.into(),
+        }
+    }
+
+    #[test]
+    fn qwen_prompt_without_system_gets_default_system_with_think_suppression() {
+        let prompt = format_messages_to_prompt(&[msg("user", "안녕?")], Some("qwen-chatml"));
+        assert!(
+            prompt.starts_with("<|im_start|>system\n당신은 도움이 되는 AI 어시스턴트"),
+            "a default system slot must exist so the suppression reaches the template"
+        );
+        assert!(prompt.contains("/no_think"), "suppression must be present");
+        assert!(prompt.contains("<|im_start|>user\n안녕?\n<|im_end|>"));
+        assert!(prompt.ends_with("<|im_start|>assistant\n"));
+    }
+
+    #[test]
+    fn qwen_prompt_with_system_appends_suppression_to_that_message() {
+        let prompt = format_messages_to_prompt(
+            &[msg("system", "RAG 발췌: ..."), msg("user", "요약해 줘")],
+            Some("qwen-chatml"),
+        );
+        assert!(
+            prompt.contains("RAG 발췌: ...\n\n질문에 곧바로 답변하세요"),
+            "suppression appends to the caller's system content, not a second system slot"
+        );
+        assert_eq!(prompt.matches("<|im_start|>system").count(), 1);
+    }
+
+    #[test]
+    fn generic_family_prompt_is_untouched() {
+        let prompt = format_messages_to_prompt(&[msg("user", "hi")], Some("mistral"));
+        assert!(!prompt.contains("/no_think"), "generic families keep their format");
+        assert!(prompt.contains("User:\nhi"));
+    }
+
+    #[test]
+    fn empty_messages_still_yield_empty_prompt() {
+        assert_eq!(format_messages_to_prompt(&[], Some("qwen-chatml")), "");
     }
 }

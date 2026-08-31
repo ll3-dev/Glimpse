@@ -184,7 +184,9 @@ export async function completeLocalLLMStream(
     runtimeId,
     modelId: effectiveModelId,
     messages: tauriMessages,
-    maxTokens: 512,
+    // reasoning 모델(Qwen3 등)은 /no_think 억제가 안 먹히면 사고에 수백~
+    // 수천 토큰을 쓴다 — 512로는 답 도달 전 예산이 끊긴다(실측).
+    maxTokens: 1024,
     temperature: 0.7,
   };
 
@@ -219,6 +221,8 @@ export async function completeLocalLLMStream(
 
     const text = stripThinkBlock(fullText).replace(/^Assistant:\s*/i, '').trim();
     callbacks.onDone(text);
+    // 사고 예산 소진으로 최종 텍스트가 비면 null — 라우터가 비(非)스트리밍
+    // 폴백 또는 정직한 실패 경로로 넘기고, [No response] 같은 가짜 답은 안 만든다.
     return text || null;
   } catch (err) {
     callbacks.onError(err instanceof Error ? err : new Error(String(err)));

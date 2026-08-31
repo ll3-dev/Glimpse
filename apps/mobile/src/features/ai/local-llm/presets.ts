@@ -97,7 +97,10 @@ const qwenPreset: LocalLLMPreset = {
     return buildChatMLInstructionPrompt(buildMetadataSystemPrompt(task), instruction);
   },
   sanitizeOutput(text) {
-    return sanitizeWithMarkers(text, [
+    // reasoning 모델(Qwen3) 대비 — 억제 지시(/no_think)가 안 먹힌
+    // 케이스에서 <think> 블록이 답과 함께 오면 제거한다.
+    const stripped = sanitizeReasoningOutput(text);
+    return sanitizeWithMarkers(stripped, [
       ...QWEN_STOP_TOKENS,
       "<|im_start|>",
       "<|im_start|>user",
