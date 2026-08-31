@@ -51,7 +51,8 @@
     "test": "bun run --cwd apps/mobile test",
     "test:coverage": "bun run --cwd apps/mobile test:coverage",
     "audit:critical": "bun audit --audit-level=critical",
-    "licenses:generate": "bun run scripts/generate-notices.ts"
+    "licenses:generate": "bun run scripts/generate-notices.ts",
+    "graph:receipt": "bun run scripts/living-graph-receipt.ts"
   },
   "patchedDependencies": {
     "expo-modules-jsi@57.0.6": "patches/expo-modules-jsi@57.0.6.patch"
