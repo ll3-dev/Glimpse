@@ -5,6 +5,17 @@
 - 제품 우선순위: 일상 사용성 우선, 기술적 완성도 병행
 - 선행 설계: `docs/plans/2026-08-31-roadmap-gates-graph-capture-design.md`
 
+## 진행 상태
+
+- Phase A — 현재 그래프 마감: 완료
+- Phase B — Living Graph 기반: 완료
+- Phase C — 발견·탐색 UX: 진행 예정
+- Phase D — 품질과 기술 증거: 진행 예정
+- Phase E — 데스크톱 캡처 동선: 진행 예정
+
+Phase B의 현재 트리 검증 근거는
+`thoughts/shared/research/2026-08-31_living-graph-phase-b-verification.md`에 기록한다.
+
 ## 1. 목표
 
 Glimpse를 다음 경험으로 수렴시킨다.

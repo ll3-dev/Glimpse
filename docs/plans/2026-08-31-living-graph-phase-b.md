@@ -1,5 +1,9 @@
 # Living Knowledge Graph Phase B 구현 계획
 
+- 상태: 완료
+- 완료 시각: 2026-08-31 17:14 KST
+- 검증 기록: `thoughts/shared/research/2026-08-31_living-graph-phase-b-verification.md`
+
 > **For Codex:** `superpowers:executing-plans`와 `superpowers:test-driven-development`를
 > 사용해 아래 작업을 순서대로 실행한다. 각 동작 변경은 실패 테스트를 먼저 확인한다.
 
