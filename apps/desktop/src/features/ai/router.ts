@@ -152,7 +152,12 @@ export async function generateChatStreamResponse(
     const streamResult = await completeBYOKStream(messages, callbacks);
     if (streamResult !== null) {
       const text = streamResult.replace(/^Assistant:\s*/i, '').trim();
-      return text || '[No response]';
+      if (!text) {
+        // 빈 응답을 가짜 답변으로 포장하지 않는다 — 비스트리밍 경로와 동일하게
+        // reject 하고 채팅 UI의 기존 에러 경로로 표시한다.
+        throw new Error('AI 응답이 비어 있습니다. 설정에서 다른 프로바이더를 선택해 주세요.');
+      }
+      return text;
     }
   }
 
@@ -171,7 +176,12 @@ export async function generateChatStreamResponse(
 
     const streamResult = await completeLocalLLMStream(allMessages, callbacks);
     if (streamResult !== null) {
-      return streamResult || '[No response]';
+      const text = streamResult.trim();
+      if (!text) {
+        // BYOK 스트리밍과 동일 — 빈 스트림은 가짜 답변이 아니라 reject다.
+        throw new Error('AI 응답이 비어 있습니다. 설정에서 다른 프로바이더를 선택해 주세요.');
+      }
+      return text;
     }
   }
 
