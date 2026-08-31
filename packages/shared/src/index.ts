@@ -31,7 +31,6 @@ export type RecommendationStatus = 'pending' | 'accepted' | 'ignored' | 'dismiss
 export type FeedbackActionType = 'accept' | 'ignore' | 'dismiss';
 export type MessageRole = 'user' | 'assistant';
 export type EmbeddingSourceType = 'message' | 'knowledge_item';
-export type InferenceMode = 'local' | 'apple' | 'byok';
 
 export interface KnowledgeItem {
   id: string;
