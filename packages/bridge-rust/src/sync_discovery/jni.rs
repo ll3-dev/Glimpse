@@ -40,6 +40,7 @@ static BRIDGE_CLASS: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicI
 ///
 /// # Safety
 /// `vm` must be the process `JavaVM` pointer (from `JNI_OnLoad`).
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn glimpse_jni_init(vm: *mut jni::sys::JavaVM) {
     let Ok(vm) = JavaVM::from_raw(vm) else {
         return;
