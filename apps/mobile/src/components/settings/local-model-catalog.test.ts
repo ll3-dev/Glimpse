@@ -16,9 +16,9 @@ describe("local model catalog filters", () => {
   test("counts latest, Korean, and publisher GGUF models independently", () => {
     const counts = getCatalogFilterCounts(RECOMMENDED_MODELS, ios6Gb);
 
-    expect(counts.all).toBe(24);
-    expect(counts.device).toBe(17);
-    expect(counts.latest).toBe(15);
+    expect(counts.all).toBe(28);
+    expect(counts.device).toBe(20);
+    expect(counts.latest).toBe(18);
     expect(counts.lowbit).toBe(2);
     expect(counts.korean).toBeGreaterThan(0);
     expect(counts.publisher).toBeGreaterThan(0);

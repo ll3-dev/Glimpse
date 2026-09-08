@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { RECOMMENDED_MODELS } from "@/src/features/ai/model-manager";
 import type { LocalModel } from "@/src/stores/settings/local-llm.store";
 import { useLocalModelCatalogActions } from "@/src/hooks/useLocalModelCatalog";
@@ -15,6 +15,7 @@ import {
   MODEL_GROUPS,
   type ModelCatalogFilter,
 } from "./local-model-catalog";
+import { blockedModelWarning } from "@/src/features/ai/model-manager/device-compatibility";
 
 type LocalModelCatalogProps = {
   enabled: boolean;
@@ -117,6 +118,47 @@ export function LocalModelCatalog({
                   models,
                 );
                 const localModel = models.find((item) => item.id === model.id);
+                const isBlocked = compatibility.status === "blocked";
+
+                // 전문가 경로 — RAM 미달도 경고 확인 후 다운로드·선택 허용.
+                const handleDownload = () => {
+                  if (isBlocked) {
+                    const warning = blockedModelWarning(
+                      model,
+                      deviceProfile,
+                      compatibility,
+                    );
+                    Alert.alert(warning.title, warning.message, [
+                      { text: "취소", style: "cancel" },
+                      {
+                        text: "그래도 받기",
+                        style: "destructive",
+                        onPress: () => void downloadModel(model),
+                      },
+                    ]);
+                    return;
+                  }
+                  void downloadModel(model);
+                };
+                const handleSelect = () => {
+                  if (isBlocked) {
+                    const warning = blockedModelWarning(
+                      model,
+                      deviceProfile,
+                      compatibility,
+                    );
+                    Alert.alert(warning.title, warning.message, [
+                      { text: "취소", style: "cancel" },
+                      {
+                        text: "그래도 사용",
+                        style: "destructive",
+                        onPress: () => selectModel(model.id),
+                      },
+                    ]);
+                    return;
+                  }
+                  selectModel(model.id);
+                };
 
                 return (
                   <ModelDownloadCard
@@ -135,19 +177,20 @@ export function LocalModelCatalog({
                         : undefined
                     }
                     errorMessage={localModel?.downloadError ?? undefined}
-                    onDownload={() => void downloadModel(model)}
+                    onDownload={handleDownload}
                     onCancelDownload={
                       status === "downloading"
                         ? () => void cancelDownload()
                         : undefined
                     }
                     onDelete={() => confirmDelete(model)}
-                    onSelect={() => selectModel(model.id)}
+                    onSelect={handleSelect}
                     canDownload={compatibility.status !== "blocked"}
                     canSelect={
                       (localModel?.isReady ?? false) &&
                       compatibility.status !== "blocked"
                     }
+                    isBlocked={isBlocked}
                   />
                 );
               })}

@@ -5,8 +5,7 @@ import { ArrowLeft, ShieldCheck, Smartphone } from "lucide-react-native";
 import { Card, ScreenHeader } from "@glimpse/ui/primitives";
 import { useSemanticColor } from "@glimpse/ui";
 import { LocalModelCatalog } from "@/src/components/settings/LocalModelCatalog";
-import { AlternativeRuntimeModels } from "@/src/components/settings/AlternativeRuntimeModels";
-import { ALTERNATIVE_RUNTIME_MODELS } from "@/src/components/settings/alternative-runtime-models";
+import { GGUFExplorer } from "@/src/components/settings/GGUFExplorer";
 import { RECOMMENDED_MODELS } from "@/src/features/ai/model-manager";
 import { useSettingsScreenState } from "@/src/hooks";
 
@@ -60,10 +59,9 @@ export default function LocalModelsScreen() {
                 기기별 모바일 GGUF {RECOMMENDED_MODELS.length}개
               </Text>
               <Text className="text-app-muted mt-1 text-xs leading-5">
-                2026년 최신 모델 {LATEST_MODEL_COUNT}개와 1.58-bit Qwen을
-                포함했습니다. 별도 엔진이 필요한 후보{" "}
-                {ALTERNATIVE_RUNTIME_MODELS.length}개도 아래에서 확인할 수
-                있습니다.
+                2026년 최신 모델 {LATEST_MODEL_COUNT}개를 포함한 전체
+                카탈로그입니다. RAM 필터로 이 기기에 맞는 모델을 먼저
+                보여줍니다.
               </Text>
             </View>
           </View>
@@ -90,7 +88,7 @@ export default function LocalModelsScreen() {
           onSelectModel={actions.selectLocalModel}
         />
 
-        <AlternativeRuntimeModels />
+        <GGUFExplorer />
 
         <Text className="text-app-subtle mt-8 text-center text-[10px] leading-4">
           Wi-Fi에서 다운로드하는 것을 권장합니다. 실제 속도와 메모리 사용량은

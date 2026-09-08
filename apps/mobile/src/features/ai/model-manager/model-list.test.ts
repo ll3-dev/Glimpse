@@ -43,12 +43,15 @@ describe("RECOMMENDED_MODELS on mobile", () => {
       "qwen3.5-2b-q4",
       "lfm2.5-2.6b-q4",
       "kanana-2-3b-instruct-q4",
+      "lfm2.5-vl-1.6b-q4",
       "qwen3-edgerazor-1.7b-tq1",
       "minicpm5-1b-q4",
       "qwen3-edgerazor-0.6b-tq1",
       "g9v3-3b-q4",
+      "lfm2.5-vl-3b-q4",
       "nanbeige4.2-3b-q4",
       "kanana-2-1.3b-instruct-q8",
+      "lfm2.5-230m-q4",
       "lfm2.5-350m-q4",
       "qwen3.5-0.8b-q4",
       "lfm2.5-1.2b-instruct-q4",
@@ -62,6 +65,7 @@ describe("RECOMMENDED_MODELS on mobile", () => {
       "smollm3-3b-q4",
       "gemma-3n-e2b-it-q4",
       "lfm2.5-8b-a1b-q4",
+      "gemma-3n-e4b-it-q4",
       "qwen3.5-9b-q4",
       "ministral-3-8b-instruct-q4",
     ]);
@@ -85,7 +89,7 @@ describe("RECOMMENDED_MODELS on mobile", () => {
       RECOMMENDED_MODELS.filter((model) =>
         model.releasedAt?.startsWith("2026"),
       ),
-    ).toHaveLength(15);
+    ).toHaveLength(18);
     expect(
       RECOMMENDED_MODELS.filter((model) => model.mobileProfile.lowBit),
     ).toHaveLength(2);

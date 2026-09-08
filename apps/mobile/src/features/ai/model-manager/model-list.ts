@@ -77,15 +77,11 @@ function toModelInfo(def: LocalModelDefinition): ModelInfo {
 }
 
 /**
- * Recommended models for mobile devices
+ * 모바일 추천 채팅 모델 — 전체 카탈로그(2026-09-08 확대 복원).
  *
- * Selection criteria:
- * - Mobile or high-memory edge hardware is an intended target
- * - Compatible with llama.rn 0.12.x model architectures
- * - Public, single-file GGUF download
- *
- * Per-device RAM cutoffs are applied by device-compatibility.ts instead of
- * excluding larger models from this source catalog.
+ * llama.rn으로 실행 가능한 모바일 GGUF 전량을 rank순으로 노출하고,
+ * 기기 RAM 게이트(device-compatibility)·최신/한국어/저비트 필터로
+ * 좁혀 가도록 한다. 기본 엔진은 Apple FM — 다운로드 없이도 앱이 동작한다.
  */
 export const RECOMMENDED_MODELS: ModelInfo[] = getChatModels("mobile")
   .filter((model) => model.mobileProfile)

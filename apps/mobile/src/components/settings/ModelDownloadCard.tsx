@@ -25,6 +25,8 @@ type ModelDownloadCardProps = {
   onSelect: () => void;
   canDownload: boolean;
   canSelect: boolean;
+  /** RAM 미달 — 차단 대신 경고 확인 후 진행하는 전문가 경로. */
+  isBlocked?: boolean;
 };
 
 export function ModelDownloadCard({
@@ -40,6 +42,7 @@ export function ModelDownloadCard({
   onSelect,
   canDownload,
   canSelect,
+  isBlocked = false,
 }: ModelDownloadCardProps) {
   const isDownloading = status === "downloading";
   const isCompleted = status === "completed";
@@ -134,22 +137,31 @@ export function ModelDownloadCard({
         {!isCompleted && !isDownloading && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${model.name} 다운로드`}
+            accessibilityLabel={
+              isBlocked ? `${model.name} 그래도 다운로드` : `${model.name} 다운로드`
+            }
             accessibilityHint={canDownload ? undefined : compatibility.reason}
-            accessibilityState={{ disabled: !canDownload }}
+            accessibilityState={{ disabled: !canDownload && !isBlocked }}
             onPress={onDownload}
-            disabled={!canDownload}
+            disabled={!canDownload && !isBlocked}
             className={`min-h-11 flex-row items-center gap-1.5 rounded-lg px-3.5 py-2 active:opacity-80 ${
-              canDownload ? "bg-app-text" : "border-app-border bg-app-bg border"
+              canDownload
+                ? "bg-app-text"
+                : isBlocked
+                  ? "border border-app-accent bg-app-surface"
+                  : "border-app-border bg-app-bg border"
             }`}
           >
-            <Download size={14} color={canDownload ? foreground : appSubtle} />
+            <Download
+              size={14}
+              color={canDownload ? foreground : isBlocked ? appAccent : appSubtle}
+            />
             <Text
               className={`text-xs font-semibold ${
-                canDownload ? "text-app-bg" : "text-app-subtle"
+                canDownload ? "text-app-bg" : isBlocked ? "text-app-accent" : "text-app-subtle"
               }`}
             >
-              {canDownload ? "다운로드" : "기기 제한"}
+              {canDownload ? "다운로드" : isBlocked ? "그래도 받기" : "기기 제한"}
             </Text>
           </Pressable>
         )}
@@ -177,23 +189,32 @@ export function ModelDownloadCard({
         {isCompleted && !isSelected && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${model.name} 사용`}
-            accessibilityState={{ disabled: !canSelect }}
+            accessibilityLabel={
+              isBlocked && !canSelect
+                ? `${model.name} 그래도 사용`
+                : `${model.name} 사용`
+            }
+            accessibilityState={{ disabled: !canSelect && !isBlocked }}
             onPress={onSelect}
-            disabled={!canSelect}
+            disabled={!canSelect && !isBlocked}
             className={`min-h-11 flex-row items-center gap-1.5 rounded-lg border px-3 py-2 active:opacity-80 ${
               canSelect
                 ? "border-app-text bg-app-surface"
-                : "border-app-border bg-app-bg"
+                : isBlocked
+                  ? "border-app-accent bg-app-surface"
+                  : "border-app-border bg-app-bg"
             }`}
           >
-            <Check size={14} color={canSelect ? appText : appSubtle} />
+            <Check
+              size={14}
+              color={canSelect ? appText : isBlocked ? appAccent : appSubtle}
+            />
             <Text
               className={`text-xs font-semibold ${
-                canSelect ? "text-app-text" : "text-app-subtle"
+                canSelect ? "text-app-text" : isBlocked ? "text-app-accent" : "text-app-subtle"
               }`}
             >
-              이 모델 사용
+              {canSelect || !isBlocked ? "이 모델 사용" : "그래도 사용"}
             </Text>
           </Pressable>
         )}

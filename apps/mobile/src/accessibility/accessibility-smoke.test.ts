@@ -37,8 +37,9 @@ describe('mobile accessibility source contracts', () => {
     ]) {
       expect(dataSection).toContain(contract);
     }
-    expect(modelCard).toContain('accessibilityState={{ disabled: !canDownload }}');
-    expect(modelCard).toContain('accessibilityState={{ disabled: !canSelect }}');
+    // 전문가 경로 — RAM 미달도 isBlocked로 경고 확인 후 진행 가능
+    expect(modelCard).toContain('accessibilityState={{ disabled: !canDownload && !isBlocked }}');
+    expect(modelCard).toContain('accessibilityState={{ disabled: !canSelect && !isBlocked }}');
     expect(modelCard).toContain('min-h-11');
     expect(modelCard).toContain('min-w-11');
   });

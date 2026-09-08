@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import type { ModelInfo } from "./model-list";
 import {
+  blockedModelWarning,
   getModelCompatibility,
   inferMinimumRamGb,
   isModelVisibleForDevice,
@@ -82,5 +83,28 @@ describe("mobile model device compatibility", () => {
     expect(getModelCompatibility(makeModel(5_000_000_000), device).status).toBe(
       "unknown",
     );
+  });
+});
+
+describe("blockedModelWarning", () => {
+  const model = { name: "Qwen 3.5 9B" };
+
+  test("기기 RAM이 확인될 때 권장 RAM과 기기 RAM을 모두 안내한다", () => {
+    const device: MobileDeviceProfile = { platform: "ios", modelName: "iPhone", ramGb: 6 };
+    const compatibility = getModelCompatibility(makeModel(4_500_000_000), device);
+    expect(compatibility.status).toBe("blocked");
+
+    const warning = blockedModelWarning(model, device, compatibility);
+    expect(warning.title).toBe("RAM 부족 경고");
+    expect(warning.message).toContain("12GB");
+    expect(warning.message).toContain("6GB");
+    expect(warning.message).toContain("그래도 진행할까요?");
+  });
+
+  test("기기 RAM을 모를 때는 기기 문구를 일반화한다", () => {
+    const device: MobileDeviceProfile = { platform: "ios", modelName: null, ramGb: null };
+    const compatibility = getModelCompatibility(makeModel(4_500_000_000), device);
+    const warning = blockedModelWarning(model, device, compatibility);
+    expect(warning.message).toContain("이 기기");
   });
 });
