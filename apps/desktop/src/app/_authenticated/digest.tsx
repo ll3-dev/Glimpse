@@ -8,11 +8,15 @@ import {
   useCoreClient,
   queryKeys,
 } from '@glimpse/hooks';
+import { buildTodaySummary } from '@glimpse/features';
 import type { RecommendationStatus, FeedbackActionType } from '@glimpse/shared';
 import { Sparkles } from 'lucide-react';
 import { DigestList } from '@/components/digest/DigestList';
 import { RecentEdgesSection } from '@/components/digest/RecentEdgesSection';
+import { TodaySummarySection } from '@/components/digest/TodaySummarySection';
+import { DailyNarrativeSection } from '@/components/digest/DailyNarrativeSection';
 import { selectRecentEdges } from '@/features/digest/recent-edges';
+import { useDailyNarrative } from '@/features/daily/use-daily-narrative';
 
 function DigestScreen() {
   const { data: recommendations = [], isLoading: recsLoading } = useRecommendationsQuery();
@@ -28,6 +32,12 @@ function DigestScreen() {
     () => selectRecentEdges(allEdges.filter((edge) => edge.status === 'accepted'), items),
     [allEdges, items],
   );
+
+  const todaySummary = useMemo(
+    () => buildTodaySummary(items, allEdges),
+    [items, allEdges],
+  );
+  const { narrative, isGenerating, regenerate } = useDailyNarrative(todaySummary);
 
   const itemMap = useMemo(() => {
     const map = new Map<string, (typeof items)[number]>();
@@ -84,6 +94,16 @@ function DigestScreen() {
             저장된 지식 간의 숨겨진 연결과 추천을 발견하고 검토합니다.
           </p>
         </div>
+
+        {/* Today's captures and connections */}
+        <TodaySummarySection summary={todaySummary} />
+
+        {/* AI 회고 문단 — 로컬 모델 사용 가능할 때만 나타난다 */}
+        <DailyNarrativeSection
+          narrative={narrative}
+          isGenerating={isGenerating}
+          onRegenerate={() => void regenerate()}
+        />
 
         {/* Recent accepted connections */}
         <RecentEdgesSection edges={recentEdges} />

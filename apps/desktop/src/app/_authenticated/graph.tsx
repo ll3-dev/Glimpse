@@ -12,7 +12,7 @@ import type { KnowledgeItem, Recommendation } from '@glimpse/shared';
 import { Network } from 'lucide-react';
 import { GraphDiscoveryCard } from '@/components/graph/GraphDiscoveryCard';
 import { KnowledgeGraph } from '@/components/graph/KnowledgeGraph';
-import { recordDesktopGraphDiscoveryOpen } from '@/features/graph/graph-metrics.store';
+import { recordDesktopGraphDiscoveryOpened } from '@/features/graph/graph-metrics.store';
 
 type GraphSearch = { focus?: string };
 
@@ -41,7 +41,9 @@ function GraphScreen() {
     void navigate({ to: '/library/$itemId', params: { itemId } });
   };
   const openDiscoveryItem = (itemId: string) => {
-    recordDesktopGraphDiscoveryOpen();
+    if (discovery) {
+      recordDesktopGraphDiscoveryOpened(discovery.recommendation.itemA_id, discovery.recommendation.itemB_id);
+    }
     openItem(itemId);
   };
   const hideRecommendation = (recommendationId: string) => {

@@ -122,6 +122,23 @@ test.describe('Phase C 그래프 GUI', () => {
     await page.getByRole('button', { name: '그래프에서 보기' }).click();
     await expect(page.getByText(/지식 항목 비\s*·\s*연결/)).toBeVisible();
 
+    // 5. 발견 카드 항목 열기 → discovery/revisit 여정이 로컬 지표에 기록된다.
+    //    (저장되는 것은 해시뿐 — 원문 제목·내용·URL은 저장되지 않는다)
+    const discoveryCard = page.locator('section').filter({ hasText: '오늘의 발견' });
+    await discoveryCard.getByRole('button', { name: '지식 항목 비' }).click();
+    await expect(page).toHaveURL(/\/library\/gui-b/);
+    const discoveryJourney = await page.evaluate(() => {
+      const raw = window.localStorage.getItem('glimpse_graph_local_metrics_v1') ?? '';
+      const parsed = JSON.parse(raw) as { journeySteps?: Array<{ kind: string }> };
+      return {
+        rawContainsTitle: raw.includes('지식 항목 비'),
+        kinds: (parsed.journeySteps ?? []).map(({ kind }) => kind),
+      };
+    });
+    expect(discoveryJourney.rawContainsTitle).toBe(false);
+    expect(discoveryJourney.kinds).toContain('discovery');
+    expect(discoveryJourney.kinds).toContain('revisit');
+
     await page.screenshot({ path: '/tmp/gui-graph-focus.png', fullPage: false });
     expect(consoleErrors.filter((e) => !/smoke stub rejects|Failed to load resource/.test(e))).toEqual([]);
   });

@@ -60,6 +60,18 @@ test('shell 캡처 저장이 Living Graph 증분 분석으로 자동 반영된�
 
   await expect(page).toHaveURL(/\/library$/, { timeout: 5_000 });
   await expect(page.getByText('셸 캡처 그래프 검증')).toBeVisible();
+
+  // Capture 성공 여정 이벤트가 로컬 지표에 기록됐는지 확인(해시만 저장, 내용 없음).
+  const captureJourney = await page.evaluate(() => {
+    const raw = window.localStorage.getItem('glimpse_graph_local_metrics_v1') ?? '';
+    const parsed = JSON.parse(raw) as { journeySteps?: Array<{ kind: string }> };
+    return {
+      rawContainsTitle: raw.includes('셸 캡처 그래프 검증'),
+      captureSteps: (parsed.journeySteps ?? []).filter(({ kind }) => kind === 'capture').length,
+    };
+  });
+  expect(captureJourney.rawContainsTitle).toBe(false);
+  expect(captureJourney.captureSteps).toBe(1);
   await expect.poll(
     () => page.evaluate(() => (window as any).__glimpseShellCaptureState.commits.length),
     { timeout: 6_000 },

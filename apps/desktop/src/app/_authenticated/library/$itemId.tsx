@@ -1,13 +1,20 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCoreClient } from '@glimpse/hooks';
 import { queryKeys } from '@glimpse/hooks';
 import { KnowledgeItemDetail } from '@/components/library/KnowledgeItemDetail';
+import { recordDesktopGraphItemDetailOpened } from '@/features/graph/graph-metrics.store';
 
 function LibraryItemPage() {
   const { itemId } = Route.useParams();
   const coreClient = useCoreClient();
   const navigate = useNavigate();
+
+  // 항목 상세 열기 = revisit 여정 이벤트(해시만 저장).
+  useEffect(() => {
+    if (itemId) recordDesktopGraphItemDetailOpened(itemId);
+  }, [itemId]);
 
   const { data: item, isLoading } = useQuery({
     queryKey: queryKeys.knowledgeItems.detail(itemId),

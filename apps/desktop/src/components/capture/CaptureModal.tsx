@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { validateInput, type KnowledgeItemInput } from '@glimpse/features/capture';
 import { useSaveKnowledgeItemMutation } from '@glimpse/hooks';
 import { useMetadataGeneration } from '@/features/ai/use-metadata-generation';
+import { recordDesktopGraphCaptureSuccess } from '@/features/graph/graph-metrics.store';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { CaptureModalForm, type CaptureFormData } from './CaptureModalForm';
 
@@ -154,6 +155,7 @@ export function CaptureModal() {
     saveMutation.mutate(item, {
       onSuccess: () => {
         setToast({ message: '지식이 성공적으로 저장되었습니다', type: 'success' });
+        recordDesktopGraphCaptureSuccess(item.id);
         setForm(EMPTY_FORM);
         setErrors({});
         setTimeout(() => {

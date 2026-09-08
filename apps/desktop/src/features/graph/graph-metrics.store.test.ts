@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import {
-  loadDesktopGraphMetrics,
+  recordDesktopGraphCaptureSuccess,
   recordDesktopGraphCycle,
   recordDesktopGraphDiscoveryOpen,
+  recordDesktopGraphDiscoveryOpened,
+  recordDesktopGraphItemDetailOpened,
+  loadDesktopGraphMetrics,
 } from './graph-metrics.store';
+import { computeGraphJourneyMetrics } from '@glimpse/features';
 
 const values = new Map<string, string>();
 const localStorageStub = {
@@ -40,6 +44,43 @@ describe('desktop graph metrics store', () => {
       recentDurationsMs: [8],
       lastCycleAt: 200,
     });
+  });
+
+  test('capture → discovery → revisit 여정이 공유 계약으로 집계된다', () => {
+    recordDesktopGraphCaptureSuccess('item-1');
+    recordDesktopGraphDiscoveryOpened('item-1', 'item-2');
+    recordDesktopGraphItemDetailOpened('item-1');
+
+    const metrics = loadDesktopGraphMetrics();
+    expect(metrics.version).toBe(2);
+    expect(metrics.journeySteps.map(({ kind }) => kind)).toEqual(['capture', 'discovery', 'revisit']);
+
+    const journey = computeGraphJourneyMetrics(metrics, { now: Date.now() });
+    expect(journey.captureCount).toBe(1);
+    expect(journey.captureToDiscoveryCount).toBe(1);
+    expect(journey.discoveryToRevisitCount).toBe(1);
+  });
+
+  test('무관한 discovery는 capture와 상관되지 않고 쿨다운 내 반복은 1회다', () => {
+    recordDesktopGraphCaptureSuccess('captured');
+    recordDesktopGraphDiscoveryOpened('unrelated-a', 'unrelated-b');
+    recordDesktopGraphDiscoveryOpened('unrelated-a', 'unrelated-b');
+    recordDesktopGraphDiscoveryOpened('captured', 'unrelated-a');
+
+    const metrics = loadDesktopGraphMetrics();
+    expect(metrics.journeySteps.filter(({ kind }) => kind === 'discovery')).toHaveLength(2);
+
+    const journey = computeGraphJourneyMetrics(metrics, { now: Date.now() });
+    expect(journey.captureCount).toBe(1);
+    expect(journey.discoveryCount).toBe(2);
+    expect(journey.captureToDiscoveryCount).toBe(1);
+  });
+
+  test('여정 저장값에 원문 id나 내용이 남지 않는다', () => {
+    recordDesktopGraphCaptureSuccess('private-note-identifier');
+
+    const raw = values.get('glimpse_graph_local_metrics_v1') ?? '';
+    expect(raw).not.toContain('private-note-identifier');
   });
 
   test('저장소 접근 실패가 사용자 흐름으로 전파되지 않는다', () => {
