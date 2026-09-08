@@ -22,8 +22,12 @@ mock.module('@tauri-apps/api/event', () => ({ listen: async () => () => {} }));
 
 // 정적 import는 호이스팅돼 다른 테스트 파일과 함께 실행될 때 mock 등록 전에
 // 실제 tauri 모듈 그래프를 로드할 수 있어, 선례와 같이 동적 import로 받는다.
+// 쿼리로 캐시를 우회한다 — 이 파일보다 먼저 실행된 테스트가 실제 tauri
+// 그래프로 이 모듈을 평가해두면(Linux 러너에서만 로드되는 경로) 늦게 등록한
+// mock.module은 캐시된 인스턴스에 적용되지 않는다.
 async function loadContract() {
-  return await import('./desktop-llm-service');
+  const contractModule = './desktop-llm-service?contract';
+  return await import(contractModule);
 }
 
 describe('run_embedding TS↔Rust 계약', () => {
