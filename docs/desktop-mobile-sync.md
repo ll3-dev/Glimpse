@@ -54,4 +54,4 @@ Simulator notes:
 
 ## Knowledge graph
 
-The desktop graph worker analyzes the most recent synced items. A configured Desktop Local LLM or BYOK provider proposes edges; if no model is available, shared tags provide a deterministic fallback. Edges are saved as normal recommendations, shown in **Graph**, and included in the next bidirectional sync.
+The desktop graph worker analyzes the most recent synced items. A configured Desktop Local LLM (managed GGUF runtime or an OpenAI-compatible local server such as LM Studio/Ollama) proposes edges; if no model is available, shared tags provide a deterministic fallback. Edges are saved as normal recommendations, shown in **Graph**, and included in the next bidirectional sync.
