@@ -45,15 +45,19 @@ export function buildDailyNarrativeInput(summary: TodaySummary): DailyNarrativeI
 
 /** 내러티브 생성 프롬프트 — 2~4문장, 항목명 인용, 연결 언급, 과장 금지. */
 export function buildDailyNarrativePrompt(input: DailyNarrativeInput): string {
+  // 정적 지시문을 앞쪽에 고정하고 가변 값(연결 수·기록 목록)은 뒤에 둔다 —
+  // llama.cpp 프롬프트 프리픽스 캐시가 같은 접두를 재사용할 수 있는 구조다
+  // (수동 재생성·같은 날 재호출). 하루 항목 수 단위 입력이라 단일 패스가
+  // 적절하고 map-reduce 분할은 불필요하다.
   const lines = [
     '사용자의 오늘 지식 캡처 기록을 바탕으로 오늘 하루를 정리한 짧은 회고 문단을 써 주세요.',
     '규칙:',
     '- 한국어로 2~4문장. 문단 하나만.',
     '- 실제 기록한 항목 이름을 최소 1개 인용할 것.',
-    `- 오늘 새로 생긴 연결이 ${input.newConnectionCount}개 있는데 1개 이상이면 자연스럽게 언급할 것.`,
     '- 없는 사실을 지어내지 말 것. 칭찬이나 훈계보다 사실 위주의 정리.',
     '기록 목록:',
     ...input.captureTitles.map((title, index) => `${index + 1}. ${title}`),
+    `오늘 새로 생긴 연결: ${input.newConnectionCount}개 — 1개 이상이면 자연스럽게 언급할 것.`,
   ];
   return lines.join('\n');
 }
