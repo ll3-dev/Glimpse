@@ -1,7 +1,7 @@
 /**
  * Chat message generation with optional knowledge-context injection.
  *
- * Routes through the AI provider system (local-llm / BYOK / rules / stub)
+ * Routes through the AI provider system (managed-llm / local-server / rules / stub)
  * based on current desktop settings. Supports streaming token delivery
  * when an onToken callback is provided.
  *
@@ -10,6 +10,11 @@
  * the pure `buildKnowledgeContext`, and PREPENDS the winning system message
  * to the history. Any step fails or finds nothing relevant → the provider is
  * called with the ORIGINAL history (silent fallback, references []).
+ *
+ * The router itself is injectable too (`ChatRouterDeps`) — bun의 mock.module은
+ * 프로세스 전역이라 모듈 mock으로 라우터를 대체하면 같은 bun test 프로세스의
+ * 뒤 테스트 파일(router.test.ts)까지 오염된다. 테스트는 deps 주입으로 격리하고
+ * 운영 경로는 실 router를 그대로 쓴다.
  */
 
 import type { KnowledgeItem } from '@glimpse/shared';
@@ -20,6 +25,7 @@ import {
 } from './knowledge-context';
 import { embedForRag, createRagEmbedDeps } from './embed-knowledge-batch';
 import { generateChatResponse, generateChatStreamResponse } from './router';
+import type { StreamingCallbacks } from './types';
 import { createRustraCoreClient } from '@/features/core/rustra-core-client';
 
 /** 지식 항목 텍스트 → 벡터, 질문 벡터를 한 배치로 돌려주는 임베딩 계약. */
@@ -66,13 +72,34 @@ export const defaultChatKnowledgeDeps: ChatKnowledgeDeps = {
   embed: (question, texts) => embedForRag(question, texts, createRagEmbedDeps()),
 };
 
+/**
+ * router 의존성 계약 — chat 응답/스트림 진입점만 노출한다. 테스트는 이 자리에
+ * 모크를 주입해 mock.module('./router') 없이 격리한다(위 파일 헤더 주석 참조).
+ */
+export interface ChatRouterDeps {
+  generateChatResponse: (
+    messages: { role: string; content: string }[],
+  ) => Promise<string>;
+  generateChatStreamResponse: (
+    messages: { role: string; content: string }[],
+    callbacks: StreamingCallbacks,
+  ) => Promise<string>;
+}
+
+/** 기본 router deps — 실제 라우터 모듈의 함수 그대로. */
+export const defaultChatRouterDeps: ChatRouterDeps = {
+  generateChatResponse,
+  generateChatStreamResponse,
+};
+
 export async function generateResponseWithKnowledge(
   messages: { role: string; content: string }[],
   options?: { onToken?: (token: string) => void },
   knowledgeDeps: ChatKnowledgeDeps = defaultChatKnowledgeDeps,
+  routerDeps: ChatRouterDeps = defaultChatRouterDeps,
 ): Promise<ChatResponseWithReferences> {
   const plain = async (): Promise<ChatResponseWithReferences> => ({
-    text: await generateText(messages, options),
+    text: await generateText(messages, options, routerDeps),
     references: [],
   });
 
@@ -128,7 +155,7 @@ export async function generateResponseWithKnowledge(
   if (context.entries.length === 0) return plain();
 
   const augmentedHistory = [...context.contextMessages, ...messages];
-  const text = await generateText(augmentedHistory, options);
+  const text = await generateText(augmentedHistory, options, routerDeps);
   return { text, references: context.entries };
 }
 
@@ -136,10 +163,11 @@ export async function generateResponseWithKnowledge(
 async function generateText(
   history: { role: string; content: string }[],
   options?: { onToken?: (token: string) => void },
+  routerDeps: ChatRouterDeps = defaultChatRouterDeps,
 ): Promise<string> {
   if (options?.onToken) {
     let fullText = '';
-    return generateChatStreamResponse(history, {
+    return routerDeps.generateChatStreamResponse(history, {
       onToken: (token) => {
         fullText += token;
         options.onToken?.(token);
@@ -152,5 +180,5 @@ async function generateText(
       },
     }).then((text) => text || fullText);
   }
-  return generateChatResponse(history);
+  return routerDeps.generateChatResponse(history);
 }

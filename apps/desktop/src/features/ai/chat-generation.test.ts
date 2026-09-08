@@ -1,32 +1,36 @@
 import { beforeEach, describe, expect, test, mock } from 'bun:test';
 import type { KnowledgeItem } from '@glimpse/shared';
 import { itemEmbeddingText } from '@glimpse/hooks';
+import {
+  generateResponseWithKnowledge,
+  RAG_LIBRARY_LIMIT,
+  type ChatRouterDeps,
+} from './chat-generation';
 
 /**
  * 채팅 지식 컨텍스트 주입 테스트.
  *
- * router는 mock.module로 대체하고, knowledge-context는 순수 랭킹이므로 실제
- * 코사인 계산을 돌린다 — 랭킹 수학을 이중으로 흉내 내면 계약 파기를 테스트가
- * 못 잡는다.
+ * router는 주입 deps(ChatRouterDeps)로 대체한다. 예전에는 mock.module('./router')
+ * 를 썼지만 bun의 모듈 mock은 프로세스 전역이라, 같은 bun test 프로세스에서
+ * 뒤이어 실행되는 router.test.ts까지 오염시킬 수 있다(CI recovery 2026-09-06).
+ * 주입 방식은 라우터 모듈 자체를 건드리지 않으므로 실행 순서와 무관하게 격리된다.
  *
- * embed-knowledge-batch는 mock으로 대체하지 않는다. bun의 mock.module은 프로세스
- * 전역이라 같은 디렉터리 테스트를 한 번에 돌리면 embed-knowledge-batch.test.ts까지
- * 오염시킨다(실측). embed는 모든 테스트에서 주입 deps로 대체되므로 실 전송 코드가
- * 실행될 일이 없다 — 모듈 mock이 없어도 격리는 유지된다.
+ * knowledge-context는 순수 랭킹이므로 실제 코사인 계산을 돌린다 — 랭킹 수학을
+ * 이중으로 흉내 내면 계약 파기를 테스트가 못 잡는다.
+ *
+ * embed-knowledge-batch도 mock.module로 대체하지 않는다(같은 전역 오염 이유).
+ * embed는 모든 테스트에서 주입 deps로 대체되므로 실 전송 코드가 실행될 일이
+ * 없다 — 모듈 mock이 없어도 격리는 유지된다.
  */
 
 const chatResponseMock = mock(async () => '비스트림 응답');
 const chatStreamMock = mock(async () => '');
 const embedForRagMock = mock(async () => null);
 
-mock.module('./router', () => ({
+const routerDeps: ChatRouterDeps = {
   generateChatResponse: chatResponseMock,
   generateChatStreamResponse: chatStreamMock,
-}));
-
-async function loadModule() {
-  return await import('./chat-generation');
-}
+};
 
 function item(overrides: Partial<KnowledgeItem> = {}): KnowledgeItem {
   const now = Date.now();
@@ -71,7 +75,6 @@ beforeEach(() => {
 
 describe('generateResponseWithKnowledge', () => {
   test('관련 지식이 있으면 system 컨텍스트를 히스토리 앞에 붙인다', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     const note = item({ id: 'a', title: '러스트 소유권', summary: '소유권 개요' });
     embedForRagMock.mockImplementation(async (question, itemTexts) => ({
       queryVector: [1, 0],
@@ -82,6 +85,7 @@ describe('generateResponseWithKnowledge', () => {
       [{ role: 'user', content: '소유권이 뭐야' }],
       undefined,
       { loadLibrary: async () => [note], embed: embedForRagMock },
+      routerDeps,
     );
 
     // 라우터는 system이 맨 앞인 보강 히스토리를 받는다.
@@ -104,14 +108,13 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('임베딩 실패(null)면 원본 히스토리로 폴백 — 참조 없음', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     embedForRagMock.mockImplementation(async () => null);
     const history = [{ role: 'user', content: '질문' }];
 
     const result = await generateResponseWithKnowledge(history, undefined, {
       loadLibrary: async () => [item({ id: 'a', title: 'A' })],
       embed: embedForRagMock,
-    });
+    }, routerDeps);
 
     expect(chatResponseMock).toHaveBeenCalledTimes(1);
     const received = chatResponseMock.mock.calls[0][0];
@@ -121,7 +124,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('라이브러리 로딩 실패(throw)도 원본 히스토리로 무음 폴백', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     const history = [{ role: 'user', content: '질문' }];
 
     const result = await generateResponseWithKnowledge(history, undefined, {
@@ -129,7 +131,7 @@ describe('generateResponseWithKnowledge', () => {
         throw new Error('db boom');
       },
       embed: embedForRagMock,
-    });
+    }, routerDeps);
 
     expect(embedForRagMock).not.toHaveBeenCalled();
     expect(chatResponseMock).toHaveBeenCalledTimes(1);
@@ -138,12 +140,11 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('빈 라이브러리면 임베딩 없이 라우터 1회 — 참조 없음', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
-
     const result = await generateResponseWithKnowledge(
       [{ role: 'user', content: '질문' }],
       undefined,
       { loadLibrary: async () => [], embed: embedForRagMock },
+      routerDeps,
     );
 
     expect(embedForRagMock).not.toHaveBeenCalled();
@@ -152,7 +153,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('사용자 메시지가 없으면 라우터를 그대로 호출 — 참조 없음', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     const history = [
       { role: 'assistant', content: '안녕하세요' },
       { role: 'assistant', content: '무엇을 도와드릴까요' },
@@ -161,7 +161,7 @@ describe('generateResponseWithKnowledge', () => {
     const result = await generateResponseWithKnowledge(history, undefined, {
       loadLibrary: async () => [item({ id: 'a', title: 'A' })],
       embed: embedForRagMock,
-    });
+    }, routerDeps);
 
     expect(embedForRagMock).not.toHaveBeenCalled();
     expect(chatResponseMock).toHaveBeenCalledTimes(1);
@@ -170,7 +170,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('스트리밍도 보강 히스토리로 돌리고 라우터 빈 문자열엔 누적 텍스트를 돌려준다', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     const note = item({ id: 'a', title: '러스트 소유권', summary: '개요' });
     chatStreamMock.mockImplementation(async (_messages, callbacks) => {
       callbacks.onToken('지식 ');
@@ -187,6 +186,7 @@ describe('generateResponseWithKnowledge', () => {
       [{ role: 'user', content: '소유권이 뭐야' }],
       { onToken: (token) => tokens.push(token) },
       { loadLibrary: async () => [note], embed: embedForRagMock },
+      routerDeps,
     );
 
     expect(chatStreamMock).toHaveBeenCalledTimes(1);
@@ -200,7 +200,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('중복 텍스트 항목은 한 번만 임베딩되고 벡터가 양쪽 id에 매핑된다', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     const first = item({ id: 'a', title: '같은 노트', summary: '동일 본문' });
     const second = item({ id: 'b', title: '같은 노트', summary: '동일 본문' });
     const sharedText = itemEmbeddingText(first);
@@ -213,6 +212,7 @@ describe('generateResponseWithKnowledge', () => {
       [{ role: 'user', content: '노트 찾아줘' }],
       undefined,
       { loadLibrary: async () => [first, second], embed: embedForRagMock },
+      routerDeps,
     );
 
     // 임베더는 고유 텍스트만 받는다.
@@ -227,7 +227,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('라이브러리는 상한 100개로 잘라 임베딩한다 — 재임베딩 비용 경계', async () => {
-    const { generateResponseWithKnowledge, RAG_LIBRARY_LIMIT } = await loadModule();
     const many = Array.from({ length: RAG_LIBRARY_LIMIT + 5 }, (_, index) =>
       item({ id: `item-${index}`, title: `노트 ${index}` }),
     );
@@ -239,7 +238,7 @@ describe('generateResponseWithKnowledge', () => {
     await generateResponseWithKnowledge([{ role: 'user', content: '질문' }], undefined, {
       loadLibrary: async () => many,
       embed: embedForRagMock,
-    });
+    }, routerDeps);
 
     const texts = embedForRagMock.mock.calls[0][1];
     expect(many.length).toBe(RAG_LIBRARY_LIMIT + 5);
@@ -247,7 +246,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('임베딩은 성공했으나 임계값 미달이면 원본 히스토리로 폴백 — 참조 없음', async () => {
-    const { generateResponseWithKnowledge } = await loadModule();
     const history = [{ role: 'user', content: '전혀 다른 질문' }];
     // 직교 벡터 = 코사인 0 < 0.55 — 임베딩 파이프라인은 살아 있지만 관련 항목 없음.
     embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
@@ -258,7 +256,7 @@ describe('generateResponseWithKnowledge', () => {
     const result = await generateResponseWithKnowledge(history, undefined, {
       loadLibrary: async () => [item({ id: 'a', title: '무관한 노트' })],
       embed: embedForRagMock,
-    });
+    }, routerDeps);
 
     expect(chatResponseMock).toHaveBeenCalledTimes(1);
     expect(chatResponseMock.mock.calls[0][0]).toEqual(history);
@@ -266,7 +264,6 @@ describe('generateResponseWithKnowledge', () => {
   });
 
   test('관련 항목이 캡 상한 밖(101번째)이면 참조 없음 — 캡 절단이 곧 무관', async () => {
-    const { generateResponseWithKnowledge, RAG_LIBRARY_LIMIT } = await loadModule();
     const beyond = item({
       id: 'beyond',
       title: '캡 밖 관련 노트',
@@ -288,6 +285,7 @@ describe('generateResponseWithKnowledge', () => {
       [{ role: 'user', content: '캡 밖 노트 찾기' }],
       undefined,
       { loadLibrary: async () => library, embed: embedForRagMock },
+      routerDeps,
     );
 
     expect(library.length).toBe(RAG_LIBRARY_LIMIT + 1);
