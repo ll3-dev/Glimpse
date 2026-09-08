@@ -13,14 +13,17 @@ import { processPendingBatch } from './process-pending-batch';
 type FakeStore = {
   text: string[] | null;
   webUrl: { url: string; meta: string }[];
+  imagePaths: string[];
 };
 
-let store: FakeStore = { text: null, webUrl: [] };
+let store: FakeStore = { text: null, webUrl: [], imagePaths: [] };
 let fullClearCalls = 0;
 let textClearCalls = 0;
 let removedUrls: string[][] = [];
+let removedImagePaths: string[][] = [];
 const savedValues: string[] = [];
 let failingUrls: Set<string> = new Set();
+let failingImageBodies: Set<string> = new Set();
 
 function makeDeps() {
   return {
@@ -28,19 +31,27 @@ function makeDeps() {
       if (item.url && failingUrls.has(item.url)) {
         throw new Error('transient failure');
       }
+      if (item.body && failingImageBodies.has(item.body)) {
+        throw new Error('db locked');
+      }
       savedValues.push(item.url ?? item.body ?? '');
       return item;
     },
+    extractText: async (uri: string) =>
+      uri.endsWith('failing.jpg') ? 'failing-body' : `ocr:${uri}`,
     getPendingShareData: async () => {
-      if (store.text === null && store.webUrl.length === 0) return null;
+      if (store.text === null && store.webUrl.length === 0 && store.imagePaths.length === 0) {
+        return null;
+      }
       return {
         ...(store.text !== null ? { text: store.text } : {}),
         ...(store.webUrl.length > 0 ? { webUrl: store.webUrl } : {}),
+        ...(store.imagePaths.length > 0 ? { imagePaths: store.imagePaths } : {}),
       };
     },
     clearPendingShareData: async () => {
       fullClearCalls += 1;
-      store = { text: null, webUrl: [] };
+      store = { text: null, webUrl: [], imagePaths: [] };
     },
     clearPendingShareText: async () => {
       textClearCalls += 1;
@@ -50,6 +61,11 @@ function makeDeps() {
       removedUrls.push(urls);
       const saved = new Set(urls);
       store.webUrl = store.webUrl.filter((entry) => !saved.has(entry.url));
+    },
+    removePendingShareImages: async (paths: string[]) => {
+      removedImagePaths.push(paths);
+      const saved = new Set(paths);
+      store.imagePaths = store.imagePaths.filter((path) => !saved.has(path));
     },
     logger: {
       info: () => {},
@@ -63,13 +79,15 @@ function resetStore(next: FakeStore) {
   fullClearCalls = 0;
   textClearCalls = 0;
   removedUrls = [];
+  removedImagePaths = [];
   savedValues.length = 0;
+  failingImageBodies = new Set();
 }
 
 describe('processPendingBatch partial processing', () => {
   test('text success with URL failure clears text, keeps failed URL, skips full clear', async () => {
     failingUrls = new Set(['https://rejected.example']);
-    resetStore({ text: ['remember this'], webUrl: [{ url: 'https://rejected.example', meta: '' }] });
+    resetStore({ text: ['remember this'], webUrl: [{ url: 'https://rejected.example', meta: '' }], imagePaths: [] });
 
     const savedCount = await processPendingBatch(makeDeps());
 
@@ -84,7 +102,7 @@ describe('processPendingBatch partial processing', () => {
 
   test('rerun after partial failure does not re-save the already-saved text', async () => {
     failingUrls = new Set(['https://rejected.example']);
-    resetStore({ text: ['remember this'], webUrl: [{ url: 'https://rejected.example', meta: '' }] });
+    resetStore({ text: ['remember this'], webUrl: [{ url: 'https://rejected.example', meta: '' }], imagePaths: [] });
 
     await processPendingBatch(makeDeps());
     expect(savedValues).toEqual(['remember this']);
@@ -100,7 +118,7 @@ describe('processPendingBatch partial processing', () => {
 
   test('all-success batch performs the full clear', async () => {
     failingUrls = new Set();
-    resetStore({ text: ['note'], webUrl: [{ url: 'https://kept.example', meta: '' }] });
+    resetStore({ text: ['note'], webUrl: [{ url: 'https://kept.example', meta: '' }], imagePaths: [] });
 
     const savedCount = await processPendingBatch(makeDeps());
 
@@ -108,5 +126,43 @@ describe('processPendingBatch partial processing', () => {
     expect(fullClearCalls).toBe(1);
     expect(store.text).toBeNull();
     expect(store.webUrl).toHaveLength(0);
+  });
+});
+
+describe('processPendingBatch image captures', () => {
+  test('saved images are dropped from the store; a failing image blocks the full clear', async () => {
+    failingUrls = new Set();
+    resetStore({
+      text: null,
+      webUrl: [],
+      imagePaths: [
+        '/group/PendingShareImages/failing.jpg',
+        '/group/PendingShareImages/ok.jpg',
+      ],
+    });
+    failingImageBodies = new Set(['failing-body']);
+
+    const savedCount = await processPendingBatch(makeDeps());
+
+    expect(savedCount).toBe(0); // one image still pending -> batch not done
+    expect(removedImagePaths).toEqual([['/group/PendingShareImages/ok.jpg']]);
+    expect(fullClearCalls).toBe(0);
+    expect(store.imagePaths).toEqual(['/group/PendingShareImages/failing.jpg']);
+  });
+
+  test('image-only all-success batch performs the full clear', async () => {
+    failingUrls = new Set();
+    failingImageBodies = new Set();
+    resetStore({
+      text: null,
+      webUrl: [],
+      imagePaths: ['/group/PendingShareImages/a.jpg'],
+    });
+
+    const savedCount = await processPendingBatch(makeDeps());
+
+    expect(savedCount).toBe(1);
+    expect(fullClearCalls).toBe(1);
+    expect(store.imagePaths).toEqual([]);
   });
 });

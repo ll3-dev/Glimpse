@@ -6,13 +6,12 @@ import {
   Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import { X } from 'lucide-react-native';
 import { fetchWebMetadata } from '@/src/features/capture/webMetadata';
 import { toast } from '@/src/stores/toast.store';
-import { logger } from '@/src/utils/logger';
 import { useOcrExtraction } from '@/src/hooks/useOcrExtraction';
+import { useCaptureImage } from '@/src/hooks/useCaptureImage';
 import { useSemanticColor } from '@glimpse/ui';
 import { UnifiedCaptureAssistantBar } from './UnifiedCaptureAssistantBar';
 
@@ -41,6 +40,7 @@ export function UnifiedCaptureForm({
   const [clipboardText, setClipboardText] = useState<string | null>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const { ocrState, extract, reset: resetOcr } = useOcrExtraction();
+  const { pickFromLibrary, captureWithCamera } = useCaptureImage();
   const appSubtle = useSemanticColor('appSubtle');
 
   useEffect(() => {
@@ -58,27 +58,18 @@ export function UnifiedCaptureForm({
   }, []);
 
   const handlePickImage = async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permission.status !== 'granted') {
-        toast.error('사진 접근 권한이 필요합니다');
-        return;
-      }
+    const uri = await pickFromLibrary();
+    if (uri) {
+      onChangeImageUri(uri);
+      await runOcrForImage(uri);
+    }
+  };
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        onChangeImageUri(uri);
-        await runOcrForImage(uri);
-      }
-    } catch (error) {
-      logger.error('Failed to pick image', error);
-      toast.error('이미지를 불러오지 못했습니다');
+  const handleCaptureWithCamera = async () => {
+    const uri = await captureWithCamera();
+    if (uri) {
+      onChangeImageUri(uri);
+      await runOcrForImage(uri);
     }
   };
 
@@ -152,6 +143,7 @@ export function UnifiedCaptureForm({
         ocrRunning={ocrState === 'running'}
         onPasteClipboard={handlePasteClipboard}
         onPickImage={handlePickImage}
+        onCaptureWithCamera={handleCaptureWithCamera}
         onFetchMetadata={() => handleFetchMetadata()}
       />
 

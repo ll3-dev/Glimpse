@@ -19,6 +19,10 @@ export interface ProcessPendingBatchDeps {
   clearPendingShareData: () => Promise<void>;
   clearPendingShareText: () => Promise<void>;
   removePendingShareUrls: (urls: string[]) => Promise<void>;
+  /** Drops absorbed image files; failed ones stay pending. */
+  removePendingShareImages?: (paths: string[]) => Promise<void>;
+  /** OCR for pending image captures; forwarded to processShareData. */
+  extractText?: (uri: string) => Promise<string | null>;
   // LogContext(Record<string, unknown>) 기반 시그니처 — unknown 매개변수는
   // 구체적 콜백(LogContext)과 반공변 충돌을 일으켜 TS6부터 할당이 거부된다.
   logger?: {
@@ -44,6 +48,7 @@ export async function processPendingBatch(
     const result = await createProcessShareData({
       saveKnowledgeItem: deps.saveKnowledgeItem,
       generateId: deps.generateId ?? defaultGenerateId,
+      extractText: deps.extractText,
       logger: deps.logger,
     })(data);
 
@@ -54,9 +59,14 @@ export async function processPendingBatch(
     if (result.savedUrls.length > 0) {
       await deps.removePendingShareUrls(result.savedUrls);
     }
+    if (result.savedImagePaths.length > 0) {
+      await deps.removePendingShareImages?.(result.savedImagePaths);
+    }
 
     const allSaved =
-      result.failedUrls.length === 0 && (!data.text || result.textSaved);
+      result.failedUrls.length === 0 &&
+      result.failedImagePaths.length === 0 &&
+      (!data.text || result.textSaved);
     if (!allSaved) {
       return 0;
     }

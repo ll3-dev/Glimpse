@@ -13,6 +13,11 @@ class AppGroupModule: NSObject {
   /// legacy sharedKey (String array); a dedicated key prevents the two kinds
   /// from clobbering each other when they differ in stored type.
   static let urlKey = "ll3.krShareUrlKey"
+  /// Pending Shortcuts image captures: filenames (no directory) of files under
+  /// `pendingImagesDirectory` in the App Group container. The share extension
+  /// writes images through the JS side; Shortcuts writes them via the intent.
+  static let imageKey = "ll3.krShareImageKey"
+  static let pendingImagesDirectory = "PendingShareImages"
 
   /// Returns the App Group container directory path
   @objc
@@ -51,7 +56,31 @@ class AppGroupModule: NSObject {
       result["webUrl"] = urlArray.map { ["url": $0.url, "meta": $0.meta] }
     }
 
+    // Read pending image captures (Shortcuts). Files that no longer exist are
+    // dropped here so a deleted file never wedges the batch as permanently failing.
+    let imagePaths = Self.pendingImagePaths(userDefaults)
+    if !imagePaths.isEmpty {
+      result["imagePaths"] = imagePaths
+    }
+
     resolve(result.isEmpty ? nil : result)
+  }
+
+  /// Absolute paths of pending image files that actually exist on disk.
+  private static func pendingImagePaths(_ userDefaults: UserDefaults?) -> [String] {
+    let filenames = userDefaults?.stringArray(forKey: Self.imageKey) ?? []
+    guard !filenames.isEmpty,
+          let directory = Self.pendingImagesDirectoryURL() else { return [] }
+    return filenames
+      .map { directory.appendingPathComponent($0).path }
+      .filter { FileManager.default.fileExists(atPath: $0) }
+  }
+
+  /// The PendingShareImages directory inside the App Group container (may be nil).
+  private static func pendingImagesDirectoryURL() -> URL? {
+    FileManager.default.containerURL(
+      forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier
+    )?.appendingPathComponent(Self.pendingImagesDirectory, isDirectory: true)
   }
 
   /// Clears pending share data after processing
@@ -60,6 +89,10 @@ class AppGroupModule: NSObject {
     let userDefaults = UserDefaults(suiteName: Self.appGroupIdentifier)
     userDefaults?.removeObject(forKey: Self.sharedKey)
     userDefaults?.removeObject(forKey: Self.urlKey)
+    userDefaults?.removeObject(forKey: Self.imageKey)
+    if let directory = Self.pendingImagesDirectoryURL() {
+      try? FileManager.default.removeItem(at: directory)
+    }
     userDefaults?.removeObject(forKey: "\(Self.sharedKey)_directSave")
     userDefaults?.synchronize()
     resolve(nil)
@@ -108,12 +141,46 @@ class AppGroupModule: NSObject {
     resolve(nil)
   }
 
+  /// Replaces the pending image list with the given absolute paths. Files the
+  /// app absorbed are deleted from the container; failed ones stay pending.
+  @objc
+  func replacePendingShareImages(_ paths: NSArray, resolve: RCTPromiseResolveBlock, reject: RCTPromiseRejectBlock) {
+    let userDefaults = UserDefaults(suiteName: Self.appGroupIdentifier)
+
+    guard let keptPaths = paths as? [String] else {
+      reject("ERROR", "Invalid pending share image payload", nil)
+      return
+    }
+
+    let keptFilenames = Set(keptPaths.map { ($0 as NSString).lastPathComponent })
+    let existing = userDefaults?.stringArray(forKey: Self.imageKey) ?? []
+
+    if let directory = Self.pendingImagesDirectoryURL() {
+      for filename in existing where !keptFilenames.contains(filename) {
+        try? FileManager.default.removeItem(
+          at: directory.appendingPathComponent(filename)
+        )
+      }
+    }
+
+    if keptFilenames.isEmpty {
+      userDefaults?.removeObject(forKey: Self.imageKey)
+    } else {
+      // Keep the recorded order of the surviving entries.
+      userDefaults?.set(existing.filter { keptFilenames.contains($0) }, forKey: Self.imageKey)
+    }
+    maybeClearDirectSaveFlag(userDefaults)
+    userDefaults?.synchronize()
+    resolve(nil)
+  }
+
   /// Drops the directSave flag once neither kind has a pending record left,
   /// so a stale flag does not make getPendingShareData report empty batches.
   private func maybeClearDirectSaveFlag(_ userDefaults: UserDefaults?) {
     let hasText = userDefaults?.object(forKey: Self.sharedKey) != nil
     let hasUrls = userDefaults?.object(forKey: Self.urlKey) != nil
-    if !hasText && !hasUrls {
+    let hasImages = userDefaults?.object(forKey: Self.imageKey) != nil
+    if !hasText && !hasUrls && !hasImages {
       userDefaults?.removeObject(forKey: "\(Self.sharedKey)_directSave")
     }
   }

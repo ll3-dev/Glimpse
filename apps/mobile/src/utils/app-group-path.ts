@@ -28,6 +28,8 @@ export async function getAppGroupContainerPath(): Promise<string | null> {
 export interface PendingShareData {
   text?: string[];
   webUrl?: { url: string; meta: string }[];
+  /** Absolute paths of pending image files (Shortcuts captures). */
+  imagePaths?: string[];
 }
 
 /**

@@ -28,4 +28,10 @@ RCT_EXTERN_METHOD(
   reject: (RCTPromiseRejectBlock)reject
 )
 
+RCT_EXTERN_METHOD(
+  replacePendingShareImages: (NSArray *)paths
+  resolve: (RCTPromiseResolveBlock)resolve
+  reject: (RCTPromiseRejectBlock)reject
+)
+
 @end

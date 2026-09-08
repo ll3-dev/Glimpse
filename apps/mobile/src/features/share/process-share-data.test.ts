@@ -109,6 +109,85 @@ describe('processShareData labeling enrollment', () => {
   });
 });
 
+describe('processShareData image captures', () => {
+  test('pending images are saved as screenshots with OCR text as the body', async () => {
+    const savedItems: KnowledgeItem[] = [];
+    const saveKnowledgeItem = mock(async (item: KnowledgeItem) => {
+      savedItems.push(item);
+      return item;
+    });
+    const extractText = mock(async (uri: string) =>
+      uri === '/group/PendingShareImages/a.jpg' ? '회의록 텍스트' : null,
+    );
+
+    const result = await createProcessShareData({
+      saveKnowledgeItem,
+      generateId: () => 'share-id-1',
+      extractText,
+      logger: { info: mock() },
+      now: () => 1_700_000_000_000,
+    })({
+      imagePaths: [
+        '/group/PendingShareImages/a.jpg',
+        '/group/PendingShareImages/b.jpg',
+      ],
+    });
+
+    expect(result.savedImagePaths).toEqual([
+      '/group/PendingShareImages/a.jpg',
+      '/group/PendingShareImages/b.jpg',
+    ]);
+    expect(result.failedImagePaths).toEqual([]);
+    expect(savedItems[0]).toMatchObject({ type: 'screenshot', body: '회의록 텍스트' });
+    // OCR이 텍스트를 못 찾은 이미지도 저장된다 — 이미지 바이트는 계약상
+    // 저장하지 않으므로 body는 null이지만 항목 자체는 남는다.
+    expect(savedItems[1]).toMatchObject({ type: 'screenshot', body: null });
+  });
+
+  test('image save failure stays pending without blocking other images', async () => {
+    const saveKnowledgeItem = mock(async (item: KnowledgeItem) => {
+      if (item.type === 'screenshot' && item.body === 'failing') {
+        throw new Error('db locked');
+      }
+      return item;
+    });
+
+    const result = await createProcessShareData({
+      saveKnowledgeItem,
+      generateId: () => 'share-id-1',
+      extractText: async (uri) => (uri.endsWith('bad.jpg') ? 'failing' : 'ok'),
+      logger: { info: mock() },
+      now: () => 1_700_000_000_000,
+    })({
+      imagePaths: ['/group/PendingShareImages/bad.jpg', '/group/PendingShareImages/good.jpg'],
+    });
+
+    expect(result.savedImagePaths).toEqual(['/group/PendingShareImages/good.jpg']);
+    expect(result.failedImagePaths).toEqual(['/group/PendingShareImages/bad.jpg']);
+  });
+
+  test('image entries are independent of text and URL entries', async () => {
+    const saveKnowledgeItem = mock(async (item: KnowledgeItem) => item);
+
+    const result = await createProcessShareData({
+      saveKnowledgeItem,
+      generateId: () => 'share-id-1',
+      extractText: async () => 'ocr text',
+      logger: { info: mock() },
+      now: () => 1_700_000_000_000,
+    })({
+      text: ['note'],
+      webUrl: [{ url: 'https://example.com', meta: '' }],
+      imagePaths: ['/group/PendingShareImages/a.jpg'],
+    });
+
+    expect(result.savedCount).toBe(3);
+    expect(result.textSaved).toBe(true);
+    expect(result.savedUrls).toEqual(['https://example.com']);
+    expect(result.savedImagePaths).toEqual(['/group/PendingShareImages/a.jpg']);
+  });
+});
+
 describe('processShareData idempotency', () => {
   test('successful entries are reported per-entry so callers can shrink the pending store', async () => {
     const savedItems: KnowledgeItem[] = [];

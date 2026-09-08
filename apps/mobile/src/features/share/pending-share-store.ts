@@ -64,3 +64,20 @@ export async function removePendingShareUrls(
     console.error("Failed to remove pending share urls:", error);
   }
 }
+
+/**
+ * Keeps only the given image paths pending — absorbed files are deleted from
+ * the App Group container by the native side; failed ones stay pending.
+ */
+export async function removePendingShareImages(
+  paths: string[],
+): Promise<void> {
+  if (Platform.OS !== "ios" || paths.length === 0) {
+    return;
+  }
+  try {
+    await AppGroupModule.replacePendingShareImages(paths);
+  } catch (error) {
+    console.error("Failed to remove pending share images:", error);
+  }
+}

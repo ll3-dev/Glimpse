@@ -8,6 +8,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/r
 import { shouldShowStubNoticeOnce } from '@glimpse/features';
 import { saveKnowledgeItem, type KnowledgeItemInput } from '@/src/features/capture';
 import { mobileCoreClient } from '@/src/features/core';
+import { recordMobileGraphCaptureSuccess } from '@/src/features/graph/graph-metrics.store';
 import { resolveEffectiveTarget } from '@/src/features/ai/targets/registry';
 import { toast } from '@/src/stores/toast.store';
 import type { KnowledgeItem } from '@glimpse/shared';
@@ -57,6 +58,7 @@ export function useSaveKnowledgeItemMutation(): UseMutationResult<
       patchKnowledgeItems(queryClient, (current) => [item, ...current]);
       // pending뿐 아니라 연결된 노트 섹션(useAllRecommendationsQuery)까지 새 엣지 반영.
       queryClient.invalidateQueries({ queryKey: queryKeys.recommendations.all });
+      recordMobileGraphCaptureSuccess(item.id);
       notifyStubQualityOnce();
     },
   });

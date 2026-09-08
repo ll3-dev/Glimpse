@@ -1,5 +1,10 @@
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import { ImagePlus, Clipboard as ClipboardIcon, Globe } from 'lucide-react-native';
+import {
+  Camera,
+  ImagePlus,
+  Clipboard as ClipboardIcon,
+  Globe,
+} from 'lucide-react-native';
 import { useSemanticColor } from '@glimpse/ui';
 
 interface UnifiedCaptureAssistantBarProps {
@@ -11,6 +16,7 @@ interface UnifiedCaptureAssistantBarProps {
   ocrRunning: boolean;
   onPasteClipboard: () => void;
   onPickImage: () => void;
+  onCaptureWithCamera: () => void;
   onFetchMetadata: () => void;
 }
 
@@ -23,6 +29,7 @@ export function UnifiedCaptureAssistantBar({
   ocrRunning,
   onPasteClipboard,
   onPickImage,
+  onCaptureWithCamera,
   onFetchMetadata,
 }: UnifiedCaptureAssistantBarProps) {
   const appMuted = useSemanticColor('appMuted');
@@ -50,6 +57,14 @@ export function UnifiedCaptureAssistantBar({
         <Text className="text-xs font-medium text-app-muted">
           {hasImage ? '사진 변경' : '사진 첨부'}
         </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={onCaptureWithCamera}
+        className="flex-row items-center rounded-lg border border-app-border bg-app-surface px-3 py-1.5 active:bg-app-bg"
+      >
+        <Camera size={13} color={appMuted} style={{ marginRight: 6 }} />
+        <Text className="text-xs font-medium text-app-muted">카메라</Text>
       </Pressable>
 
       {hasUrl && (

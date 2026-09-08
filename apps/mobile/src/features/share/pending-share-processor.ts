@@ -18,6 +18,7 @@
 import { useEffect } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { mobileCoreClient } from "@/src/features/core/mobile-core-client";
+import { runOcr } from "@/src/features/capture/ocr/ocr-service";
 import { logger } from "@/src/utils/logger";
 import {
   getPendingShareData,
@@ -26,6 +27,7 @@ import {
 import {
   clearPendingShareText,
   removePendingShareUrls,
+  removePendingShareImages,
 } from "./pending-share-store";
 import { generateId } from "@/src/lib/id";
 import { processPendingBatch } from "./process-pending-batch";
@@ -42,6 +44,13 @@ const batchDeps = {
   clearPendingShareData,
   clearPendingShareText,
   removePendingShareUrls,
+  removePendingShareImages,
+  // Pending image captures carry no text — OCR at absorption time becomes the
+  // body, matching the in-app screenshot flow (image bytes stay unpersisted).
+  extractText: async (uri: string) => {
+    const outcome = await runOcr(uri);
+    return outcome.status === "ok" ? outcome.text : null;
+  },
   logger,
 };
 
