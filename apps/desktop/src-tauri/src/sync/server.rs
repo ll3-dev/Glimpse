@@ -267,6 +267,8 @@ pub const CLIPPER_HEADER: &str = "x-glimpse-clipper";
 const CLIPPER_MAX_URL: usize = 2048;
 const CLIPPER_MAX_TITLE: usize = 300;
 const CLIPPER_MAX_TEXT: usize = 200_000;
+/// 확장이 페이지 DOM에서 발췌한 본문 전문의 상한 — `text`와 별개 컷.
+const CLIPPER_MAX_CONTENT: usize = 200_000;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -275,6 +277,9 @@ pub struct ClipperRequest {
     title: Option<String>,
     /// 선택 텍스트나 페이지 발췌 — 없으면 URL만 저장한다.
     text: Option<String>,
+    /// 확장이 그 순간의 DOM에서 발췌한 페이지 본문 전문. 외부 크롤러가 못
+    /// 얻는(로그인·JS 렌더) 페이지를 열려 있는 브라우저가 대신 읽어 준다.
+    content: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -302,14 +307,26 @@ fn clipper_request_to_item(
         .map(|text| text.trim().to_string())
         .filter(|text| !text.is_empty())
         .map(|text| text.chars().take(CLIPPER_MAX_TEXT).collect::<String>());
-    if title.is_none() && text.is_none() {
+    let content = request
+        .content
+        .map(|content| content.trim().to_string())
+        .filter(|content| !content.is_empty())
+        .map(|content| content.chars().take(CLIPPER_MAX_CONTENT).collect::<String>());
+    // 선택 텍스트를 앞에 두고 본문 전문은 구분선 뒤에 붙인다 — 노트에서
+    // "내가 고른 것"과 "페이지 전체"가 한눈에 갈린다.
+    let body = match (text, content) {
+        (Some(text), Some(content)) => Some(format!("{text}\n\n---\n\n{content}")),
+        (Some(text), None) | (None, Some(text)) => Some(text),
+        (None, None) => None,
+    };
+    if title.is_none() && body.is_none() {
         return Err("저장할 내용이 없습니다.".into());
     }
     Ok(glimpse_core::KnowledgeItem {
         id: uuid::Uuid::new_v4().to_string(),
         item_type: glimpse_core::KnowledgeItemType::Note,
         title,
-        body: text,
+        body,
         url: Some(url),
         summary: None,
         tags: None,
@@ -701,6 +718,7 @@ mod tests {
                 url: "https://example.com/article".into(),
                 title: Some("  기사 제목  ".into()),
                 text: Some("선택한 본문".into()),
+                content: None,
             },
             1_000,
         )
@@ -716,21 +734,83 @@ mod tests {
     #[test]
     fn clipper_request_without_content_is_rejected() {
         assert!(clipper_request_to_item(
-            super::ClipperRequest { url: String::new(), title: None, text: None },
+            super::ClipperRequest { url: String::new(), title: None, text: None, content: None },
             1,
         )
         .is_err());
         assert!(clipper_request_to_item(
-            super::ClipperRequest { url: "  ".into(), title: None, text: None },
+            super::ClipperRequest { url: "  ".into(), title: None, text: None, content: None },
             1,
         )
         .is_err());
         // URL은 있어도 제목·본문이 전부 비면 저장할 내용이 없다.
         assert!(clipper_request_to_item(
-            super::ClipperRequest { url: "https://a.b".into(), title: None, text: None },
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: None,
+                text: None,
+                content: None,
+            },
             1,
         )
         .is_err());
+    }
+
+    #[test]
+    fn clipper_page_content_joins_selection_behind_a_separator() {
+        // content만 있으면 그대로 note 본문이 된다.
+        let item = clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: None,
+                text: None,
+                content: Some("페이지 본문 전문".into()),
+            },
+            1,
+        )
+        .expect("content-only clip");
+        assert_eq!(item.body.as_deref(), Some("페이지 본문 전문"));
+
+        // 선택 텍스트와 본문 전문은 `---` 구분선으로 갈린다.
+        let item = clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: None,
+                text: Some("선택한 발췌".into()),
+                content: Some("페이지 본문 전문".into()),
+            },
+            1,
+        )
+        .expect("selection + content clip");
+        assert_eq!(item.body.as_deref(), Some("선택한 발췌\n\n---\n\n페이지 본문 전문"));
+
+        // 공백뿐인 content는 없는 것과 같다.
+        assert!(clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: None,
+                text: None,
+                content: Some("  \n\t".into()),
+            },
+            1,
+        )
+        .is_err());
+
+        // content는 자체 상한에서 잘린다.
+        let item = clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: None,
+                text: None,
+                content: Some("가".repeat(super::CLIPPER_MAX_CONTENT + 1)),
+            },
+            1,
+        )
+        .expect("capped content clip");
+        assert_eq!(
+            item.body.as_deref().unwrap().chars().count(),
+            super::CLIPPER_MAX_CONTENT
+        );
     }
 
     #[test]
@@ -741,6 +821,7 @@ mod tests {
                 url: "https://a.b".into(),
                 title: Some(long_title.clone()),
                 text: None,
+                content: None,
             },
             1,
         )
@@ -754,6 +835,7 @@ mod tests {
                 url: "https://a.b".into(),
                 title: Some("   ".into()),
                 text: Some("\n\t".into()),
+                content: None,
             },
             1,
         )

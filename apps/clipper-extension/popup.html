@@ -35,6 +35,18 @@
         color: inherit;
       }
       textarea:focus { outline: 2px solid #c7d2fe; outline-offset: 0; }
+      .body-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .body-toggle input { accent-color: #37352f; margin: 0; }
+      .body-toggle input:disabled { cursor: default; }
+      .body-toggle input:disabled + span { color: #787774; }
+      #body-size { color: #787774; font-size: 11px; }
       .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
       .port { display: flex; align-items: center; gap: 4px; color: #787774; font-size: 11px; }
       .port input {
@@ -69,7 +81,11 @@
       <div class="title" id="page-title">…</div>
       <div class="url" id="page-url">…</div>
     </div>
-    <textarea id="selection" placeholder="선택한 텍스트가 여기에 채워집니다. 비워 두면 링크만 저장합니다."></textarea>
+    <textarea id="selection" placeholder="선택한 텍스트가 여기에 채워집니다. 비워 두면 본문(또는 링크)만 저장합니다."></textarea>
+    <label class="body-toggle">
+      <input type="checkbox" id="page-body" checked />
+      <span>페이지 본문 함께 저장 <span id="body-size"></span></span>
+    </label>
     <div class="row">
       <label class="port">포트 <input id="port" type="text" inputmode="numeric" /></label>
       <button id="save">저장</button>
