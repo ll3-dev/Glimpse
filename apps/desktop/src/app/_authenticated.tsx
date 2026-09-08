@@ -5,6 +5,7 @@ import { MainPanel } from '@/components/layout/MainPanel';
 import { useForegroundLabeling } from '@/hooks/useForegroundLabeling';
 import { useKnowledgeGraphAutomation } from '@/hooks/useKnowledgeGraphAutomation';
 import { useAppReviewReminder } from '@/hooks/useAppReviewReminder';
+import { useClipperCaptureListener } from '@/hooks/useClipperCaptureListener';
 import { useLabelingBackfill } from '@glimpse/hooks';
 import { desktopBackfillStorage } from '@/features/labeling/backfill-storage';
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/_authenticated')({
     useForegroundLabeling();
     useKnowledgeGraphAutomation();
     useAppReviewReminder();
+    useClipperCaptureListener();
     // GlimpseProvider(coreClient) 안에서 실행된다
     useLabelingBackfill(desktopBackfillStorage);
 

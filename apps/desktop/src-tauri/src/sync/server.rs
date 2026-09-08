@@ -146,6 +146,7 @@ pub fn router<R: tauri::Runtime>(state: ServerState<R>) -> Router {
         .route("/v1/health", get(health))
         .route("/v1/pair", post(pair))
         .route("/v1/sync", post(sync))
+        .route("/v1/clipper", post(clipper))
         .layer(axum::middleware::from_fn(move |request: Request, next| {
             reject_foreign_hosts(request, next, port, local_names.clone())
         }))
@@ -245,6 +246,151 @@ async fn health<R: tauri::Runtime>(State(state): State<ServerState<R>>) -> Json<
         device_name: state.sync.device_name.clone(),
         pairing_required: state.sync.paired_clients().is_empty(),
     })
+}
+
+// --- Web clipper -----------------------------------------------------------
+//
+// 브라우저 확장이 열어 둔 페이지를 로컬 데스크톱으로 보내 저장하는
+// 최소 캡처 경로다. 동기화 클라이언트와 달리 페어링 없이 쓴다:
+//
+// 1. 루프백 발신만 허용한다(확장은 같은 기기에서 요청한다).
+// 2. 커스텀 헤더(`X-Glimpse-Clipper`)를 필수로 강제한다. 커스텀 헤더는
+//    브라우저가 cross-origin fetch에서 preflight를 유발하고 이 서버는 CORS
+//    preflight에 응답하지 않으므로, 임의 웹페이지의 JS 요청은 브라우저가
+//    차단한다. 헤더 없는 폼 POST(프리플라이트 없는 단순 요청)는 아래
+//    헤더 검증에서 거절된다.
+// 3. 전역 host 검증 미들웨어가 DNS 리바인딩을 이미 걸러낸다.
+
+/// 클리퍼 요청 필수 헤더 — 값은 '1'로 고정(존재 자체가 목적).
+pub const CLIPPER_HEADER: &str = "x-glimpse-clipper";
+
+const CLIPPER_MAX_URL: usize = 2048;
+const CLIPPER_MAX_TITLE: usize = 300;
+const CLIPPER_MAX_TEXT: usize = 200_000;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipperRequest {
+    url: String,
+    title: Option<String>,
+    /// 선택 텍스트나 페이지 발췌 — 없으면 URL만 저장한다.
+    text: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ClipperResponse {
+    item_id: String,
+}
+
+/// 요청 페이로드를 지식 항목으로 바꾼다(순수 — 길이 검증·제목 폴백 포함).
+fn clipper_request_to_item(
+    request: ClipperRequest,
+    now_ms: i64,
+) -> Result<glimpse_core::KnowledgeItem, String> {
+    let url = request.url.trim().to_string();
+    if url.is_empty() || url.len() > CLIPPER_MAX_URL {
+        return Err("url이 없거나 너무 깁니다.".into());
+    }
+    let title = request
+        .title
+        .map(|title| title.trim().to_string())
+        .filter(|title| !title.is_empty())
+        .map(|title| title.chars().take(CLIPPER_MAX_TITLE).collect::<String>());
+    let text = request
+        .text
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
+        .map(|text| text.chars().take(CLIPPER_MAX_TEXT).collect::<String>());
+    if title.is_none() && text.is_none() {
+        return Err("저장할 내용이 없습니다.".into());
+    }
+    Ok(glimpse_core::KnowledgeItem {
+        id: uuid::Uuid::new_v4().to_string(),
+        item_type: glimpse_core::KnowledgeItemType::Note,
+        title,
+        body: text,
+        url: Some(url),
+        summary: None,
+        tags: None,
+        labels: None,
+        provisional_labels: None,
+        label_status: None,
+        label_source: None,
+        label_version: None,
+        label_score: None,
+        label_requested_at: None,
+        label_completed_at: None,
+        label_error: None,
+        created_at: now_ms,
+        updated_at: now_ms,
+        stability: None,
+        difficulty: None,
+        last_reviewed_at: None,
+        next_review_at: None,
+    })
+}
+
+fn now_ms() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+async fn clipper<R: tauri::Runtime>(
+    State(state): State<ServerState<R>>,
+    ConnectInfo(remote): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    Json(request): Json<ClipperRequest>,
+) -> Result<Json<ClipperResponse>, ApiError> {
+    if !remote.ip().is_loopback() {
+        return Err(ApiError(
+            StatusCode::FORBIDDEN,
+            "loopback_only",
+            "클리퍼는 같은 기기(루프백)에서만 사용할 수 있습니다.".into(),
+        ));
+    }
+    let header_ok = headers
+        .get(CLIPPER_HEADER)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.trim() == "1");
+    if !header_ok {
+        return Err(ApiError(
+            StatusCode::FORBIDDEN,
+            "clipper_header_required",
+            "클리퍼 헤더가 필요합니다.".into(),
+        ));
+    }
+
+    let item = clipper_request_to_item(request, now_ms()).map_err(|message| {
+        ApiError(StatusCode::UNPROCESSABLE_ENTITY, "invalid_clip", message)
+    })?;
+    let item_id = item.id.clone();
+
+    let saved = tauri::async_runtime::spawn_blocking(move || {
+        let core = glimpse_bridge::core_state();
+        core.save_knowledge_item(&item).map_err(|error| error.to_string())
+    })
+    .await
+    .map_err(|error| ApiError(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "clipper_join_failed",
+        error.to_string(),
+    ))?
+    .map_err(|message| ApiError(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "clipper_save_failed",
+        message,
+    ))?;
+
+    // 웹뷰의 보관함·그래프 쿼리 무효화는 이 이벤트 소비처가 담당한다.
+    let _ = state.app.emit(
+        "glimpse://clipper-captured",
+        serde_json::json!({ "itemId": saved.id }),
+    );
+
+    Ok(Json(ClipperResponse { item_id }))
 }
 
 async fn pair<R: tauri::Runtime>(
@@ -544,7 +690,75 @@ mod tests {
 
     use glimpse_core::{DataExport, KnowledgeItem, KnowledgeItemType, SqliteStorage};
 
-    use super::{is_allowed_host, should_skip_merge, DELTA_GUARDBAND_MS};
+    use super::{is_allowed_host, should_skip_merge, clipper_request_to_item, DELTA_GUARDBAND_MS};
+
+    // --- Clipper payload → KnowledgeItem ------------------------------------
+
+    #[test]
+    fn clipper_request_becomes_a_note_with_url_and_selection() {
+        let item = clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://example.com/article".into(),
+                title: Some("  기사 제목  ".into()),
+                text: Some("선택한 본문".into()),
+            },
+            1_000,
+        )
+        .expect("valid clip");
+        assert_eq!(item.title.as_deref(), Some("기사 제목"));
+        assert_eq!(item.body.as_deref(), Some("선택한 본문"));
+        assert_eq!(item.url.as_deref(), Some("https://example.com/article"));
+        assert!(matches!(item.item_type, glimpse_core::KnowledgeItemType::Note));
+        assert_eq!(item.created_at, 1_000);
+        assert!(!item.id.is_empty());
+    }
+
+    #[test]
+    fn clipper_request_without_content_is_rejected() {
+        assert!(clipper_request_to_item(
+            super::ClipperRequest { url: String::new(), title: None, text: None },
+            1,
+        )
+        .is_err());
+        assert!(clipper_request_to_item(
+            super::ClipperRequest { url: "  ".into(), title: None, text: None },
+            1,
+        )
+        .is_err());
+        // URL은 있어도 제목·본문이 전부 비면 저장할 내용이 없다.
+        assert!(clipper_request_to_item(
+            super::ClipperRequest { url: "https://a.b".into(), title: None, text: None },
+            1,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn clipper_title_falls_back_to_body_only_and_caps_lengths() {
+        let long_title = "제".repeat(1_000);
+        let item = clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: Some(long_title.clone()),
+                text: None,
+            },
+            1,
+        )
+        .expect("title-only clip");
+        assert_eq!(item.title.as_deref().unwrap().chars().count(), 300);
+        assert_eq!(item.body, None);
+
+        // 공백뿐인 제목·본문은 내용 없음으로 취급된다.
+        assert!(clipper_request_to_item(
+            super::ClipperRequest {
+                url: "https://a.b".into(),
+                title: Some("   ".into()),
+                text: Some("\n\t".into()),
+            },
+            1,
+        )
+        .is_err());
+    }
 
     const PORT: u16 = 34_129;
     /// Empty advertisement set: only IPs, localhost, and `*.ts.net` apply.

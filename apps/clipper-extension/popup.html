@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light; }
+      body {
+        width: 320px;
+        margin: 0;
+        padding: 14px;
+        background: #f7f6f3;
+        color: #37352f;
+        font: 13px/1.5 -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+      }
+      h1 { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+      .page {
+        border: 1px solid #edece9;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+      }
+      .page .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .page .url { color: #787774; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 84px;
+        resize: vertical;
+        border: 1px solid #edece9;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 8px 10px;
+        font: inherit;
+        color: inherit;
+      }
+      textarea:focus { outline: 2px solid #c7d2fe; outline-offset: 0; }
+      .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+      .port { display: flex; align-items: center; gap: 4px; color: #787774; font-size: 11px; }
+      .port input {
+        width: 64px;
+        border: 1px solid #edece9;
+        border-radius: 6px;
+        padding: 3px 6px;
+        font: inherit;
+        font-size: 11px;
+        background: #ffffff;
+      }
+      button {
+        margin-left: auto;
+        border: 0;
+        border-radius: 8px;
+        background: #37352f;
+        color: #ffffff;
+        font: inherit;
+        font-weight: 600;
+        padding: 7px 14px;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: default; }
+      #status { margin-top: 8px; font-size: 11px; color: #787774; min-height: 16px; }
+      #status.error { color: #b3261e; }
+      #status.ok { color: #1a7f37; }
+    </style>
+  </head>
+  <body>
+    <h1>Glimpse로 저장</h1>
+    <div class="page">
+      <div class="title" id="page-title">…</div>
+      <div class="url" id="page-url">…</div>
+    </div>
+    <textarea id="selection" placeholder="선택한 텍스트가 여기에 채워집니다. 비워 두면 링크만 저장합니다."></textarea>
+    <div class="row">
+      <label class="port">포트 <input id="port" type="text" inputmode="numeric" /></label>
+      <button id="save">저장</button>
+    </div>
+    <div id="status"></div>
+    <script src="popup.js"></script>
+  </body>
+</html>
