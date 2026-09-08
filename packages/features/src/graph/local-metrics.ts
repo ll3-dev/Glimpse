@@ -1,5 +1,7 @@
+import { parseGraphJourneyStep, pruneGraphJourneySteps, type GraphJourneyStep } from './journey';
+
 export interface GraphLocalMetrics {
-  version: 1;
+  version: 2;
   discoveryDetailOpenCount: number;
   cycleCount: number;
   successfulCycleCount: number;
@@ -9,6 +11,8 @@ export interface GraphLocalMetrics {
   totalDurationMs: number;
   recentDurationsMs: number[];
   lastCycleAt: number | null;
+  /** Content-free hashed journey steps (see ./journey). Bounded and short-lived. */
+  journeySteps: GraphJourneyStep[];
 }
 
 export interface GraphCycleMetricSample {
@@ -31,7 +35,7 @@ function safeNumber(value: number): number {
 
 export function createEmptyGraphLocalMetrics(): GraphLocalMetrics {
   return {
-    version: 1,
+    version: 2,
     discoveryDetailOpenCount: 0,
     cycleCount: 0,
     successfulCycleCount: 0,
@@ -41,14 +45,20 @@ export function createEmptyGraphLocalMetrics(): GraphLocalMetrics {
     totalDurationMs: 0,
     recentDurationsMs: [],
     lastCycleAt: null,
+    journeySteps: [],
   };
 }
 
-export function parseGraphLocalMetrics(raw: string | null | undefined): GraphLocalMetrics {
+export function parseGraphLocalMetrics(
+  raw: string | null | undefined,
+  options?: { now?: number },
+): GraphLocalMetrics {
   if (!raw) return createEmptyGraphLocalMetrics();
 
   try {
-    const value = JSON.parse(raw) as Partial<GraphLocalMetrics>;
+    const value = JSON.parse(raw) as Omit<Partial<GraphLocalMetrics>, 'version'> & {
+      version?: unknown;
+    };
     const numericKeys: Array<keyof GraphLocalMetrics> = [
       'discoveryDetailOpenCount',
       'cycleCount',
@@ -59,7 +69,7 @@ export function parseGraphLocalMetrics(raw: string | null | undefined): GraphLoc
       'totalDurationMs',
     ];
     if (
-      value.version !== 1 ||
+      (value.version !== 1 && value.version !== 2) ||
       numericKeys.some((key) => !finiteNonNegative(value[key])) ||
       !Array.isArray(value.recentDurationsMs) ||
       value.recentDurationsMs.some((duration) => !finiteNonNegative(duration)) ||
@@ -67,8 +77,16 @@ export function parseGraphLocalMetrics(raw: string | null | undefined): GraphLoc
     ) {
       return createEmptyGraphLocalMetrics();
     }
+    // v1 payloads migrate with counters intact and no journey steps; unknown
+    // fields (which could carry content) are never carried through. Invalid v2
+    // steps are dropped individually rather than corrupting the counters.
+    const journeySteps = Array.isArray(value.journeySteps)
+      ? value.journeySteps
+        .map(parseGraphJourneyStep)
+        .filter((step): step is GraphJourneyStep => step !== null)
+      : [];
     return {
-      version: 1,
+      version: 2,
       discoveryDetailOpenCount: value.discoveryDetailOpenCount!,
       cycleCount: value.cycleCount!,
       successfulCycleCount: value.successfulCycleCount!,
@@ -78,6 +96,7 @@ export function parseGraphLocalMetrics(raw: string | null | undefined): GraphLoc
       totalDurationMs: value.totalDurationMs!,
       recentDurationsMs: value.recentDurationsMs.slice(-MAX_GRAPH_DURATION_SAMPLES),
       lastCycleAt: value.lastCycleAt!,
+      journeySteps: pruneGraphJourneySteps(journeySteps, options?.now ?? Date.now()),
     };
   } catch {
     return createEmptyGraphLocalMetrics();

@@ -1,5 +1,6 @@
 export * from './library';
 export * from './chat';
+export * from './daily';
 export {
   DEFAULT_INITIAL_REVIEW_INTERVAL_MS,
   DEFAULT_POSTPONE_INTERVAL_MS,
