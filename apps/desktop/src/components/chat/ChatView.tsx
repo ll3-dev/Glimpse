@@ -5,6 +5,10 @@ import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import type { ChatReference } from './ReferenceChips';
 import { generateResponseWithKnowledge, type ChatKnowledgeDeps } from '@/features/ai/chat-generation';
+import {
+  runToolCallingChat,
+  searchReferencesFromToolRuns,
+} from '@/features/ai/tools/tool-loop';
 import { loadSettings } from '@/lib/settings-storage';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
@@ -135,16 +139,38 @@ export function ChatView({ conversationId }: ChatViewProps) {
       try {
         const currentMessages = messages ?? [];
         const history = buildMessageHistory([...currentMessages, userMessage]);
-        const { text: response, references } = await generateResponseWithKnowledge(
-          history,
-          {
-            onToken: (token) => {
-              streamingTextRef.current += token;
-              broadcastStreaming(streamingTextRef.current);
-            },
-          },
-          ragEnabled ? undefined : RAG_DISABLED_DEPS
-        );
+        const onToken = (token: string) => {
+          streamingTextRef.current += token;
+          broadcastStreaming(streamingTextRef.current);
+        };
+
+        // 도구 지원 경로를 먼저 시도한다 — 이용 불가능하면 null로 돌아와
+        // 기존 RAG 경로가 그대로 답한다. 도구 경로는 비스트리밍이므로 최종
+        // 텍스트를 한 번에 전달한다(비스트리밍 폴백과 동일한 단일 전달).
+        const toolOutcome = await runToolCallingChat(history);
+        let response: string;
+        let references: ChatReference[];
+        if (toolOutcome) {
+          response = toolOutcome.text;
+          references = searchReferencesFromToolRuns(toolOutcome.toolRuns).map((ref) => ({
+            itemId: ref.itemId,
+            title: ref.title,
+            score: 0,
+          }));
+          if (response) onToken(response);
+        } else {
+          const outcome = await generateResponseWithKnowledge(
+            history,
+            { onToken },
+            ragEnabled ? undefined : RAG_DISABLED_DEPS
+          );
+          response = outcome.text;
+          references = outcome.references.map((entry) => ({
+            itemId: entry.item.id,
+            title: entry.item.title ?? '',
+            score: entry.score,
+          }));
+        }
 
         const assistantMessage: Message = {
           id: assistantId,
@@ -158,12 +184,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
         await addMessage.mutateAsync(assistantMessage);
 
         if (references.length > 0) {
-          const refs: ChatReference[] = references.map((entry) => ({
-            itemId: entry.item.id,
-            title: entry.item.title ?? '',
-            score: entry.score,
-          }));
-          setReferencesByMessage((prev) => new Map(prev).set(assistantId, refs));
+          setReferencesByMessage((prev) => new Map(prev).set(assistantId, references));
         }
       } catch (err) {
         console.error('Chat response generation failed:', err);
