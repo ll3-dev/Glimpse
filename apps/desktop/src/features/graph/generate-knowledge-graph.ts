@@ -108,7 +108,7 @@ async function runKnowledgeGraphCycle(
   if (settings.aiProvider !== 'rules') {
     try {
       const provider = await getProviderForFeature('metadata');
-      if (provider.kind === 'local-llm' || provider.kind === 'byok') {
+      if (provider.kind === 'managed-llm' || provider.kind === 'local-server') {
         proposed = await proposeWithDesktopAI(
           provider.complete.bind(provider),
           plan.toAnalyze,

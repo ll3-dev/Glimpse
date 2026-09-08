@@ -9,7 +9,12 @@
 // Provider kinds
 // ---------------------------------------------------------------------------
 
-export type AIProviderKind = 'local-llm' | 'byok' | 'rules' | 'stub';
+/**
+ * managed-llm — 앱이 관리하는 llama.cpp 런타임(GGUF 자동 다운로드).
+ * local-server — 외부 로컬 서버(LM Studio·Ollama 등)의 OpenAI 호환 엔드포인트.
+ * 클라우드 BYOK는 2026-09-08 완전 로컬 전환으로 제거되었다.
+ */
+export type AIProviderKind = 'managed-llm' | 'local-server' | 'rules' | 'stub';
 
 export type AIFeature = 'metadata' | 'labeling' | 'chat';
 

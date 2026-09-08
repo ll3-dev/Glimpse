@@ -1,24 +1,30 @@
 import { useState, useCallback } from 'react';
-import { Settings as SettingsIcon, Sparkles, BookOpen } from 'lucide-react';
+import { Settings as SettingsIcon, Sparkles, BookOpen, Server, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { BYOKSection } from './BYOKSection';
+import { LocalServerSection } from './LocalServerSection';
 import { ModelManagerSection } from './ModelManagerSection';
 import { DesktopSyncSection } from './DesktopSyncSection';
 import { ReviewReminderSection } from './ReviewReminderSection';
 import { ThemeSection } from './ThemeSection';
-import { loadSettings, saveSettings, type DesktopSettings } from '@/lib/settings-storage';
+import {
+  loadSettings,
+  saveSettings,
+  consumeByokRemovalNotice,
+  type DesktopSettings,
+} from '@/lib/settings-storage';
 
 type AiProvider = DesktopSettings['aiProvider'];
 
 const PROVIDER_OPTIONS: { value: AiProvider; label: string; description: string }[] = [
-  { value: 'rules', label: '규칙 기반 (Rules)', description: '외부 API나 모델 없이 내장 규칙 엔진으로 자동 분류 및 태깅' },
-  { value: 'byok', label: '개인 API 키 (BYOK)', description: 'OpenAI, DeepSeek, Anthropic 등의 사용자 API 키 직접 연동' },
-  { value: 'local-llm', label: '로컬 AI 모델 (Local LLM)', description: '내 기기에서 직접 llama.cpp 기반으로 모델을 실행하여 추론' },
+  { value: 'managed-llm', label: '관리 로컬 런타임', description: '앱이 GGUF 모델을 직접 내려받아 llama.cpp로 실행 — 배경 라벨링·요약용 소형 모델' },
+  { value: 'local-server', label: '외부 로컬 서버', description: 'LM Studio·Ollama·llama.cpp 등이 연 OpenAI 호환 엔드포인트 — 큰 모델 탈출구' },
+  { value: 'rules', label: '규칙 기반 (Rules)', description: '모델 없이 내장 규칙 엔진으로 자동 분류 및 태깅' },
 ];
 
 export function SettingsPanel() {
   const [settings, setSettings] = useState<DesktopSettings>(() => loadSettings());
+  const [showByokNotice, setShowByokNotice] = useState(() => consumeByokRemovalNotice());
 
   const handleSettingsChange = useCallback((next: DesktopSettings) => {
     setSettings(next);
@@ -42,6 +48,31 @@ export function SettingsPanel() {
         </div>
       </div>
 
+      {/* BYOK 제거 일회성 안내 — 마이그레이션 직후 한 번만 표시 */}
+      {showByokNotice && (
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-2xs">
+          <div className="flex items-start gap-2.5">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-app-primary" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                클라우드 BYOK 설정이 제거되었습니다
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                Glimpse가 완전 로컬 AI로 전환되었습니다. 저장된 API 키는 키체인에서 삭제되었고,
+                아래 로컬 런타임 또는 외부 로컬 서버 중에서 선택해 사용하세요.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowByokNotice(false)}
+                className="mt-2 text-xs font-semibold text-app-primary hover:underline"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* AI Provider Section */}
       <section>
         <div className="mb-3 flex items-center gap-1.5">
@@ -53,6 +84,7 @@ export function SettingsPanel() {
         <div className="rounded-2xl border border-border bg-card p-6 shadow-2xs">
           <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
             지식 자동 분류, 메타데이터 생성 및 지식 그래프 분석에 사용할 AI 엔진을 선택합니다.
+            모든 경로가 로컬에서만 실행됩니다.
           </p>
           <div className="space-y-2.5">
             {PROVIDER_OPTIONS.map((opt) => (
@@ -85,9 +117,15 @@ export function SettingsPanel() {
       {/* Divider */}
       <hr className="border-border/60" />
 
-      {/* BYOK Section */}
+      {/* External Local Server Section */}
       <section>
-        <BYOKSection settings={settings} onSettingsChange={handleSettingsChange} />
+        <div className="mb-3 flex items-center gap-1.5">
+          <Server className="h-4 w-4 text-app-primary" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">
+            외부 로컬 서버
+          </h2>
+        </div>
+        <LocalServerSection settings={settings} onSettingsChange={handleSettingsChange} />
       </section>
 
       {/* Divider */}

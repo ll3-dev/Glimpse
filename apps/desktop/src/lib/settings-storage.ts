@@ -1,15 +1,28 @@
+/**
+ * 데스크톱 설정 저장 — 완전 로컬 AI 런타임 스키마(2026-09-08 전환).
+ *
+ * 클라우드 BYOK(openai/anthropic/google/deepseek + API 키)는 제거되었다.
+ * 프로바이더는 관리 런타임(llama.cpp GGUF) / 외부 로컬 서버(LM Studio·
+ * Ollama·llama.cpp server의 OpenAI 호환 엔드포인트) / rules 3종뿐이며
+ * 저장 시크릿이 없어 키체인 분리 저장 코드도 함께 제거되었다.
+ */
+
 const SETTINGS_KEY_V1 = 'glimpse_desktop_settings_v1';
 const LEGACY_SETTINGS_KEY = 'glimpse-desktop-settings';
-/** keyring account — provider 별 키를 분리해 교체/삭제가 독립적이게 */
-const SECRET_ACCOUNT_PREFIX = 'byok-api-key';
+/** BYOK 제거 일회성 안내 플래그 — 설정 화면에서 1회만 표시한다 */
+const BYOK_REMOVAL_NOTICE_KEY = 'glimpse_byok_removed_notice_v1';
+/** 키체인에 남아 있을 수 있는 레거시 BYOK 키 계정 접두사 */
+const LEGACY_SECRET_ACCOUNT_PREFIX = 'byok-api-key';
+const LEGACY_SECRET_PROVIDERS = ['openai', 'anthropic', 'google', 'deepseek', 'custom'];
+
+export type LocalServerSource = 'lmstudio' | 'ollama' | 'llamacpp' | 'manual';
 
 export interface DesktopSettings {
-  aiProvider: 'local-llm' | 'byok' | 'rules';
-  byok: {
-    provider: 'openai' | 'deepseek' | 'anthropic' | 'google' | 'custom';
-    apiKey: string;
+  aiProvider: 'managed-llm' | 'local-server' | 'rules';
+  localServer: {
     baseUrl: string;
     model: string;
+    detectedFrom: LocalServerSource;
   };
   localLlm: {
     enabled: boolean;
@@ -18,16 +31,17 @@ export interface DesktopSettings {
   chat: {
     /** 채팅 응답에 저장한 지식을 자동 참조(RAG)할지 여부 */
     ragEnabled: boolean;
+    /** 채팅 AI가 라이브러리 검색/저장 도구를 쓸지 여부 (미지원 프로바이더는 무시) */
+    toolsEnabled: boolean;
   };
 }
 
 const DEFAULT_SETTINGS: DesktopSettings = {
-  aiProvider: 'rules',
-  byok: {
-    provider: 'openai',
-    apiKey: '',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o-mini',
+  aiProvider: 'managed-llm',
+  localServer: {
+    baseUrl: '',
+    model: '',
+    detectedFrom: 'manual',
   },
   localLlm: {
     enabled: false,
@@ -35,6 +49,7 @@ const DEFAULT_SETTINGS: DesktopSettings = {
   },
   chat: {
     ragEnabled: true,
+    toolsEnabled: true,
   },
 };
 
@@ -42,41 +57,48 @@ function isTauriRuntime(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-function readRawSettings(): Partial<DesktopSettings> | null {
+interface RawStoredSettings extends Partial<Omit<DesktopSettings, 'localServer'>> {
+  localServer?: Partial<DesktopSettings['localServer']>;
+  /** 레거시 BYOK 블록 — 감지되면 일회성 마이그레이션 후 폐기한다 */
+  byok?: unknown;
+}
+
+function readRawSettings(): RawStoredSettings | null {
   try {
     const raw =
       localStorage.getItem(SETTINGS_KEY_V1) ?? localStorage.getItem(LEGACY_SETTINGS_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as Partial<DesktopSettings>;
+    return JSON.parse(raw) as RawStoredSettings;
   } catch {
     return null;
   }
 }
 
+/** 저장된 프로바이더 값을 현행 스키마로 정규화 — 구값 'local-llm'/'byok' 폐기 */
+function normalizeProvider(value: unknown): DesktopSettings['aiProvider'] {
+  if (value === 'local-server' || value === 'rules') return value;
+  return 'managed-llm';
+}
+
 /**
- * Load settings (sync). API 키는 여기에 포함되지 않는다 — 키체인에서
- * 읽는 loadApiKey() 를 사용한다. 레거시 localStorage 평문 키가 남아
- * 있으면 키체인으로 이관을 시작한다(fire-and-forget).
+ * Load settings (sync). 저장 시크릿이 없으므로 로컬 읽기만으로 완결된다.
+ * 레거시 BYOK 설정이 감지되면 새 스키마로 초기화하고(fire-and-forget)
+ * 키체인에 남은 BYOK 키를 삭제한다.
  */
 export function loadSettings(): DesktopSettings {
   const parsed = readRawSettings();
-  if (!parsed) {
-    void migrateLegacyApiKey();
-    return { ...DEFAULT_SETTINGS };
-  }
+  if (!parsed) return { ...DEFAULT_SETTINGS };
 
-  // 레거시 평문 키 이관 — 저장된 settings 는 키를 더이상 포함하지 않는다
-  const legacyKey = parsed.byok?.apiKey;
-  if (legacyKey) {
-    void migrateLegacyApiKey(legacyKey);
+  if (parsed.byok !== undefined) {
+    void migrateAwayFromByok(parsed);
   }
 
   return {
-    aiProvider: parsed.aiProvider ?? DEFAULT_SETTINGS.aiProvider,
-    byok: {
-      ...DEFAULT_SETTINGS.byok,
-      ...parsed.byok,
-      apiKey: '', // 키는 키체인 전용
+    aiProvider: normalizeProvider(parsed.aiProvider),
+    localServer: {
+      baseUrl: parsed.localServer?.baseUrl ?? DEFAULT_SETTINGS.localServer.baseUrl,
+      model: parsed.localServer?.model ?? DEFAULT_SETTINGS.localServer.model,
+      detectedFrom: parsed.localServer?.detectedFrom ?? DEFAULT_SETTINGS.localServer.detectedFrom,
     },
     localLlm: { ...DEFAULT_SETTINGS.localLlm, ...parsed.localLlm },
     chat: { ...DEFAULT_SETTINGS.chat, ...parsed.chat },
@@ -84,92 +106,49 @@ export function loadSettings(): DesktopSettings {
 }
 
 /**
- * localStorage 에 평문 키가 남아 있는 경우 키체인으로 이관하고 제거한다.
- * 이관 실패 시 localStorage 값을 유지해 다음 기회에 재시도한다(키 손실 없음).
+ * BYOK 완전 제거 마이그레이션 — 소유자 1명 기준의 일회성 경로.
+ * 새 스키마로 초기화된 설정을 저장하고, 키체인의 레거시 BYOK 키를 삭제한다.
+ * 삭제 실패는 다음 시작의 재시도 기회를 남긴다(byok 블록이 저장소에 남는 동안).
  */
-async function migrateLegacyApiKey(explicitKey?: string): Promise<void> {
+async function migrateAwayFromByok(parsed: RawStoredSettings): Promise<void> {
+  const sanitized: DesktopSettings = {
+    aiProvider: normalizeProvider(parsed.aiProvider),
+    localServer: { ...DEFAULT_SETTINGS.localServer },
+    localLlm: { ...DEFAULT_SETTINGS.localLlm, ...parsed.localLlm },
+    chat: { ...DEFAULT_SETTINGS.chat, ...parsed.chat },
+  };
+  localStorage.setItem(SETTINGS_KEY_V1, JSON.stringify(sanitized));
+  localStorage.removeItem(LEGACY_SETTINGS_KEY);
+  localStorage.setItem(BYOK_REMOVAL_NOTICE_KEY, 'pending');
+
   if (!isTauriRuntime()) return;
-
-  try {
-    const parsed = readRawSettings();
-    const legacyKey = explicitKey ?? parsed?.byok?.apiKey;
-    if (!legacyKey) return;
-
-    const provider = parsed?.byok?.provider ?? DEFAULT_SETTINGS.byok.provider;
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('set_secret', {
-      account: secretAccount(provider),
-      secret: legacyKey,
-    });
-
-    // 이관 성공 — localStorage 에서 키 제거
-    if (parsed) {
-      const sanitized: DesktopSettings = {
-        aiProvider: parsed.aiProvider ?? DEFAULT_SETTINGS.aiProvider,
-        byok: { ...DEFAULT_SETTINGS.byok, ...parsed.byok, apiKey: '' },
-        localLlm: { ...DEFAULT_SETTINGS.localLlm, ...parsed.localLlm },
-        chat: { ...DEFAULT_SETTINGS.chat, ...parsed.chat },
-      };
-      localStorage.setItem(SETTINGS_KEY_V1, JSON.stringify(sanitized));
-    }
-    // 레거시 키 전체 제거 — 이관 후에도 남아 있으면 평문 키가 디스크에
-    // 영구 잔존한다. V1 sanitized 저장 후에 수행해 실패 시 재시도 보존.
-    localStorage.removeItem(LEGACY_SETTINGS_KEY);
-  } catch {
-    // 키체인 접근 실패 — localStorage 값 유지, 다음 시작에 재시도
-  }
-}
-
-function secretAccount(provider: string): string {
-  return `${SECRET_ACCOUNT_PREFIX}:${provider}`;
-}
-
-/**
- * 현재 provider 의 API 키를 키체인에서 읽는다(비동기).
- * 웹 프리뷰(비 Tauri)에서는 localStorage 폴백을 유지한다.
- */
-export async function loadApiKey(provider: string): Promise<string> {
-  if (!isTauriRuntime()) {
-    const parsed = readRawSettings();
-    return parsed?.byok?.apiKey ?? '';
-  }
   try {
     const { invoke } = await import('@tauri-apps/api/core');
-    const secret = await invoke<string | null>('get_secret', {
-      account: secretAccount(provider),
-    });
-    return secret ?? '';
-  } catch {
-    return '';
-  }
-}
-
-/**
- * Save settings. Tauri 런타임에서는 API 키를 키체인에 쓰고
- * localStorage 에는 키를 제외한 설정만 남긴다.
- */
-export async function saveSettings(settings: DesktopSettings): Promise<void> {
-  if (isTauriRuntime()) {
-    const { invoke } = await import('@tauri-apps/api/core');
-    if (settings.byok.apiKey) {
-      await invoke('set_secret', {
-        account: secretAccount(settings.byok.provider),
-        secret: settings.byok.apiKey,
-      });
-    } else {
-      await invoke('delete_secret', {
-        account: secretAccount(settings.byok.provider),
-      });
-    }
-    const { apiKey: _excluded, ...byokWithoutKey } = settings.byok;
-    void _excluded;
-    localStorage.setItem(
-      SETTINGS_KEY_V1,
-      JSON.stringify({ ...settings, byok: byokWithoutKey }),
+    await Promise.all(
+      LEGACY_SECRET_PROVIDERS.map((provider) =>
+        invoke('delete_secret', {
+          account: `${LEGACY_SECRET_ACCOUNT_PREFIX}:${provider}`,
+        }).catch(() => {
+          // 계정이 없거나 키체인 접근 실패 — 다음 시작에 재시도된다
+        }),
+      ),
     );
-    return;
+  } catch {
+    // 키체인 접근 실패 — 설정 초기화는 이미 완료, 키 삭제만 재시도 대상
   }
+}
 
-  // 웹 프리뷰 폴백 — 종전대로 localStorage 저장
+/**
+ * BYOK 제거 일회성 안내 소비 — true를 돌려준 뒤 플래그를 소진시켜
+ * 설정 화면의 안내 배너가 한 번만 나타나게 한다.
+ */
+export function consumeByokRemovalNotice(): boolean {
+  if (localStorage.getItem(BYOK_REMOVAL_NOTICE_KEY) !== 'pending') return false;
+  localStorage.setItem(BYOK_REMOVAL_NOTICE_KEY, 'shown');
+  return true;
+}
+
+/** Save settings — 시크릿이 없으므로 localStorage 단일 저장으로 단순화되었다. */
+export async function saveSettings(settings: DesktopSettings): Promise<void> {
   localStorage.setItem(SETTINGS_KEY_V1, JSON.stringify(settings));
 }

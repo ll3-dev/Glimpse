@@ -7,8 +7,8 @@ import type { AIProvider, CompletionResponse } from './types';
  * chat-generation.test.ts 와 동일한 이유(모듈 mock의 프로세스 전역성)로 mock
  * 범위를 최소화한다: provider 선택 결과만 rules 로 고정하면 되므로
  * './providers/rules-provider' 만 mock.module 로 대체한다. router 를 실제로
- * import 하는 모듈은 이 테스트뿐이고(chat-generation은 router 자체를 mock),
- * rules-provider 를 import 하는 것도 router 뿐이라 누수 면이 없다.
+ * import 하는 모듈은 이 테스트뿐이고(chat-generation은 router를 deps로 주입받아
+ * 모듈 mock이 필요 없다), rules-provider 를 import 하는 것도 router 뿐이라 누수 면이 없다.
  *
  * 설정은 실제 settings-storage 를 쓴다 — localStorage 에 aiProvider:'rules' 를
  * 써두면 loadSettings 기본 체인을 그대로 통과해 라우팅 분기까지 실 검증된다.
@@ -42,7 +42,7 @@ const storage = new Map<string, string>();
 
 const RULES_SETTINGS = JSON.stringify({
   aiProvider: 'rules',
-  byok: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  localServer: { baseUrl: '', model: '', detectedFrom: 'manual' },
   localLlm: { enabled: false, selectedModel: null },
   chat: { ragEnabled: false },
 });

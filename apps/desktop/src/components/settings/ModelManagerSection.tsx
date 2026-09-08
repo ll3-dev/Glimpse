@@ -25,12 +25,13 @@ const CATEGORIES: ModelCategory[] = [
     id: 'recommended',
     label: '추천 (Recommended)',
     filter: (m) => {
-      // Curated recommendation set: best quality/speed ratio for general use
+      // 완전 로컬 전환(2026-09-08) 큐레이션 — 용도별 하드 세트.
+      // 배경(라벨링·임베딩)은 2B Q4, 챗·오늘 요약은 8~9B Q4(16GB) /
+      // MoE 대형(24GB+)으로 RAM 가이드와 함께 제공한다.
       const recommendedIds = new Set([
-        'qwen3.5-35b-a3b-q4',   // MoE: best quality at low cost
-        'qwen3.5-9b-q4',        // High performance medium model
-        'qwen3.5-2b-q4',        // Fast & balanced
-        'ministral-3-8b-instruct-q4', // Tools & agent instruct
+        'qwen3.5-2b-q4',        // 배경: 항상 떠 있어도 부담 없는 소형
+        'qwen3.5-9b-q4',        // 챗·요약: 16GB RAM용 중형
+        'qwen3.5-35b-a3b-q4',   // 챗·요약: 24GB+ RAM용 MoE 대형
       ]);
       return recommendedIds.has(m.id);
     },

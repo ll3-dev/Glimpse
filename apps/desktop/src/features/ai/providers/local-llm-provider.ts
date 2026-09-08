@@ -50,7 +50,7 @@ export function createLocalLLMProvider(
   modelId = 'qwen3.5-2b-q4',
 ): AIProvider {
   return {
-    kind: 'local-llm' as const,
+    kind: 'managed-llm' as const,
 
     async isAvailable(): Promise<boolean> {
       try {
@@ -85,7 +85,7 @@ export function createLocalLLMProvider(
 
       return {
         text: response.text,
-        provider: 'local-llm',
+        provider: 'managed-llm',
       };
     },
 
@@ -195,11 +195,10 @@ export async function completeLocalLLMStream(
   let unlisten: (() => void) | null = null;
 
   try {
-    // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명(`rustra://llm:stream-token`)과
-    // JSON 파싱을 @rustra/tauri가 처리한다. 페이로드는 선언된 계약과 같은
-    // camelCase 모양({requestId, token}).
+    // rustra 이벤트 계약 헬퍼(name, callback[, listen]) — 채널명
+    // (`rustra://llm:stream-token`)과 JSON 파싱을 @rustra/tauri가 처리한다.
+    // 페이로드는 선언된 계약과 같은 camelCase 모양({requestId, token}).
     unlisten = await subscribeEvent<{ requestId: string; token: string }>(
-      listen,
       'llm:stream-token',
       (payload) => {
         if (payload.requestId !== requestId) {
@@ -212,6 +211,7 @@ export async function completeLocalLLMStream(
           visibleText = display;
         }
       },
+      listen,
     );
 
     await invoke<TauriCompletionResponse>('stream_completion', {

@@ -11,7 +11,7 @@
 
 import type { AIProvider, AIFeature, MetadataOutput, StreamingCallbacks } from './types';
 import { createLocalLLMProvider, completeLocalLLMStream } from './providers/local-llm-provider';
-import { createBYOKProvider, completeBYOKStream } from './providers/byok-provider';
+import { createLocalServerProvider, completeLocalServerStream } from './providers/local-server-provider';
 import { rulesProvider } from './providers/rules-provider';
 import { stubProvider } from './providers/stub-provider';
 import { loadSettings } from '@/lib/settings-storage';
@@ -22,10 +22,10 @@ import { loadSettings } from '@/lib/settings-storage';
 
 function providerFromKind(kind: string): AIProvider {
   switch (kind) {
-    case 'local-llm':
+    case 'managed-llm':
       return createLocalLLMProvider();
-    case 'byok':
-      return createBYOKProvider();
+    case 'local-server':
+      return createLocalServerProvider();
     case 'rules':
       return rulesProvider;
     case 'stub':
@@ -95,7 +95,7 @@ export async function generateChatResponse(
   const provider = await getProviderForFeature('chat');
 
   // Convert message history into a single prompt for providers that need it.
-  // Local LLM and BYOK providers handle multi-turn differently, but the
+  // Local LLM and local-server providers handle multi-turn differently, but the
   // CompletionRequest interface accepts a single prompt. For chat we join
   // the conversation into a structured prompt.
   const systemLines: string[] = [];
@@ -135,7 +135,7 @@ export async function generateChatResponse(
 /**
  * Generate a chat response with streaming token delivery.
  *
- * Attempts to stream tokens via the BYOK SSE endpoint. If the provider
+ * Attempts to stream tokens via the local server's SSE endpoint. If the provider
  * doesn't support streaming (e.g. local-llm, rules, stub), falls back
  * to the non-streaming `generateChatResponse` path.
  *
@@ -147,9 +147,9 @@ export async function generateChatStreamResponse(
 ): Promise<string> {
   const settings = loadSettings();
 
-  // BYOK: stream via SSE
-  if (settings.aiProvider === 'byok') {
-    const streamResult = await completeBYOKStream(messages, callbacks);
+  // 외부 로컬 서버: SSE 스트리밍
+  if (settings.aiProvider === 'local-server') {
+    const streamResult = await completeLocalServerStream(messages, callbacks);
     if (streamResult !== null) {
       const text = streamResult.replace(/^Assistant:\s*/i, '').trim();
       if (!text) {
@@ -161,8 +161,8 @@ export async function generateChatStreamResponse(
     }
   }
 
-  // Local LLM: stream via Tauri events
-  if (settings.aiProvider === 'local-llm') {
+  // 관리 런타임: Tauri 이벤트 스트리밍
+  if (settings.aiProvider === 'managed-llm') {
     const contextMessages = messages
       .filter((m) => m.role !== 'system')
       .slice(-10)
@@ -178,7 +178,7 @@ export async function generateChatStreamResponse(
     if (streamResult !== null) {
       const text = streamResult.trim();
       if (!text) {
-        // BYOK 스트리밍과 동일 — 빈 스트림은 가짜 답변이 아니라 reject다.
+        // 로컬 서버 스트리밍과 동일 — 빈 스트림은 가짜 답변이 아니라 reject다.
         throw new Error('AI 응답이 비어 있습니다. 설정에서 다른 프로바이더를 선택해 주세요.');
       }
       return text;

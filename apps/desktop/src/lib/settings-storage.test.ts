@@ -2,24 +2,18 @@ import { describe, expect, test, mock, beforeEach } from 'bun:test';
 import { tauriCoreMocks } from '../test/tauri-core-mock';
 
 /**
- * 데스크톱 설정 저장의 키 분리 검증.
+ * 데스크톱 설정 저장 — 완전 로컬 전환(2026-09-08) 이후 스키마 검증.
  *
- * Tauri 런타임에서는 API 키가 keyring(set_secret 커맨드)에만 저장되고
- * localStorage 에는 키 없는 설정이 남는다. 웹 프리뷰(비 Tauri)는
- * 종전대로 localStorage 를 쓴다.
+ * 클라우드 BYOK는 제거되었다: 저장 시크릿이 없으므로 localStorage 단일
+ * 저장이고, 레거시 BYOK 설정은 로드 시 새 스키마로 초기화되며 키체인의
+ * 구 API 키는 삭제된다.
  */
 
-const keychain = new Set<string>();
+const deletedAccounts: string[] = [];
 
-const invokeMock = mock(async (cmd: string, args?: { secret?: string }) => {
-  if (cmd === 'set_secret') {
-    keychain.add(args?.secret ?? '');
-  }
+const invokeMock = mock(async (cmd: string, args?: { account?: string }) => {
   if (cmd === 'delete_secret') {
-    keychain.clear();
-  }
-  if (cmd === 'get_secret') {
-    return keychain.size ? [...keychain][0] : null;
+    deletedAccounts.push(args?.account ?? '');
   }
   return null;
 });
@@ -48,116 +42,116 @@ const localStorageStub = {
 };
 (globalThis as Record<string, unknown>).localStorage = localStorageStub;
 
-describe('settings-storage 키 분리', () => {
+describe('settings-storage 완전 로컬 스키마', () => {
   beforeEach(() => {
     storage.clear();
-    keychain.clear();
+    deletedAccounts.length = 0;
     invokeMock.mockClear();
   });
 
-  test('Tauri 런타임에서 localStorage 에 API 키가 남지 않는다', async () => {
+  test('기본 프로바이더는 managed-llm 이고 시크릿 필드가 없다', async () => {
+    setTauriWindow(false);
+    const { loadSettings } = await import('./settings-storage');
+
+    const loaded = loadSettings();
+    expect(loaded.aiProvider).toBe('managed-llm');
+    expect(loaded.localServer).toEqual({ baseUrl: '', model: '', detectedFrom: 'manual' });
+    expect(loaded.chat.ragEnabled).toBe(true);
+    expect(loaded.chat.toolsEnabled).toBe(true);
+  });
+
+  test('saveSettings 는 localStorage 단일 저장 — 키체인 호출이 없다', async () => {
     setTauriWindow(true);
     const { saveSettings, loadSettings } = await import('./settings-storage');
 
     await saveSettings({
-      aiProvider: 'byok',
-      byok: {
-        provider: 'openai',
-        apiKey: 'sk-secret-value',
-        baseUrl: 'https://api.openai.com/v1',
-        model: 'gpt-4o-mini',
-      },
+      aiProvider: 'local-server',
+      localServer: { baseUrl: 'http://localhost:1234', model: 'qwen3-8b', detectedFrom: 'lmstudio' },
       localLlm: { enabled: false, selectedModel: null },
-      chat: { ragEnabled: true },
+      chat: { ragEnabled: true, toolsEnabled: true },
     });
 
-    // 키체인에 저장됨
-    expect(invokeMock.mock.calls.some((c) => c[0] === 'set_secret')).toBe(true);
-
-    // localStorage 원문에 키 없음
-    const raw = storage.get('glimpse_desktop_settings_v1') ?? '';
-    expect(raw).not.toContain('sk-secret-value');
-
-    // loadSettings 는 키를 빈 값으로 로드
+    expect(invokeMock.mock.calls.length).toBe(0);
     const loaded = loadSettings();
-    expect(loaded.byok.apiKey).toBe('');
+    expect(loaded.aiProvider).toBe('local-server');
+    expect(loaded.localServer.baseUrl).toBe('http://localhost:1234');
 
     setTauriWindow(false);
   });
 
-  test('빈 키 저장은 keyring 삭제로 처리된다', async () => {
-    setTauriWindow(true);
-    const { saveSettings } = await import('./settings-storage');
-
-    await saveSettings({
-      aiProvider: 'rules',
-      byok: { provider: 'openai', apiKey: '', baseUrl: '', model: '' },
-      localLlm: { enabled: false, selectedModel: null },
-      chat: { ragEnabled: true },
-    });
-
-    expect(invokeMock.mock.calls.some((c) => c[0] === 'delete_secret')).toBe(true);
+  test('구 프로바이더 값(local-llm/byok)은 managed-llm 로 정규화된다', async () => {
     setTauriWindow(false);
+    storage.set(
+      'glimpse_desktop_settings_v1',
+      JSON.stringify({
+        aiProvider: 'local-llm',
+        localLlm: { enabled: true, selectedModel: null },
+      }),
+    );
+    const { loadSettings } = await import('./settings-storage');
+    expect(loadSettings().aiProvider).toBe('managed-llm');
+
+    storage.set(
+      'glimpse_desktop_settings_v1',
+      JSON.stringify({ aiProvider: 'rules', localLlm: { enabled: false, selectedModel: null } }),
+    );
+    expect(loadSettings().aiProvider).toBe('rules');
   });
 
-  test('레거시 localStorage 평문 키는 이관 대상이 된다', async () => {
+  test('레거시 BYOK 설정은 키체인 키 삭제와 함께 새 스키마로 초기화된다', async () => {
     setTauriWindow(true);
-    // 레거시 상태 시딩 — chat 필드가 없는 구포맷(마이그레이션 rebuild 병합 커버)
+    // 마이그레이션 직전 상태 시딩 — byok 블록 포함 구포맷
     storage.set(
       'glimpse_desktop_settings_v1',
       JSON.stringify({
         aiProvider: 'byok',
-        byok: { provider: 'openai', apiKey: 'sk-legacy-plain', baseUrl: '', model: '' },
+        byok: { provider: 'openai', apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+        localLlm: { enabled: false, selectedModel: null },
+        chat: { ragEnabled: true, toolsEnabled: true },
+      }),
+    );
+
+    const { loadSettings, consumeByokRemovalNotice } = await import('./settings-storage');
+    const loaded = loadSettings();
+    expect(loaded.aiProvider).toBe('managed-llm');
+
+    // 마이그레이션(fire-and-forget) 완료 대기 — 키체인의 BYOK 키 전량 삭제
+    await new Promise((r) => setTimeout(r, 20));
+    expect(deletedAccounts).toContain('byok-api-key:openai');
+    expect(deletedAccounts).toContain('byok-api-key:anthropic');
+    expect(deletedAccounts).toContain('byok-api-key:google');
+    expect(deletedAccounts).toContain('byok-api-key:deepseek');
+    expect(deletedAccounts).toContain('byok-api-key:custom');
+
+    // 저장소에는 byok 블록이 더 이상 남지 않는다
+    const raw = storage.get('glimpse_desktop_settings_v1') ?? '';
+    expect(raw).not.toContain('byok');
+    expect(raw).not.toContain('gpt-4o-mini');
+
+    // 일회성 안내 플래그 — 첫 소비만 true
+    expect(consumeByokRemovalNotice()).toBe(true);
+    expect(consumeByokRemovalNotice()).toBe(false);
+
+    setTauriWindow(false);
+  });
+
+  test('구 레거시 키(glimpse-desktop-settings)의 BYOK 설정도 같은 마이그레이션을 탄다', async () => {
+    setTauriWindow(true);
+    storage.set(
+      'glimpse-desktop-settings',
+      JSON.stringify({
+        aiProvider: 'byok',
+        byok: { provider: 'deepseek', apiKey: 'sk-old', baseUrl: '', model: '' },
         localLlm: { enabled: false, selectedModel: null },
       }),
     );
 
     const { loadSettings } = await import('./settings-storage');
-    const loaded = loadSettings();
-
-    // 로드된 설정에서 키는 제거되어 있다
-    expect(loaded.byok.apiKey).toBe('');
-
-    // chat 없는 구포맷도 rebuild 병합에서 기본값 true로 채워진다
-    expect(loaded.chat.ragEnabled).toBe(true);
-
-    // 이관(fire-and-forget)이 실행됐을 때 원문 키는 사라진다 —
-    // 마이그레이션 완료를 기다렸다 확인
-    await new Promise((r) => setTimeout(r, 20));
-    const raw = storage.get('glimpse_desktop_settings_v1') ?? '';
-    expect(raw).not.toContain('sk-legacy-plain');
-    // rebuild 병합(settings-storage.ts 의 sanitized)이 chat 기본값을 채워 저장했다
-    expect(raw).toContain('"ragEnabled":true');
-    expect(invokeMock.mock.calls.some((c) => c[0] === 'set_secret')).toBe(true);
-
-    setTauriWindow(false);
-  });
-
-  test('구 레거시 키(glimpse-desktop-settings)의 평문 키는 이관 후 삭제된다', async () => {
-    setTauriWindow(true);
-    // 구버전 포맷의 레거시 키 시딩 — V1 키는 없음
-    storage.set(
-      'glimpse-desktop-settings',
-      JSON.stringify({
-        aiProvider: 'byok',
-        byok: { provider: 'openai', apiKey: 'sk-old-plaintext', baseUrl: '', model: '' },
-        localLlm: { enabled: false, selectedModel: null },
-      }),
-    );
-
-    const { loadSettings, loadApiKey } = await import('./settings-storage');
     loadSettings();
 
-    // 이관(fire-and-forget) 완료 대기
     await new Promise((r) => setTimeout(r, 20));
-
-    // 키체인으로 이관됐고
-    expect(invokeMock.mock.calls.some((c) => c[0] === 'set_secret')).toBe(true);
-    const key = await loadApiKey('openai');
-    expect(key).toBe('sk-old-plaintext');
-
-    // 레거시 키는 localStorage 에서 완전히 제거 — 평문 잔존 차단
     expect(storage.has('glimpse-desktop-settings')).toBe(false);
+    expect(deletedAccounts.length).toBe(5);
 
     setTauriWindow(false);
   });
@@ -166,7 +160,6 @@ describe('settings-storage 키 분리', () => {
 describe('settings-storage chat.ragEnabled', () => {
   beforeEach(() => {
     storage.clear();
-    keychain.clear();
     invokeMock.mockClear();
   });
 
@@ -180,11 +173,7 @@ describe('settings-storage chat.ragEnabled', () => {
     // chat 없이 저장된 구설정에서도 기본값 true로 병합된다
     storage.set(
       'glimpse_desktop_settings_v1',
-      JSON.stringify({
-        aiProvider: 'rules',
-        byok: { provider: 'openai', apiKey: '', baseUrl: '', model: '' },
-        localLlm: { enabled: false, selectedModel: null },
-      }),
+      JSON.stringify({ aiProvider: 'rules', localLlm: { enabled: false, selectedModel: null } }),
     );
     expect(loadSettings().chat.ragEnabled).toBe(true);
 
@@ -193,7 +182,6 @@ describe('settings-storage chat.ragEnabled', () => {
       'glimpse_desktop_settings_v1',
       JSON.stringify({
         aiProvider: 'rules',
-        byok: { provider: 'openai', apiKey: '', baseUrl: '', model: '' },
         localLlm: { enabled: false, selectedModel: null },
         chat: { ragEnabled: false },
       }),
