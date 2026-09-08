@@ -1,7 +1,11 @@
 import type { KnowledgeItem } from '@glimpse/shared';
+import { cosineSimilarity } from '@glimpse/features';
+import { itemEmbeddingText, type SemanticEmbedDeps } from '@glimpse/hooks';
 import type { LocalLLMMessage } from './local-llm';
 
 const DEFAULT_RETRIEVAL_LIMIT = 3;
+/** 시맨틱 재순위 전에 휴리스틱으로 고르는 후보 풀 배수 */
+const SEMANTIC_CANDIDATE_MULTIPLIER = 3;
 const DEFAULT_HISTORY_CHARACTER_BUDGET = 8_000;
 const MAX_ITEM_BODY_CHARACTERS = 1_500;
 
@@ -61,13 +65,57 @@ export function selectRelevantKnowledge(
   return selected.map(({ item }) => item);
 }
 
-export function buildChatKnowledgeContext(
+/**
+ * 임베더가 주입되면 후보 풀을 넓혀 뽑은 뒤 온디바이스 임베딩으로 재순위한다.
+ * 데스크톱 챗 RAG와 같은 임베딩 검색으로 일원화하는 단계다 — 임베더가
+ * 없거나(모델 미다운로드·옵트아웃) 실패하면 휴리스틱 순서를 그대로
+ * 돌려준다(채팅은 검색 품질 저하로 죽지 않는다).
+ */
+export async function selectRelevantKnowledgeWithEmbedding(
+  query: string,
+  items: KnowledgeItem[],
+  embedDeps: SemanticEmbedDeps | undefined,
+  options: { limit?: number; excludeIds?: string[] } = {}
+): Promise<KnowledgeItem[]> {
+  const limit = options.limit ?? DEFAULT_RETRIEVAL_LIMIT;
+  const candidates = selectRelevantKnowledge(query, items, {
+    ...options,
+    limit: limit * SEMANTIC_CANDIDATE_MULTIPLIER,
+  });
+  if (!embedDeps || candidates.length <= 1) return candidates;
+
+  try {
+    const target = await embedDeps.resolveEmbeddingTarget();
+    if (!target) return candidates;
+    const requests = [
+      query,
+      ...candidates.map((candidate) => itemEmbeddingText(candidate)),
+    ].map((input) => ({ ...target, input }));
+    const vectors = await embedDeps.embedBatch(requests);
+    if (vectors.length !== requests.length) return candidates;
+
+    const queryVector = vectors[0].vector;
+    return candidates
+      .map((candidate, index) => ({
+        candidate,
+        score: cosineSimilarity(queryVector, vectors[index + 1].vector),
+      }))
+      .sort((left, right) => right.score - left.score)
+      .slice(0, limit)
+      .map(({ candidate }) => candidate);
+  } catch {
+    return candidates;
+  }
+}
+
+export async function buildChatKnowledgeContext(
   query: string,
   primaryItem: KnowledgeItem | null | undefined,
-  allItems: KnowledgeItem[]
-): KnowledgeItem[] {
+  allItems: KnowledgeItem[],
+  embedDeps?: SemanticEmbedDeps
+): Promise<KnowledgeItem[]> {
   const primary = primaryItem ? [primaryItem] : [];
-  const related = selectRelevantKnowledge(query, allItems, {
+  const related = await selectRelevantKnowledgeWithEmbedding(query, allItems, embedDeps, {
     limit: DEFAULT_RETRIEVAL_LIMIT,
     excludeIds: primary.map((item) => item.id),
   });

@@ -3,9 +3,14 @@ import type { KnowledgeItem } from '@glimpse/shared';
 import { itemEmbeddingText } from '@glimpse/hooks';
 import {
   generateResponseWithKnowledge,
-  RAG_LIBRARY_LIMIT,
+  RAG_LIBRARY_SAFETY_LIMIT,
   type ChatRouterDeps,
 } from './chat-generation';
+import {
+  createMemoryEmbeddingIndexStore,
+  hashItemText,
+  type EmbeddingIndex,
+} from './embedding-index';
 
 /**
  * 채팅 지식 컨텍스트 주입 테스트.
@@ -226,9 +231,9 @@ describe('generateResponseWithKnowledge', () => {
     expect(result.references.every((entry) => entry.score >= 0.55)).toBe(true);
   });
 
-  test('라이브러리는 상한 100개로 잘라 임베딩한다 — 재임베딩 비용 경계', async () => {
-    const many = Array.from({ length: RAG_LIBRARY_LIMIT + 5 }, (_, index) =>
-      item({ id: `item-${index}`, title: `노트 ${index}` }),
+  test('저장소 없이는 캐시 없이 전체를 임베딩한다 — 100컷 철폐 확인', async () => {
+    const many = Array.from({ length: 150 }, (_, index) =>
+      item({ id: `item-${index}`, title: `노트 ${index}`, updatedAt: index }),
     );
     embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
       queryVector: [1, 0],
@@ -241,8 +246,28 @@ describe('generateResponseWithKnowledge', () => {
     }, routerDeps);
 
     const texts = embedForRagMock.mock.calls[0][1];
-    expect(many.length).toBe(RAG_LIBRARY_LIMIT + 5);
-    expect(texts).toHaveLength(RAG_LIBRARY_LIMIT);
+    expect(texts).toHaveLength(150);
+  });
+
+  test('안전 상한을 넘으면 최신 항목을 남기고 가장 오래된 것부터 자른다', async () => {
+    const many = Array.from({ length: RAG_LIBRARY_SAFETY_LIMIT + 5 }, (_, index) =>
+      item({ id: `item-${index}`, title: `노트 ${index}`, updatedAt: index }),
+    );
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      itemVectors: new Map(itemTexts.map((text) => [text, [1, 0]])),
+    }));
+
+    await generateResponseWithKnowledge([{ role: 'user', content: '질문' }], undefined, {
+      loadLibrary: async () => many,
+      embed: embedForRagMock,
+    }, routerDeps);
+
+    const texts = embedForRagMock.mock.calls[0][1];
+    expect(texts).toHaveLength(RAG_LIBRARY_SAFETY_LIMIT);
+    // updatedAt이 가장 낮은 5개(가장 오래된 항목)가 잘렸다.
+    expect(texts).not.toContain(itemEmbeddingText(item({ id: 'item-0', title: '노트 0' })));
+    expect(texts).toContain(itemEmbeddingText(item({ id: 'item-1004', title: '노트 1004' })));
   });
 
   test('임베딩은 성공했으나 임계값 미달이면 원본 히스토리로 폴백 — 참조 없음', async () => {
@@ -263,36 +288,151 @@ describe('generateResponseWithKnowledge', () => {
     expect(result.references).toEqual([]);
   });
 
-  test('관련 항목이 캡 상한 밖(101번째)이면 참조 없음 — 캡 절단이 곧 무관', async () => {
-    const beyond = item({
-      id: 'beyond',
-      title: '캡 밖 관련 노트',
-    });
-    const library = [
-      ...Array.from({ length: RAG_LIBRARY_LIMIT }, (_, index) =>
-        item({ id: `in-${index}`, title: `캡 내 노트 ${index}` }),
-      ),
-      beyond,
-    ];
-
+  test('캐시 적중분은 재임베딩 없이 랭킹된다 — 질문 벡터만 배치에 실린다', async () => {
+    const note = item({ id: 'a', title: '러스트 소유권', summary: '소유권 개요' });
+    const index: EmbeddingIndex = {
+      version: 1,
+      modelId: 'emb-1',
+      entries: {
+        a: { h: hashItemText(itemEmbeddingText(note)), v: [1, 0], t: 1 },
+      },
+    };
+    const store = createMemoryEmbeddingIndexStore(index);
     embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
       queryVector: [1, 0],
-      // 캡 안 텍스트는 전부 직교(무관) — 관련 항목의 텍스트는 애초에 요청에 없다.
-      itemVectors: new Map(itemTexts.map((text) => [text, [0, 1]])),
+      itemVectors: new Map(itemTexts.map((text) => [text, [1, 0]])),
+      modelId: 'emb-1',
     }));
 
     const result = await generateResponseWithKnowledge(
-      [{ role: 'user', content: '캡 밖 노트 찾기' }],
+      [{ role: 'user', content: '소유권이 뭐야' }],
       undefined,
-      { loadLibrary: async () => library, embed: embedForRagMock },
+      { loadLibrary: async () => [note], embed: embedForRagMock, indexStore: store },
       routerDeps,
     );
 
-    expect(library.length).toBe(RAG_LIBRARY_LIMIT + 1);
-    const texts = embedForRagMock.mock.calls[0][1];
-    expect(texts).toHaveLength(RAG_LIBRARY_LIMIT);
-    expect(texts).not.toContain(itemEmbeddingText(beyond));
-    expect(result.references).toEqual([]);
-    expect(chatResponseMock.mock.calls[0][0][0].role).not.toBe('system');
+    // 임베더는 질문만 받는다 — 항목 벡터는 캐시에서 왔다.
+    expect(embedForRagMock).toHaveBeenCalledWith('소유권이 뭐야', []);
+    expect(result.references).toHaveLength(1);
+    expect(result.references[0].item.id).toBe('a');
+  });
+
+  test('첫 호출은 전부 임베딩해 저장하고, 다음 호출은 새 항목만 임베딩한다', async () => {
+    const first = item({ id: 'a', title: '노트 A', updatedAt: 1 });
+    const second = item({ id: 'b', title: '노트 B', updatedAt: 2 });
+    const store = createMemoryEmbeddingIndexStore(null);
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      itemVectors: new Map(itemTexts.map((text) => [text, [1, 0]])),
+      modelId: 'emb-1',
+    }));
+
+    await generateResponseWithKnowledge([{ role: 'user', content: '질문' }], undefined, {
+      loadLibrary: async () => [first],
+      embed: embedForRagMock,
+      indexStore: store,
+    }, routerDeps);
+    expect(embedForRagMock.mock.calls[0][1]).toHaveLength(1);
+
+    const afterFirst = store.load();
+    expect(afterFirst?.modelId).toBe('emb-1');
+    // 벡터는 소수 4자리로 반올림돼 저장된다.
+    expect(afterFirst?.entries.a?.v).toEqual([1, 0]);
+
+    // 라이브러리에 B가 추가됐다 — A는 캐시 적중, B만 배치에 실린다.
+    await generateResponseWithKnowledge([{ role: 'user', content: '질문' }], undefined, {
+      loadLibrary: async () => [first, second],
+      embed: embedForRagMock,
+      indexStore: store,
+    }, routerDeps);
+
+    expect(embedForRagMock.mock.calls[1][1]).toEqual([itemEmbeddingText(second)]);
+  });
+
+  test('텍스트가 바뀐 항목만 재임베딩하고, 삭제된 항목은 인덱스에서 프룬한다', async () => {
+    const edited = item({ id: 'a', title: '노트 A (수정)', updatedAt: 3 });
+    const removed = item({ id: 'gone', title: '노트 G', updatedAt: 2 });
+    const kept = item({ id: 'b', title: '노트 B', updatedAt: 1 });
+    const index: EmbeddingIndex = {
+      version: 1,
+      modelId: 'emb-1',
+      entries: {
+        a: { h: hashItemText(itemEmbeddingText(item({ id: 'a', title: '노트 A' }))), v: [1, 0], t: 1 },
+        gone: { h: hashItemText(itemEmbeddingText(removed)), v: [1, 0], t: 1 },
+        b: { h: hashItemText(itemEmbeddingText(kept)), v: [1, 0], t: 1 },
+      },
+    };
+    const store = createMemoryEmbeddingIndexStore(index);
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      itemVectors: new Map(itemTexts.map((text) => [text, [1, 0]])),
+      modelId: 'emb-1',
+    }));
+
+    await generateResponseWithKnowledge([{ role: 'user', content: '질문' }], undefined, {
+      // 'gone'은 라이브러리에서 삭제됐고, 'a'는 텍스트가 바뀌었다.
+      loadLibrary: async () => [edited, kept],
+      embed: embedForRagMock,
+      indexStore: store,
+    }, routerDeps);
+
+    // 수정된 A만 배치에 실린다.
+    expect(embedForRagMock.mock.calls[0][1]).toEqual([itemEmbeddingText(edited)]);
+
+    const saved = store.load();
+    expect(saved?.entries.a?.h).toBe(hashItemText(itemEmbeddingText(edited)));
+    expect(saved?.entries.gone).toBeUndefined();
+    expect(saved?.entries.b).toBeDefined();
+  });
+
+  test('임베딩 모델이 바뀌면 캐시를 폐기하고 전체를 다시 임베딩한다', async () => {
+    const note = item({ id: 'a', title: '러스트 소유권', summary: '개요' });
+    const index: EmbeddingIndex = {
+      version: 1,
+      modelId: 'old-model',
+      entries: {
+        a: { h: hashItemText(itemEmbeddingText(note)), v: [1, 0], t: 1 },
+      },
+    };
+    const store = createMemoryEmbeddingIndexStore(index);
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      itemVectors: new Map(itemTexts.map((text) => [text, [1, 0]])),
+      modelId: 'new-model',
+    }));
+
+    const result = await generateResponseWithKnowledge(
+      [{ role: 'user', content: '소유권이 뭐야' }],
+      undefined,
+      { loadLibrary: async () => [note], embed: embedForRagMock, indexStore: store },
+      routerDeps,
+    );
+
+    // 1차 배치(캐시 적중으로 빈 목록) → 모델 불일치 감지 → 전체 재임베딩.
+    expect(embedForRagMock).toHaveBeenCalledTimes(2);
+    expect(embedForRagMock.mock.calls[1][1]).toEqual([itemEmbeddingText(note)]);
+    expect(result.references).toHaveLength(1);
+    expect(store.load()?.modelId).toBe('new-model');
+  });
+
+  test('캐시 저장이 실패해도 채팅은 정상 응답한다', async () => {
+    const note = item({ id: 'a', title: '노트 A' });
+    const store = createMemoryEmbeddingIndexStore(null);
+    store.failNextSave();
+    embedForRagMock.mockImplementation(async (_question, itemTexts) => ({
+      queryVector: [1, 0],
+      itemVectors: new Map(itemTexts.map((text) => [text, [1, 0]])),
+      modelId: 'emb-1',
+    }));
+
+    const result = await generateResponseWithKnowledge(
+      [{ role: 'user', content: '질문' }],
+      undefined,
+      { loadLibrary: async () => [note], embed: embedForRagMock, indexStore: store },
+      routerDeps,
+    );
+
+    expect(result.references).toHaveLength(1);
+    expect(result.text).toBe('비스트림 응답');
   });
 });

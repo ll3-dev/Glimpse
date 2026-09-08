@@ -4,7 +4,8 @@
  * Manages chat state and AI response generation.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useStore } from 'zustand';
 import { useAddMessageMutation } from '@/src/hooks/mutations';
 import { useMessagesQuery } from '@/src/hooks/queries';
 import { executeChatTarget, resolveEffectiveTarget } from '@/src/features/ai/targets';
@@ -15,6 +16,9 @@ import { generateAssistantReply, savePartialAssistantReply } from './chatGenerat
 import { getLocalLLMRuntime } from './chatRuntime';
 import { getSelectedLocalModel } from '@/src/features/settings/local-llm.selectors';
 import { buildChatKnowledgeContext } from '@/src/features/ai/chat-context';
+import { useSemanticRerankEnabled } from '@/src/features/search/semantic-settings';
+import { onDeviceEmbeddingStore } from '@/src/features/search/on-device-embedding-model';
+import { createOnDeviceEmbedDeps } from '@/src/features/search/useMobileSemanticRerank';
 
 interface UseChatOptions {
   conversationId: string;
@@ -64,6 +68,18 @@ export function useChat({
   const { data: messages } = useMessagesQuery(conversationId);
   const { mutateAsync: addMessage } = useAddMessageMutation();
 
+  // 챗 지식 검색도 검색 리랭크와 같은 온디바이스 임베더를 쓴다(일원화).
+  // 옵트아웃이거나 임베딩 모델이 없으면 undefined — 휴리스틱 순서로 폴백.
+  const [semanticEnabled] = useSemanticRerankEnabled();
+  const onDeviceModelPath = useStore(onDeviceEmbeddingStore, (state) => state.modelPath);
+  const embedDeps = useMemo(
+    () =>
+      semanticEnabled && onDeviceModelPath
+        ? createOnDeviceEmbedDeps(onDeviceModelPath)
+        : undefined,
+    [semanticEnabled, onDeviceModelPath]
+  );
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isGenerating) return false;
 
@@ -82,10 +98,11 @@ export function useChat({
         role: message.role,
         content: message.content,
       })) ?? [];
-      const contextItems = buildChatKnowledgeContext(
+      const contextItems = await buildChatKnowledgeContext(
         text.trim(),
         contextItem,
-        knowledgeItems
+        knowledgeItems,
+        embedDeps
       );
 
       if (target.kind === 'local') {
@@ -184,7 +201,7 @@ export function useChat({
         setIsGenerating(false);
       }
     }
-  }, [conversationId, contextItem, isGenerating, addMessage, knowledgeItems, messages, cancelPendingFlush]);
+  }, [conversationId, contextItem, isGenerating, addMessage, knowledgeItems, messages, cancelPendingFlush, embedDeps]);
 
   /**
    * Abort current generation and save partial response

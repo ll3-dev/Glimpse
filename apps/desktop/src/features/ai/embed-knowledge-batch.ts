@@ -16,6 +16,8 @@ export interface RagEmbedResult {
    * 수렴 — 호출부에서 중복 제거 책임.
    */
   itemVectors: Map<string, number[]>;
+  /** 벡터를 만든 임베딩 모델 id — 지속 인덱스의 무효화 판정에 쓴다. */
+  modelId: string;
 }
 
 /** 모델 id당 실패 경고 1회만 — 조용한 catch가 계약 파기를 숨긴 과거 반면교사. */
@@ -66,6 +68,7 @@ export async function embedForRag(
     return {
       queryVector: responses[responses.length - 1].vector,
       itemVectors,
+      modelId,
     };
   } catch (error) {
     warnOncePerModel(modelId, error);
