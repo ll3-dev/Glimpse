@@ -11,7 +11,10 @@ describe("LOCAL_MODEL_REGISTRY licenseKind", () => {
 
   it("custom 라이선스 모델 집합은 기대 목록과 정확히 일치한다", () => {
     const expected = [
+      "lfm2.5-230m-q4",
       "lfm2.5-2.6b-q4",
+      "lfm2.5-vl-1.6b-q4",
+      "lfm2.5-vl-3b-q4",
       "lfm2.5-350m-q4",
       "lfm2.5-1.2b-instruct-q4",
       "lfm2.5-8b-a1b-q4",
@@ -20,6 +23,7 @@ describe("LOCAL_MODEL_REGISTRY licenseKind", () => {
       "exaone-4.0-1.2b-q4",
       "hyperclovax-seed-1.5b-q4",
       "gemma-3n-e2b-it-q4",
+      "gemma-3n-e4b-it-q4",
     ];
     const actual = LOCAL_MODEL_REGISTRY
       .filter((m) => m.licenseKind === "custom")

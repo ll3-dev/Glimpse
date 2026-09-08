@@ -25,8 +25,7 @@ export type KnowledgeItemLabelSource =
   | 'apple'
   | 'local_small'
   | 'local_full'
-  | 'stub'
-  | 'byok';
+  | 'stub';
 export type RecommendationStatus = 'pending' | 'accepted' | 'ignored' | 'dismissed';
 export type GraphAnalysisStatus = 'completed' | 'failed';
 export type FeedbackActionType = 'accept' | 'ignore' | 'dismiss';

@@ -25,7 +25,9 @@ export type MobileModelTier = "compact" | "balanced" | "quality";
 
 export type GGUFSource = "publisher" | "community";
 
-export type MobileModelRuntime = "llama-rn" | "bitnet-cpp" | "mnn";
+// 별도 런타임(bitnet-cpp, mnn) 후보는 연결 가능한 엔진이 없어 2026-09-08
+// 제거되었다 — llama.rn 단일 런타임.
+export type MobileModelRuntime = "llama-rn";
 
 /** 라이선스 성격 — permissive(Apache/MIT 등 허용적) 또는 custom(조건부 허용) */
 export type ModelLicenseKind = "permissive" | "custom";
@@ -115,6 +117,30 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
       strengths: ["한국어", "도구·추론"],
       caveat:
         "깊게 생각한 뒤 답해 첫 응답은 조금 느릴 수 있어요 · 커스텀 라이선스(LFM 1.0)라 상용 배포 시 라이선스 확인이 필요해요",
+    },
+  },
+  {
+    id: "lfm2.5-vl-1.6b-q4",
+    name: "LFM2.5 VL 1.6B",
+    repo: "LiquidAI/LFM2.5-VL-1.6B-GGUF",
+    filename: "LFM2.5-VL-1.6B-Q4_K_M.gguf",
+    family: "lfm2",
+    quantization: "Q4_K_M",
+    sizeBytes: 730_896_256,
+    displaySize: "~697MB",
+    contextLength: 32_768,
+    capabilities: ["chat", "vision"],
+    platform: "both",
+    description: "2026년 8월 공개된 온디바이스 비전 언어 모델 — 캡처·이미지 이해 대비",
+    license: "LFM 1.0",
+    licenseKind: "custom",
+    releasedAt: "2026.08",
+    ggufSource: "publisher",
+    mobileProfile: {
+      rank: 2.25,
+      tier: "compact",
+      strengths: ["2026.08 최신", "비전 대비", "경량"],
+      caveat: "이미지 입력 지원은 앱 업데이트 예정 — 현재는 텍스트 전용으로 동작해요",
     },
   },
   {
@@ -253,6 +279,30 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
     },
   },
   {
+    id: "lfm2.5-vl-3b-q4",
+    name: "LFM2.5 VL 3B",
+    repo: "LiquidAI/LFM2.5-VL-3B-GGUF",
+    filename: "LFM2.5-VL-3B-Q4_K_M.gguf",
+    family: "lfm2",
+    quantization: "Q4_K_M",
+    sizeBytes: 1_674_455_072,
+    displaySize: "~1.56GB",
+    contextLength: 32_768,
+    capabilities: ["chat", "vision"],
+    platform: "both",
+    description: "2026년 8월 공개된 비전 언어 모델 3B — 문서·화면 이해 품질형",
+    license: "LFM 1.0",
+    licenseKind: "custom",
+    releasedAt: "2026.08",
+    ggufSource: "publisher",
+    mobileProfile: {
+      rank: 4.5,
+      tier: "balanced",
+      strengths: ["2026.08 최신", "비전 대비", "문서 이해"],
+      caveat: "이미지 입력 지원은 앱 업데이트 예정 — 현재는 텍스트 전용으로 동작해요",
+    },
+  },
+  {
     id: "nanbeige4.2-3b-q4",
     name: "Nanbeige 4.2 3B",
     repo: "bartowski/Nanbeige_Nanbeige4.2-3B-GGUF",
@@ -326,6 +376,30 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
       recommended: true,
       strengths: ["기본 추천", "다국어", "한국어", "범용 추론"],
       caveat: "현재 앱에서는 텍스트 기능만 사용해요",
+    },
+  },
+  {
+    id: "lfm2.5-230m-q4",
+    name: "LFM2.5 230M",
+    repo: "LiquidAI/LFM2.5-230M-GGUF",
+    filename: "LFM2.5-230M-Q4_K_M.gguf",
+    family: "lfm2",
+    quantization: "Q4_K_M",
+    sizeBytes: 153_406_304,
+    displaySize: "~146MB",
+    contextLength: 32_768,
+    capabilities: ["chat", "tools"],
+    platform: "both",
+    description: "2026년 8월 공개된 LFM2.5 최소 모델 — 가장 가벼운 최신 선택",
+    license: "LFM 1.0",
+    licenseKind: "custom",
+    releasedAt: "2026.08",
+    ggufSource: "publisher",
+    mobileProfile: {
+      rank: 7.5,
+      tier: "compact",
+      strengths: ["초경량", "2026.08 최신", "빠른 응답"],
+      caveat: "230M 규모라 복잡한 질문이나 긴 대화의 정확도는 제한적이에요",
     },
   },
   {
@@ -602,6 +676,31 @@ export const LOCAL_MODEL_REGISTRY: LocalModelDefinition[] = [
       caveat:
         "공식 지원 언어에 한국어가 명시되어 있지 않아 한국어는 실험적으로 봐 주세요",
       runtime: "llama-rn",
+    },
+  },
+  {
+    id: "gemma-3n-e4b-it-q4",
+    name: "Gemma 3n E4B Instruct",
+    repo: "unsloth/gemma-3n-E4B-it-GGUF",
+    filename: "gemma-3n-E4B-it-Q4_K_M.gguf",
+    family: "gemma",
+    quantization: "Q4_K_M",
+    sizeBytes: 4_539_054_208,
+    displaySize: "~4.23GB",
+    contextLength: 32_768,
+    capabilities: ["chat", "code"],
+    platform: "both",
+    description: "Google의 모바일 네이티브 MatFormer 모델 E4B — 품질 우선형",
+    license: "Gemma",
+    licenseKind: "custom",
+    releasedAt: "2025.06",
+    ggufSource: "community",
+    sourceModelRepo: "google/gemma-3n-E4B-it",
+    mobileProfile: {
+      rank: 20.5,
+      tier: "quality",
+      strengths: ["높은 답변 품질", "멀티모달 아키텍처"],
+      caveat: "12GB 이상 RAM 기기용이며 원본 저장소(gated) 대신 커뮤니티 변환이에요",
     },
   },
   {
