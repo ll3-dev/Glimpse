@@ -21,10 +21,19 @@ mock.module("react-native-nitro-crypto", () => ({
 
 // Mock native-core-client to avoid "not available on web platform" errors in tests
 // The .ts (web fallback) variant throws immediately at import time
+// 표면은 실제 CoreClient 전체와 맞춘다 — 여기 메서드가 빠져 있으면 모킹 경쟁에서
+// 이 noop에 붙은 소비자가 "is not a function"으로 깨진다.
 mock.module("../features/core/native-core-client", () => {
   const noop = async () => {};
   const noopReturn = async () => null;
   const noopArray = async () => [];
+  const noopCount = async () => ({
+    knowledgeItems: 0,
+    conversations: 0,
+    messages: 0,
+    recommendations: 0,
+    feedbackEvents: 0,
+  });
   return {
     nativeCoreClient: {
       initialize: noop,
@@ -47,6 +56,22 @@ mock.module("../features/core/native-core-client", () => {
       listRecentFeedbackEvents: noopArray,
       listPendingKnowledgeItemsForLabeling: noopArray,
       syncKnowledgeItems: noopArray,
+      createConversation: noopReturn,
+      listConversations: noopArray,
+      updateConversation: noopReturn,
+      deleteConversation: noop,
+      listConversationMessages: noopArray,
+      addMessage: noopReturn,
+      updateMessage: noopReturn,
+      deleteMessage: noop,
+      listGraphAnalysisRecords: noopArray,
+      commitGraphAnalysis: noopReturn,
+      exportData: noopReturn,
+      exportDelta: noopReturn,
+      syncDataRevision: noopReturn,
+      importData: noopCount,
+      mergeData: noopCount,
+      deleteAllData: noop,
     },
   };
 });

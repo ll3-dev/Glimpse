@@ -54,7 +54,13 @@ mock.module('./native-core-client', () => ({
   nativeCoreClient: bridge,
 }));
 
-const { mobileCoreClient } = await import('./mobile-core-client');
+// 캐시 우회 평가 — 이 파일보다 먼저 실행된 테스트(local-llm.*, labeling 등)가
+// 같은 모듈 그래프를 자기 모킹으로 평가해두면, 늦게 등록한 mock.module은 이미
+// 캐시된 의존성에 적용되지 않는다(Linux bun에서 재현). ?contract 쿼리로 이
+// 파일의 모킹이 등록된 이후의 새 평가를 강제해 어느 플랫폼에서도 자기 모킹을
+// 쓰게 한다.
+const contractModule = './mobile-core-client?contract';
+const { mobileCoreClient } = await import(contractModule);
 
 describe('mobileCoreClient typed bridge contract', () => {
   beforeEach(() => {
