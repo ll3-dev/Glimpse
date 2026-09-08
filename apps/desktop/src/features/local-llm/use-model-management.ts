@@ -77,26 +77,27 @@ export function useDownloadProgress() {
       else unlistens.push(fn);
     };
 
-    // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명/파싱은 @rustra/tauri 담당.
-    subscribeEvent<DownloadProgress>(listen, DOWNLOAD_PROGRESS_EVENT, (payload) => {
+    // rustra 이벤트 계약 헬퍼(name, callback[, listen]) — 채널명/파싱은
+    // @rustra/tauri 담당.
+    subscribeEvent<DownloadProgress>(DOWNLOAD_PROGRESS_EVENT, (payload) => {
       setProgress((prev) => ({
         ...prev,
         [payload.modelId]: payload,
       }));
       setFailures((prev) => withoutKey(prev, payload.modelId));
-    }).then((fn) => track(fn));
+    }, listen).then((fn) => track(fn));
 
-    subscribeEvent<{ modelId: string; path: string }>(listen, DOWNLOAD_DONE_EVENT, (payload) => {
+    subscribeEvent<{ modelId: string; path: string }>(DOWNLOAD_DONE_EVENT, (payload) => {
       setProgress((prev) => withoutKey(prev, payload.modelId));
-    }).then((fn) => track(fn));
+    }, listen).then((fn) => track(fn));
 
-    subscribeEvent<DownloadFailure>(listen, DOWNLOAD_FAILED_EVENT, (payload) => {
+    subscribeEvent<DownloadFailure>(DOWNLOAD_FAILED_EVENT, (payload) => {
       setProgress((prev) => withoutKey(prev, payload.modelId));
       setFailures((prev) => ({
         ...prev,
         [payload.modelId]: payload,
       }));
-    }).then((fn) => track(fn));
+    }, listen).then((fn) => track(fn));
 
     return () => {
       disposed = true;

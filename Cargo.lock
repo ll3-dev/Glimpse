@@ -1756,6 +1756,7 @@ dependencies = [
  "keyring",
  "llama-cpp-2",
  "mdns-sd",
+ "objc2",
  "reqwest",
  "rustra",
  "serde",
@@ -3899,9 +3900,9 @@ dependencies = [
 
 [[package]]
 name = "rustra"
-version = "0.5.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4ac566538049313f017853955a14e76b204925fbbd7b078b0d73bb67c6822b7"
+checksum = "46e060e845ce1cd93d558c04000816d64a2c3eae552c250768f6e129954eb9fd"
 dependencies = [
  "hex",
  "postcard",
@@ -3916,9 +3917,9 @@ dependencies = [
 
 [[package]]
 name = "rustra-macros"
-version = "0.5.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2567f26dc8f4324d0689d53b20f672ddd78e5cc32afc564f714144817c5221ff"
+checksum = "6880ee973316a2c68fcca4f4813e03906c67328896157092c6e4f7f88ebb5a96"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3928,9 +3929,9 @@ dependencies = [
 
 [[package]]
 name = "rustra-naming"
-version = "0.5.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd05f878d9937e49d5622868706215ad63e6df4f1d23a6b22913d65c9e02a928"
+checksum = "cfad102f0b91969bd284a73f8f27b05506c5c3b9e00fceb1e20c64765916c05e"
 
 [[package]]
 name = "rustversion"

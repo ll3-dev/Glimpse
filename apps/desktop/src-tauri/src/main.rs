@@ -2,6 +2,7 @@
 
 mod commands;
 mod download;
+mod download_activity;
 mod llm;
 mod models;
 mod secrets;
@@ -91,8 +92,10 @@ fn main() {
         .expect("error while building glimpse desktop tauri shell");
 
     // 종료 핸들러: 진행 중 다운로드에 취소 플래그를 설정해 chunk 루프가
-    // 빠르게 빠져나오게 한다. SQLite 연결은 bridge 전역이 소유하며 프로세스
-    // 종료 시 OS 가 정리한다(WAL 모드라 트랜잭션 커밋 후에는 일관성 유지).
+    // 빠르게 빠져나오게 한다. 중단된 다운로드의 .gguf.tmp 는 보존되어
+    // 재시작 후 같은 모델 재다운로드 시 Range 로 이어받는다. SQLite 연결은
+    // bridge 전역이 소유하며 프로세스 종료 시 OS 가 정리한다(WAL 모드라
+    // 트랜잭션 커밋 후에는 일관성 유지).
     app.run(|app_handle, event| match event {
         tauri::RunEvent::WindowEvent {
             label,

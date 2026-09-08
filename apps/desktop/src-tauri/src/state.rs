@@ -111,13 +111,15 @@ pub struct DesktopRuntimeStateInner {
     pub health: Mutex<RuntimeHealth>,
     pub llm_engine: Mutex<LlmEngine>,
     pub download_cancels: DownloadCancelFlags,
+    /// 진행 중 다운로드가 있는 동안 잡는 프로세스 활동(App Nap 해제).
+    /// 창을 닫아(트레이) 숨겨도 다운로드가 계속되게 하는 보호다.
+    download_activity: Mutex<Option<crate::download_activity::DownloadActivity>>,
 }
 
 impl DesktopRuntimeStateInner {
     pub fn from_defaults() -> DesktopRuntimeState {
-        // 다운로드 중 강제 종료로 남은 tmp 파일 정리
-        download::cleanup_stale_tmp_files();
-
+        // 다운로드 중 강제 종료로 남은 tmp 파일은 삭제하지 않는다 —
+        // 같은 모델의 재다운로드가 Range 로 이어받는다(백그라운드 다운로드).
         let mut models = default_models();
         download::sync_download_status(&mut models);
 
@@ -126,7 +128,29 @@ impl DesktopRuntimeStateInner {
             health: Mutex::new(default_health()),
             llm_engine: Mutex::new(LlmEngine::new()),
             download_cancels: DownloadCancelFlags::default(),
+            download_activity: Mutex::new(None),
         })
+    }
+
+    /// 다운로드 활동 보호를 진행 중 다운로드 유무에 맞춘다. 모델 상태를
+    /// 바꾼 뒤에 호출한다 — models 락이 풀린 뒤여야 한다(비재진입).
+    /// 시작 실패는 다운로드를 막지 않는다(최선 노력 보호).
+    fn refresh_download_activity(&self) {
+        let downloading = self
+            .models
+            .lock()
+            .map(|models| models.iter().any(|m| m.status == "downloading"))
+            .unwrap_or(false);
+        if let Ok(mut guard) = self.download_activity.lock() {
+            if downloading && guard.is_none() {
+                *guard = crate::download_activity::DownloadActivity::begin(
+                    "Glimpse model download in progress",
+                );
+            } else if !downloading {
+                // Drop → endActivity — 마지막 다운로드가 끝나면 보호 해제.
+                *guard = None;
+            }
+        }
     }
 
     /// 진행 중(downloading) 다운로드의 model id 목록 — 종료 시 취소
@@ -169,47 +193,59 @@ impl DesktopRuntimeStateInner {
         model_id: &str,
         path: &str,
     ) -> Result<ManagedModelRecord, String> {
-        let mut models = self
-            .models
-            .lock()
-            .map_err(|_| "models lock poisoned".to_string())?;
-        let model = models
-            .iter_mut()
-            .find(|m| m.id == model_id)
-            .ok_or_else(|| format!("Model not found: {}", model_id))?;
-        model.status = "ready".into();
-        model.path = Some(path.to_string());
-        Ok(model.clone())
+        let result = {
+            let mut models = self
+                .models
+                .lock()
+                .map_err(|_| "models lock poisoned".to_string())?;
+            let model = models
+                .iter_mut()
+                .find(|m| m.id == model_id)
+                .ok_or_else(|| format!("Model not found: {}", model_id))?;
+            model.status = "ready".into();
+            model.path = Some(path.to_string());
+            model.clone()
+        };
+        self.refresh_download_activity();
+        Ok(result)
     }
 
     pub fn mark_model_downloading(&self, model_id: &str) -> Result<ManagedModelRecord, String> {
-        let mut models = self
-            .models
-            .lock()
-            .map_err(|_| "models lock poisoned".to_string())?;
-        let model = models
-            .iter_mut()
-            .find(|m| m.id == model_id)
-            .ok_or_else(|| format!("Model not found: {}", model_id))?;
+        let result = {
+            let mut models = self
+                .models
+                .lock()
+                .map_err(|_| "models lock poisoned".to_string())?;
+            let model = models
+                .iter_mut()
+                .find(|m| m.id == model_id)
+                .ok_or_else(|| format!("Model not found: {}", model_id))?;
 
-        // 중복 다운로드 가드 — 이미 진행 중이면 상태를 덮어쓰지 않는다
-        if model.status == "downloading" {
-            return Err(format!("Model {} is already downloading", model_id));
-        }
-        model.status = "downloading".into();
-        model.download_error = None;
-        Ok(model.clone())
+            // 중복 다운로드 가드 — 이미 진행 중이면 상태를 덮어쓰지 않는다
+            if model.status == "downloading" {
+                return Err(format!("Model {} is already downloading", model_id));
+            }
+            model.status = "downloading".into();
+            model.download_error = None;
+            model.clone()
+        };
+        // App Nap 해제 — 창을 닫아도 다운로드가 계속되게 하는 보호를 잡는다.
+        self.refresh_download_activity();
+        Ok(result)
     }
 
     pub fn mark_model_download_failed(&self, model_id: &str, error: &str) -> Result<(), String> {
-        let mut models = self
-            .models
-            .lock()
-            .map_err(|_| "models lock poisoned".to_string())?;
-        if let Some(model) = models.iter_mut().find(|m| m.id == model_id) {
-            model.status = "download_failed".into();
-            model.download_error = Some(error.to_string());
+        {
+            let mut models = self
+                .models
+                .lock()
+                .map_err(|_| "models lock poisoned".to_string())?;
+            if let Some(model) = models.iter_mut().find(|m| m.id == model_id) {
+                model.status = "download_failed".into();
+                model.download_error = Some(error.to_string());
+            }
         }
+        self.refresh_download_activity();
         Ok(())
     }
 

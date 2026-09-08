@@ -131,7 +131,9 @@ async fn resolve_verified_artifact(
 ///
 /// - `is_cancelled`: 다운로드 루프가 chunk 사이에 조회하는 취소 플래그.
 /// - tmp 파일이 남아 있으면 `Range` 헤더로 이어받기(서버가 206을
-///   돌려주지 않으면 처음부터 다시 받는다).
+///   돌려주지 않으면 처음부터 다시 받는다). 취소·네트워크 중단·앱 종료는
+///   tmp 를 보존해 다음 시도(재시작 포함)가 이어받도록 한다 — 무결성
+///   실패(크기/SHA 불일치)만 tmp 를 폐기한다.
 /// - 완료 시 수신 바이트가 기대 크기와 일치(±1KB)하는지 검증한 뒤
 ///   rename 한다 — 서버 조기 종료로 인한 부분 파일 완성본 취급 차단.
 #[allow(clippy::too_many_arguments)]
@@ -150,8 +152,16 @@ pub async fn download_model(
 
     let model_id = model.id.clone();
 
-    // 실패 경로 정규화: tmp 정리 + 실패 이벤트 발행을 한 곳에서.
+    // 실패 경로 정규화: 실패 이벤트 발행을 한 곳에서. tmp 는 기본
+    // 보존한다 — 취소·네트워크 중단은 이어받기(Range resume) 대상이고,
+    // 앱 종료로 중단된 다운로드도 재시작 후 이어받는다(백그라운드
+    // 다운로드 계약). 무결성 실패(크기/SHA 불일치)에서만 corrupt 경로로
+    // tmp 를 지운다.
     let fail = |msg: String| -> Result<PathBuf, String> {
+        glimpse_bridge::emit_model_download_failed(&model_id, &msg);
+        Err(msg)
+    };
+    let fail_corrupt = |msg: String| -> Result<PathBuf, String> {
         if tmp_path.exists() {
             let tmp = tmp_path.clone();
             tokio::spawn(async move {
@@ -232,7 +242,7 @@ pub async fn download_model(
         let mut prefix = match tokio::fs::File::open(&tmp_path).await {
             Ok(prefix) => prefix,
             Err(error) => {
-                return fail(format!("Failed to hash resumed download: {error}"));
+                return fail_corrupt(format!("Failed to hash resumed download: {error}"));
             }
         };
         let mut buffer = vec![0_u8; 1024 * 1024];
@@ -240,7 +250,7 @@ pub async fn download_model(
             let read = match prefix.read(&mut buffer).await {
                 Ok(read) => read,
                 Err(error) => {
-                    return fail(format!("Failed to hash resumed download: {error}"));
+                    return fail_corrupt(format!("Failed to hash resumed download: {error}"));
                 }
             };
             if read == 0 {
@@ -307,7 +317,7 @@ pub async fn download_model(
 
     // --- 최종 크기 검증: 서버 조기 종료로 짧게 끝난 스트림 차단 ---
     if (bytes_received as i64 - artifact.size as i64).abs() > 1024 {
-        return fail(format!(
+        return fail_corrupt(format!(
             "Size mismatch: received {} of {} bytes",
             bytes_received, artifact.size
         ));
@@ -315,7 +325,9 @@ pub async fn download_model(
 
     let actual_sha256 = format!("{:x}", hasher.finalize());
     if actual_sha256 != artifact.sha256.to_lowercase() {
-        return fail(format!(
+        // 이어받은 prefix 가 오염된 경우 재시도마다 같은 실패를 반복하지
+        // 않도록 tmp 를 폐기한다 — 다음 시도는 처음부터 받는다.
+        return fail_corrupt(format!(
             "SHA-256 mismatch: expected {}, received {}",
             artifact.sha256, actual_sha256
         ));
@@ -340,36 +352,20 @@ pub async fn download_model(
     Ok(dest_path)
 }
 
-/// 부팅 시 models_dir 에 남은 stale `*.gguf.tmp` 를 정리한다.
-///
-/// 다운로드 중 앱이 강제 종료되면 tmp 파일이 남는다 — 이를 완성본으로
-/// 오인하는 일은 없지만(최종 .gguf 가 아니므로) 디스크 공간을 잡아
-/// 두고 다음 다운로드의 overwrite 대상이 되므로 시작 시 제거한다.
-pub fn cleanup_stale_tmp_files() {
-    let dir = models_dir();
-    if !dir.is_dir() {
-        return;
-    }
-    if let Ok(entries) = std::fs::read_dir(&dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("tmp"))
-            {
-                let _ = std::fs::remove_file(&path);
-            }
-        }
-    }
-}
-
 /// Delete a downloaded model file from disk.
+///
+/// 이어받기용 `.gguf.tmp` 잔여분도 함께 지운다 — 모델 삭제 시 미완성
+/// 다운로드를 디스크에 남기지 않기 위해서다.
 pub async fn delete_model_file(model_id: &str) -> Result<(), String> {
     let path = model_path(model_id);
     if path.exists() {
         tokio::fs::remove_file(&path)
             .await
             .map_err(|e| format!("Failed to delete model file: {}", e))?;
+    }
+    let tmp_path = path.with_extension("gguf.tmp");
+    if tmp_path.exists() {
+        let _ = tokio::fs::remove_file(&tmp_path).await;
     }
     Ok(())
 }

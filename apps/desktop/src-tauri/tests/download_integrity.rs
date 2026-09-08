@@ -63,21 +63,28 @@ fn download_failed_event_reaches_channel_with_camel_case_payload() {
 }
 
 #[test]
-fn stale_tmp_files_are_cleaned_up() {
+fn tmp_files_are_preserved_for_resume() {
+    // 백그라운드 다운로드 계약: 중단된 다운로드의 .gguf.tmp 는 보존되어
+    // 재시작 후 같은 모델 재다운로드가 Range 로 이어받는다.
     let dir = glimpse_desktop::download::models_dir();
     let _ = std::fs::create_dir_all(&dir);
 
-    let stale = dir.join("stale-test.gguf.tmp");
-    let keep = dir.join("keep-test.gguf");
-    std::fs::write(&stale, b"partial").expect("write stale tmp");
+    let partial = dir.join("resume-test.gguf.tmp");
+    let keep = dir.join("resume-test.gguf");
+    std::fs::write(&partial, b"partial").expect("write partial tmp");
     std::fs::write(&keep, b"full").expect("write final gguf");
 
-    glimpse_desktop::download::cleanup_stale_tmp_files();
+    // from_defaults 는 부팅 경로다 — tmp 를 지우지 않아야 한다.
+    let _state = glimpse_desktop::state::DesktopRuntimeStateInner::from_defaults();
 
-    assert!(!stale.exists(), "stale .gguf.tmp must be removed");
-    assert!(keep.exists(), "final .gguf must survive cleanup");
+    assert!(partial.exists(), "interrupted .gguf.tmp must survive boot for resume");
 
-    let _ = std::fs::remove_file(&keep);
+    // delete_model_file 은 완성본과 tmp 잔여분을 모두 정리한다.
+    let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+    rt.block_on(glimpse_desktop::download::delete_model_file("resume-test"))
+        .expect("delete succeeds");
+    assert!(!keep.exists(), "final .gguf must be removed");
+    assert!(!partial.exists(), "leftover .gguf.tmp must be removed with the model");
 }
 
 #[test]

@@ -24,7 +24,7 @@ reqwest = { version = "0.13", features = ["json", "stream"] }
 # coupled to the rustra crate version (see packages/bridge-rust + @rustra/*).
 # Exact pin so a cargo update can never silently drift the Rust side past
 # the pinned @rustra/* TS side.
-rustra = { version = "=0.5.0", features = ["tauri"] }
+rustra = { version = "=0.8.0", features = ["tauri"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
@@ -37,6 +37,11 @@ tokio = { version = "1", features = ["fs", "io-util", "net", "rt-multi-thread", 
 # wire compatible without touching the bridge contract.
 tower-http = { version = "0.6", features = ["compression-gzip", "decompression-gzip"] }
 uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# 다운로드 중 App Nap 해제(NSProcessInfo 프로세스 활동) — Cargo.lock 의
+# tauri 전이 의존성과 같은 버전을 쓴다.
+objc2 = "0.6"
 
 [features]
 default = []

@@ -6,6 +6,7 @@
 
 pub mod commands;
 pub mod download;
+pub mod download_activity;
 pub mod llm;
 pub mod models;
 pub mod secrets;

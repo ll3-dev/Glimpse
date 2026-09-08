@@ -11,6 +11,43 @@ pub fn start_window_dragging(window: tauri::WebviewWindow) -> Result<(), String>
     window.start_dragging().map_err(|e| e.to_string())
 }
 
+/// 창이 숨겨져 있으면(트레이) 시스템 알림으로 다운로드 결과를 알린다.
+/// 창이 보이면 전역 배너가 이미 결과를 보여주므로 알리지 않는다.
+/// 알림은 최선 노력 — 실패는 로그만 남긴다.
+fn notify_download_result(app: &tauri::AppHandle, model_name: &str, ok: bool) {
+    use tauri::Manager;
+    use tauri_plugin_notification::NotificationExt;
+
+    let window_hidden = app
+        .get_webview_window("main")
+        .map(|window| !window.is_visible().unwrap_or(true))
+        .unwrap_or(false);
+    if !window_hidden {
+        return;
+    }
+
+    let (title, body) = if ok {
+        (
+            "Glimpse 모델 다운로드 완료",
+            format!("{model_name} 다운로드가 끝났습니다. Glimpse를 열어 모델을 로드하세요."),
+        )
+    } else {
+        (
+            "Glimpse 모델 다운로드 실패",
+            format!("{model_name} 다운로드에 실패했습니다. Glimpse를 열어 다시 시도하세요."),
+        )
+    };
+    if let Err(error) = app
+        .notification()
+        .builder()
+        .title(title)
+        .body(body)
+        .show()
+    {
+        eprintln!("[download] failed to show result notification: {error}");
+    }
+}
+
 #[tauri::command]
 pub fn list_available_runtimes() -> Vec<RuntimeDescriptor> {
     DesktopRuntimeService::list_available_runtimes()
@@ -50,10 +87,15 @@ pub async fn download_model(
         Ok(path) => {
             let path_str = path.to_string_lossy().to_string();
             state.download_cancels.clear(&model_id);
+            notify_download_result(&app_clone, &model_clone.name, true);
             state.mark_model_downloaded(&model_id, &path_str)
         }
         Err(e) => {
             state.download_cancels.clear(&model_id);
+            // 사용자 취소는 실패 알림을 내보내지 않는다
+            if !e.contains("cancelled by user") {
+                notify_download_result(&app_clone, &model_clone.name, false);
+            }
             state.mark_model_download_failed(&model_id, &e)?;
             Err(e)
         }

@@ -155,13 +155,6 @@ const DEFAULT_RUNTIMES: DesktopLLMRuntimeDescriptor[] = [
     availability: 'degraded',
     reason: 'Enabled when macOS exposes Apple Intelligence on the current device.',
   },
-  {
-    id: 'remote-byok',
-    displayName: 'Remote BYOK',
-    priority: 3,
-    availability: 'available',
-    reason: 'Fallback runtime when local execution is unavailable.',
-  },
 ];
 
 /**
@@ -336,11 +329,12 @@ function createTauriBridge(): DesktopLLMService {
       return parseEmbeddingBatchResponse(raw).map((vector) => ({ vector }));
     },
     getRuntimeHealth: () => invoke<RuntimeHealth>('get_runtime_health'),
-    // rustra 0.4.0 이벤트 계약 헬퍼 — 채널명/파싱은 @rustra/tauri 담당.
+    // rustra 이벤트 계약 헬퍼(name, callback[, listen]) — 채널명/파싱은
+    // @rustra/tauri 담당.
     onDownloadProgress: (callback) =>
-      subscribeEvent<DownloadProgressEvent>(listen, DOWNLOAD_PROGRESS_EVENT, (payload) => callback(payload)),
+      subscribeEvent<DownloadProgressEvent>(DOWNLOAD_PROGRESS_EVENT, (payload) => callback(payload), listen),
     onDownloadDone: (callback) =>
-      subscribeEvent<DownloadDoneEvent>(listen, DOWNLOAD_DONE_EVENT, (payload) => callback(payload)),
+      subscribeEvent<DownloadDoneEvent>(DOWNLOAD_DONE_EVENT, (payload) => callback(payload), listen),
   };
 }
 

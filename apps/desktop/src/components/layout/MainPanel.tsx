@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { useRouterState, useNavigate } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight, GripHorizontal, Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { triggerWindowDrag } from '@/lib/window-drag';
+import { GlobalModelDownloadBanner } from './GlobalModelDownloadBanner';
 
 interface MainPanelProps {
   children: ReactNode;
@@ -69,15 +70,8 @@ export function MainPanel({ children }: MainPanelProps) {
           </div>
         </div>
 
-        {/* Center: Visible Draggable Grip Capsule */}
-        <div
-         
-          className="flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-0.8 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground cursor-grab active:cursor-grabbing shadow-2xs"
-          title="클릭하고 드래그하여 창을 이동할 수 있습니다"
-        >
-          <GripHorizontal className="h-3.5 w-3.5 opacity-60" />
-          <span className="select-none text-[11px]">창 이동</span>
-        </div>
+        {/* Center: 여백 — 헤더 전체가 드래그 존이다(창 이동 그립 캡슐은 제거됨) */}
+        <div className="flex-1" />
 
         {/* Right: Quick Window Action Pills */}
         <div className="flex items-center gap-2">
@@ -108,6 +102,9 @@ export function MainPanel({ children }: MainPanelProps) {
       <main className="flex-1 overflow-auto">
         {children}
       </main>
+
+      {/* 전역 모델 다운로드 배너 — 어느 화면에서든 진행/완료/실패를 보여준다 */}
+      <GlobalModelDownloadBanner />
     </div>
   );
 }
