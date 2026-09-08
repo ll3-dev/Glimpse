@@ -1,4 +1,9 @@
-import { initLlama, type LlamaContext } from 'llama.rn';
+import type { LlamaContext } from 'llama.rn';
+
+// llama.rn은 모듈 스코프에서 TurboModuleRegistry.get('RNLlama')를 호출한다 —
+// 웹 정적 렌더(node) 환경에선 get 자체가 없어 모듈 평가 시점에 죽는다. 이
+// 임베더는 라이브러리·채팅 화면의 렌더 그래프에 걸려 있으므로, 네이티브 전용
+// 로드를 첫 embedBatch 때 동적 import로 미룬다(웹 번들에서 제외 효과).
 
 /**
  * On-device embedding context — llama.rn 전용 인스턴스.
@@ -30,7 +35,7 @@ interface EmbedBatchItem {
   input: string;
 }
 
-type InitLlamaFn = typeof initLlama;
+type InitLlamaFn = typeof import('llama.rn').initLlama;
 
 export interface OnDeviceEmbedderDeps {
   initLlama?: InitLlamaFn;
@@ -50,7 +55,8 @@ export function createOnDeviceEmbedder(
   target: OnDeviceEmbeddingTarget,
   deps: OnDeviceEmbedderDeps = {},
 ) {
-  const initLlamaFn = deps.initLlama ?? initLlama;
+  // deps.initLlama는 테스트 주입용 — 실제 로드는 acquire()에서 동적 import.
+  const injectedInitLlama = deps.initLlama ?? null;
 
   let context: LlamaContext | null = null;
   let disposed = false;
@@ -71,16 +77,19 @@ export function createOnDeviceEmbedder(
       throw new Error('온디바이스 임베딩 모델 로드 쿨다운 중');
     }
     if (!loading) {
-      loading = initLlamaFn({
-        model: target.modelPath,
-        embedding: true,
-        // ContextParams.pooling_type은 문자열 유니온(네이티브는 숫자)
-        pooling_type: 'mean',
-        n_ctx: EMBEDDING_CONTEXT_SIZE,
-        n_gpu_layers: EMBEDDING_GPU_LAYERS,
-        use_mlock: false,
-        use_mmap: true,
-      })
+      loading = (async () => {
+        const initLlamaFn = injectedInitLlama ?? (await import('llama.rn')).initLlama;
+        return initLlamaFn({
+          model: target.modelPath,
+          embedding: true,
+          // ContextParams.pooling_type은 문자열 유니온(네이티브는 숫자)
+          pooling_type: 'mean',
+          n_ctx: EMBEDDING_CONTEXT_SIZE,
+          n_gpu_layers: EMBEDDING_GPU_LAYERS,
+          use_mlock: false,
+          use_mmap: true,
+        });
+      })()
         .then((ctx) => {
           lastInitFailureAt = 0;
           context = ctx;

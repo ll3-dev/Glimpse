@@ -1,4 +1,4 @@
-import { initLlama, type LlamaContext } from 'llama.rn';
+import type { LlamaContext } from 'llama.rn';
 import type {
   GenerateResult,
   LlamaService,
@@ -14,6 +14,17 @@ import {
 } from './llama-service.utils';
 import { emitStreamDone, emitStreamToken } from './stream-events';
 import { logger } from '@/src/utils/logger';
+
+// llama.rn은 모듈 스코프에서 TurboModuleRegistry.get('RNLlama')를 호출한다 —
+// 웹 정적 렌더(node) 환경엔 get이 없어 앱 전체가 렌더 시점에 죽는다. 네이티브
+// 전용 모듈이므로 loadModel에서 동적으로 로드해 렌더 그래프에서 뺀다. 캐시 없이
+// 매번 레지스트리에서 resolve 한다 — 테스트가 호출마다 모킹을 갈아끼우기
+// 때문이다(이후 호출은 모듈 캐시 히트라 비용이 없다).
+type InitLlamaFn = typeof import('llama.rn').initLlama;
+
+async function loadInitLlama(): Promise<InitLlamaFn> {
+  return (await import('llama.rn')).initLlama;
+}
 
 type QueueCompletionContext = LlamaContext & {
   queueCompletion?: (
@@ -122,6 +133,7 @@ export function createLlamaService(): LlamaService {
 
       for (let index = 0; index < candidates.length; index += 1) {
         const candidate = candidates[index];
+        const initLlama = await loadInitLlama();
 
         try {
           context = await initLlama(candidate, (progress) => options?.onProgress?.(Math.round(progress)));
