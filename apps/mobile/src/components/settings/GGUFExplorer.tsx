@@ -24,10 +24,11 @@ export function GGUFExplorer() {
   const appText = useSemanticColor("appText");
   const appMuted = useSemanticColor("appMuted");
   const appAccent = useSemanticColor("appAccent");
-  const { availableModels, downloadStatus } = useLocalLLMConfig((config) => ({
-    availableModels: config.availableModels,
-    downloadStatus: config.downloadStatus,
-  }));
+  // zustand 5 셀렉터는 안정 참조를 반환해야 한다 — 객체 리터럴을 만들면
+  // useSyncExternalStore의 Object.is 비교가 매번 실패해 무한 재렌더링으로
+  // JS 스레드가 굳는다(release에서 UI 프리즈). 필드별로 선택한다.
+  const availableModels = useLocalLLMConfig((config) => config.availableModels);
+  const downloadStatus = useLocalLLMConfig((config) => config.downloadStatus);
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
