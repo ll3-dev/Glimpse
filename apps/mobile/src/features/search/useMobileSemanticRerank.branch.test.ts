@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 // react-native AppState/Platform은 src/test/setup.ts 전역 mock 사용
 
 /**
- * useMobileSemanticRerank 분기 결정 테스트 — BYOK 우선 → 온디바이스 폴백
- * → 둘 다 없으면 inactive(null target) 순서를 deps 팩토리 수준에서 검증.
+ * useMobileSemanticRerank 분기 결정 테스트 — 온디바이스 임베딩 활성
+ * → 아니면 inactive(null target) 순서를 deps 팩토리 수준에서 검증.
  *
  * React hook 자체가 아닌 createOnDeviceEmbedDeps의 resolveEmbeddingTarget
  * 결정 로직을 대상으로 한다(hook 본문은 platform-neutral useSemanticRerank가

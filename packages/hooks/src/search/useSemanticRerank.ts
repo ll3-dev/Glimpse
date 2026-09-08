@@ -6,7 +6,7 @@ import { rankBySemanticSimilarity } from '@glimpse/features';
  * Semantic re-ranking for library search — platform-neutral.
  *
  * The embed function is injected by the caller (desktop: local llama.cpp
- * batch IPC, mobile: BYOK openai-compatible /embeddings), so both platforms
+ * batch IPC, mobile: on-device llama.rn embedding context), so both platforms
  * share the ranking/caching/debounce/fallback behavior. Runs only when the
  * embed deps resolve to a usable model; otherwise returns the keyword order
  * untouched. Vectors are computed for item text (title + summary + body

@@ -9,11 +9,4 @@ export * from './filterKnowledgeItems';
 export * from './parseQueryToKeyword';
 export {
   useSemanticRerankEnabled,
-  DEFAULT_EMBEDDING_MODEL,
 } from './semantic-settings';
-export {
-  providerSupportsEmbedding,
-  embedBatchWithBYOK,
-  buildEmbeddingsUrl,
-  type EmbeddingClientConfig,
-} from './byok-embedding-client';

@@ -3,15 +3,13 @@ import { createStore } from 'zustand/vanilla';
 import { storage, StorageKeys } from '@/src/lib/storage';
 
 /**
- * Semantic rerank (mobile) settings — BYOK embedding opt-in.
+ * Semantic rerank (mobile) settings — 온디바이스 임베딩 opt-in.
  *
- * 기본 OFF(옵트인). ON이면 검색어와 선택 항목 내용(제목/요약/본문 발췌)이
- * 사용자가 설정한 openai-compatible embedding API로 전송된다 — 설정 UI에는
- * 프라이버시 문구가 반드시 함께 노출된다.
+ * 기본 OFF(옵트인). ON + 기기 내 nomic 모델 다운로드 완료 시 llama.rn으로
+ * 기기 내부에서만 임베딩해 재정렬한다 — 외부 전송은 없다.
  */
 
 export const SEMANTIC_RERANK_ENABLED_KEY = StorageKeys.SEMANTIC_RERANK_ENABLED;
-export const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small';
 
 interface SemanticSettingsState {
   enabled: boolean;

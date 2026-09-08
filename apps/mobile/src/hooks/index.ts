@@ -21,5 +21,5 @@ export * from './useWarmLocalLLM';
 export * from './useReleaseLocalLLMOnPressure';
 export * from './useRecoverLocalModelDownload';
 export * from './useSettingsScreenState';
+export * from './useDailyNarrative';
 export * from './useDataManagementActions';
-export * from './useBYOKSectionState';

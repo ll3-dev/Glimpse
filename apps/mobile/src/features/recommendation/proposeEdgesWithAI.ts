@@ -2,7 +2,7 @@
  * LLM-proposed recommendation edges for mobile.
  *
  * Closes the intelligence gap with the desktop knowledge graph: instead of
- * only matching shared tags, the configured chat target (local LLM or BYOK)
+ * only matching shared tags, the configured chat target (local LLM)
  * reads the week's items and proposes meaningful connections. Tag overlap
  * remains the fallback when no model is available or generation fails.
  */
@@ -71,7 +71,7 @@ export async function proposeEdgesWithAI(
   if (items.length < 2) return [];
 
   const target = deps.resolveTarget();
-  if (!target || (target.kind !== 'local' && target.kind !== 'byok')) {
+  if (!target || target.kind !== 'local') {
     return [];
   }
 

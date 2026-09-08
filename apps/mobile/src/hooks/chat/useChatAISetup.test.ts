@@ -10,6 +10,6 @@ describe('useChatAISetup target resolution logic', () => {
   it('should resolve local target when local is configured', () => {
     const target = resolveEffectiveTarget('chat');
     expect(target).toBeDefined();
-    expect(['local', 'byok', 'apple', 'stub']).toContain(target.kind);
+    expect(['local', 'apple', 'stub']).toContain(target.kind);
   });
 });

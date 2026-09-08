@@ -1,12 +1,9 @@
-import { describe, expect, test, mock, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, test, mock, beforeEach } from 'bun:test';
 import { Effect, Exit } from 'effect';
 import {
   executeMetadataTargetEffect,
   executeLabelingTargetEffect,
   executeChatTargetEffect,
-  executeChatTarget,
-  setBYOKChatTimeoutForTests,
-  resetBYOKChatTimeoutForTests,
 } from './executors';
 import type { KnowledgeItem } from '@glimpse/shared';
 import type { LocalLLMRuntime } from '@/src/features/ai/local-llm';
@@ -16,20 +13,6 @@ import {
   resetLocalLLMStoreConfig,
   selectLocalLLMModel,
 } from '@/src/stores/settings/local-llm.store';
-import { updateBYOKStoreConfig } from '@/src/stores/settings/byok.store';
-
-/**
- * byok 라벨 버전 매핑만 검증하기 위한 프로바이더 스텁.
- * 실제 byokProvider는 스토어 설정+네트워크가 필요해 여기서는 도달할 수 없다.
- * (mock.module은 테스트 파일 단위로 격리된다.)
- */
-mock.module('../providers/byok-provider', () => ({
-  byokProvider: {
-    name: 'byok',
-    isAvailable: async () => true,
-    generate: () => Effect.succeed({ summary: 'stub summary', tags: ['personal'] }),
-  },
-}));
 
 /**
  * 모델 핀 검증용 런타임 스텁 — generate에 전달된 모델을 기록한다.
@@ -47,32 +30,9 @@ mock.module('@/src/hooks/chat/chatRuntime', () => ({
   getLocalLLMRuntime: () => runtimeMock,
 }));
 
-const originalFetch = globalThis.fetch;
-const byokRequests: { endpoint: string; init?: RequestInit }[] = [];
-
 beforeEach(() => {
   generateCalls.length = 0;
-  byokRequests.length = 0;
   resetLocalLLMStoreConfig();
-  updateBYOKStoreConfig((config) => ({
-    ...config,
-    enabled: true,
-    provider: 'openai',
-    apiKey: 'test-key',
-    baseUrl: null,
-    model: 'store-model',
-  }));
-  globalThis.fetch = (async (endpoint: string, init?: RequestInit) => {
-    byokRequests.push({ endpoint, init });
-    return {
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: 'byok reply' } }] }),
-    };
-  }) as typeof fetch;
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
 });
 
 function makeDownloadedModel(id: string, withPath = true): Parameters<typeof addLocalLLMModel>[0] {
@@ -156,20 +116,6 @@ describe('Effect-based Executors', () => {
       if (Exit.isSuccess(exit)) {
         expect(exit.value.labels).toBeDefined();
         expect(exit.value.source).toBe('stub');
-      }
-    });
-
-    test('returns Effect that succeeds with byok target and byok label version', async () => {
-      const effect = executeLabelingTargetEffect(
-        { kind: 'byok', provider: 'openai', model: 'gpt-4.1-mini', id: 'byok.openai:gpt-4.1-mini' },
-        mockItem
-      );
-      const exit = await Effect.runPromiseExit(effect);
-
-      expect(Exit.isSuccess(exit)).toBe(true);
-      if (Exit.isSuccess(exit)) {
-        expect(exit.value.source).toBe('byok');
-        expect(exit.value.version).toBe('byok-label-v1');
       }
     });
   });
@@ -274,80 +220,6 @@ describe('Effect-based Executors', () => {
       if (Exit.isFailure(exit)) {
         const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
         expect(error?.message).toBe('고정된 로컬 채팅 모델을 사용할 수 없습니다.');
-      }
-    });
-
-    test('byok target model pin overrides the store model', async () => {
-      const effect = executeChatTargetEffect(
-        { kind: 'byok', provider: 'openai', model: 'pinned-gpt', id: 'byok.openai:pinned-gpt' },
-        { userText: '안녕하세요, BYOK 핀 메시지입니다.' }
-      );
-      const exit = await Effect.runPromiseExit(effect);
-
-      expect(Exit.isSuccess(exit)).toBe(true);
-      if (Exit.isSuccess(exit)) {
-        expect(exit.value).toBe('byok reply');
-      }
-
-      const body = JSON.parse(String(byokRequests[0]?.init?.body ?? '{}')) as { model?: string };
-      expect(body.model).toBe('pinned-gpt');
-    });
-
-    test('byok chat fetch that outlives the timeout fails with a timeout message', async () => {
-      // 회귀 방지: BYOK 채팅 fetch는 타임아웃이 없어 hang 시 영원히 대기했다.
-      // signal-aware hanging fetch로 실제 타임아웃 경로를 태운다.
-      setBYOKChatTimeoutForTests(20);
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = ((url: string, init?: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () => {
-            reject(new DOMException('The operation was aborted.', 'AbortError'));
-          });
-        })) as unknown as typeof fetch;
-
-      try {
-        const effect = executeChatTargetEffect(
-          { kind: 'byok', provider: 'openai', model: 'store-model', id: 'byok.openai:store-model' },
-          { userText: '안녕하세요, 타임아웃 검증 메시지입니다.' }
-        );
-        const exit = await Effect.runPromiseExit(effect);
-
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          const error = exit.cause._tag === 'Fail' ? exit.cause.error : null;
-          expect(error?.message).toContain('응답하지 않았습니다');
-        }
-      } finally {
-        globalThis.fetch = originalFetch;
-        resetBYOKChatTimeoutForTests();
-      }
-    });
-  });
-
-  describe('executeChatTarget (async) BYOK timeout', () => {
-    test('byok chat fetch that outlives the timeout returns a timeout failure', async () => {
-      setBYOKChatTimeoutForTests(20);
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = ((url: string, init?: RequestInit) =>
-        new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener('abort', () => {
-            reject(new DOMException('The operation was aborted.', 'AbortError'));
-          });
-        })) as unknown as typeof fetch;
-
-      try {
-        const result = await executeChatTarget(
-          { kind: 'byok', provider: 'openai', model: 'store-model', id: 'byok.openai:store-model' },
-          { userText: '안녕하세요, 비동기 경로 타임아웃 검증입니다.' }
-        );
-
-        expect(result.success).toBe(false);
-        if (!result.success) {
-          expect(result.error.message).toContain('응답하지 않았습니다');
-        }
-      } finally {
-        globalThis.fetch = originalFetch;
-        resetBYOKChatTimeoutForTests();
       }
     });
   });

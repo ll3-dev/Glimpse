@@ -1,10 +1,8 @@
 import { checkAppleIntelligenceAvailability } from '@/src/features/settings/appleIntelligenceToggle';
-import { getBYOKStoreConfig } from '@/src/stores/settings/byok.store';
 import { getAvailableLocalModels } from '@/src/features/settings/local-llm.selectors';
 import { getAITargetSettings } from '@/src/stores/settings/ai-targets.store';
 import {
   APPLE_TARGET_ID,
-  createBYOKTargetId,
   createLocalTargetId,
   parseAITargetId,
   RULES_TARGET_ID,
@@ -18,7 +16,6 @@ import {
 export function listAvailableAITargets(): AITargetDescriptor[] {
   const appleAvailability = checkAppleIntelligenceAvailability();
   const localModels = getAvailableLocalModels();
-  const byokConfig = getBYOKStoreConfig();
 
   const descriptors: AITargetDescriptor[] = [
     {
@@ -43,7 +40,7 @@ export function listAvailableAITargets(): AITargetDescriptor[] {
       description: 'Apple 온디바이스 모델',
       kind: 'apple',
       available: appleAvailability.available,
-      featureSupport: ['metadata', 'labeling'],
+      featureSupport: ['metadata', 'labeling', 'summary'],
     },
   ];
 
@@ -54,23 +51,7 @@ export function listAvailableAITargets(): AITargetDescriptor[] {
       description: '다운로드된 로컬 모델',
       kind: 'local',
       available: model.isReady === true,
-      featureSupport: ['metadata', 'labeling', 'chat'],
-    });
-  }
-
-  if (
-    byokConfig.enabled &&
-    byokConfig.provider &&
-    byokConfig.apiKey &&
-    byokConfig.model
-  ) {
-    descriptors.push({
-      id: createBYOKTargetId(byokConfig.provider, byokConfig.model),
-      label: `BYOK: ${byokConfig.provider} / ${byokConfig.model}`,
-      description: '외부 API 기반 모델',
-      kind: 'byok',
-      available: true,
-      featureSupport: ['metadata', 'labeling', 'chat'],
+      featureSupport: ['metadata', 'labeling', 'chat', 'summary'],
     });
   }
 
@@ -86,12 +67,13 @@ export function listSelectableTargets(feature: AIFeature): AITargetDescriptor[] 
 export function isTargetSupportedForFeature(target: AITarget, feature: AIFeature): boolean {
   switch (target.kind) {
     case 'apple':
-      return feature === 'metadata' || feature === 'labeling';
+      return feature === 'metadata' || feature === 'labeling' || feature === 'summary';
     case 'local':
-    case 'byok':
       return true;
     case 'stub':
-      return feature !== 'chat';
+      // summary는 AI 문단이므로 stub가 지원하지 않는다 — 미지원 시 stub
+      // 폴백으로 떨어지고 UI가 문단을 숨긴다.
+      return feature !== 'chat' && feature !== 'summary';
     case 'rules':
       return feature === 'labeling';
   }
@@ -105,6 +87,8 @@ export function resolveEffectiveTargetId(feature: AIFeature): AITargetId {
       return settings.metadataTargetId ?? settings.defaultTargetId;
     case 'chat':
       return settings.chatTargetId ?? settings.defaultTargetId;
+    case 'summary':
+      return settings.summaryTargetId ?? settings.defaultTargetId;
     case 'labeling':
       return settings.labelingTargetId;
   }

@@ -1,7 +1,7 @@
 /**
  * Secure Storage Module
  *
- * Provides encrypted storage for sensitive secrets (e.g. BYOK API Keys, tokens)
+ * Provides encrypted storage for sensitive secrets (e.g. sync pairing tokens)
  * using iOS Keychain / Android Keystore via expo-secure-store.
  */
 
@@ -11,7 +11,6 @@ import { storage } from './storage';
 import { logger } from '../utils/logger';
 
 export const SecureStorageKeys = {
-  BYOK_API_KEY: 'glimpse_secure_byok_api_key',
   SYNC_PAIRING_TOKEN: 'glimpse_secure_sync_pairing_token',
 } as const;
 

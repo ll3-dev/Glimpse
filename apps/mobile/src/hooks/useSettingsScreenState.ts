@@ -5,7 +5,6 @@ import {
   useLocalLLMEnabled,
   useLocalLLMReady,
   useSelectedLocalModelId,
-  useBYOKConfig,
   selectLocalLLMModel,
   disableLocalLLM,
   enableLocalLLM,
@@ -32,8 +31,6 @@ export function useSettingsScreenState() {
   const localLLMReady = useLocalLLMReady();
   const localLLMModels = useAvailableLocalModels();
   const localLLMSelectedModelId = useSelectedLocalModelId();
-  useBYOKConfig((config) => `${config.enabled}:${config.provider ?? ''}:${config.model ?? ''}:${config.apiKey ? '1' : '0'}`);
-
   const aiTargetSettings = useAITargetSettings((settings) => settings);
   const defaultOptions = listSelectableTargets('metadata').filter(
     (target) => target.kind !== 'rules'

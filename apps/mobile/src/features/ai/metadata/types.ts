@@ -2,7 +2,7 @@
  * AI Metadata Provider Contract Types
  *
  * Shared types for provider/ router/usecase communication.
- * All providers (Apple, Local, BYOK) implement MetadataProvider interface.
+ * All providers (Apple, Local) implement MetadataProvider interface.
  */
 
 import type { Effect } from "effect";
@@ -44,7 +44,7 @@ export type AIProviderErrorCode =
 export interface AIProviderError {
   readonly _tag: 'AI_PROVIDER_ERROR';
   readonly code: AIProviderErrorCode | string;
-  readonly provider: string; // 'apple' | 'local' | 'byok' | 'stub'
+  readonly provider: string; // 'apple' | 'local' | 'stub'
   readonly message: string;
   readonly details?: {
     provider: string;
@@ -55,7 +55,7 @@ export interface AIProviderError {
 /**
  * AI Provider 공통 인터페이스
  *
- * 모든 provider (Apple, Local, BYOK, Stub)가 구현해야 하는 계약
+ * 모든 provider (Apple, Local, Stub)가 구현해야 하는 계약
  */
 export interface MetadataProvider {
   /** Provider 식별자 */
@@ -65,7 +65,7 @@ export interface MetadataProvider {
    * 현재 환경에서 provider 사용 가능 여부 확인
    * - Apple: iOS 버전 + 토글 ON 확인
    * - Local: 모델 다운로드 완료 확인
-   * - BYOK: API key 설정 확인
+   * - 로컬: 모델 다운로드·로드 상태 확인
    */
   isAvailable(): Promise<boolean>;
 

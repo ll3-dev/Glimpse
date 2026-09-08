@@ -64,13 +64,13 @@ describe('proposeEdgesWithAI', () => {
 
   test('returns empty when generation fails or throws', async () => {
     const failing = await proposeEdgesWithAI([item('a', 'A'), item('b', 'B')], {
-      resolveTarget: () => ({ kind: 'byok' }),
+      resolveTarget: () => ({ kind: 'local' }),
       executeChat: async () => ({ success: false, error: new Error('boom') }),
     });
     expect(failing).toEqual([]);
 
     const throwing = await proposeEdgesWithAI([item('a', 'A'), item('b', 'B')], {
-      resolveTarget: () => ({ kind: 'byok' }),
+      resolveTarget: () => ({ kind: 'local' }),
       executeChat: async () => {
         throw new Error('network down');
       },

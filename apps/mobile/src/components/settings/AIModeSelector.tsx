@@ -1,10 +1,10 @@
 import { Pressable, View } from 'react-native';
-import { Cpu, Key, Sparkles, Check } from 'lucide-react-native';
+import { Cpu, Sparkles, Check } from 'lucide-react-native';
 import { Text, Badge } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { useAppLocale } from '@/src/localization';
 
-export type AIMode = 'auto' | 'on-device' | 'cloud';
+export type AIMode = 'auto' | 'on-device';
 
 type AIModeSelectorProps = {
   selectedMode: AIMode;
@@ -36,12 +36,6 @@ export function AIModeSelector({ selectedMode, onSelectMode }: AIModeSelectorPro
       title: messages.settings.aiModeOnDevice,
       description: messages.settings.aiModeOnDeviceDesc,
       icon: <Cpu size={18} color={selectedMode === 'on-device' ? appPrimary : appMuted} />,
-    },
-    {
-      id: 'cloud',
-      title: messages.settings.aiModeCloud,
-      description: messages.settings.aiModeCloudDesc,
-      icon: <Key size={18} color={selectedMode === 'cloud' ? appPrimary : appMuted} />,
     },
   ];
 

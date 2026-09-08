@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Bot, Cpu, Key, Sparkles, ShieldCheck } from 'lucide-react-native';
+import { Bot, Cpu, Sparkles, ShieldCheck } from 'lucide-react-native';
 import { Card, Text, Badge } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { useAppLocale } from '@/src/localization';
@@ -8,8 +8,6 @@ import {
   useLocalLLMEnabled,
   useLocalLLMReady,
   useSelectedLocalModel,
-  useBYOKConfig,
-  useBYOKReady,
 } from '@/src/features/settings';
 
 export function SettingsOverviewCard() {
@@ -18,8 +16,6 @@ export function SettingsOverviewCard() {
   const localLLMEnabled = useLocalLLMEnabled();
   const localLLMReady = useLocalLLMReady();
   const selectedLocalModel = useSelectedLocalModel();
-  const byokConfig = useBYOKConfig((config) => config);
-  const byokReady = useBYOKReady();
 
   const appPrimary = useSemanticColor('appPrimary');
   const appMuted = useSemanticColor('appMuted');
@@ -44,13 +40,6 @@ export function SettingsOverviewCard() {
     badgeText = 'Offline';
     badgeVariant = 'secondary';
     icon = <Bot size={20} color={appPrimary} />;
-  } else if (byokConfig.enabled && byokReady && byokConfig.provider) {
-    const providerName = byokConfig.provider.toUpperCase();
-    title = `${messages.settings.aiOverviewByok} (${providerName})`;
-    description = messages.settings.aiOverviewByokDesc(providerName);
-    badgeText = 'Cloud API';
-    badgeVariant = 'outline';
-    icon = <Key size={20} color={appPrimary} />;
   }
 
   return (

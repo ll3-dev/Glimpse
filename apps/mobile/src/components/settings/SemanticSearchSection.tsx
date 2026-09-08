@@ -4,10 +4,6 @@ import { Check, Download, Sparkles, Trash2 } from 'lucide-react-native';
 import { Text, Switch } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import { SettingsSection } from './SettingsSection';
-import {
-  providerSupportsEmbedding,
-} from '@/src/features/search/byok-embedding-client';
-import { useBYOKConfig, useBYOKCredentialsConfigured } from '@/src/features/settings/byok.selectors';
 import { useSemanticRerankEnabled } from '@/src/features/search/semantic-settings';
 import {
   useOnDeviceEmbedding,
@@ -16,8 +12,8 @@ import {
 /**
  * Semantic search opt-in section.
  *
- * 기본 OFF. ON이면 (1) BYOK embedding API 또는 (2) 온디바이스 nomic 모델로
- * 재정렬한다. 프라이버시 문구는 접히지 않는 본문에 항상 노출된다.
+ * 기본 OFF. ON + 기기 내 nomic 모델 다운로드 완료 시 온디바이스로만
+ * 재정렬한다 — 외부 전송 경로는 없다(2026-09-08 완전 로컬 전환).
  */
 
 type SemanticSearchSectionProps = {
@@ -26,8 +22,6 @@ type SemanticSearchSectionProps = {
 
 export function SemanticSearchSection({ embedded = false }: SemanticSearchSectionProps) {
   const [enabled, setEnabled] = useSemanticRerankEnabled();
-  const provider = useBYOKConfig((config) => config.provider);
-  const credentialsConfigured = useBYOKCredentialsConfigured();
   const appMuted = useSemanticColor('appMuted');
   const appText = useSemanticColor('appText');
   const appAccent = useSemanticColor('appAccent');
@@ -46,14 +40,6 @@ export function SemanticSearchSection({ embedded = false }: SemanticSearchSectio
     void refresh();
   }, [refresh]);
 
-  const byokEligible =
-    credentialsConfigured && providerSupportsEmbedding(provider);
-  const disabledReason = byokEligible
-    ? undefined
-    : !credentialsConfigured
-      ? 'BYOK API 키 또는 기기 내 임베딩 모델을 준비해주세요.'
-      : '현재 Provider는 embedding을 지원하지 않습니다. OpenAI 계열 키를 사용하거나 기기 내 모델을 다운로드해주세요.';
-
   const content = (
     <View>
       <View className="flex-row items-center justify-between">
@@ -70,7 +56,7 @@ export function SemanticSearchSection({ embedded = false }: SemanticSearchSectio
         />
       </View>
 
-      {/* 온디바이스 임베딩 모델 — BYOK 없이 기기 내 처리를 위한 최소 진입점 */}
+      {/* 온디바이스 임베딩 모델 — 기기 내 처리를 위한 유일한 임베딩 경로 */}
       {modelInfo && (
         <View className="bg-app-bg/50 mt-2.5 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
@@ -118,7 +104,7 @@ export function SemanticSearchSection({ embedded = false }: SemanticSearchSectio
             <View className="flex-row items-center gap-1 mt-2">
               <Check size={12} color={appText} />
               <Text className="text-app-muted text-[11px]">
-                준비됨 — BYOK이 없으면 이 모델로 재정렬합니다
+                준비됨 — 이 모델로 기기 내부에서 재정렬합니다
               </Text>
             </View>
           )}
@@ -133,10 +119,7 @@ export function SemanticSearchSection({ embedded = false }: SemanticSearchSectio
       {/* 프라이버시 문구 — 옵트인 상태와 무관하게 항상 노출 */}
       <View className="mt-3">
         <Text className="text-[11px] text-app-muted leading-4">
-          {modelPath
-            ? '온디바이스 모드에서는 모든 임베딩이 기기 내부에서 처리되며 외부로 전송되지 않습니다. '
-            : ''}
-          BYOK 임베딩을 켜면 검색어와 검색 중인 항목의 내용이 설정한 외부 임베딩 API로 전송됩니다.
+          모든 임베딩은 기기 내부에서만 처리되며 외부로 전송되지 않습니다.
         </Text>
       </View>
     </View>
@@ -150,7 +133,7 @@ export function SemanticSearchSection({ embedded = false }: SemanticSearchSectio
     <SettingsSection
       title="의미 검색"
       icon={<Sparkles size={18} color={appMuted} />}
-      footer={enabled && disabledReason ? disabledReason : undefined}
+      footer={enabled && !modelPath ? '기기 내 임베딩 모델을 다운로드해주세요.' : undefined}
     >
       {content}
     </SettingsSection>

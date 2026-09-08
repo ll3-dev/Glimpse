@@ -31,12 +31,6 @@ export const StorageKeys = {
   LOCAL_LLM_ENABLED: 'local_llm_enabled',
   LOCAL_LLM_SELECTED_MODEL: 'local_llm_selected_model',
   LOCAL_MODEL_DOWNLOAD_SESSION: 'local_model_download_session',
-  // BYOK settings
-  BYOK_ENABLED: 'byok_enabled',
-  BYOK_PROVIDER: 'byok_provider',
-  BYOK_API_KEY: 'byok_api_key',
-  BYOK_BASE_URL: 'byok_base_url',
-  BYOK_MODEL: 'byok_model',
   // Recommendation scheduling
   RECOMMENDATION_CADENCE: 'recommendation_cadence',
   RECOMMENDATION_LAST_REFRESH_AT: 'recommendation_last_refresh_at',
@@ -44,7 +38,7 @@ export const StorageKeys = {
   // Desktop synchronization
   SYNC_CONFIG: 'sync_config_v1',
   SYNC_DEVICE_ID: 'sync_device_id',
-  // Semantic search (BYOK embedding opt-in)
+  // Semantic search (온디바이스 임베딩 opt-in)
   SEMANTIC_RERANK_ENABLED: 'semantic_rerank_enabled',
   /** 온디바이스 임베딩 모델 id(레지스트리) — 검색 재정렬 폴백용. */
   ON_DEVICE_EMBEDDING_MODEL_ID: 'on_device_embedding_model_id',
@@ -56,6 +50,10 @@ export const StorageKeys = {
   THEME_PREFERENCE: 'theme_preference',
   // Labeling backfill (one-time version flag)
   LABELING_BACKFILL_VERSION: 'labeling_backfill_version',
+  // AI target — summary(오늘 요약 내러티브)
+  AI_SUMMARY_TARGET: 'ai_summary_target',
+  /** 오늘 요약 내러티브 캐시 — 일자 키 JSON. */
+  DAILY_NARRATIVE_CACHE: 'daily_narrative_cache',
 } as const;
 
 export type StorageKey = (typeof StorageKeys)[keyof typeof StorageKeys];

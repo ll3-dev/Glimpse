@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { addLocalLLMModel, clearLocalLLMSettings } from '@/src/features/settings';
-import { clearBYOKStoredSettings, setBYOKEnabled, setBYOKModel, setBYOKProvider, setBYOKApiKey } from '@/src/stores/settings/byok.store';
 import {
   getAITargetSettings,
   resetAITargetSettings,
@@ -8,38 +7,34 @@ import {
   setDefaultAITargetId,
   setLabelingAITargetId,
   setMetadataAITargetId,
+  setSummaryAITargetId,
 } from '@/src/stores/settings/ai-targets.store';
 import {
   APPLE_TARGET_ID,
-  createBYOKTargetId,
   createLocalTargetId,
   listSelectableTargets,
   parseAITargetId,
   resolveEffectiveTarget,
+  resolveEffectiveTargetId,
   RULES_TARGET_ID,
   STUB_TARGET_ID,
 } from './index';
 
 describe('ai target registry', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     clearLocalLLMSettings();
-    await clearBYOKStoredSettings();
     resetAITargetSettings();
   });
 
-  test('parses and serializes local/byok target ids', () => {
+  test('parses and serializes local target ids', () => {
     expect(parseAITargetId(createLocalTargetId('qwen3-4b'))).toEqual({
       kind: 'local',
       modelId: 'qwen3-4b',
       id: 'local.qwen3-4b',
     });
 
-    expect(parseAITargetId(createBYOKTargetId('openai', 'gpt-4.1-mini'))).toEqual({
-      kind: 'byok',
-      provider: 'openai',
-      model: 'gpt-4.1-mini',
-      id: 'byok.openai:gpt-4.1-mini',
-    });
+    // 구 BYOK 타깃 id는 파싱 실패(null) — stub/rules 폴백으로 떨어진다
+    expect(parseAITargetId('byok.openai:gpt-4.1-mini')).toBeNull();
   });
 
   test('lists only ready local models as selectable targets', () => {
@@ -52,16 +47,6 @@ describe('ai target registry', () => {
     expect(metadataTargets.some((target) => target.id === createLocalTargetId('not-ready-model'))).toBe(false);
   });
 
-  test('lists only fully configured byok target as selectable', async () => {
-    setBYOKProvider('openai');
-    await setBYOKApiKey('sk-test');
-    setBYOKModel('gpt-4.1-mini');
-    setBYOKEnabled(true);
-
-    const chatTargets = listSelectableTargets('chat');
-    expect(chatTargets.some((target) => target.id === createBYOKTargetId('openai', 'gpt-4.1-mini'))).toBe(true);
-  });
-
   test('resolves metadata/chat null settings from default target', () => {
     setDefaultAITargetId(STUB_TARGET_ID);
     setMetadataAITargetId(null);
@@ -69,6 +54,22 @@ describe('ai target registry', () => {
 
     expect(resolveEffectiveTarget('metadata').id).toBe(STUB_TARGET_ID);
     expect(resolveEffectiveTarget('chat').id).toBe(STUB_TARGET_ID);
+  });
+
+  test('summary resolves from summaryTargetId, falling back to default', () => {
+    setDefaultAITargetId(APPLE_TARGET_ID);
+    expect(resolveEffectiveTarget('summary').kind).toBe('apple');
+
+    // 로컬 모델이 없어 로컬 타깃을 쓸 수 없어도 id 해석은 설정을 따른다
+    setSummaryAITargetId(createLocalTargetId('some-model'));
+    expect(resolveEffectiveTargetId('summary')).toBe('local.some-model');
+  });
+
+  test('unsupported summary target falls back to stub — UI hides the paragraph', () => {
+    setDefaultAITargetId(STUB_TARGET_ID);
+    setSummaryAITargetId(null);
+
+    expect(resolveEffectiveTarget('summary').kind).toBe('stub');
   });
 
   test('keeps labeling target independent from default target', () => {

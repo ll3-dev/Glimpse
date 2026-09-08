@@ -3,7 +3,6 @@ import { useStore } from 'zustand';
 import { storage, StorageKeys } from '@/src/lib/storage';
 import {
   APPLE_TARGET_ID,
-  createBYOKTargetId,
   createLocalTargetId,
   RULES_TARGET_ID,
   STUB_TARGET_ID,
@@ -11,7 +10,6 @@ import {
   type AITargetId,
   type AITargetSettings,
 } from '@/src/features/ai/targets/types';
-import { getBYOKStoreConfig } from './byok.store';
 import { getLocalLLMStoreConfig } from './local-llm.store';
 import { isAppleIntelligenceEnabled } from '@/src/features/settings/appleIntelligenceToggle';
 
@@ -30,17 +28,24 @@ function migrateInitialTargetSettings(): AITargetSettings {
   const persistedMetadataTarget = storage.getString(StorageKeys.AI_METADATA_TARGET) ?? null;
   const persistedLabelingTarget = storage.getString(StorageKeys.AI_LABELING_TARGET) ?? null;
   const persistedChatTarget = storage.getString(StorageKeys.AI_CHAT_TARGET) ?? null;
+  const persistedSummaryTarget = storage.getString(StorageKeys.AI_SUMMARY_TARGET) ?? null;
 
-  if (persistedDefaultTarget || persistedMetadataTarget || persistedLabelingTarget || persistedChatTarget) {
+  if (
+    persistedDefaultTarget ||
+    persistedMetadataTarget ||
+    persistedLabelingTarget ||
+    persistedChatTarget ||
+    persistedSummaryTarget
+  ) {
     return {
       defaultTargetId: persistedDefaultTarget ?? STUB_TARGET_ID,
       metadataTargetId: persistedMetadataTarget,
       labelingTargetId: persistedLabelingTarget ?? RULES_TARGET_ID,
       chatTargetId: persistedChatTarget,
+      summaryTargetId: persistedSummaryTarget,
     };
   }
 
-  const byokConfig = getBYOKStoreConfig();
   const localConfig = getLocalLLMStoreConfig();
   const appleEnabled = isAppleIntelligenceEnabled();
 
@@ -50,12 +55,6 @@ function migrateInitialTargetSettings(): AITargetSettings {
     defaultTargetId = APPLE_TARGET_ID;
   } else if (localConfig.enabled && localConfig.selectedModelId) {
     defaultTargetId = createLocalTargetId(localConfig.selectedModelId);
-  } else if (
-    byokConfig.enabled &&
-    byokConfig.provider &&
-    byokConfig.model
-  ) {
-    defaultTargetId = createBYOKTargetId(byokConfig.provider, byokConfig.model);
   }
 
   return {
@@ -63,6 +62,7 @@ function migrateInitialTargetSettings(): AITargetSettings {
     metadataTargetId: null,
     labelingTargetId: RULES_TARGET_ID,
     chatTargetId: null,
+    summaryTargetId: null,
   };
 }
 
@@ -78,6 +78,11 @@ function persistSettings(settings: AITargetSettings): void {
     storage.set(StorageKeys.AI_CHAT_TARGET, settings.chatTargetId);
   } else {
     storage.remove(StorageKeys.AI_CHAT_TARGET);
+  }
+  if (settings.summaryTargetId) {
+    storage.set(StorageKeys.AI_SUMMARY_TARGET, settings.summaryTargetId);
+  } else {
+    storage.remove(StorageKeys.AI_SUMMARY_TARGET);
   }
 }
 
@@ -95,9 +100,15 @@ const aiTargetSettingsStore = createStore<AITargetSettingsStoreState>((set) => (
     },
     setFeatureTargetId: (feature, targetId) => {
       set((state) => {
+        const featureKey =
+          feature === 'metadata'
+            ? 'metadataTargetId'
+            : feature === 'summary'
+              ? 'summaryTargetId'
+              : 'chatTargetId';
         const next = {
           ...state.settings,
-          [feature === 'metadata' ? 'metadataTargetId' : 'chatTargetId']: targetId,
+          [featureKey]: targetId,
         } as AITargetSettings;
         persistSettings(next);
         return { settings: next };
@@ -135,6 +146,10 @@ export function setMetadataAITargetId(targetId: AITargetId | null): void {
 
 export function setChatAITargetId(targetId: AITargetId | null): void {
   aiTargetSettingsStore.getState().actions.setFeatureTargetId('chat', targetId);
+}
+
+export function setSummaryAITargetId(targetId: AITargetId | null): void {
+  aiTargetSettingsStore.getState().actions.setFeatureTargetId('summary', targetId);
 }
 
 export function setLabelingAITargetId(targetId: AITargetId): void {

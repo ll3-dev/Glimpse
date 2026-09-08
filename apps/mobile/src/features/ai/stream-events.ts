@@ -30,11 +30,12 @@ type EventListener<T = unknown> = (payload: T) => void;
  * Native event push wiring — JSI `onEvent`/`offEvent` over the rustra FFI
  * event sink (CallInvoker-marshalled to the JS thread).
  *
- * Delegates to `@rustra/react-native`'s `subscribeEvent` (the 0.4.0 event
- * contract helper): the first subscriber of an event name registers the
- * native listener, the last unsubscribe releases it. Without the native
- * surface (Expo Go, tests), returns null — the hub stays local-only and
- * behavior is unchanged.
+ * Delegates to `@rustra/react-native`'s `subscribeEvent` (canonical
+ * `(name, callback)` contract — the native module is resolved from
+ * `globalThis.__rustraNative` inside the adapter): the first subscriber of an
+ * event name registers the native listener, the last unsubscribe releases it.
+ * Without the native surface (Expo Go, tests), returns null — the hub stays
+ * local-only and behavior is unchanged.
  */
 function registerNativeListener(
   eventName: string,
@@ -47,7 +48,7 @@ function registerNativeListener(
   }
 
   try {
-    return subscribeEvent(native, eventName, emit);
+    return subscribeEvent(eventName, emit);
   } catch {
     return null;
   }

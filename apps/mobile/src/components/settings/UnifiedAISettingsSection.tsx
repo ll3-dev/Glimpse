@@ -8,15 +8,12 @@ import { useAppLocale } from '@/src/localization';
 import { SettingsSection } from './SettingsSection';
 import { AIModeSelector, type AIMode } from './AIModeSelector';
 import { AITargetPicker } from './AITargetPicker';
-import { BYOKSectionContainer } from './BYOKSectionContainer';
 import { SemanticSearchSection } from './SemanticSearchSection';
 import {
   useAppleIntelligenceConfig,
   useLocalLLMEnabled,
   useLocalLLMReady,
   useSelectedLocalModel,
-  useBYOKConfig,
-  useBYOKReady,
   enableAppleIntelligence,
   disableAppleIntelligence,
   enableLocalLLM,
@@ -60,18 +57,14 @@ export function UnifiedAISettingsSection({
   const localLLMEnabled = useLocalLLMEnabled();
   const localLLMReady = useLocalLLMReady();
   const selectedLocalModel = useSelectedLocalModel();
-  const byokConfig = useBYOKConfig((config) => config);
-  const byokReady = useBYOKReady();
 
   const appMuted = useSemanticColor('appMuted');
   const appPrimary = useSemanticColor('appPrimary');
 
-  // Derive active high-level mode
-  const derivedMode: AIMode = byokConfig.enabled && byokReady
-    ? 'cloud'
-    : localLLMEnabled || (appleConfig.enabled && appleConfig.isAvailable)
-      ? 'on-device'
-      : 'auto';
+  // Derive active high-level mode — 클라우드(cloud) 모드는 BYOK 제거로 폐지
+  const derivedMode: AIMode = localLLMEnabled || (appleConfig.enabled && appleConfig.isAvailable)
+    ? 'on-device'
+    : 'auto';
 
   const activeMode = selectedModeOverride ?? derivedMode;
 
@@ -147,12 +140,6 @@ export function UnifiedAISettingsSection({
             </View>
             <ChevronRight size={18} color={appMuted} />
           </Pressable>
-        </View>
-      )}
-
-      {activeMode === 'cloud' && (
-        <View className="mb-4 pt-2 border-t border-app-border/60">
-          <BYOKSectionContainer />
         </View>
       )}
 

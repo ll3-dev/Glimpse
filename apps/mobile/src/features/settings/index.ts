@@ -4,39 +4,6 @@
 
 export {
   // Types
-  type BYOKConfig,
-  type BYOKProviderType,
-  type ValidationResult,
-  BYOKProvider,
-  // Getters
-  getBYOKConfig,
-  useBYOKConfig,
-  useBYOKReady,
-  useBYOKCredentialsConfigured,
-  isBYOKReady,
-  hasBYOKCredentials,
-  getApiKey,
-  getBaseUrl,
-  getModel,
-  getProvider,
-  // Setters
-  enableBYOK,
-  disableBYOK,
-  setProvider,
-  setApiKey,
-  setBaseUrl,
-  setModel,
-  clearApiKey,
-  // Utilities
-  BYOK_MODEL_REGISTRY,
-  isAppOnlyModelRegistry,
-  isPreviewModelAllowed,
-  maskApiKey,
-  validateApiKey,
-} from './byokSettings';
-
-export {
-  // Types
   type AppleIntelligenceConfig,
   // Functions
   checkAppleIntelligenceAvailability,
