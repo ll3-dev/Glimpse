@@ -46,8 +46,16 @@ last_updated_by: Claude
 
 - [ ] OS 알림 권한 + 데스크톱 리마인더 발화
       (in-process 재시작 시 소실은 문서화된 설계 한계)
-- [ ] Phase 3 구현 후: 전역 단축키(CmdOrCtrl+Shift+K)·트레이 메뉴 동작
-      (`docs/plans/2026-08-31-roadmap-gates-graph-capture-design.md` Phase 3)
+- [x] 전역 단축키(CmdOrCtrl+Shift+K)·트레이 메뉴 동작 — 2026-08-31 완료
+      (증거: `2026-08-31_living-graph-phase-e-verification.md` "OS 물리 입력과 트레이 게이트
+      종료 후속" 절. Finder 전면에서 물리 키 코드 40+command+shift 입력 → 창 복원·`/capture`
+      진입, 실제 상태 메뉴에서 열기·빠른 캡처·지식 그래프·종료 실측 클릭, 종료 후 프로세스
+      소멸 확인. 스크린샷: `~/Desktop/screenshot-2026-08-31_18-45-23.png` 외 4장.
+      재현: `bun run tauri:build -- --bundles app` 후 실제 `.app` 실행)
+
+> 2026-09-06 정합화: 위 Phase 3·Phase E 런타임 항목은 Phase E 검증 기록과 대조해 완료
+> 처리했다. 배포·서명·updater·privacy/support URL 항목은 현재 범위에서 **명시적으로
+> 제외**되며, 완료 처리하지 않는다.
 
 ## 시뮬레이터/헤드리스로 불가한 것 (참고)
 
@@ -100,8 +108,11 @@ last_updated_by: Claude
 
 ### Phase E 패키지 런타임 2항목 (상세: `2026-08-31_living-graph-phase-e-verification.md:74-81`)
 
-- [ ] macOS: 다른 앱 전면 상태에서 `Cmd+Shift+K` → 창 복원 + `/capture` 진입
-- [ ] macOS: 메뉴 막대 트레이에서 빠른 캡처·지식 그래프·종료 실측
+- [x] macOS: 다른 앱 전면 상태에서 `Cmd+Shift+K` → 창 복원 + `/capture` 진입 — 2026-08-31 완료
+      (증거: 위 Phase E 검증 기록 물리 입력 절 + `screenshot-2026-08-31_18-45-23.png`)
+- [x] macOS: 메뉴 막대 트레이에서 빠른 캡처·지식 그래프·종료 실측 — 2026-08-31 완료
+      (증거: 위 Phase E 검증 기록 물리 입력 절 + `screenshot-2026-08-31_18-47-12.png` 등 3장,
+      종료 후 프로세스 소멸 확인)
 
 ### Android bridge 재생성 전제 (Task 1 후속, 2026-08-31)
 
