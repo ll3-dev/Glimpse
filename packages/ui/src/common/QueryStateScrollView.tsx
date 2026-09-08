@@ -21,6 +21,8 @@ type QueryStateScrollViewProps<T> = {
   emptyDescription: string;
   error?: Error | null;
   loadingText: string;
+  /** Optional content rendered above every state (loading/error/empty/data). */
+  header?: ReactNode;
   topPadding?: number;
   horizontalPadding?: number;
   bottomInset: number;
@@ -52,6 +54,7 @@ export function QueryStateScrollView<T>({
   emptyDescription,
   error,
   loadingText,
+  header,
   topPadding = 16,
   horizontalPadding = 24,
   bottomInset,
@@ -109,6 +112,7 @@ export function QueryStateScrollView<T>({
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
       }
     >
+      {header}
       {showLoading && (
         <View className="flex-1 items-center justify-center py-24">
           <Text className="text-app-muted text-sm font-medium">{loadingText}</Text>

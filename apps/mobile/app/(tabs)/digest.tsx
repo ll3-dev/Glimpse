@@ -9,10 +9,18 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Sparkles } from 'lucide-react-native';
-import { useRecommendationsQuery, useRecommendationActionsMutation } from '@/src/hooks';
-import { RecommendationCard } from '@/src/components/digest';
+import { useMemo } from 'react';
+import { buildTodaySummary } from '@glimpse/features';
+import {
+  useKnowledgeItemsQuery,
+  useAllRecommendationsQuery,
+  useRecommendationsQuery,
+  useRecommendationActionsMutation,
+} from '@/src/hooks';
+import { RecommendationCard, TodaySummaryCard } from '@/src/components/digest';
 import { QueryStateScrollView } from '@glimpse/ui/common';
 import { ScreenHeader } from '@glimpse/ui/primitives';
+import { useDailyNarrative } from '@/src/hooks/useDailyNarrative';
 import * as Haptics from 'expo-haptics';
 
 export default function DigestScreen() {
@@ -24,8 +32,16 @@ export default function DigestScreen() {
     error,
     refetch,
   } = useRecommendationsQuery();
+  const { data: knowledgeItems = [] } = useKnowledgeItemsQuery();
+  const { data: allEdges = [] } = useAllRecommendationsQuery();
   const { accept, ignore, dismiss } = useRecommendationActionsMutation();
   const insets = useSafeAreaInsets();
+
+  const todaySummary = useMemo(
+    () => buildTodaySummary(knowledgeItems, allEdges),
+    [knowledgeItems, allEdges],
+  );
+  const { narrative, isGenerating, regenerate } = useDailyNarrative(todaySummary);
 
   const isRefreshing = isFetching && !isLoading;
   const items = recommendations ?? [];
@@ -35,6 +51,15 @@ export default function DigestScreen() {
       <ScreenHeader title="연결 추천" subtitle="항목 간의 지식 연결" />
       <QueryStateScrollView
         data={items}
+        header={
+          <TodaySummaryCard
+            summary={todaySummary}
+            onPressEntry={(itemId) => router.push(`/library/${itemId}`)}
+            narrative={narrative}
+            isGeneratingNarrative={isGenerating}
+            onRegenerateNarrative={() => void regenerate()}
+          />
+        }
         isLoading={isLoading}
         isRefreshing={isRefreshing}
         onRefresh={() => refetch()}

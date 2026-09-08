@@ -24,7 +24,8 @@ describe('mobile graph focus navigation source contract', () => {
   test('오늘의 발견 상세 이동은 로컬 품질 카운터를 남긴다', async () => {
     const graph = await source('apps/mobile/app/(tabs)/graph.tsx');
 
-    expect(graph).toContain('recordMobileGraphDiscoveryOpen();');
+    // journey 프로토콜 v2 — 발견 카드의 itemA/itemB 쌍을 해시해 기록한다.
+    expect(graph).toContain('recordMobileGraphDiscoveryOpened(');
     expect(graph).toContain('onOpenDiscoveryItem');
   });
 });

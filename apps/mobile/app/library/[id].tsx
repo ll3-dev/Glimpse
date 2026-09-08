@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { ArrowLeft, MessageCircle, Network, SearchX } from 'lucide-react-native';
@@ -17,6 +17,7 @@ import {
   useAllRecommendationsQuery,
 } from '@/src/hooks';
 import { getDisplayLabels } from '@/src/features/labeling';
+import { recordMobileGraphItemDetailOpened } from '@/src/features/graph/graph-metrics.store';
 import { EmptyState, ScreenHeader } from '@glimpse/ui/primitives';
 import { useSemanticColor } from '@glimpse/ui';
 import {
@@ -50,6 +51,10 @@ export default function LibraryDetailScreen() {
   const { mutate: createConversation, isPending: isCreatingChat } = useCreateConversationMutation();
 
   const item = items?.find((entry) => entry.id === itemId);
+  // 항목 상세 열기 = revisit 여정 이벤트(해시만 저장).
+  useEffect(() => {
+    if (itemId) recordMobileGraphItemDetailOpened(itemId);
+  }, [itemId]);
   const showLoading = isLoading;
   const showMissing = !isLoading && !item;
   const showItem = !isLoading && Boolean(item);
