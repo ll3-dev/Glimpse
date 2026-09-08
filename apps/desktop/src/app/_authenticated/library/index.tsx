@@ -5,6 +5,7 @@ import { filterKnowledgeItems } from '@glimpse/features/search';
 import { useDesktopSemanticRerank } from '@/features/search/useSemanticRerank';
 import { SearchBar } from '@/components/library/SearchBar';
 import { KnowledgeItemList } from '@/components/library/KnowledgeItemList';
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import { BookOpen, Network, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -66,6 +67,8 @@ function LibraryPage() {
       </div>
 
       <SearchBar onSearch={setSearchQuery} />
+
+      <OnboardingChecklist />
 
       <div className="flex-1 overflow-y-auto pr-1">
         <KnowledgeItemList
