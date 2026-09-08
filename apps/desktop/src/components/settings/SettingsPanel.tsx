@@ -181,6 +181,33 @@ export function SettingsPanel() {
             </div>
           </div>
         </div>
+        <div className="mt-3 rounded-2xl border border-border bg-card p-6 shadow-2xs">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-card-foreground">
+                채팅 도구 사용 (Tool Calling)
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                AI가 지식 검색·최근 항목 조회·노트 저장 도구를 직접 씁니다. 로컬 서버 프로바이더에서만 동작하고, 실행 기록은 답변 아래 영수증으로 표시됩니다.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Label htmlFor="chat-tools-toggle" className="text-xs font-semibold text-foreground cursor-pointer">
+                {settings.chat.toolsEnabled ? '켜짐' : '꺼짐'}
+              </Label>
+              <Switch
+                id="chat-tools-toggle"
+                checked={settings.chat.toolsEnabled}
+                onCheckedChange={(v) =>
+                  handleSettingsChange({
+                    ...settings,
+                    chat: { ...settings.chat, toolsEnabled: v },
+                  })
+                }
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
       <hr className="border-border/60" />

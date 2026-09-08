@@ -2,11 +2,15 @@ import { memo } from 'react';
 import type { Message } from '@glimpse/shared';
 import { cn } from '@/lib/utils';
 import { ReferenceChips, type ChatReference } from './ReferenceChips';
+import { ToolRunReceipts } from './ToolRunReceipts';
+import type { ToolRunSummary } from '@/features/ai/tools/tool-loop';
 
 interface MessageBubbleProps {
   message: Message;
   /** 어시스턴트 응답이 참조한 노트 — 응답 완료 시 한 번 만들어지는 안정 배열 */
   references?: ChatReference[];
+  /** 도구 실행 영수증 — 응답 완료 시 한 번 만들어지는 안정 배열 */
+  toolRuns?: ToolRunSummary[];
 }
 
 function formatTimestamp(ts: number): string {
@@ -21,6 +25,7 @@ function formatTimestamp(ts: number): string {
 export const MessageBubble = memo(function MessageBubble({
   message,
   references,
+  toolRuns,
 }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
@@ -37,6 +42,9 @@ export const MessageBubble = memo(function MessageBubble({
         )}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
+        {!isUser && toolRuns && toolRuns.length > 0 && (
+          <ToolRunReceipts runs={toolRuns} />
+        )}
         {!isUser && references && <ReferenceChips references={references} />}
         <span
           className={cn(

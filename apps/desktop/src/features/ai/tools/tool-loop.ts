@@ -164,3 +164,82 @@ export function searchReferencesFromToolRuns(
   }
   return references;
 }
+
+export interface ToolRunSummary {
+  name: string;
+  /** UI 라벨 — 알려진 도구는 한국어, 모르는 도구는 원본 이름 */
+  label: string;
+  /** 사람이 읽는 한 줄 요약(인자+결과) */
+  detail: string;
+  /** 결과가 {error}면 false — 영수증에서 오류 톤으로 표시된다 */
+  ok: boolean;
+}
+
+const TOOL_LABELS: Record<string, string> = {
+  search_knowledge: '지식 검색',
+  list_recent_knowledge: '최근 항목',
+  save_note: '노트 저장',
+};
+
+function parseToolArgs(argsJson: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(argsJson);
+    return parsed && typeof parsed === 'object'
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function truncateDetail(text: string, max = 40): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+}
+
+function itemCount(run: ToolRunRecord): number {
+  const result = run.result as { items?: unknown } | null;
+  return Array.isArray(result?.items) ? result.items.length : 0;
+}
+
+/**
+ * 도구 실행 기록을 UI 영수증 한 줄로 요약한다. 도구가 라이브러리를
+ * 변경(save_note)할 수 있는 이상, 무엇을 실행했는지 사용자에게 가리지
+ * 않는 것이 투명성 계약이다.
+ */
+export function summarizeToolRuns(toolRuns: ToolRunRecord[]): ToolRunSummary[] {
+  return toolRuns.map((run) => {
+    const label = TOOL_LABELS[run.name] ?? run.name;
+    const args = parseToolArgs(run.arguments);
+    const error =
+      run.result && typeof run.result === 'object' && 'error' in run.result
+        ? String((run.result as { error: unknown }).error)
+        : null;
+
+    if (error) {
+      return { name: run.name, label, detail: truncateDetail(error), ok: false };
+    }
+    if (run.name === 'search_knowledge') {
+      const query = typeof args.query === 'string' ? truncateDetail(args.query, 24) : '';
+      return {
+        name: run.name,
+        label,
+        detail: `${query ? `"${query}" ` : ''}${itemCount(run)}건`,
+        ok: true,
+      };
+    }
+    if (run.name === 'list_recent_knowledge') {
+      return { name: run.name, label, detail: `${itemCount(run)}건`, ok: true };
+    }
+    if (run.name === 'save_note') {
+      const title = typeof args.title === 'string' ? truncateDetail(args.title, 24) : '';
+      return { name: run.name, label, detail: `${title ? `"${title}" ` : ''}저장됨`, ok: true };
+    }
+    return {
+      name: run.name,
+      label,
+      detail: truncateDetail(String(run.result ?? '')),
+      ok: true,
+    };
+  });
+}

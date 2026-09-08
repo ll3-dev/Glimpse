@@ -8,6 +8,8 @@ import { generateResponseWithKnowledge, type ChatKnowledgeDeps } from '@/feature
 import {
   runToolCallingChat,
   searchReferencesFromToolRuns,
+  summarizeToolRuns,
+  type ToolRunSummary,
 } from '@/features/ai/tools/tool-loop';
 import { loadSettings } from '@/lib/settings-storage';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
@@ -74,6 +76,11 @@ export function ChatView({ conversationId }: ChatViewProps) {
   // 메시지 id → 참조한 노트 목록. 응답 완료 시 한 번 기록되며 이후 불변으로
   // 유지되므로 MessageBubble의 memo를 깨지 않는다.
   const [referencesByMessage, setReferencesByMessage] = useState<Map<string, ChatReference[]>>(
+    new Map()
+  );
+  // 메시지 id → 도구 실행 영수증. 참조와 같은 타이밍(응답 완료)에 한 번
+  // 기록되고 이후 불변 — MessageBubble의 memo를 깨지 않는다.
+  const [toolRunsByMessage, setToolRunsByMessage] = useState<Map<string, ToolRunSummary[]>>(
     new Map()
   );
   // Streamed tokens land in a ref and are broadcast to the StreamingBubble
@@ -157,6 +164,10 @@ export function ChatView({ conversationId }: ChatViewProps) {
             title: ref.title,
             score: 0,
           }));
+          const runs = summarizeToolRuns(toolOutcome.toolRuns);
+          if (runs.length > 0) {
+            setToolRunsByMessage((prev) => new Map(prev).set(assistantId, runs));
+          }
           if (response) onToken(response);
         } else {
           const outcome = await generateResponseWithKnowledge(
@@ -265,6 +276,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
                   key={message.id}
                   message={message}
                   references={referencesByMessage.get(message.id)}
+                  toolRuns={toolRunsByMessage.get(message.id)}
                 />
               ))}
               {/* Streaming response bubble — a leaf holding its own token

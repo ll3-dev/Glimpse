@@ -3,6 +3,7 @@ import {
   MAX_TOOL_ROUNDS,
   runToolCallingChat,
   searchReferencesFromToolRuns,
+  summarizeToolRuns,
   type ToolLoopDeps,
 } from './tool-loop';
 import type { ToolRoundResult } from './local-server-tools';
@@ -120,5 +121,46 @@ describe('searchReferencesFromToolRuns', () => {
       { itemId: 'b', title: 'B' },
       { itemId: 'c', title: '제목 없음' },
     ]);
+  });
+});
+
+describe('summarizeToolRuns', () => {
+  test('search_knowledge는 질문과 결과 수를 한 줄로 요약한다', () => {
+    expect(
+      summarizeToolRuns([
+        {
+          name: 'search_knowledge',
+          arguments: '{"query":"러스트 소유권"}',
+          result: { items: [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }] },
+        },
+      ]),
+    ).toEqual([
+      { name: 'search_knowledge', label: '지식 검색', detail: '"러스트 소유권" 2건', ok: true },
+    ]);
+  });
+
+  test('save_note는 저장된 제목을, list_recent는 건수를 요약한다', () => {
+    const runs = summarizeToolRuns([
+      { name: 'save_note', arguments: '{"title":"새 메모","body":"내용"}', result: { saved: true } },
+      { name: 'list_recent_knowledge', arguments: '{"limit":5}', result: { items: [1, 2, 3] } },
+    ]);
+    expect(runs[0]).toEqual({ name: 'save_note', label: '노트 저장', detail: '"새 메모" 저장됨', ok: true });
+    expect(runs[1]).toEqual({ name: 'list_recent_knowledge', label: '최근 항목', detail: '3건', ok: true });
+  });
+
+  test('실패한 도구는 오류 메시지를 ok=false로 표시한다', () => {
+    expect(
+      summarizeToolRuns([
+        { name: 'save_note', arguments: '{}', result: { error: '저장 실패: 디스크 오류' } },
+      ]),
+    ).toEqual([
+      { name: 'save_note', label: '노트 저장', detail: '저장 실패: 디스크 오류', ok: false },
+    ]);
+  });
+
+  test('깨진 인자 JSON도 안전하게 요약한다', () => {
+    expect(
+      summarizeToolRuns([{ name: 'search_knowledge', arguments: '{broken', result: { items: [] } }]),
+    ).toEqual([{ name: 'search_knowledge', label: '지식 검색', detail: '0건', ok: true }]);
   });
 });
